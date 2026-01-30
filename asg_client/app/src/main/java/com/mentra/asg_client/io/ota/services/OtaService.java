@@ -249,29 +249,30 @@ public class OtaService extends Service {
     
     @Subscribe(threadMode = ThreadMode.MAIN)
     public void onBesOtaProgress(BesOtaProgressEvent event) {
-        Log.d(TAG, "BES OTA progress: " + event.toString());
+        // Note: BES install PROGRESS is sent to phone via sr_adota from BES chip directly (via BLE)
+        // We can't send via UART during BES OTA because it's busy with firmware transfer
+        // We only handle STARTED/FINISHED/FAILED here for logging and internal state management
         
         switch (event.getStatus()) {
             case STARTED:
+                Log.i(TAG, "BES firmware update started");
                 updateNotification("BES firmware update started");
-                if (otaHelper != null) {
-                    otaHelper.sendBesInstallProgressToPhone("STARTED", 0, null);
-                }
+                // Note: Can't send to phone - UART busy, phone will get progress via sr_adota
                 break;
             case PROGRESS:
+                // Progress is handled by BES chip sending sr_adota via BLE
+                // No need to try sending via UART (it would fail anyway)
                 updateNotification("Sending BES firmware: " + event.getProgress() + "%");
-                if (otaHelper != null) {
-                    otaHelper.sendBesInstallProgressToPhone("PROGRESS", event.getProgress(), null);
-                }
                 break;
             case FINISHED:
+                Log.i(TAG, "BES firmware update finished successfully");
                 updateNotification("BES firmware updated successfully");
-                if (otaHelper != null) {
-                    otaHelper.sendBesInstallProgressToPhone("FINISHED", 100, null);
-                }
+                // Note: BES chip will send sr_adota with progress=100 or type=success
                 break;
             case FAILED:
+                Log.e(TAG, "BES firmware update failed: " + event.getErrorMessage());
                 updateNotification("BES firmware update failed: " + event.getErrorMessage());
+                // Try to notify phone of failure (might work if UART recovers)
                 if (otaHelper != null) {
                     otaHelper.sendBesInstallProgressToPhone("FAILED", 0, event.getErrorMessage());
                 }

@@ -251,6 +251,110 @@ public class K900BluetoothManager extends BaseBluetoothManager implements Serial
         return comManager;
     }
 
+    /**
+     * Request BES firmware version and MAC address from BES chipset via UART.
+     * Sends cs_syvr command to BES, which responds with hs_syvr containing:
+     * - version: BES firmware version (e.g., "17.26.1.14")
+     * - btaddr: Bluetooth MAC address
+     * - bleaddr: BLE MAC address
+     *
+     * This is called when serial port is ready, ensuring version info is cached
+     * before phone connects, making it available for OTA patch matching.
+     */
+    public void requestBesSystemVersion() {
+        Log.i(TAG, "🔧 Requesting BES system version (cs_syvr) via UART");
+
+        try {
+            // Build K900 command format: {"C":"cs_syvr","V":1,"B":""}
+            org.json.JSONObject k900Command = new org.json.JSONObject();
+            k900Command.put("C", "cs_syvr");
+            k900Command.put("V", 1);
+            k900Command.put("B", "");
+
+            String commandStr = k900Command.toString();
+            Log.d(TAG, "📤 Sending cs_syvr request: " + commandStr);
+
+            // Send via sendData() which handles protocol formatting and isSerialOpen check
+            boolean sent = sendData(commandStr.getBytes(java.nio.charset.StandardCharsets.UTF_8));
+
+            if (sent) {
+                Log.i(TAG, "✅ BES system version request (cs_syvr) sent successfully via UART");
+            } else {
+                Log.e(TAG, "❌ Failed to send BES system version request via UART");
+            }
+        } catch (org.json.JSONException e) {
+            Log.e(TAG, "💥 Failed to build cs_syvr request", e);
+        }
+    }
+
+    /**
+     * Handle sr_syvr response from BES chipset.
+     * This is called early in the serial read pipeline to avoid timing issues
+     * with CommandProcessor initialization.
+     *
+     * @param payload The JSON payload bytes
+     * @return true if this was a sr_syvr response and was handled, false otherwise
+     */
+    private boolean handleSrSyvrResponse(byte[] payload) {
+        try {
+            String jsonStr = new String(payload, java.nio.charset.StandardCharsets.UTF_8);
+            org.json.JSONObject json = new org.json.JSONObject(jsonStr);
+            
+            String command = json.optString("C", "");
+            if (!"sr_syvr".equals(command)) {
+                return false; // Not a sr_syvr response
+            }
+
+            Log.i(TAG, "📋 Handling sr_syvr response directly in K900BluetoothManager");
+
+            // Parse the B field which contains version info
+            String bFieldStr = json.optString("B", "");
+            if (bFieldStr.isEmpty()) {
+                // Try as JSONObject directly
+                org.json.JSONObject bData = json.optJSONObject("B");
+                if (bData != null) {
+                    String dpjVersion = bData.optString("dpj", "");
+                    if (!dpjVersion.isEmpty()) {
+                        cacheBesFirmwareVersion(dpjVersion);
+                    }
+                }
+            } else {
+                // B field is a string, parse it as JSON
+                org.json.JSONObject bData = new org.json.JSONObject(bFieldStr);
+                String dpjVersion = bData.optString("dpj", "");
+                if (!dpjVersion.isEmpty()) {
+                    cacheBesFirmwareVersion(dpjVersion);
+                }
+            }
+
+            return true; // Handled
+        } catch (Exception e) {
+            Log.e(TAG, "💥 Error parsing sr_syvr response", e);
+            return false; // Let it fall through to normal processing
+        }
+    }
+
+    /**
+     * Cache BES firmware version to SharedPreferences.
+     * Uses the same storage as AsgSettings for compatibility.
+     */
+    private void cacheBesFirmwareVersion(String version) {
+        if (version == null || version.isEmpty()) {
+            Log.w(TAG, "⚠️ Attempted to cache empty BES firmware version");
+            return;
+        }
+
+        Log.i(TAG, "📋 Caching BES firmware version: " + version);
+        
+        try {
+            android.content.SharedPreferences prefs = context.getSharedPreferences("asg_settings", android.content.Context.MODE_PRIVATE);
+            prefs.edit().putString("mcu_firmware_version", version).commit();
+            Log.i(TAG, "✅ BES firmware version cached successfully: " + version);
+        } catch (Exception e) {
+            Log.e(TAG, "💥 Failed to cache BES firmware version", e);
+        }
+    }
+
     @Override
     public void stopAdvertising() {
         // K900 doesn't need to stop advertising manually
@@ -326,7 +430,13 @@ public class K900BluetoothManager extends BaseBluetoothManager implements Serial
                                 // Notify listeners with the clean payload (JSON data without markers)
                                 String payloadPreview = new String(payload, 0, Math.min(payload.length, 200));
                                 Log.d(TAG, "📥 Extracted K900 payload (" + payload.length + " bytes): " + payloadPreview);
-                                notifyDataReceived(payload);
+                                
+                                // Check if this is a sr_syvr response (BES system version)
+                                // Handle it directly here to avoid timing issues with CommandProcessor initialization
+                                if (!handleSrSyvrResponse(payload)) {
+                                    // Not a sr_syvr response, forward to listeners
+                                    notifyDataReceived(payload);
+                                }
                             } else {
                                 Log.w(TAG, "📥 Failed to extract payload from K900 message");
                             }
@@ -370,6 +480,11 @@ public class K900BluetoothManager extends BaseBluetoothManager implements Serial
         notificationManager.showBluetoothStateNotification(true);
         notificationManager.showDebugNotification("Serial Ready", "Serial port ready: " + serialPath);
         Log.d(TAG, "🔌 ✅ Bluetooth state notifications sent");
+
+        // Request BES system version now that UART is ready
+        // This caches firmware version and MAC addresses before phone connects
+        Log.d(TAG, "🔌 📋 Requesting BES system version via UART");
+        requestBesSystemVersion();
     }
 
     @Override

@@ -1297,18 +1297,21 @@ public class OtaHelper {
     /**
      * Check if BES firmware update is available.
      * BES does not require sequential updates - can install any newer version directly.
+     * If current version is unknown, assume update is needed.
      * @param besFirmware Object with version and url
      * @param currentVersion Current BES version string (e.g., "17.26.1.14")
-     * @return true if server version > current version
+     * @return true if server version > current version, or if current version is unknown
      */
     private boolean checkBesUpdate(JSONObject besFirmware, String currentVersion) {
-        if (currentVersion == null || currentVersion.isEmpty()) {
-            Log.w(TAG, "Cannot check BES update - current version unknown");
-            return false;
-        }
-
         try {
             String serverVersion = besFirmware.getString("version");
+            
+            // If current version is unknown, assume we need to update
+            if (currentVersion == null || currentVersion.isEmpty()) {
+                Log.i(TAG, "BES current version unknown - will update to server version: " + serverVersion);
+                return true;
+            }
+
             // Simple version string comparison - if server > current, update available
             int comparison = compareVersions(serverVersion, currentVersion);
             if (comparison > 0) {
@@ -1418,9 +1421,10 @@ public class OtaHelper {
             boolean downloaded = downloadBesFirmware(firmwareUrl, firmwareInfo, context);
 
             if (downloaded) {
-                Log.i(TAG, "✅ BES firmware download complete - beginning installation");
+                Log.i(TAG, "BES firmware download complete - starting install phase");
                 
                 // Start firmware update via BesOtaManager singleton
+                // Install progress will be sent to phone via sr_adota from BES chip (via BLE)
                 BesOtaManager manager = BesOtaManager.getInstance();
                 if (manager != null) {
                     Log.i(TAG, "Starting BES firmware update from: " + OtaConstants.BES_FIRMWARE_PATH);
@@ -1432,7 +1436,7 @@ public class OtaHelper {
                         Log.e(TAG, "Failed to start BES firmware update");
                     }
                 } else {
-                    Log.e(TAG, "BesOtaManager not available - is this a K900 device?");
+                    Log.e(TAG, "BesOtaManager not available");
                 }
             } else {
                 Log.e(TAG, "Failed to download BES firmware");
@@ -1974,7 +1978,9 @@ public class OtaHelper {
      */
     private void sendProgressToPhone(String stage, int progress, long bytesDownloaded,
                                      long totalBytes, String status, String errorMessage) {
-        if (phoneConnectionProvider == null || !isPhoneConnected()) return;
+        if (phoneConnectionProvider == null || !isPhoneConnected()) {
+            return;
+        }
 
         long now = System.currentTimeMillis();
         boolean shouldSend = false;
@@ -1990,7 +1996,9 @@ public class OtaHelper {
             shouldSend = timeElapsed || percentChanged || progress == 100;
         }
 
-        if (!shouldSend) return;
+        if (!shouldSend) {
+            return;
+        }
 
         try {
             JSONObject progressInfo = new JSONObject();
@@ -2032,7 +2040,9 @@ public class OtaHelper {
 
     /**
      * Send BES installation progress to phone.
-     * Called by OtaService when receiving BES OTA progress events.
+     * Note: During BES OTA, UART is busy so this will likely fail for PROGRESS messages.
+     * BES install progress is sent via sr_adota from BES chip directly via BLE.
+     * This method is mainly used for FAILED status when we need to notify phone of errors.
      * 
      * @param status Status: "STARTED", "PROGRESS", "FINISHED", "FAILED"
      * @param progress Progress percentage (0-100)

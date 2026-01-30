@@ -1031,6 +1031,9 @@ class MentraLive: NSObject, SGCManager {
     private var heartbeatCounter = 0
     private var readinessCheckTimer: Timer?
     private var readinessCheckCounter = 0
+
+    // BES OTA progress tracking - only send to UI on 5% increments
+    private var lastBesOtaProgress = -1
     private var connectionTimeoutTimer: Timer?
     private var reconnectionWorkItem: DispatchWorkItem?
 
@@ -2008,6 +2011,63 @@ class MentraLive: NSObject, SGCManager {
             // }
             // Notify the system that glasses are intentionally disconnected
             connectionState = ConnTypes.DISCONNECTED
+
+        case "sr_adota":
+            // BES chip OTA progress - convert to ota_progress format for phone UI
+            // This is sent by the BES chip during firmware flashing (the "install" phase)
+            // Since the glasses can't send ota_progress via serial during BES OTA (serial is busy),
+            // the BES chip sends progress via this K900 BLE command instead
+            if let bodyObj = json["B"] as? [String: Any] {
+                let type = bodyObj["type"] as? String ?? ""
+                let rawProgress = bodyObj["progress"] as? Int ?? 0
+
+                // Round to nearest 5% for cleaner UI updates
+                var progress = ((rawProgress + 2) / 5) * 5
+                if progress > 100 { progress = 100 }
+
+                // Only send if progress changed to a new 5% increment
+                let isTerminalStatus = type == "success" || type == "error" || type == "fail"
+                if progress == lastBesOtaProgress && !isTerminalStatus {
+                    break // Skip duplicate progress
+                }
+                lastBesOtaProgress = progress
+
+                Bridge.log("LIVE: 📱 BES OTA progress via sr_adota - type: \(type), raw: \(rawProgress)%, rounded: \(progress)%")
+
+                // Determine status and error message based on type
+                var besOtaStatus: String
+                var besOtaProgress: Int
+                var besOtaErrorMessage: String? = nil
+
+                if type == "update" {
+                    besOtaStatus = "PROGRESS"
+                    besOtaProgress = progress
+                } else if type == "success" || rawProgress >= 100 {
+                    besOtaStatus = "FINISHED"
+                    besOtaProgress = 100
+                    lastBesOtaProgress = -1 // Reset for next OTA
+                } else if type == "error" || type == "fail" {
+                    besOtaStatus = "FAILED"
+                    besOtaProgress = progress
+                    besOtaErrorMessage = bodyObj["message"] as? String ?? "BES update failed"
+                    lastBesOtaProgress = -1 // Reset for next OTA
+                } else {
+                    // Unknown type, treat as progress
+                    besOtaStatus = "PROGRESS"
+                    besOtaProgress = progress
+                }
+
+                // Send to React Native bridge as ota_progress
+                Bridge.sendOtaProgress(
+                    stage: "install",
+                    status: besOtaStatus,
+                    progress: besOtaProgress,
+                    bytesDownloaded: 0,
+                    totalBytes: 0,
+                    currentUpdate: "bes",
+                    errorMessage: besOtaErrorMessage
+                )
+            }
 
         default:
             // Bridge.log("Unknown K900 command: \(command)")

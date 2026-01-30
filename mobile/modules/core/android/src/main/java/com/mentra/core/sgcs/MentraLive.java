@@ -410,6 +410,9 @@ public class MentraLive extends SGCManager {
     private Runnable heartbeatRunnable;
     private int heartbeatCounter = 0;
     private boolean glassesReady = false;
+    
+    // BES OTA progress tracking - only send to UI on 5% increments
+    private int lastBesOtaProgress = -1;
     private boolean rgbLedAuthorityClaimed = false; // Track if we've claimed RGB LED control from BES
 
     // Audio Pairing: Track readiness separately for BLE and audio (matches iOS implementation)
@@ -2791,6 +2794,61 @@ public class MentraLive extends SGCManager {
                 // }
                 // Notify the system that glasses are intentionally disconnected
                 updateConnectionState(ConnTypes.DISCONNECTED);
+                break;
+
+            case "sr_adota":
+                // BES chip OTA progress - convert to ota_progress format for phone UI
+                // This is sent by the BES chip during firmware flashing (the "install" phase)
+                // Since the glasses can't send ota_progress via serial during BES OTA (serial is busy),
+                // the BES chip sends progress via this K900 BLE command instead
+                try {
+                    JSONObject bodyObj = json.optJSONObject("B");
+                    if (bodyObj != null) {
+                        String type = bodyObj.optString("type", "");
+                        int rawProgress = bodyObj.optInt("progress", 0);
+                        
+                        // Round to nearest 5% for cleaner UI updates
+                        int progress = ((rawProgress + 2) / 5) * 5;
+                        if (progress > 100) progress = 100;
+                        
+                        // Only send if progress changed to a new 5% increment
+                        if (progress == lastBesOtaProgress && !"success".equals(type) && !"error".equals(type) && !"fail".equals(type)) {
+                            break; // Skip duplicate progress
+                        }
+                        lastBesOtaProgress = progress;
+                        
+                        Bridge.log("LIVE: 📱 BES OTA progress via sr_adota - type: " + type + ", raw: " + rawProgress + "%, rounded: " + progress + "%");
+                        
+                        // Determine status and error message based on type
+                        String besOtaStatus;
+                        int besOtaProgress;
+                        String besOtaErrorMessage = null;
+                        
+                        if ("update".equals(type)) {
+                            besOtaStatus = "PROGRESS";
+                            besOtaProgress = progress;
+                        } else if ("success".equals(type) || rawProgress >= 100) {
+                            besOtaStatus = "FINISHED";
+                            besOtaProgress = 100;
+                            lastBesOtaProgress = -1; // Reset for next OTA
+                        } else if ("error".equals(type) || "fail".equals(type)) {
+                            besOtaStatus = "FAILED";
+                            besOtaProgress = progress;
+                            besOtaErrorMessage = bodyObj.optString("message", "BES update failed");
+                            lastBesOtaProgress = -1; // Reset for next OTA
+                        } else {
+                            // Unknown type, treat as progress
+                            besOtaStatus = "PROGRESS";
+                            besOtaProgress = progress;
+                        }
+                        
+                        // Send to React Native bridge as ota_progress
+                        Bridge.sendOtaProgress("install", besOtaStatus, besOtaProgress,
+                            0L, 0L, "bes", besOtaErrorMessage);
+                    }
+                } catch (Exception e) {
+                    Log.e(TAG, "Error processing sr_adota BES OTA progress", e);
+                }
                 break;
 
             default:
