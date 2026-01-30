@@ -182,8 +182,8 @@ object GlassesStore {
                 }
             }
             "core" to "dashboard_height", "core" to "dashboard_depth" -> {
-                val h = (store.get("glasses", "dashboard_height") as? Int) ?: 4
-                val d = (store.get("glasses", "dashboard_depth") as? Int) ?: 5
+                val h = (store.get("core", "dashboard_height") as? Int) ?: 4
+                val d = (store.get("core", "dashboard_depth") as? Int) ?: 5
                 CoroutineScope(Dispatchers.Main).launch {
                     CoreManager.getInstance().sgc?.setDashboardPosition(h, d)
                 }

@@ -113,7 +113,7 @@ class GlassesStore {
                 // also set the connected state to the same value
                 // if ready is true, set connected to true
                 if ready {
-                  GlassesStore.shared.set("glasses", "connected", value)
+                    GlassesStore.shared.set("glasses", "connected", value)
                 }
             }
 
@@ -175,10 +175,9 @@ class GlassesStore {
             }
 
         case ("core", "dashboard_height"), ("core", "dashboard_depth"):
-            let h = store.get("glasses", "dashboard_height") as? Int ?? 4
-            let d = store.get("glasses", "dashboard_depth") as? Int ?? 5
+            let h = store.get("core", "dashboard_height") as? Int ?? 4
+            let d = store.get("core", "dashboard_depth") as? Int ?? 5
             Task { await CoreManager.shared.sgc?.setDashboardPosition(h, d) }
-            Bridge.log("STORE: Dashboard position changed to \(h)x\(d)")
 
         case ("core", "head_up_angle"):
             if let angle = value as? Int {

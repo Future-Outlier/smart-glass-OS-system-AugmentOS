@@ -1,7 +1,6 @@
-import CoreModule from "core"
 import {useFocusEffect} from "expo-router"
 import {useCallback} from "react"
-import {ScrollView, View} from "react-native"
+import {View} from "react-native"
 
 import {Header, Screen} from "@/components/ignite"
 import SliderSetting from "@/components/settings/SliderSetting"
@@ -27,29 +26,27 @@ export default function ScreenSettingsScreen() {
     <Screen preset="fixed">
       <Header titleTx="positionSettings:title" leftIcon="chevron-left" onLeftPress={goBack} />
 
-      <ScrollView>
-        <View className="gap-6 pt-6">
-          <SliderSetting
-            label="Display Depth"
-            subtitle="Adjust how far the content appears from you."
-            value={dashboardDepth ?? 5}
-            min={1}
-            max={5}
-            onValueChange={(_value) => {}}
-            onValueSet={setDashboardDepth}
-          />
+      <View className="gap-6 pt-6">
+        <SliderSetting
+          label="Display Depth"
+          subtitle="Adjust how far the content appears from you."
+          value={dashboardDepth ?? 5}
+          min={1}
+          max={5}
+          onValueChange={(_value) => {}}
+          onValueSet={setDashboardDepth}
+        />
 
-          <SliderSetting
-            label="Display Height"
-            subtitle="Adjust the vertical position of the content."
-            value={dashboardHeight ?? 4}
-            min={1}
-            max={8}
-            onValueChange={(_value) => {}}
-            onValueSet={setDashboardHeight}
-          />
-        </View>
-      </ScrollView>
+        <SliderSetting
+          label="Display Height"
+          subtitle="Adjust the vertical position of the content."
+          value={dashboardHeight ?? 4}
+          min={1}
+          max={8}
+          onValueChange={(_value) => {}}
+          onValueSet={setDashboardHeight}
+        />
+      </View>
     </Screen>
   )
 }
