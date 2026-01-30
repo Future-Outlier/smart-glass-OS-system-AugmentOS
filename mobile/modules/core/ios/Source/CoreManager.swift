@@ -271,7 +271,7 @@ struct ViewState {
     // Canonical LC3 config: 16kHz sample rate, 10ms frame duration
     // Frame size is configurable: 20 bytes (16kbps), 40 bytes (32kbps), 60 bytes (48kbps)
     // Persistent LC3 converter for encoding/decoding
-    public var lc3Converter: PcmConverter?
+    var lc3Converter: PcmConverter?
     // Audio output format - defaults to LC3 for bandwidth savings
     private var audioOutputFormat: AudioOutputFormat = .lc3
 
@@ -683,8 +683,6 @@ struct ViewState {
             return
         }
 
-        Bridge.log("MAN: sendCurrentState() headUp: \(headUp)")
-
         Task {
             var currentViewState: ViewState!
             if headUp {
@@ -801,7 +799,7 @@ struct ViewState {
 
     func checkCurrentAudioDevice() {
         let audioDevicePattern = getAudioDevicePattern()
-        
+
         if audioDevicePattern.isEmpty || audioDevicePattern == DeviceTypes.SIMULATED {
             Bridge.log("MAN: Audio device pattern is empty or simulated, returning")
             return
@@ -917,14 +915,12 @@ struct ViewState {
             // self.g1Manager?.RN_setDashboardPosition(self.dashboardHeight, self.dashboardDepth)
             // try? await Task.sleep(nanoseconds: 400_000_000)
             //      playStartupSequence()
-
         }
     }
 
-    private func handleMach1Ready() {
-    }
+    private func handleMach1Ready() {}
 
-    public func handleDeviceDisconnected() {
+    func handleDeviceDisconnected() {
         Bridge.log("MAN: Device disconnected")
         // setMicState(shouldSendPcmData, shouldSendTranscript, false)
         // shouldSendBootingMessage = true  // Reset for next first connect
