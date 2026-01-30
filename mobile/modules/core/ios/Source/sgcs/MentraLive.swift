@@ -2901,6 +2901,7 @@ class MentraLive: NSObject, SGCManager {
         GlassesStore.shared.apply("glasses", "hotspotSsid", ssid)
         GlassesStore.shared.apply("glasses", "hotspotPassword", password)
         GlassesStore.shared.apply("glasses", "hotspotGatewayIp", ip) // This is the gateway IP from glasses
+        emitHotspotStatusChange()
     }
 
     private func handleHotspotError(errorMessage: String, timestamp: Int64) {

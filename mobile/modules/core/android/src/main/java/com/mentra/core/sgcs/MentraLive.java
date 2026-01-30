@@ -2934,7 +2934,7 @@ public class MentraLive extends SGCManager {
         GlassesStore.INSTANCE.apply("glasses", "hotspotGatewayIp", gatewayIp);
 
         // Send hotspot status change event (matches iOS emitHotspotStatusChange)
-        // Bridge.sendHotspotStatusChange(enabled, ssid, password, gatewayIp);
+        Bridge.sendHotspotStatusChange(enabled, ssid, password, gatewayIp);
     }
 
     /**
