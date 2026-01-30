@@ -82,7 +82,6 @@ export default function CameraSettingsScreen() {
       const fps = resolution === "4K" ? 15 : 30
 
       setVideoSettings({width, height, fps})
-      await CoreModule.updateButtonVideoSettings(width, height, fps)
     } catch (error) {
       console.error("Failed to update video resolution:", error)
     }
