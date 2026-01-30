@@ -177,6 +177,8 @@ export const useGlassesStore = create<GlassesState>()(
       set((_state) => {
         // Auto-detect otaInProgress from status
         const otaInProgress = progress !== null && progress.status !== "FINISHED" && progress.status !== "FAILED"
+        console.log("🔍 GLASSES STORE: setOtaProgress called with:", JSON.stringify(progress))
+        console.log("🔍 GLASSES STORE: otaInProgress =", otaInProgress)
         return {otaProgress: progress, otaInProgress}
       }),
 

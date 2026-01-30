@@ -18,7 +18,7 @@ export default function WifiConnectingScreen() {
   const password = (params.password as string) || ""
   const rememberPassword = (params.rememberPassword as string) === "true"
   const returnTo = params.returnTo as string | undefined
-  const nextRoute = params.nextRoute as string | undefined
+  const _nextRoute = params.nextRoute as string | undefined
 
   const {theme} = useAppTheme()
   const [connectionStatus, setConnectionStatus] = useState<"connecting" | "success" | "failed">("connecting")
@@ -26,7 +26,7 @@ export default function WifiConnectingScreen() {
   const connectionTimeoutRef = useRef<number | null>(null)
   const failureGracePeriodRef = useRef<number | null>(null)
 
-  const {goBack, navigate, pushPrevious} = useNavigationHistory()
+  const {goBack, navigate, pushPrevious: _pushPrevious} = useNavigationHistory()
   const wifiConnected = useGlassesStore((state) => state.wifiConnected)
   const wifiSsid = useGlassesStore((state) => state.wifiSsid)
 
@@ -108,8 +108,9 @@ export default function WifiConnectingScreen() {
   }
 
   const handleSuccess = useCallback(() => {
-    pushPrevious(2) // pop the entire stack
-  }, [nextRoute, returnTo, navigate])
+    // Navigate to OTA check-for-updates after successful WiFi connection
+    navigate("/ota/check-for-updates")
+  }, [navigate])
 
   const handleHeaderBack = useCallback(() => {
     goBack()

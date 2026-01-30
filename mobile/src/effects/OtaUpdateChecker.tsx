@@ -118,6 +118,10 @@ export function getLatestVersionInfo(versionJson: VersionJson | null): VersionIn
 /**
  * Find MTK firmware patch matching the current version.
  * MTK requires sequential updates - must find patch starting from current version.
+ *
+ * Handles format mismatch between:
+ * - Server format: "MentraLive_20260113" (with prefix)
+ * - Glasses format: "20260113" (just date)
  */
 export function findMatchingMtkPatch(
   patches: MtkPatch[] | undefined,
@@ -126,24 +130,37 @@ export function findMatchingMtkPatch(
   if (!patches || !currentVersion) {
     return null
   }
+
   // MTK requires sequential updates - find the patch that starts from current version
-  return patches.find((p) => p.start_firmware === currentVersion) || null
+  // Handle format mismatch: server uses "MentraLive_YYYYMMDD", glasses report "YYYYMMDD"
+  return (
+    patches.find((p) => {
+      // Exact match first
+      if (p.start_firmware === currentVersion) {
+        return true
+      }
+      // Extract date from server format (e.g., "MentraLive_20260113" -> "20260113")
+      const serverDate = p.start_firmware.includes("_") ? p.start_firmware.split("_").pop() : p.start_firmware
+      // Compare extracted date with glasses version
+      return serverDate === currentVersion
+    }) || null
+  )
 }
 
 /**
  * Check if BES firmware update is available.
  * BES does not require sequential updates - can install any newer version directly.
- * If current version is unknown, do NOT suggest update (can't verify compatibility).
+ * If current version is unknown, assume update is needed.
  */
 export function checkBesUpdate(besFirmware: BesFirmware | undefined, currentVersion: string | undefined): boolean {
   if (!besFirmware) {
     return false
   }
 
-  // If current version is unknown, do NOT suggest update
+  // If current version is unknown, assume we need to update
   if (!currentVersion) {
-    console.log("📱 BES update check skipped - current version unknown")
-    return false
+    console.log("📱 BES current version unknown - will suggest update to server version: " + besFirmware.version)
+    return true
   }
   // BES does not require sequential updates - can install any newer version directly
   return compareVersions(besFirmware.version, currentVersion) > 0
@@ -314,6 +331,7 @@ export function OtaUpdateChecker() {
     latestVersionInfo: VersionInfo
     updates: string[]
   } | null>(null)
+  const otaCheckTimeoutRef = useRef<NodeJS.Timeout | null>(null)
 
   // Reset OTA check flag when glasses disconnect (allows fresh check on reconnect)
   useEffect(() => {
@@ -322,6 +340,11 @@ export function OtaUpdateChecker() {
         console.log("📱 OTA: Glasses disconnected - resetting check flag for next connection")
         hasCheckedOta.current = false
         pendingUpdate.current = null
+      }
+      // Clear any pending OTA check timeout
+      if (otaCheckTimeoutRef.current) {
+        clearTimeout(otaCheckTimeoutRef.current)
+        otaCheckTimeoutRef.current = null
       }
       // Clear MTK session flag on disconnect (glasses rebooted, new version now active)
       const mtkWasUpdated = useGlassesStore.getState().mtkUpdatedThisSession
@@ -388,71 +411,105 @@ export function OtaUpdateChecker() {
       return
     }
 
-    console.log(`📱 OTA check starting (MTK: ${mtkFwVersion || "unknown"}, BES: ${besFwVersion || "unknown"})`)
-    hasCheckedOta.current = true // Mark as checked to prevent duplicate checks
+    // Clear any existing timeout
+    if (otaCheckTimeoutRef.current) {
+      clearTimeout(otaCheckTimeoutRef.current)
+    }
 
-    checkForOtaUpdate(otaVersionUrl, buildNumber, mtkFwVersion, besFwVersion)
-      .then(({updateAvailable, latestVersionInfo, updates}) => {
-        console.log(
-          `📱 OTA check completed - updateAvailable: ${updateAvailable}, updates: ${updates?.join(", ") || "none"}`,
-        )
+    // Delay OTA check by 500ms to allow all version_info chunks to arrive
+    // (version_info_1, version_info_2, version_info_3 arrive sequentially with ~100ms gaps)
+    console.log("📱 OTA check scheduled - waiting 500ms for firmware version info...")
+    otaCheckTimeoutRef.current = setTimeout(() => {
+      // Re-check conditions after delay (glasses might have disconnected)
+      if (!useGlassesStore.getState().connected) {
+        console.log("📱 OTA check cancelled - glasses disconnected during delay")
+        return
+      }
+      if (hasCheckedOta.current) {
+        console.log("📱 OTA check cancelled - already checked")
+        return
+      }
 
-        // Filter out MTK if it was already updated this session (A/B updates don't change version until reboot)
-        const mtkUpdatedThisSession = useGlassesStore.getState().mtkUpdatedThisSession
-        let filteredUpdates = updates
-        if (mtkUpdatedThisSession && updates.includes("mtk")) {
-          console.log("📱 OTA: Filtering out MTK - already updated this session (pending reboot)")
-          filteredUpdates = updates.filter((u) => u !== "mtk")
-        }
+      // Get latest firmware versions from store (they may have arrived during delay)
+      const latestMtkFwVersion = useGlassesStore.getState().mtkFwVersion
+      const latestBesFwVersion = useGlassesStore.getState().besFwVersion
 
-        if (filteredUpdates.length === 0 || !latestVersionInfo) {
-          console.log("📱 OTA check result: No updates available")
-          return
-        }
+      console.log(
+        `📱 OTA check starting (MTK: ${latestMtkFwVersion || "unknown"}, BES: ${latestBesFwVersion || "unknown"})`,
+      )
+      hasCheckedOta.current = true // Mark as checked to prevent duplicate checks
 
-        // Verify glasses are still connected before showing alert
-        const currentlyConnected = useGlassesStore.getState().connected
-        if (!currentlyConnected) {
-          console.log("📱 OTA update found but glasses disconnected - skipping alert")
-          return
-        }
+      checkForOtaUpdate(otaVersionUrl, buildNumber, latestMtkFwVersion, latestBesFwVersion)
+        .then(({updateAvailable, latestVersionInfo, updates}) => {
+          console.log(
+            `📱 OTA check completed - updateAvailable: ${updateAvailable}, updates: ${updates?.join(", ") || "none"}`,
+          )
 
-        const deviceName = defaultWearable || "Glasses"
-        const updateList = filteredUpdates.join(", ").toUpperCase() // "APK, MTK, BES"
-        const updateMessage = `Updates available: ${updateList}`
+          // Filter out MTK if it was already updated this session (A/B updates don't change version until reboot)
+          const mtkUpdatedThisSession = useGlassesStore.getState().mtkUpdatedThisSession
+          let filteredUpdates = updates
+          if (mtkUpdatedThisSession && updates.includes("mtk")) {
+            console.log("📱 OTA: Filtering out MTK - already updated this session (pending reboot)")
+            filteredUpdates = updates.filter((u) => u !== "mtk")
+          }
 
-        console.log(`📱 OTA showing alert - WiFi connected: ${glassesWifiConnected}, updates: ${updateList}`)
+          if (filteredUpdates.length === 0 || !latestVersionInfo) {
+            console.log("📱 OTA check result: No updates available")
+            return
+          }
 
-        if (glassesWifiConnected) {
-          // WiFi connected - go to OTA check screen to confirm and start update
-          showAlert(translate("ota:updateAvailable", {deviceName}), updateMessage, [
-            {
-              text: translate("ota:updateLater"),
-              style: "cancel",
-            },
-            {text: translate("ota:install"), onPress: () => push("/ota/check-for-updates")},
-          ])
-        } else {
-          // No WiFi - cache the update info and prompt to connect
-          console.log("📱 Update available but WiFi not connected - caching for later")
-          pendingUpdate.current = {latestVersionInfo, updates: filteredUpdates}
+          // Verify glasses are still connected before showing alert
+          const currentlyConnected = useGlassesStore.getState().connected
+          if (!currentlyConnected) {
+            console.log("📱 OTA update found but glasses disconnected - skipping alert")
+            return
+          }
 
-          const wifiMessage = `Updates available: ${updateList}\n\nConnect your ${deviceName} to WiFi to install.`
-          showAlert(translate("ota:updateAvailable", {deviceName}), wifiMessage, [
-            {
-              text: translate("ota:updateLater"),
-              style: "cancel",
-              onPress: () => {
-                pendingUpdate.current = null // Clear pending on dismiss
+          const deviceName = defaultWearable || "Glasses"
+          const updateList = filteredUpdates.join(", ").toUpperCase() // "APK, MTK, BES"
+          const updateMessage = `Updates available: ${updateList}`
+
+          console.log(`📱 OTA showing alert - WiFi connected: ${glassesWifiConnected}, updates: ${updateList}`)
+
+          if (glassesWifiConnected) {
+            // WiFi connected - go to OTA check screen to confirm and start update
+            showAlert(translate("ota:updateAvailable", {deviceName}), updateMessage, [
+              {
+                text: translate("ota:updateLater"),
+                style: "cancel",
               },
-            },
-            {text: translate("ota:setupWifi"), onPress: () => push("/wifi/scan")},
-          ])
-        }
-      })
-      .catch((error) => {
-        console.log(`📱 OTA check failed with error: ${error?.message || error}`)
-      })
+              {text: translate("ota:install"), onPress: () => push("/ota/check-for-updates")},
+            ])
+          } else {
+            // No WiFi - cache the update info and prompt to connect
+            console.log("📱 Update available but WiFi not connected - caching for later")
+            pendingUpdate.current = {latestVersionInfo, updates: filteredUpdates}
+
+            const wifiMessage = `Updates available: ${updateList}\n\nConnect your ${deviceName} to WiFi to install.`
+            showAlert(translate("ota:updateAvailable", {deviceName}), wifiMessage, [
+              {
+                text: translate("ota:updateLater"),
+                style: "cancel",
+                onPress: () => {
+                  pendingUpdate.current = null // Clear pending on dismiss
+                },
+              },
+              {text: translate("ota:setupWifi"), onPress: () => push("/wifi/scan")},
+            ])
+          }
+        })
+        .catch((error) => {
+          console.log(`📱 OTA check failed with error: ${error?.message || error}`)
+        })
+    }, 500) // Delay to allow version_info_3 to arrive
+
+    // Cleanup timeout on effect re-run or unmount
+    return () => {
+      if (otaCheckTimeoutRef.current) {
+        clearTimeout(otaCheckTimeoutRef.current)
+        otaCheckTimeoutRef.current = null
+      }
+    }
   }, [
     glassesConnected,
     otaVersionUrl,

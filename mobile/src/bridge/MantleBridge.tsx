@@ -354,8 +354,18 @@ export class MantleBridge {
         // Phone now handles all OTA checking via OtaUpdateChecker.tsx.
         // Glasses only report versions; phone compares and initiates updates.
         case "ota_progress":
-          console.log("📱 MantleBridge: OTA progress:", data.stage, data.status, data.progress + "%")
-          useGlassesStore.getState().setOtaProgress({
+          console.log("📱 MantleBridge: OTA progress RAW DATA:", JSON.stringify(data))
+          console.log(
+            "📱 MantleBridge: OTA progress - stage:",
+            data.stage,
+            "status:",
+            data.status,
+            "progress:",
+            data.progress,
+            "current_update:",
+            data.current_update,
+          )
+          const otaProgressPayload = {
             stage: data.stage ?? "download",
             status: data.status ?? "PROGRESS",
             progress: data.progress ?? 0,
@@ -363,7 +373,9 @@ export class MantleBridge {
             totalBytes: data.total_bytes ?? 0,
             currentUpdate: data.current_update ?? "apk",
             errorMessage: data.error_message,
-          })
+          }
+          console.log("📱 MantleBridge: Setting otaProgress in store:", JSON.stringify(otaProgressPayload))
+          useGlassesStore.getState().setOtaProgress(otaProgressPayload)
           GlobalEventEmitter.emit("ota_progress", {
             stage: data.stage,
             status: data.status,
