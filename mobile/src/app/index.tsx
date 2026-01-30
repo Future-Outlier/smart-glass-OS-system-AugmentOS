@@ -47,7 +47,6 @@ export default function InitScreen() {
   const [isUpdating, setIsUpdating] = useState(false)
   const [isUsingCustomUrl, setIsUsingCustomUrl] = useState(false)
   const [canSkipUpdate, setCanSkipUpdate] = useState(false)
-  const [loadingStatus, setLoadingStatus] = useState<string>(translate("versionCheck:checkingForUpdates"))
   const [isRetrying, setIsRetrying] = useState(false)
   // Zustand store hooks
   const [backendUrl, setBackendUrl] = useSetting(SETTINGS.backend_url.key)
@@ -104,9 +103,6 @@ export default function InitScreen() {
   }
 
   const handleTokenExchange = async (): Promise<void> => {
-    setState("loading")
-    setLoadingStatus(translate("versionCheck:connectingToServer"))
-
     const token = session?.token
     if (!token) {
       setState("auth")
@@ -136,13 +132,11 @@ export default function InitScreen() {
     // Only show loading screen on initial load, not on retry
     if (!isRetry) {
       setState("loading")
-      setLoadingStatus(translate("versionCheck:checkingForUpdates"))
     } else {
       setIsRetrying(true)
     }
 
     const localVer = getLocalVersion()
-    setLocalVersion(localVer)
     console.log("INIT: Local version:", localVer)
 
     if (!localVer) {
@@ -161,11 +155,12 @@ export default function InitScreen() {
     }
 
     const {required, recommended} = res.value
-    setCloudVersion(recommended)
     console.log(`INIT: Version check: local=${localVer}, required=${required}, recommended=${recommended}`)
     if (semver.lt(localVer, recommended)) {
-      setState("outdated")
+      setLocalVersion(localVer)
+      setCloudVersion(recommended)
       setCanSkipUpdate(!semver.lt(localVer, required))
+      setState("outdated")
       setIsRetrying(false)
       return
     }
@@ -256,7 +251,6 @@ export default function InitScreen() {
       <Screen preset="fixed" safeAreaEdges={["bottom"]}>
         <View style={themed($centerContainer)}>
           <ActivityIndicator size="large" color={theme.colors.foreground} />
-          <Text style={themed($loadingText)}>{loadingStatus}</Text>
         </View>
       </Screen>
     )
@@ -343,12 +337,6 @@ const $centerContainer: ThemedStyle<ViewStyle> = () => ({
   flex: 1,
   justifyContent: "center",
   alignItems: "center",
-})
-
-const $loadingText: ThemedStyle<TextStyle> = ({colors, spacing}) => ({
-  marginTop: spacing.s4,
-  fontSize: 16,
-  color: colors.text,
 })
 
 const $mainContainer: ThemedStyle<ViewStyle> = ({spacing}) => ({
