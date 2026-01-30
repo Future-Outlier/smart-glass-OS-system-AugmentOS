@@ -137,9 +137,6 @@ export default function PairingSuccessScreen() {
           type: "image",
           source: glassesImage,
           containerClassName: "px-12",
-          containerStyle: {
-            paddingHorizontal: 100,
-          },
           transition: false,
           title: translate("common:success"),
           subtitle: translate("onboarding:g1Connected"),
