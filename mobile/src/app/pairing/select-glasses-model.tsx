@@ -13,6 +13,7 @@ import {Screen} from "@/components/ignite/Screen"
 import {Spacer} from "@/components/ui/Spacer"
 import {useNavigationHistory} from "@/contexts/NavigationHistoryContext"
 import {useAppTheme} from "@/contexts/ThemeContext"
+import {SETTINGS, useSetting} from "@/stores/settings"
 import {ThemedStyle} from "@/theme"
 import {getGlassesImage} from "@/utils/getGlassesImage"
 
@@ -21,6 +22,7 @@ import {getGlassesImage} from "@/utils/getGlassesImage"
 export default function SelectGlassesModelScreen() {
   const {theme, themed} = useAppTheme()
   const {push, goBack} = useNavigationHistory()
+  const [devMode] = useSetting(SETTINGS.dev_mode.key)
 
   // when this screen is focused, forget any glasses that may be paired:
   useFocusEffect(
@@ -55,7 +57,7 @@ export default function SelectGlassesModelScreen() {
           {deviceModel: DeviceTypes.LIVE, key: "mentra_live"},
           {deviceModel: DeviceTypes.MACH1, key: "mentra_mach1"},
           {deviceModel: DeviceTypes.Z100, key: "vuzix-z100"},
-          {deviceModel: DeviceTypes.NEX, key: "mentra_nex"},
+          devMode && {deviceModel: DeviceTypes.NEX, key: "mentra_nex"},
           //{deviceModel: "Brilliant Labs Frame", key: "frame"},
         ]
       : [
@@ -65,7 +67,7 @@ export default function SelectGlassesModelScreen() {
           {deviceModel: DeviceTypes.LIVE, key: "mentra_live"},
           {deviceModel: DeviceTypes.MACH1, key: "mentra_mach1"},
           {deviceModel: DeviceTypes.Z100, key: "vuzix-z100"},
-          {deviceModel: DeviceTypes.NEX, key: "mentra_nex"},
+          devMode && {deviceModel: DeviceTypes.NEX, key: "mentra_nex"},
           // {deviceModel: "Brilliant Labs Frame", key: "frame"},
         ]
 
