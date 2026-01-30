@@ -687,10 +687,10 @@ export const askPermissionsUI = async (app: AppletInterface, theme: Theme): Prom
           },
         },
       ],
-      {
-        iconName: "information-outline",
-        iconColor: theme.colors.textDim,
-      },
+      // {
+      //   iconName: "info",
+      //   iconColor: theme.colors.textDim,
+      // },
     )
   })
 }
@@ -824,11 +824,10 @@ async function isLocationPermissionGranted(): Promise<boolean> {
 async function isLocationServicesEnabled(): Promise<boolean> {
   try {
     if (Platform.OS === "android") {
-      // // Use our native module to check if location services are enabled
-      // const locationServicesEnabled = await checkLocationServices()
-      // console.log("Location services enabled (native check):", locationServicesEnabled)
-      // return locationServicesEnabled
-      return true // TODO: fix this!
+      // Use our native module to check if location services are enabled
+      const locationServicesEnabled = await CoreModule.isLocationServicesEnabled()
+      console.log("Location services enabled (native check):", locationServicesEnabled)
+      return locationServicesEnabled
     } else if (Platform.OS === "ios") {
       // iOS doesn't require location for BLE scanning since iOS 13
       return true
@@ -839,6 +838,9 @@ async function isLocationServicesEnabled(): Promise<boolean> {
     return false
   }
 }
+
+// Export for use in other services (e.g., GallerySyncService)
+export {isLocationServicesEnabled}
 
 async function checkConnectivityRequirements(): Promise<{
   isReady: boolean
@@ -868,8 +870,7 @@ async function checkConnectivityRequirements(): Promise<{
       console.log("Location permission missing, showing error")
       return {
         isReady: false,
-        message:
-          "Location permission is required to scan for glasses on Android. Please grant location permission and try again.",
+        message: translate("connectivity:locationPermissionRequiredMessage"),
         requirement: "location",
       }
     }

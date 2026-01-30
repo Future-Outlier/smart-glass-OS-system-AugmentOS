@@ -157,7 +157,7 @@ const VideoPlayerItem = memo(function VideoPlayerItem({photo, isActive}: VideoPl
           setIsBuffering(false)
           setShowThumbnail(false)
         }}
-        onError={error => {
+        onError={(error) => {
           console.error("🎥 [VideoPlayerItem] Video error:", error)
           const errorStr = String(error?.error?.errorString || error?.error?.code || "Unknown error")
           const isCorrupted = errorStr.includes("UNSUPPORTED") || errorStr.includes("PARSING")
@@ -269,7 +269,7 @@ const VideoPlayerItem = memo(function VideoPlayerItem({photo, isActive}: VideoPl
                 maximumTrackTintColor="rgba(255,255,255,0.3)"
                 thumbTintColor="#FFFFFF"
                 onSlidingStart={() => setIsSeeking(true)}
-                onSlidingComplete={value => {
+                onSlidingComplete={(value) => {
                   videoRef.current?.seek(value)
                 }}
               />
@@ -316,7 +316,7 @@ const ImageItem = memo(function ImageItem({photo, setImageDimensions}: ImageItem
         priority="high"
         cachePolicy="memory-disk"
         transition={200}
-        onLoad={e => {
+        onLoad={(e) => {
           // Report dimensions back to Gallery for proper scaling - only once
           if (e.source?.width && e.source?.height && !hasReportedDimensions.current) {
             hasReportedDimensions.current = true
@@ -331,7 +331,7 @@ const ImageItem = memo(function ImageItem({photo, setImageDimensions}: ImageItem
         onLoadStart={() => {
           console.log("📸 [ImageItem] Image loading started:", photo.name)
         }}
-        onError={error => {
+        onError={(error) => {
           console.warn("📸 [ImageItem] Image load warning:", photo.name, error.error)
           setIsLoading(false)
         }}
@@ -386,7 +386,7 @@ export function AwesomeGalleryViewer({visible, photos, initialIndex, onClose, on
   console.log("🎨 [AwesomeGalleryViewer] initialIndex:", initialIndex)
   console.log(
     "🎨 [AwesomeGalleryViewer] photos:",
-    photos.map(p => ({name: p.name, isVideo: p.is_video})),
+    photos.map((p) => ({name: p.name, isVideo: p.is_video})),
   )
 
   // Reset index when modal opens
@@ -404,7 +404,15 @@ export function AwesomeGalleryViewer({visible, photos, initialIndex, onClose, on
   // Memoized renderItem to prevent unnecessary re-renders of gallery items
   // Only videos need currentIndex (for play/pause), images don't care
   const renderItem = useCallback(
-    ({item, index, setImageDimensions}: {item: PhotoInfo; index: number; setImageDimensions: (dims: {width: number; height: number}) => void}) => {
+    ({
+      item,
+      index,
+      setImageDimensions,
+    }: {
+      item: PhotoInfo
+      index: number
+      setImageDimensions: (dims: {width: number; height: number}) => void
+    }) => {
       const isVideo =
         item.is_video || item.mime_type?.startsWith("video/") || item.name.match(/\.(mp4|mov|avi|webm|mkv)$/i)
 
@@ -442,7 +450,7 @@ export function AwesomeGalleryViewer({visible, photos, initialIndex, onClose, on
         ref={galleryRef}
         data={photos}
         initialIndex={initialIndex}
-        onIndexChange={newIndex => {
+        onIndexChange={(newIndex) => {
           console.log("🎨 [AwesomeGalleryViewer] Index changed to:", newIndex, photos[newIndex]?.name)
           setCurrentIndex(newIndex)
         }}
@@ -459,7 +467,7 @@ export function AwesomeGalleryViewer({visible, photos, initialIndex, onClose, on
         pinchEnabled={true}
         swipeEnabled={true}
         doubleTapEnabled={true}
-        disableVerticalSwipe={false}
+        disableVerticalSwipe={true}
         disableTransitionOnScaledImage={true}
         loop={false}
         onTap={() => {

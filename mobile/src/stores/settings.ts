@@ -37,6 +37,13 @@ export const SETTINGS: Record<string, Setting> = {
     saveOnServer: true,
     persist: true,
   },
+  debug_navigation_history: {
+    key: "debug_navigation_history",
+    defaultValue: () => false,
+    writable: true,
+    saveOnServer: true,
+    persist: true,
+  },
   china_deployment: {
     key: "china_deployment",
     defaultValue: () => (process.env.EXPO_PUBLIC_DEPLOYMENT_REGION === "china" ? true : false),
@@ -69,7 +76,7 @@ export const SETTINGS: Record<string, Setting> = {
         return process.env.EXPO_PUBLIC_STORE_URL_OVERRIDE
       }
       if (process.env.EXPO_PUBLIC_DEPLOYMENT_REGION === "china") {
-        return "https://store.mentraglass.cn"
+        return "https://dev-store.mentraglass.cn"
       }
       return "https://apps.mentra.glass"
     },
@@ -89,6 +96,20 @@ export const SETTINGS: Record<string, Setting> = {
   location_tier: {key: "location_tier", defaultValue: () => "", writable: true, saveOnServer: true, persist: true},
   // state:
   core_token: {key: "core_token", defaultValue: () => "", writable: true, saveOnServer: true, persist: true},
+  pending_wearable: {
+    key: "pending_wearable",
+    defaultValue: () => "",
+    writable: true,
+    saveOnServer: false,
+    persist: false,
+  },
+  pending_device_name: {
+    key: "pending_device_name",
+    defaultValue: () => "",
+    writable: true,
+    saveOnServer: false,
+    persist: false,
+  },
   default_wearable: {
     key: "default_wearable",
     defaultValue: () => "",
@@ -107,8 +128,8 @@ export const SETTINGS: Record<string, Setting> = {
   // ui state:
   theme_preference: {
     key: "theme_preference",
-    defaultValue: () => "light",
-    // Force light mode - dark mode is not complete yet
+    defaultValue: () => (__DEV__ ? "system" : "light"),
+    // Force light mode - i mode is not complete yet
     // override: () => "light",
     writable: true,
     saveOnServer: true,
@@ -212,6 +233,15 @@ export const SETTINGS: Record<string, Setting> = {
     defaultValue: () => false,
     writable: true,
     saveOnServer: true,
+    persist: true,
+  },
+  // LC3 audio quality setting (frame size in bytes)
+  // 20 = 16kbps (low bandwidth), 40 = 32kbps (balanced), 60 = 48kbps (high quality)
+  lc3_frame_size: {
+    key: "lc3_frame_size",
+    defaultValue: () => 60,
+    writable: true,
+    saveOnServer: false,
     persist: true,
   },
   preferred_mic: {
@@ -373,6 +403,14 @@ export const SETTINGS: Record<string, Setting> = {
     saveOnServer: true,
     persist: true,
   },
+  // OTA update dismissal - stores the version code user dismissed (not persisted so resets on app restart)
+  dismissed_ota_version: {
+    key: "dismissed_ota_version",
+    defaultValue: () => "",
+    writable: true,
+    saveOnServer: false,
+    persist: false,
+  },
 } as const
 
 export const OFFLINE_APPLETS: string[] = ["com.mentra.livecaptions", "com.mentra.camera"]
@@ -386,6 +424,7 @@ const CORE_SETTINGS_KEYS: string[] = [
   SETTINGS.bypass_audio_encoding_for_debugging.key,
   SETTINGS.metric_system.key,
   SETTINGS.enforce_local_transcription.key,
+  SETTINGS.lc3_frame_size.key,
   SETTINGS.preferred_mic.key,
   SETTINGS.screen_disabled.key,
   // glasses settings:
@@ -401,6 +440,8 @@ const CORE_SETTINGS_KEYS: string[] = [
   SETTINGS.button_video_settings.key,
   SETTINGS.button_camera_led.key,
   SETTINGS.button_max_recording_time.key,
+  SETTINGS.pending_wearable.key,
+  SETTINGS.pending_device_name.key,
   SETTINGS.default_wearable.key,
   SETTINGS.device_name.key,
   SETTINGS.device_address.key,
@@ -440,15 +481,6 @@ const getDefaultSettings = () =>
     },
     {} as Record<string, any>,
   )
-
-const migrateSettings = () => {
-  useSettingsStore.getState().setSetting(SETTINGS.enable_squircles.key, true, true)
-  // Force light mode - dark mode is not complete yet
-  // const devMode = useSettingsStore.getState().getSetting(SETTINGS.dev_mode.key)
-  // if (!devMode) {
-  // useSettingsStore.getState().setSetting(SETTINGS.theme_preference.key, "light", true)
-  // }
-}
 
 export const useSettingsStore = create<SettingsState>()(
   subscribeWithSelector((set, get) => ({
@@ -558,7 +590,6 @@ export const useSettingsStore = create<SettingsState>()(
         let loadedSettings: Record<string, any> = {}
 
         if (state.isInitialized) {
-          migrateSettings()
           return undefined
         }
 
@@ -604,7 +635,6 @@ export const useSettingsStore = create<SettingsState>()(
           isInitialized: true,
           settings: {...state.settings, ...loadedSettings},
         }))
-        migrateSettings()
       })
     },
     getRestUrl: () => {

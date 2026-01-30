@@ -10,6 +10,9 @@ abstract class SGCManager {
     var connectionState: String =
             ConnTypes.DISCONNECTED // "disconnected" | "connected" | "connecting"
 
+    @JvmField var protobufSchemaVersion: String = ""
+    @JvmField var glassesProtobufVersion: String = ""
+
     @JvmField var glassesAppVersion: String = ""
     @JvmField var glassesBuildNumber: String = ""
     @JvmField var glassesDeviceModel: String = ""
@@ -109,6 +112,9 @@ abstract class SGCManager {
     abstract fun sendWifiCredentials(ssid: String, password: String)
     abstract fun forgetWifiNetwork(ssid: String)
     abstract fun sendHotspotState(enabled: Boolean)
+
+    // User Context (for crash reporting)
+    abstract fun sendUserEmailToGlasses(email: String)
 
     // Gallery
     abstract fun queryGalleryStatus()

@@ -196,6 +196,12 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+      - name: Checkout to get dev SHA
+        uses: actions/checkout@v4
+        with:
+          ref: dev
+          fetch-depth: 1
+
       - name: Download mobile artifact
         uses: actions/download-artifact@v4
         with:
@@ -207,12 +213,6 @@ jobs:
         with:
           name: asg-nightly
           path: ./asg-apk
-
-      - name: Checkout to get dev SHA
-        uses: actions/checkout@v4
-        with:
-          ref: dev
-          fetch-depth: 1
 
       - name: Get build info
         id: build-info

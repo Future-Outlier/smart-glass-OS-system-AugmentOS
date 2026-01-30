@@ -1,3 +1,4 @@
+import "react-native-get-random-values" // Must be first - required for tweetnacl crypto (UDP encryption)
 import "@/utils/polyfills/event" // Must be before any livekit imports
 import {registerGlobals} from "@livekit/react-native-webrtc"
 import * as Sentry from "@sentry/react-native"
@@ -11,8 +12,8 @@ import {initI18n} from "@/i18n"
 import {useSettingsStore} from "@/stores/settings"
 import {customFontsToLoad} from "@/theme"
 import {loadDateFnsLocale} from "@/utils/formatDate"
-import {AllEffects} from "@/utils/structure/AllEffects"
-import {AllProviders} from "@/utils/structure/AllProviders"
+import {AllEffects} from "@/effects/AllEffects"
+import {AllProviders} from "@/contexts/AllProviders"
 import "@/global.css"
 
 // prevent the annoying warning box at the bottom of the screen from getting in the way:

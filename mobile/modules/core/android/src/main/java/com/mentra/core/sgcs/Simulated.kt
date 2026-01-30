@@ -10,7 +10,7 @@ class Simulated : SGCManager() {
     init {
         ready = true
         type = DeviceTypes.SIMULATED
-        connectionState = ConnTypes.DISCONNECTED
+        connectionState = ConnTypes.CONNECTED
         batteryLevel = 100
         micEnabled = false
     }
@@ -191,6 +191,10 @@ class Simulated : SGCManager() {
 
     override fun sendHotspotState(enabled: Boolean) {
         Bridge.log("sendHotspotState")
+    }
+
+    override fun sendUserEmailToGlasses(email: String) {
+        Bridge.log("sendUserEmailToGlasses: $email")
     }
 
     // Gallery

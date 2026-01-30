@@ -36,6 +36,8 @@ class CoreModule : Module() {
             coreManager?.displayText(params)
         }
 
+        AsyncFunction("clearDisplay") { coreManager?.clearDisplay() }
+
         // MARK: - Connection Commands
 
         AsyncFunction("getStatus") { coreManager?.getStatus() }
@@ -72,6 +74,12 @@ class CoreModule : Module() {
 
         AsyncFunction("setHotspotState") { enabled: Boolean ->
             coreManager?.setHotspotState(enabled)
+        }
+
+        // MARK: - User Context Commands
+
+        AsyncFunction("setUserEmail") { email: String ->
+            coreManager?.setUserEmail(email)
         }
 
         // MARK: - Gallery Commands
@@ -133,6 +141,12 @@ class CoreModule : Module() {
         }
 
         AsyncFunction("restartTranscriber") { coreManager?.restartTranscriber() }
+
+        // MARK: - Audio Encoding Commands
+
+        AsyncFunction("setLC3FrameSize") { frameSize: Int ->
+            coreManager?.setLC3FrameSize(frameSize)
+        }
 
         // MARK: - RGB LED Control
 
@@ -232,6 +246,18 @@ class CoreModule : Module() {
             intent.addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK)
             context.startActivity(intent)
             true
+        }
+
+        // Check if location services are enabled (required for WiFi operations on Android)
+        AsyncFunction("isLocationServicesEnabled") {
+            val context =
+                    appContext.reactContext
+                            ?: appContext.currentActivity
+                                    ?: throw IllegalStateException("No context available")
+            val locationManager = context.getSystemService(android.content.Context.LOCATION_SERVICE) as android.location.LocationManager
+            // Check if either GPS or Network location provider is enabled
+            locationManager.isProviderEnabled(android.location.LocationManager.GPS_PROVIDER) ||
+                    locationManager.isProviderEnabled(android.location.LocationManager.NETWORK_PROVIDER)
         }
 
         AsyncFunction("openLocationSettings") {

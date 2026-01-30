@@ -4,9 +4,9 @@ import {Animated, BackHandler, TextStyle, View, ViewStyle} from "react-native"
 import {useSafeAreaInsets} from "react-native-safe-area-context"
 
 import {Header, Icon, PillButton, Screen, Text} from "@/components/ignite"
-import AppIcon from "@/components/misc/AppIcon"
-import LoadingOverlay from "@/components/misc/LoadingOverlay"
-import SettingsSkeleton from "@/components/misc/SettingsSkeleton"
+import AppIcon from "@/components/home/AppIcon"
+import LoadingOverlay from "@/components/ui/LoadingOverlay"
+import SettingsSkeleton from "@/components/settings/SettingsSkeleton"
 import GroupTitle from "@/components/settings/GroupTitle"
 import MultiSelectSetting from "@/components/settings/MultiSelectSetting"
 import NumberSetting from "@/components/settings/NumberSetting"
@@ -159,7 +159,7 @@ export default function AppSettings() {
               showAlert(
                 translate("common:success"),
                 translate("appSettings:uninstalledSuccess", {appName: appInfo?.name || appName}),
-                [{text: translate("common:ok"), onPress: () => replaceAll("/(tabs)/home")}],
+                [{text: translate("common:ok"), onPress: () => replaceAll("/home")}],
               )
             } catch (error: any) {
               console.error("Error uninstalling app:", error)

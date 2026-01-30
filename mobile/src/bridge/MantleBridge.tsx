@@ -4,12 +4,13 @@ import Toast from "react-native-toast-message"
 import {translate} from "@/i18n"
 // NOTE: LiveKit audio path disabled - using UDP or WebSocket instead
 // import livekit from "@/services/Livekit"
+import {displayProcessor} from "@/services/display"
 import mantle from "@/services/MantleManager"
 import restComms from "@/services/RestComms"
 import socketComms from "@/services/SocketComms"
-import udpAudioService from "@/services/UdpAudioService"
+import udp from "@/services/UdpManager"
 import {useGlassesStore} from "@/stores/glasses"
-import {useSettingsStore} from "@/stores/settings"
+import {useSettingsStore, SETTINGS} from "@/stores/settings"
 import {INTENSE_LOGGING} from "@/utils/Constants"
 import {CoreStatusParser} from "@/utils/CoreStatusParser"
 import GlobalEventEmitter from "@/utils/GlobalEventEmitter"
@@ -23,6 +24,14 @@ export class MantleBridge {
   private constructor() {
     // Initialize message event listener
     this.initializeMessageEventListener()
+
+    // Initialize DisplayProcessor with the saved default wearable setting
+    // This ensures correct text wrapping profile is used from the start
+    const defaultWearable = useSettingsStore.getState().getSetting(SETTINGS.default_wearable.key)
+    if (defaultWearable) {
+      displayProcessor.setDeviceModel(defaultWearable)
+      console.log(`[MantleBridge] Initialized DisplayProcessor with default wearable: ${defaultWearable}`)
+    }
   }
 
   /**
@@ -109,6 +118,10 @@ export class MantleBridge {
       switch (data.type) {
         case "core_status_update":
           useGlassesStore.getState().setGlassesInfo(data.core_status.glasses_info)
+          // Update DisplayProcessor with the device model for correct text wrapping
+          if (data.core_status.glasses_info?.modelName) {
+            displayProcessor.setDeviceModel(data.core_status.glasses_info.modelName)
+          }
           GlobalEventEmitter.emit("core_status_update", data)
           return
         case "wifi_status_change":
@@ -152,15 +165,31 @@ export class MantleBridge {
           })
           break
         case "heartbeat_sent":
-          console.log("💓 Received heartbeat_sent event from Core", data.heartbeat_sent)
+          console.log("💓 Received heartbeat_sent event from Core", data)
           GlobalEventEmitter.emit("heartbeat_sent", {
-            timestamp: data.heartbeat_sent.timestamp,
+            timestamp: data.timestamp,
           })
           break
         case "heartbeat_received":
-          console.log("💓 Received heartbeat_received event from Core", data.heartbeat_received)
+          console.log("💓 Received heartbeat_received event from Core", data)
           GlobalEventEmitter.emit("heartbeat_received", {
-            timestamp: data.heartbeat_received.timestamp,
+            timestamp: data.timestamp,
+          })
+          break
+        case "send_command_to_ble":
+          console.log("📡 Received send_command_to_ble event from Core", data)
+          GlobalEventEmitter.emit("send_command_to_ble", {
+            command: data.command,
+            commandText: data.commandText,
+            timestamp: data.timestamp,
+          })
+          break
+        case "receive_command_from_ble":
+          console.log("📡 Received receive_command_from_ble event from Core", data)
+          GlobalEventEmitter.emit("receive_command_from_ble", {
+            command: data.command,
+            commandText: data.commandText,
+            timestamp: data.timestamp,
           })
           break
         case "notify_manager":
@@ -283,9 +312,9 @@ export class MantleBridge {
           break
         case "mic_data":
           // Route audio to: UDP (if enabled) -> WebSocket (fallback)
-          if (socketComms.isUdpAudioEnabled() && udpAudioService.isConfiguredAndReady()) {
+          if (socketComms.udpEnabledAndReady()) {
             // UDP audio is enabled and ready - send directly via UDP
-            udpAudioService.sendAudio(data.base64)
+            udp.sendAudio(data.base64)
           } else {
             // Fallback to WebSocket
             binaryString = atob(data.base64)
@@ -373,6 +402,13 @@ export class MantleBridge {
             fwVersion: data.firmware_version,
             btMacAddress: data.bt_mac_address,
           })
+          // Update DisplayProcessor with the connected glasses model
+          // This ensures text wrapping uses the correct device profile
+          try {
+            displayProcessor.setDeviceModel(data.device_model)
+          } catch (err) {
+            console.error("MantleBridge: Failed to set device model:", err)
+          }
           break
         default:
           console.log("Unknown event type:", data.type)

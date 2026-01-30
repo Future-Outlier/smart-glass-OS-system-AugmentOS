@@ -39,21 +39,21 @@ export default function FeedbackPage() {
 
   const {goBack} = useNavigationHistory()
   const {theme, themed} = useAppTheme()
-  const apps = useAppletStatusStore(state => state.apps)
+  const apps = useAppletStatusStore((state) => state.apps)
   const [defaultWearable] = useSetting(SETTINGS.default_wearable.key)
 
   // Glasses info for bug reports
-  const glassesConnected = useGlassesStore(state => state.connected)
-  const glassesModelName = useGlassesStore(state => state.modelName)
-  const glassesBluetoothName = useGlassesStore(state => state.bluetoothName)
-  const glassesBuildNumber = useGlassesStore(state => state.buildNumber)
-  const glassesFwVersion = useGlassesStore(state => state.fwVersion)
-  const glassesAppVersion = useGlassesStore(state => state.appVersion)
-  const glassesSerialNumber = useGlassesStore(state => state.serialNumber)
-  const glassesAndroidVersion = useGlassesStore(state => state.androidVersion)
-  const glassesWifiConnected = useGlassesStore(state => state.wifiConnected)
-  const glassesWifiSsid = useGlassesStore(state => state.wifiSsid)
-  const glassesBatteryLevel = useGlassesStore(state => state.batteryLevel)
+  const glassesConnected = useGlassesStore((state) => state.connected)
+  const glassesModelName = useGlassesStore((state) => state.modelName)
+  const glassesBluetoothName = useGlassesStore((state) => state.bluetoothName)
+  const glassesBuildNumber = useGlassesStore((state) => state.buildNumber)
+  const glassesFwVersion = useGlassesStore((state) => state.fwVersion)
+  const glassesAppVersion = useGlassesStore((state) => state.appVersion)
+  const glassesSerialNumber = useGlassesStore((state) => state.serialNumber)
+  const glassesAndroidVersion = useGlassesStore((state) => state.androidVersion)
+  const glassesWifiConnected = useGlassesStore((state) => state.wifiConnected)
+  const glassesWifiSsid = useGlassesStore((state) => state.wifiSsid)
+  const glassesBatteryLevel = useGlassesStore((state) => state.batteryLevel)
 
   const [userEmail, setUserEmail] = useState("")
 
@@ -80,78 +80,6 @@ export default function FeedbackPage() {
 
     // Check if user rated 4-5 stars on feature request
     const shouldPromptAppRating = feedbackType === "feature" && experienceRating !== null && experienceRating >= 4
-
-    let feedbackBody = ""
-
-    if (feedbackType === "bug") {
-      feedbackBody = `
-<!DOCTYPE html>
-<html>
-<head>
-  <style>
-    body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
-    .container { max-width: 600px; margin: 0 auto; padding: 20px; }
-    h2 { color: #d32f2f; border-bottom: 2px solid #d32f2f; padding-bottom: 10px; }
-    table { width: 100%; border-collapse: collapse; margin: 20px 0; }
-    th { background: #f5f5f5; padding: 12px; text-align: left; font-weight: 600; border: 1px solid #ddd; }
-    td { padding: 12px; border: 1px solid #ddd; }
-    .severity { font-weight: bold; color: ${severityRating && severityRating >= 4 ? "#d32f2f" : severityRating && severityRating >= 3 ? "#ff9800" : "#4caf50"}; }
-  </style>
-</head>
-<body>
-  <div class="container">
-    <h2>🐛 Bug Report</h2>
-    <table>
-      <tr>
-        <th width="30%">Expected Behavior</th>
-        <td>${expectedBehavior}</td>
-      </tr>
-      <tr>
-        <th>Actual Behavior</th>
-        <td>${actualBehavior}</td>
-      </tr>
-      <tr>
-        <th>Severity Rating</th>
-        <td class="severity">${severityRating}/5</td>
-      </tr>
-    </table>
-  </div>
-</body>
-</html>`
-    } else {
-      feedbackBody = `
-<!DOCTYPE html>
-<html>
-<head>
-  <style>
-    body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
-    .container { max-width: 600px; margin: 0 auto; padding: 20px; }
-    h2 { color: #00b869; border-bottom: 2px solid #00b869; padding-bottom: 10px; }
-    table { width: 100%; border-collapse: collapse; margin: 20px 0; }
-    th { background: #f5f5f5; padding: 12px; text-align: left; font-weight: 600; border: 1px solid #ddd; }
-    td { padding: 12px; border: 1px solid #ddd; }
-    .rating { color: #00b869; font-size: 1.2em; }
-  </style>
-</head>
-<body>
-  <div class="container">
-    <h2>💡 Feature Request</h2>
-    <table>
-      <tr>
-        <th width="30%">Feedback</th>
-        <td>${feedbackText}</td>
-      </tr>
-      <tr>
-        <th>Experience Rating</th>
-        <td class="rating">${"⭐".repeat(experienceRating || 0)} ${experienceRating}/5</td>
-      </tr>
-    </table>
-  </div>
-</body>
-</html>`
-    }
-
-    console.log("Feedback submitted:", feedbackBody)
 
     // Collect diagnostic information
     const customBackendUrl = process.env.EXPO_PUBLIC_BACKEND_URL_OVERRIDE
@@ -181,8 +109,8 @@ export default function FeedbackPage() {
     }
 
     // Get location if permission is granted
-    let locationInfo: string | null = null
-    let locationPlace: string | null = null
+    let locationInfo: string | undefined
+    let locationPlace: string | undefined
     try {
       const {status} = await Location.getForegroundPermissionsAsync()
       if (status === "granted") {
@@ -211,61 +139,68 @@ export default function FeedbackPage() {
     }
 
     // Running apps
-    const runningApps = apps.filter(app => app.running).map(app => app.packageName)
-    const runningAppsText = runningApps.length > 0 ? runningApps.join(", ") : "None"
+    const runningApps = apps.filter((app) => app.running).map((app) => app.packageName)
 
-    // Build glasses info section (only if glasses are connected and have info)
+    // Build glasses info (only if glasses are connected)
     const glassesBluetoothId = glassesBluetoothName?.split("_").pop() || glassesBluetoothName
-    const glassesInfoHtml = glassesConnected
-      ? `
-    <h3 style="color: #666; margin-top: 30px; border-top: 1px solid #ddd; padding-top: 20px;">🕶️ Glasses Information</h3>
-    <table>
-      <tr><th>Model</th><td>${glassesModelName || "Unknown"}</td></tr>
-      ${glassesBluetoothId ? `<tr><th>Device ID</th><td>${glassesBluetoothId}</td></tr>` : ""}
-      ${glassesSerialNumber ? `<tr><th>Serial Number</th><td>${glassesSerialNumber}</td></tr>` : ""}
-      ${glassesBuildNumber ? `<tr><th>Build Number</th><td>${glassesBuildNumber}</td></tr>` : ""}
-      ${glassesFwVersion ? `<tr><th>Firmware Version</th><td>${glassesFwVersion}</td></tr>` : ""}
-      ${glassesAppVersion ? `<tr><th>Glasses App Version</th><td>${glassesAppVersion}</td></tr>` : ""}
-      ${glassesAndroidVersion ? `<tr><th>Android Version</th><td>${glassesAndroidVersion}</td></tr>` : ""}
-      <tr><th>WiFi Connected</th><td>${glassesWifiConnected ? "Yes" : "No"}</td></tr>
-      ${glassesWifiConnected && glassesWifiSsid ? `<tr><th>WiFi Network</th><td>${glassesWifiSsid}</td></tr>` : ""}
-      ${glassesBatteryLevel >= 0 ? `<tr><th>Battery Level</th><td>${glassesBatteryLevel}%</td></tr>` : ""}
-    </table>`
-      : ""
 
-    // Add diagnostic info to HTML
-    const diagnosticInfoHtml = `
-    <h3 style="color: #666; margin-top: 30px; border-top: 1px solid #ddd; padding-top: 20px;">📱 System Information</h3>
-    <table>
-      ${isApplePrivateRelay && email ? `<tr><th>Contact Email</th><td>${email}</td></tr>` : ""}
-      <tr><th>App Version</th><td>${appVersion}</td></tr>
-      <tr><th>Device</th><td>${deviceName}</td></tr>
-      <tr><th>OS</th><td>${osVersion}</td></tr>
-      <tr><th>Platform</th><td>${Platform.OS}</td></tr>
-      <tr><th>Glasses Connected</th><td>${glassesConnected ? "Yes" : "No"}</td></tr>
-      <tr><th>Default Wearable</th><td>${defaultWearable}</td></tr>
-      <tr><th>Running Apps</th><td>${runningAppsText}</td></tr>
-      <tr><th>Offline Mode</th><td>${offlineMode ? "Yes" : "No"}</td></tr>
-      <tr><th>Network Type</th><td>${networkInfo.type}</td></tr>
-      <tr><th>Network Connected</th><td>${networkInfo.isConnected ? "Yes" : "No"}</td></tr>
-      <tr><th>Internet Reachable</th><td>${networkInfo.isInternetReachable ? "Yes" : "No"}</td></tr>
-      ${locationInfo ? `<tr><th>Location</th><td>${locationInfo}${locationPlace ? ` (${locationPlace})` : ""}</td></tr>` : ""}
-      ${isBetaBuild ? `<tr><th>Beta Build</th><td>Yes</td></tr>` : ""}
-      ${isBetaBuild ? `<tr><th>Backend URL</th><td>${customBackendUrl}</td></tr>` : ""}
-      <tr><th>Build Commit</th><td>${buildCommit}</td></tr>
-      <tr><th>Build Branch</th><td>${buildBranch}</td></tr>
-      <tr><th>Build Time</th><td>${buildTime}</td></tr>
-      <tr><th>Build User</th><td>${buildUser}</td></tr>
-    </table>
-    ${glassesInfoHtml}
-  </div>
-</body>
-</html>`
+    // Build structured feedback JSON
+    const feedbackData = {
+      type: feedbackType,
+      // Bug report fields
+      ...(feedbackType === "bug" && {
+        expectedBehavior: expectedBehavior,
+        actualBehavior: actualBehavior,
+        severityRating: severityRating ?? undefined,
+      }),
+      // Feature request fields
+      ...(feedbackType === "feature" && {
+        feedbackText: feedbackText,
+        experienceRating: experienceRating ?? undefined,
+      }),
+      // Contact email for Apple private relay users
+      ...(isApplePrivateRelay && email && {contactEmail: email}),
+      // System information
+      systemInfo: {
+        appVersion,
+        deviceName,
+        osVersion,
+        platform: Platform.OS,
+        glassesConnected,
+        defaultWearable: defaultWearable as string,
+        runningApps,
+        offlineMode: !!offlineMode,
+        networkType: networkInfo.type,
+        networkConnected: networkInfo.isConnected,
+        internetReachable: networkInfo.isInternetReachable,
+        ...(locationInfo && {location: locationInfo}),
+        ...(locationPlace && {locationPlace}),
+        ...(isBetaBuild && {isBetaBuild: true}),
+        ...(isBetaBuild && customBackendUrl && {backendUrl: customBackendUrl}),
+        buildCommit,
+        buildBranch,
+        buildTime,
+        buildUser,
+      },
+      // Glasses information (only if connected)
+      ...(glassesConnected && {
+        glassesInfo: {
+          modelName: glassesModelName || undefined,
+          bluetoothId: glassesBluetoothId || undefined,
+          serialNumber: glassesSerialNumber || undefined,
+          buildNumber: glassesBuildNumber || undefined,
+          fwVersion: glassesFwVersion || undefined,
+          appVersion: glassesAppVersion || undefined,
+          androidVersion: glassesAndroidVersion || undefined,
+          wifiConnected: glassesWifiConnected,
+          ...(glassesWifiConnected && glassesWifiSsid && {wifiSsid: glassesWifiSsid}),
+          ...(glassesBatteryLevel >= 0 && {batteryLevel: glassesBatteryLevel}),
+        },
+      }),
+    }
 
-    // Combine feedback with diagnostic info
-    const fullFeedback = feedbackBody.replace("</div>\n</body>\n</html>", diagnosticInfoHtml)
-    console.log("Full Feedback submitted:", fullFeedback)
-    const res = await restComms.sendFeedback(fullFeedback)
+    console.log("Feedback submitted:", JSON.stringify(feedbackData, null, 2))
+    const res = await restComms.sendFeedback(feedbackData)
     setIsSubmitting(false)
 
     if (res.is_error()) {
@@ -331,7 +266,7 @@ export default function FeedbackPage() {
       <Header title={translate("feedback:giveFeedback")} leftIcon="chevron-left" onLeftPress={goBack} />
       <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : "height"} style={{flex: 1}}>
         <ScrollView
-          className="pt-6"
+          className="pt-6 -mx-6 px-6"
           contentContainerStyle={themed($scrollContainer)}
           keyboardShouldPersistTaps="handled">
           <View style={themed($container)}>
@@ -358,7 +293,7 @@ export default function FeedbackPage() {
                   {value: "feature", label: translate("feedback:featureRequest")},
                 ]}
                 value={feedbackType}
-                onValueChange={value => setFeedbackType(value as "bug" | "feature")}
+                onValueChange={(value) => setFeedbackType(value as "bug" | "feature")}
               />
             </View>
 

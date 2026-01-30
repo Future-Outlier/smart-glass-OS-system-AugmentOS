@@ -105,6 +105,14 @@ public class CoreModule: Module {
             }
         }
 
+        // MARK: - User Context Commands
+
+        AsyncFunction("setUserEmail") { (email: String) in
+            await MainActor.run {
+                CoreManager.shared.setUserEmail(email)
+            }
+        }
+
         // MARK: - Gallery Commands
 
         AsyncFunction("queryGalleryStatus") {
@@ -196,6 +204,14 @@ public class CoreModule: Module {
         AsyncFunction("restartTranscriber") {
             await MainActor.run {
                 CoreManager.shared.restartTranscriber()
+            }
+        }
+
+        // MARK: - Audio Encoding Commands
+
+        AsyncFunction("setLC3FrameSize") { (frameSize: Int) in
+            await MainActor.run {
+                CoreManager.shared.setLC3FrameSize(frameSize)
             }
         }
 

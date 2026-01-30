@@ -8,6 +8,7 @@ declare class CoreModule extends NativeModule<CoreModuleEvents> {
   // Display Commands
   displayEvent(params: Record<string, any>): Promise<void>
   displayText(params: Record<string, any>): Promise<void>
+  clearDisplay(): Promise<void>
 
   // Connection Commands
   requestStatus(): Promise<void>
@@ -24,6 +25,9 @@ declare class CoreModule extends NativeModule<CoreModuleEvents> {
   sendWifiCredentials(ssid: string, password: string): Promise<void>
   forgetWifiNetwork(ssid: string): Promise<void>
   setHotspotState(enabled: boolean): Promise<void>
+
+  // User Context Commands
+  setUserEmail(email: string): Promise<void>
 
   // Gallery Commands
   queryGalleryStatus(): Promise<void>
@@ -55,6 +59,9 @@ declare class CoreModule extends NativeModule<CoreModuleEvents> {
   // Microphone Commands
   setMicState(sendPcmData: boolean, sendTranscript: boolean, bypassVad: boolean): Promise<void>
   restartTranscriber(): Promise<void>
+
+  // Audio Encoding Commands
+  setLC3FrameSize(frameSize: number): Promise<void>
 
   // RGB LED Control
   rgbLedControl(

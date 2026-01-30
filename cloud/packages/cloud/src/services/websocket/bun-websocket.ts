@@ -11,7 +11,7 @@
  * - Clean upgrade flow without request hacks
  */
 
-import jwt from "jsonwebtoken"
+import jwt from "jsonwebtoken";
 
 import {
   CloudToGlassesMessageType,
@@ -22,12 +22,12 @@ import {
   AppToCloudMessage,
   AppToCloudMessageType,
   AppConnectionInit,
-} from "@mentra/sdk"
+} from "@mentra/sdk";
 
-import {SYSTEM_DASHBOARD_PACKAGE_NAME} from "../core/app.service"
-import {logger as rootLogger} from "../logging/pino-logger"
-import {PosthogService} from "../logging/posthog.service"
-import UserSession from "../session/UserSession"
+import { SYSTEM_DASHBOARD_PACKAGE_NAME } from "../core/app.service";
+import { logger as rootLogger } from "../logging/pino-logger";
+import { PosthogService } from "../logging/posthog.service";
+import UserSession from "../session/UserSession";
 
 import type {
   GlassesWebSocketData,
@@ -35,73 +35,78 @@ import type {
   GlassesServerWebSocket,
   AppServerWebSocket,
   CloudServerWebSocket,
-} from "./types"
+} from "./types";
 
-const logger = rootLogger.child({service: "bun-websocket"})
+const logger = rootLogger.child({ service: "bun-websocket" });
 
-const AUGMENTOS_AUTH_JWT_SECRET = process.env.AUGMENTOS_AUTH_JWT_SECRET || ""
+const AUGMENTOS_AUTH_JWT_SECRET = process.env.AUGMENTOS_AUTH_JWT_SECRET || "";
 
 // Grace period for glasses reconnection (1 minute)
-const RECONNECT_GRACE_PERIOD_MS = 1000 * 60 * 1
+const RECONNECT_GRACE_PERIOD_MS = 1000 * 60 * 1;
 
 // Enable grace period cleanup
-const GRACE_PERIOD_CLEANUP_ENABLED = true
+const GRACE_PERIOD_CLEANUP_ENABLED = true;
 
 /**
  * Handle WebSocket upgrade requests.
  * Returns true if upgrade was successful, false otherwise.
  */
 export function handleUpgrade(req: Request, server: any): Response | undefined {
-  const url = new URL(req.url)
-  const path = url.pathname
+  const url = new URL(req.url);
+  const path = url.pathname;
 
   if (path === "/glasses-ws") {
-    return handleGlassesUpgrade(req, server, url)
+    return handleGlassesUpgrade(req, server, url);
   } else if (path === "/app-ws") {
-    return handleAppUpgrade(req, server, url)
+    return handleAppUpgrade(req, server, url);
   }
 
-  return new Response("Unknown WebSocket path", {status: 404})
+  return new Response("Unknown WebSocket path", { status: 404 });
 }
 
 /**
  * Handle glasses WebSocket upgrade
  */
 function handleGlassesUpgrade(req: Request, server: any, url: URL): Response | undefined {
-  const token = req.headers.get("authorization")?.split(" ")[1] || url.searchParams.get("token")
+  const token = req.headers.get("authorization")?.split(" ")[1] || url.searchParams.get("token");
 
   if (!token) {
-    logger.warn("Glasses upgrade rejected: no token")
+    logger.warn("Glasses upgrade rejected: no token");
     return new Response(
       JSON.stringify({
         type: CloudToGlassesMessageType.CONNECTION_ERROR,
         message: "No core token provided",
         timestamp: new Date(),
       }),
-      {status: 401, headers: {"Content-Type": "application/json"}},
-    )
+      { status: 401, headers: { "Content-Type": "application/json" } },
+    );
   }
 
   try {
-    const payload = jwt.verify(token, AUGMENTOS_AUTH_JWT_SECRET) as any
-    const userId = payload.email
+    const payload = jwt.verify(token, AUGMENTOS_AUTH_JWT_SECRET) as any;
+    const userId = payload.email;
 
     if (!userId) {
-      logger.warn("Glasses upgrade rejected: no userId in token")
+      logger.warn("Glasses upgrade rejected: no userId in token");
       return new Response(
         JSON.stringify({
           type: CloudToGlassesMessageType.CONNECTION_ERROR,
           message: "Invalid core token - no user ID",
           timestamp: new Date(),
         }),
-        {status: 401, headers: {"Content-Type": "application/json"}},
-      )
+        { status: 401, headers: { "Content-Type": "application/json" } },
+      );
     }
 
-    const livekitRequested = url.searchParams.get("livekit") === "true" || req.headers.get("livekit") === "true"
+    const livekitRequested = url.searchParams.get("livekit") === "true" || req.headers.get("livekit") === "true";
+    const udpEncryptionRequested = url.searchParams.get("udpEncryption") === "true";
 
     if (livekitRequested) {
-      logger.info({userId, feature: "livekit"}, "Client requested LiveKit transport")
+      logger.info({ userId, feature: "livekit" }, "Client requested LiveKit transport");
+    }
+
+    if (udpEncryptionRequested) {
+      logger.info({ userId, feature: "udp-audio-encryption" }, "Client requested UDP encryption");
     }
 
     const upgraded = server.upgrade(req, {
@@ -109,25 +114,26 @@ function handleGlassesUpgrade(req: Request, server: any, url: URL): Response | u
         type: "glasses",
         userId,
         livekitRequested,
+        udpEncryptionRequested,
       } as GlassesWebSocketData,
-    })
+    });
 
     if (upgraded) {
-      logger.debug({userId}, "Glasses WebSocket upgrade successful")
-      return undefined // Upgrade successful
+      logger.debug({ userId }, "Glasses WebSocket upgrade successful");
+      return undefined; // Upgrade successful
     }
 
-    return new Response("WebSocket upgrade failed", {status: 500})
+    return new Response("WebSocket upgrade failed", { status: 500 });
   } catch (error) {
-    logger.warn({error}, "Glasses upgrade rejected: invalid token")
+    logger.warn({ error }, "Glasses upgrade rejected: invalid token");
     return new Response(
       JSON.stringify({
         type: CloudToGlassesMessageType.CONNECTION_ERROR,
         message: "Invalid core token",
         timestamp: new Date(),
       }),
-      {status: 401, headers: {"Content-Type": "application/json"}},
-    )
+      { status: 401, headers: { "Content-Type": "application/json" } },
+    );
   }
 }
 
@@ -135,19 +141,19 @@ function handleGlassesUpgrade(req: Request, server: any, url: URL): Response | u
  * Handle app WebSocket upgrade
  */
 function handleAppUpgrade(req: Request, server: any, _url: URL): Response | undefined {
-  const authHeader = req.headers.get("authorization")
-  const userId = req.headers.get("x-user-id") || ""
-  const sessionId = req.headers.get("x-session-id") || ""
+  const authHeader = req.headers.get("authorization");
+  const userId = req.headers.get("x-user-id") || "";
+  const sessionId = req.headers.get("x-session-id") || "";
 
-  let appJwtPayload: {packageName: string; apiKey: string} | undefined
+  let appJwtPayload: { packageName: string; apiKey: string } | undefined;
 
   // If we have auth header, try to validate JWT
   if (authHeader?.startsWith("Bearer ")) {
-    const appJwt = authHeader.substring(7)
+    const appJwt = authHeader.substring(7);
 
     // Check for required headers when using JWT auth
     if (!userId || !sessionId) {
-      logger.error("Missing userId or sessionId in app request headers")
+      logger.error("Missing userId or sessionId in app request headers");
       return new Response(
         JSON.stringify({
           type: "tpa_connection_error",
@@ -155,19 +161,19 @@ function handleAppUpgrade(req: Request, server: any, _url: URL): Response | unde
           message: "Missing userId or sessionId in request headers",
           timestamp: new Date(),
         }),
-        {status: 401, headers: {"Content-Type": "application/json"}},
-      )
+        { status: 401, headers: { "Content-Type": "application/json" } },
+      );
     }
 
     try {
       appJwtPayload = jwt.verify(appJwt, AUGMENTOS_AUTH_JWT_SECRET) as {
-        packageName: string
-        apiKey: string
-      }
-      logger.debug({packageName: appJwtPayload.packageName}, "App JWT authentication successful")
+        packageName: string;
+        apiKey: string;
+      };
+      logger.debug({ packageName: appJwtPayload.packageName }, "App JWT authentication successful");
     } catch (jwtError) {
       if (jwtError instanceof jwt.JsonWebTokenError) {
-        logger.warn({error: jwtError}, "Invalid JWT token for App WebSocket connection")
+        logger.warn({ error: jwtError }, "Invalid JWT token for App WebSocket connection");
         return new Response(
           JSON.stringify({
             type: "tpa_connection_error",
@@ -175,11 +181,11 @@ function handleAppUpgrade(req: Request, server: any, _url: URL): Response | unde
             message: "Invalid JWT token: " + jwtError.message,
             timestamp: new Date(),
           }),
-          {status: 401, headers: {"Content-Type": "application/json"}},
-        )
+          { status: 401, headers: { "Content-Type": "application/json" } },
+        );
       }
       // For other errors, continue without failing (backward compatibility)
-      logger.error({error: jwtError}, "Error verifying App JWT token")
+      logger.error({ error: jwtError }, "Error verifying App JWT token");
     }
   }
 
@@ -191,14 +197,14 @@ function handleAppUpgrade(req: Request, server: any, _url: URL): Response | unde
       sessionId,
       appJwtPayload,
     } as AppWebSocketData,
-  })
+  });
 
   if (upgraded) {
-    logger.debug({userId, hasJwt: !!appJwtPayload}, "App WebSocket upgrade successful")
-    return undefined
+    logger.debug({ userId, hasJwt: !!appJwtPayload }, "App WebSocket upgrade successful");
+    return undefined;
   }
 
-  return new Response("WebSocket upgrade failed", {status: 500})
+  return new Response("WebSocket upgrade failed", { status: 500 });
 }
 
 /**
@@ -210,9 +216,9 @@ export const websocketHandlers = {
    */
   async open(ws: CloudServerWebSocket) {
     if (ws.data.type === "glasses") {
-      await handleGlassesOpen(ws as GlassesServerWebSocket)
+      await handleGlassesOpen(ws as GlassesServerWebSocket);
     } else if (ws.data.type === "app") {
-      await handleAppOpen(ws as AppServerWebSocket)
+      await handleAppOpen(ws as AppServerWebSocket);
     }
   },
 
@@ -221,9 +227,9 @@ export const websocketHandlers = {
    */
   async message(ws: CloudServerWebSocket, message: string | Buffer) {
     if (ws.data.type === "glasses") {
-      await handleGlassesMessage(ws as GlassesServerWebSocket, message)
+      await handleGlassesMessage(ws as GlassesServerWebSocket, message);
     } else if (ws.data.type === "app") {
-      await handleAppMessage(ws as AppServerWebSocket, message)
+      await handleAppMessage(ws as AppServerWebSocket, message);
     }
   },
 
@@ -232,9 +238,9 @@ export const websocketHandlers = {
    */
   close(ws: CloudServerWebSocket, code: number, reason: string) {
     if (ws.data.type === "glasses") {
-      handleGlassesClose(ws as GlassesServerWebSocket, code, reason)
+      handleGlassesClose(ws as GlassesServerWebSocket, code, reason);
     } else if (ws.data.type === "app") {
-      handleAppClose(ws as AppServerWebSocket, code, reason)
+      handleAppClose(ws as AppServerWebSocket, code, reason);
     }
   },
 
@@ -242,7 +248,7 @@ export const websocketHandlers = {
    * Called when backpressure is relieved (can resume sending)
    */
   drain(ws: CloudServerWebSocket) {
-    logger.debug({userId: ws.data.userId, type: ws.data.type}, "WebSocket drain - backpressure relieved")
+    logger.debug({ userId: ws.data.userId, type: ws.data.type }, "WebSocket drain - backpressure relieved");
   },
 
   /**
@@ -250,7 +256,7 @@ export const websocketHandlers = {
    */
   pong(ws: CloudServerWebSocket, _data: Buffer) {
     if (ws.data.type === "glasses") {
-      handleGlassesPong(ws as GlassesServerWebSocket)
+      handleGlassesPong(ws as GlassesServerWebSocket);
     }
     // Apps don't need pong handling currently
   },
@@ -259,7 +265,7 @@ export const websocketHandlers = {
   idleTimeout: 120, // 2 minutes
   sendPings: true, // Bun will send pings automatically
   maxPayloadLength: 16 * 1024 * 1024, // 16 MB max message size
-}
+};
 
 // ============================================================================
 // Glasses Handlers
@@ -269,29 +275,37 @@ export const websocketHandlers = {
  * Handle glasses WebSocket connection open
  */
 async function handleGlassesOpen(ws: GlassesServerWebSocket): Promise<void> {
-  const {userId, livekitRequested} = ws.data
+  const { userId, livekitRequested, udpEncryptionRequested } = ws.data;
 
   try {
     // Create or reconnect user session
-    const {userSession, reconnection} = await UserSession.createOrReconnect(ws as any, userId)
+    const { userSession, reconnection } = await UserSession.createOrReconnect(ws as any, userId);
 
     // Store LiveKit preference
-    userSession.livekitRequested = livekitRequested
+    userSession.livekitRequested = livekitRequested;
 
-    userSession.logger.info({reconnection, livekitRequested}, `Glasses WebSocket connection opened for user: ${userId}`)
+    // Initialize UDP encryption if requested
+    if (udpEncryptionRequested) {
+      userSession.udpAudioManager.initializeEncryption();
+    }
+
+    userSession.logger.info(
+      { reconnection, livekitRequested },
+      `Glasses WebSocket connection opened for user: ${userId}`,
+    );
 
     // Handle connection initialization
-    await handleGlassesConnectionInit(userSession, ws, reconnection, livekitRequested)
+    await handleGlassesConnectionInit(userSession, ws, reconnection, livekitRequested, udpEncryptionRequested);
 
     // Track connection in analytics
     PosthogService.trackEvent("glasses_connection", userId, {
       sessionId: userSession.sessionId,
       timestamp: new Date().toISOString(),
       reconnection,
-    })
+    });
   } catch (error) {
-    logger.error({error, userId}, "Error handling glasses connection open")
-    ws.close(1011, "Internal server error")
+    logger.error({ error, userId }, "Error handling glasses connection open");
+    ws.close(1011, "Internal server error");
   }
 }
 
@@ -303,27 +317,28 @@ async function handleGlassesConnectionInit(
   ws: GlassesServerWebSocket,
   reconnection: boolean,
   livekitRequested: boolean,
+  udpEncryptionRequested: boolean,
 ): Promise<void> {
   if (!reconnection) {
     // Start dashboard app
     try {
-      await userSession.appManager.startApp(SYSTEM_DASHBOARD_PACKAGE_NAME)
+      await userSession.appManager.startApp(SYSTEM_DASHBOARD_PACKAGE_NAME);
     } catch (error) {
-      userSession.logger.error({error}, "Error starting dashboard app")
+      userSession.logger.error({ error }, "Error starting dashboard app");
     }
 
     // Start previously running apps
     try {
-      await userSession.appManager.startPreviouslyRunningApps()
+      await userSession.appManager.startPreviouslyRunningApps();
     } catch (error) {
-      userSession.logger.error({error}, "Error starting user apps")
+      userSession.logger.error({ error }, "Error starting user apps");
     }
 
     // Track connection event
     PosthogService.trackEvent("connected", userSession.userId, {
       sessionId: userSession.sessionId,
       timestamp: new Date().toISOString(),
-    })
+    });
   }
 
   // Handle reconnection - check LiveKit bridge status and resurrect dormant apps
@@ -331,36 +346,36 @@ async function handleGlassesConnectionInit(
     try {
       const hadBridge =
         typeof userSession.liveKitManager.getBridgeClient === "function" &&
-        !!userSession.liveKitManager.getBridgeClient()
+        !!userSession.liveKitManager.getBridgeClient();
 
       if (hadBridge || livekitRequested) {
-        const status = await userSession.liveKitManager.getBridgeStatus?.()
-        userSession.logger.info({feature: "livekit", status, reconnection}, "Reconnect: bridge status")
+        const status = await userSession.liveKitManager.getBridgeStatus?.();
+        userSession.logger.info({ feature: "livekit", status, reconnection }, "Reconnect: bridge status");
 
         if (!status || status.connected === false) {
-          await userSession.liveKitManager.rejoinBridge?.()
-          userSession.logger.info({feature: "livekit"}, "Reconnect: bridge rejoin attempted")
+          await userSession.liveKitManager.rejoinBridge?.();
+          userSession.logger.info({ feature: "livekit" }, "Reconnect: bridge rejoin attempted");
         } else {
-          userSession.logger.info({feature: "livekit"}, "Reconnect: bridge healthy, keeping session")
+          userSession.logger.info({ feature: "livekit" }, "Reconnect: bridge healthy, keeping session");
         }
       }
     } catch (err) {
-      userSession.logger.warn({feature: "livekit", err}, "Reconnect: bridge status check failed")
+      userSession.logger.warn({ feature: "livekit", err }, "Reconnect: bridge status check failed");
     }
 
     // Resurrect any apps that went dormant while user was disconnected
     // See AppManager.resurrectDormantApps() for detailed explanation of why
     // we wait for user reconnection before resurrecting
     try {
-      const resurrected = await userSession.appManager.resurrectDormantApps()
+      const resurrected = await userSession.appManager.resurrectDormantApps();
       if (resurrected.length > 0) {
         userSession.logger.info(
-          {resurrected, count: resurrected.length},
+          { resurrected, count: resurrected.length },
           "Resurrected dormant apps after user reconnect",
-        )
+        );
       }
     } catch (err) {
-      userSession.logger.error({err}, "Error resurrecting dormant apps after reconnect")
+      userSession.logger.error({ err }, "Error resurrecting dormant apps after reconnect");
     }
   }
   // Testing client livekit reconnection logic.
@@ -372,74 +387,102 @@ async function handleGlassesConnectionInit(
     type: CloudToGlassesMessageType.CONNECTION_ACK,
     sessionId: userSession.sessionId,
     timestamp: new Date(),
-  }
+  };
+
+  (ackMessage as any).env = process.env.NODE_ENV;
 
   // Include UDP endpoint if configured
-  const udpHost = process.env.UDP_HOST
-  const udpPort = process.env.UDP_PORT ? parseInt(process.env.UDP_PORT, 10) : 8000
+  const udpHost = process.env.UDP_HOST;
+  const udpPort = process.env.UDP_PORT ? parseInt(process.env.UDP_PORT, 10) : 8000;
   if (udpHost) {
-    ;(ackMessage as any).udpHost = udpHost
-    ;(ackMessage as any).udpPort = udpPort
-    userSession.logger.info({udpHost, udpPort, feature: "udp-audio"}, "Included UDP endpoint in CONNECTION_ACK")
+    (ackMessage as any).udpHost = udpHost;
+    (ackMessage as any).udpPort = udpPort;
+    userSession.logger.info({ udpHost, udpPort, feature: "udp-audio" }, "Included UDP endpoint in CONNECTION_ACK");
+  }
+
+  // Include UDP encryption info if requested
+  if (udpEncryptionRequested) {
+    const encryptionKey = userSession.udpAudioManager.getEncryptionKey();
+    if (encryptionKey) {
+      ackMessage.udpEncryption = {
+        key: encryptionKey,
+        algorithm: "xsalsa20-poly1305",
+      };
+      userSession.logger.info({ feature: "udp-audio-encryption" }, "Included UDP encryption key in CONNECTION_ACK");
+    } else {
+      userSession.logger.warn(
+        { feature: "udp-audio-encryption" },
+        "UDP encryption requested but no encryption key available",
+      );
+    }
   }
 
   // Include LiveKit info if requested
   if (livekitRequested) {
     try {
-      const livekitInfo = await userSession.liveKitManager.handleLiveKitInit()
+      const livekitInfo = await userSession.liveKitManager.handleLiveKitInit();
       if (livekitInfo) {
-        ;(ackMessage as any).livekit = {
+        (ackMessage as any).livekit = {
           url: livekitInfo.url,
           roomName: livekitInfo.roomName,
           token: livekitInfo.token,
-        }
+        };
         userSession.logger.info(
-          {url: livekitInfo.url, roomName: livekitInfo.roomName, feature: "livekit"},
+          { url: livekitInfo.url, roomName: livekitInfo.roomName, feature: "livekit" },
           "Included LiveKit info in CONNECTION_ACK",
-        )
+        );
       }
     } catch (error) {
-      userSession.logger.warn({error, feature: "livekit"}, "Failed to initialize LiveKit for CONNECTION_ACK")
+      userSession.logger.warn({ error, feature: "livekit" }, "Failed to initialize LiveKit for CONNECTION_ACK");
     }
   }
 
-  ws.send(JSON.stringify(ackMessage))
+  // Log when we send CONNECTION_ACK, and if it's a reconnection or not.
+  const _logger = userSession.logger.child({ function: "sendConnectionAck" });
+  _logger.info({ feature: "websocket", ackMessage, reconnection }, "Sending CONNECTION_ACK");
+  ws.send(JSON.stringify(ackMessage));
 }
 
 /**
  * Handle glasses WebSocket message
  */
 async function handleGlassesMessage(ws: GlassesServerWebSocket, message: string | Buffer): Promise<void> {
-  const {userId} = ws.data
-  const userSession = UserSession.getById(userId)
+  const { userId } = ws.data;
+  const userSession = UserSession.getById(userId);
 
   if (!userSession) {
-    logger.error({userId}, "No user session found for glasses message")
-    return
+    logger.error({ userId }, "No user session found for glasses message");
+    return;
   }
 
   try {
     // Handle binary message (audio data)
     if (message instanceof Buffer || message instanceof ArrayBuffer) {
-      userSession.audioManager.processAudioData(message)
-      return
+      userSession.audioManager.processAudioData(message);
+      return;
     }
 
     // Parse text message
-    const messageStr = typeof message === "string" ? message : message.toString()
-    const parsed = JSON.parse(messageStr) as GlassesToCloudMessage
+    const messageStr = typeof message === "string" ? message : message.toString();
+    const parsed = JSON.parse(messageStr) as GlassesToCloudMessage;
 
     // Handle connection init specially (re-init after reconnect)
     if (parsed.type === GlassesToCloudMessageType.CONNECTION_INIT) {
-      userSession.logger.info("Received CONNECTION_INIT from glasses")
-      await handleGlassesConnectionInit(userSession, ws, true, userSession.livekitRequested || false)
-      return
+      userSession.logger.info("Received CONNECTION_INIT from glasses");
+      await handleGlassesConnectionInit(
+        userSession,
+        ws,
+        true,
+        userSession.livekitRequested || false,
+        userSession.udpAudioManager.encryptionRequested,
+      );
+      return;
     }
 
     // Delegate all other messages to UserSession
-    await userSession.handleGlassesMessage(parsed)
+    await userSession.handleGlassesMessage(parsed);
   } catch (error) {
-    userSession.logger.error({error}, "Error processing glasses message")
+    userSession.logger.error({ error }, "Error processing glasses message");
   }
 }
 
@@ -447,12 +490,12 @@ async function handleGlassesMessage(ws: GlassesServerWebSocket, message: string 
  * Handle glasses pong response
  */
 function handleGlassesPong(ws: GlassesServerWebSocket): void {
-  const {userId} = ws.data
-  const userSession = UserSession.getById(userId)
+  const { userId } = ws.data;
+  const userSession = UserSession.getById(userId);
 
   if (userSession) {
     // Handle pong - updates lastPongTime and resets timeout timer
-    userSession.handlePong()
+    userSession.handlePong();
   }
 }
 
@@ -460,48 +503,48 @@ function handleGlassesPong(ws: GlassesServerWebSocket): void {
  * Handle glasses WebSocket close
  */
 function handleGlassesClose(ws: GlassesServerWebSocket, code: number, reason: string): void {
-  const {userId} = ws.data
-  const userSession = UserSession.getById(userId)
+  const { userId } = ws.data;
+  const userSession = UserSession.getById(userId);
 
-  logger.info({userId, code, reason}, "Glasses WebSocket closed")
+  logger.info({ userId, code, reason }, "Glasses WebSocket closed");
 
   if (!userSession) {
-    return
+    return;
   }
 
-  userSession.logger.warn({code, reason}, "Glasses connection closed")
+  userSession.logger.warn({ code, reason }, "Glasses connection closed");
 
   // Mark session as disconnected
-  userSession.disconnectedAt = new Date()
+  userSession.disconnectedAt = new Date();
 
   // Clear any existing cleanup timer
   if (userSession.cleanupTimerId) {
-    clearTimeout(userSession.cleanupTimerId)
-    userSession.cleanupTimerId = undefined
+    clearTimeout(userSession.cleanupTimerId);
+    userSession.cleanupTimerId = undefined;
   }
 
   // Set up grace period cleanup
   if (!GRACE_PERIOD_CLEANUP_ENABLED) {
-    userSession.logger.debug("Grace period cleanup disabled")
-    return
+    userSession.logger.debug("Grace period cleanup disabled");
+    return;
   }
 
   userSession.cleanupTimerId = setTimeout(() => {
-    userSession.logger.debug("Cleanup grace period expired")
+    userSession.logger.debug("Cleanup grace period expired");
 
     // Check if user reconnected
     if (!userSession.disconnectedAt) {
-      userSession.logger.debug("User reconnected, skipping cleanup")
+      userSession.logger.debug("User reconnected, skipping cleanup");
       if (userSession.cleanupTimerId) {
-        clearTimeout(userSession.cleanupTimerId)
-        userSession.cleanupTimerId = undefined
+        clearTimeout(userSession.cleanupTimerId);
+        userSession.cleanupTimerId = undefined;
       }
-      return
+      return;
     }
 
-    userSession.logger.info("User did not reconnect, disposing session")
-    userSession.dispose()
-  }, RECONNECT_GRACE_PERIOD_MS)
+    userSession.logger.info("User did not reconnect, disposing session");
+    userSession.dispose();
+  }, RECONNECT_GRACE_PERIOD_MS);
 }
 
 // ============================================================================
@@ -512,15 +555,15 @@ function handleGlassesClose(ws: GlassesServerWebSocket, code: number, reason: st
  * Handle app WebSocket connection open
  */
 async function handleAppOpen(ws: AppServerWebSocket): Promise<void> {
-  const {userId, sessionId, appJwtPayload} = ws.data
+  const { userId, sessionId, appJwtPayload } = ws.data;
 
-  logger.info({userId, hasJwt: !!appJwtPayload}, "App WebSocket connection opened")
+  logger.info({ userId, hasJwt: !!appJwtPayload }, "App WebSocket connection opened");
 
   // If we have JWT auth, handle init immediately
   if (appJwtPayload && userId && sessionId) {
-    const userSession = UserSession.getById(userId)
+    const userSession = UserSession.getById(userId);
     if (!userSession) {
-      logger.error({userId}, "User session not found for app connection")
+      logger.error({ userId }, "User session not found for app connection");
       ws.send(
         JSON.stringify({
           type: CloudToAppMessageType.CONNECTION_ERROR,
@@ -528,9 +571,9 @@ async function handleAppOpen(ws: AppServerWebSocket): Promise<void> {
           message: "Session not found",
           timestamp: new Date(),
         }),
-      )
-      ws.close(1008, "Session not found")
-      return
+      );
+      ws.close(1008, "Session not found");
+      return;
     }
 
     // Create connection init message
@@ -539,15 +582,15 @@ async function handleAppOpen(ws: AppServerWebSocket): Promise<void> {
       packageName: appJwtPayload.packageName,
       sessionId: sessionId,
       apiKey: appJwtPayload.apiKey,
-    }
+    };
 
     try {
-      await userSession.appManager.handleAppInit(ws as any, initMessage)
+      await userSession.appManager.handleAppInit(ws as any, initMessage);
       // Store package name in ws.data for later use
-      ws.data.packageName = appJwtPayload.packageName
+      ws.data.packageName = appJwtPayload.packageName;
     } catch (error) {
-      logger.error({error, packageName: appJwtPayload.packageName}, "Error handling app init")
-      ws.close(1011, "Internal server error")
+      logger.error({ error, packageName: appJwtPayload.packageName }, "Error handling app init");
+      ws.close(1011, "Internal server error");
     }
   }
   // Otherwise wait for CONNECTION_INIT message (legacy flow)
@@ -557,28 +600,28 @@ async function handleAppOpen(ws: AppServerWebSocket): Promise<void> {
  * Handle app WebSocket message
  */
 async function handleAppMessage(ws: AppServerWebSocket, message: string | Buffer): Promise<void> {
-  const {userId, packageName} = ws.data
+  const { userId, packageName } = ws.data;
 
   try {
-    const parsed = JSON.parse(message.toString()) as AppToCloudMessage
+    const parsed = JSON.parse(message.toString()) as AppToCloudMessage;
 
     // Handle CONNECTION_INIT for legacy apps
     if (parsed.type === AppToCloudMessageType.CONNECTION_INIT) {
-      const initMessage = parsed as AppConnectionInit
+      const initMessage = parsed as AppConnectionInit;
 
       // Parse session ID to get user ID
-      const sessionParts = initMessage.sessionId.split("-")
-      const parsedUserId = sessionParts[0]
+      const sessionParts = initMessage.sessionId.split("-");
+      const parsedUserId = sessionParts[0];
 
       if (sessionParts.length < 2) {
-        logger.error({sessionId: initMessage.sessionId}, "Invalid session ID format")
-        ws.close(1008, "Invalid session ID format")
-        return
+        logger.error({ sessionId: initMessage.sessionId }, "Invalid session ID format");
+        ws.close(1008, "Invalid session ID format");
+        return;
       }
 
-      const userSession = UserSession.getById(parsedUserId)
+      const userSession = UserSession.getById(parsedUserId);
       if (!userSession) {
-        logger.error({userId: parsedUserId}, "User session not found for app message")
+        logger.error({ userId: parsedUserId }, "User session not found for app message");
         ws.send(
           JSON.stringify({
             type: CloudToAppMessageType.CONNECTION_ERROR,
@@ -586,23 +629,23 @@ async function handleAppMessage(ws: AppServerWebSocket, message: string | Buffer
             message: "Session not found",
             timestamp: new Date(),
           }),
-        )
-        ws.close(1008, "Session not found")
-        return
+        );
+        ws.close(1008, "Session not found");
+        return;
       }
 
       // Update ws.data with parsed info
-      ws.data.userId = parsedUserId
-      ws.data.packageName = initMessage.packageName
+      ws.data.userId = parsedUserId;
+      ws.data.packageName = initMessage.packageName;
 
-      await userSession.appManager.handleAppInit(ws as any, initMessage)
-      return
+      await userSession.appManager.handleAppInit(ws as any, initMessage);
+      return;
     }
 
     // For other messages, we need an existing session
-    const userSession = UserSession.getById(userId || ws.data.userId)
+    const userSession = UserSession.getById(userId || ws.data.userId);
     if (!userSession) {
-      logger.error({userId}, "User session not found for app message")
+      logger.error({ userId }, "User session not found for app message");
       ws.send(
         JSON.stringify({
           type: CloudToAppMessageType.CONNECTION_ERROR,
@@ -610,15 +653,15 @@ async function handleAppMessage(ws: AppServerWebSocket, message: string | Buffer
           message: "Session not found",
           timestamp: new Date(),
         }),
-      )
-      return
+      );
+      return;
     }
 
     // Delegate message handling to UserSession
-    await userSession.handleAppMessage(ws as any, parsed)
+    await userSession.handleAppMessage(ws as any, parsed);
   } catch (error) {
-    logger.error({error, userId, packageName}, "Error processing app message")
-    ws.close(1011, "Internal server error")
+    logger.error({ error, userId, packageName }, "Error processing app message");
+    ws.close(1011, "Internal server error");
   }
 }
 
@@ -634,22 +677,22 @@ async function handleAppMessage(ws: AppServerWebSocket, message: string | Buffer
  * so we must explicitly call handleDisconnect here.
  */
 function handleAppClose(ws: AppServerWebSocket, code: number, reason: string): void {
-  const {userId, packageName} = ws.data
+  const { userId, packageName } = ws.data;
 
-  logger.info({userId, packageName, code, reason}, "App WebSocket closed")
+  logger.info({ userId, packageName, code, reason }, "App WebSocket closed");
 
   if (!packageName) {
-    logger.warn({userId, code, reason}, "App WebSocket closed but no packageName - ignoring")
-    return
+    logger.warn({ userId, code, reason }, "App WebSocket closed but no packageName - ignoring");
+    return;
   }
 
-  const userSession = UserSession.getById(userId)
+  const userSession = UserSession.getById(userId);
   if (!userSession) {
-    logger.warn({userId, packageName, code, reason}, "App WebSocket closed but no UserSession found - ignoring")
-    return
+    logger.warn({ userId, packageName, code, reason }, "App WebSocket closed but no UserSession found - ignoring");
+    return;
   }
 
   // Delegate to AppManager which owns the AppSession
   // This will trigger grace period -> resurrection flow
-  userSession.appManager.handleAppConnectionClosed(packageName, code, reason)
+  userSession.appManager.handleAppConnectionClosed(packageName, code, reason);
 }

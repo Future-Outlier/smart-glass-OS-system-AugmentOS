@@ -356,6 +356,8 @@ class G1: NSObject, SGCManager {
 
     func sendHotspotState(_: Bool) {}
 
+    func sendUserEmailToGlasses(_: String) {}
+
     func queryGalleryStatus() {}
 
     var connectionState: String = ConnTypes.DISCONNECTED
@@ -800,28 +802,7 @@ class G1: NSObject, SGCManager {
     }
 
     func sendTextWall(_ text: String) {
-        // clear the screen with the exit command after 3 seconds if the text is empty or a space:
-        if CoreManager.shared.powerSavingMode && text.isEmpty || text == " " {
-            CoreManager.shared.sendStateWorkItem?.cancel()
-            Bridge.log("Mentra: Clearing display after 3 seconds")
-            // if we're clearing the display, after a delay, send a clear command if not cancelled with another
-            let workItem = DispatchWorkItem { [weak self] in
-                guard let self = self else { return }
-                if CoreManager.shared.isHeadUp {
-                    return
-                }
-                self.exit()
-            }
-            CoreManager.shared.sendStateWorkItem = workItem
-            CoreManager.shared.sendStateQueue.asyncAfter(deadline: .now() + 3, execute: workItem)
-        }
-
         let chunks = textHelper.createTextWallChunks(text)
-        // if text.isEmpty {
-        //     clearDisplay()
-        //     return
-        // }
-        // let chunks = textHelper.chunkTextForTransmission(text)
         queueChunks(chunks, sleepAfterMs: 10)
     }
 
