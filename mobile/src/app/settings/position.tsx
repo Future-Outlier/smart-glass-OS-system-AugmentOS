@@ -1,17 +1,19 @@
 import {useFocusEffect} from "expo-router"
-import {useCallback} from "react"
+import {useCallback, useEffect} from "react"
 import {View} from "react-native"
 
 import {Header, Screen} from "@/components/ignite"
 import SliderSetting from "@/components/settings/SliderSetting"
 import {useNavigationHistory} from "@/contexts/NavigationHistoryContext"
 import {SETTINGS, useSetting} from "@/stores/settings"
+import {useKonamiCode} from "@/utils/debug/konami"
 
 export default function ScreenSettingsScreen() {
   const {goBack} = useNavigationHistory()
   const [dashboardDepth, setDashboardDepth] = useSetting(SETTINGS.dashboard_depth.key)
   const [dashboardHeight, setDashboardHeight] = useSetting(SETTINGS.dashboard_height.key)
   const [_screenDisabled, setScreenDisabled] = useSetting(SETTINGS.screen_disabled.key)
+  const {setEnabled} = useKonamiCode()
 
   useFocusEffect(
     useCallback(() => {
@@ -21,6 +23,11 @@ export default function ScreenSettingsScreen() {
       }
     }, []),
   )
+
+  useEffect(() => {
+    setEnabled(false)
+    return () => setEnabled(true)
+  }, [setEnabled])
 
   return (
     <Screen preset="fixed">

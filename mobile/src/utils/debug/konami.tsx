@@ -1,4 +1,4 @@
-import {useEffect, useState, useRef} from "react"
+import {createContext, useContext, useEffect, useState, useRef} from "react"
 import {Platform, View} from "react-native"
 import {Gesture, GestureDetector} from "react-native-gesture-handler"
 
@@ -12,12 +12,30 @@ const MINI_CODE: Direction[] = ["up", "up", "down", "down", "left", "left", "rig
 const SUPER_CODE: Direction[] = ["up", "up", "down", "down", "up", "up", "down", "down", "left", "left", "left"]
 const MAX_CODE_LENGTH = Math.max(KONAMI_CODE.length, MINI_CODE.length, SUPER_CODE.length)
 
+type KonamiContextType = {
+  enabled: boolean
+  setEnabled: (enabled: boolean) => void
+}
+
+const KonamiContext = createContext<KonamiContextType | null>(null)
+
+export function useKonamiCode() {
+  const context = useContext(KonamiContext)
+  if (!context) {
+    throw new Error("useKonamiCode must be used within a KonamiCodeProvider")
+  }
+  return context
+}
+
 export function KonamiCodeProvider({children}: {children: React.ReactNode}) {
+  const [enabled, setEnabled] = useState(true)
   const [sequence, setSequence] = useState<Direction[]>([])
   const resetTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const {goHomeAndPush} = useNavigationHistory()
 
   useEffect(() => {
+    if (!enabled) return
+
     if (sequence.length === KONAMI_CODE.length) {
       const matches = sequence.every((dir, i) => dir === KONAMI_CODE[i])
       if (matches) {
@@ -41,7 +59,7 @@ export function KonamiCodeProvider({children}: {children: React.ReactNode}) {
         setSequence([])
       }
     }
-  }, [sequence, goHomeAndPush])
+  }, [sequence, goHomeAndPush, enabled])
 
   useEffect(() => {
     return () => {
@@ -119,8 +137,14 @@ export function KonamiCodeProvider({children}: {children: React.ReactNode}) {
   const composedGesture = Gesture.Simultaneous(Gesture.Race(flingUp, flingDown, flingLeft, flingRight))
 
   return (
-    <GestureDetector gesture={composedGesture}>
-      <View style={{flex: 1}}>{children}</View>
-    </GestureDetector>
+    <KonamiContext.Provider value={{enabled, setEnabled}}>
+      {enabled ? (
+        <GestureDetector gesture={composedGesture}>
+          <View style={{flex: 1}}>{children}</View>
+        </GestureDetector>
+      ) : (
+        children
+      )}
+    </KonamiContext.Provider>
   )
 }
