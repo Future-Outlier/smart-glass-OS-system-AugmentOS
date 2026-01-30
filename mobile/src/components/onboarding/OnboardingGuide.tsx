@@ -1,6 +1,6 @@
 import {Image, ImageSource} from "expo-image"
 import {useVideoPlayer, VideoView, VideoSource, VideoPlayer} from "expo-video"
-import {useState, useCallback, useEffect, useMemo} from "react"
+import {useState, useCallback, useEffect, useMemo, useRef} from "react"
 import {View, ViewStyle, ActivityIndicator, Platform} from "react-native"
 
 import {MentraLogoStandalone} from "@/components/brands/MentraLogoStandalone"
@@ -97,6 +97,7 @@ export function OnboardingGuide({
   const [player2Loading, setPlayer2Loading] = useState(true)
   const [showPoster, setShowPoster] = useState(false)
   const [waitState, setWaitState] = useState(false)
+  const resettingRef = useRef(false)
 
   // Initialize players with first video sources found
   const initialSource1 = useMemo(() => findNextVideoSource(steps, 0), [steps])
@@ -245,9 +246,10 @@ export function OnboardingGuide({
   const handleBack = useCallback(() => {
     setUiIndex(uiIndex - 1)
     setPlayCount(0)
-
+    
     // The start is a special case
     if (currentIndex === 0 || currentIndex === 1) {
+      resettingRef.current = true
       setHasStarted(autoStart) // if autoStart is true, we don't want to reset the hasStarted state (because it's already started)
       setCurrentIndex(0)
       setActivePlayer(1)
@@ -268,6 +270,9 @@ export function OnboardingGuide({
         player2.currentTime = 0
         player2.pause()
       }
+      setTimeout(() => {
+        resettingRef.current = false
+      }, 0)
       return
     }
 
@@ -373,6 +378,7 @@ export function OnboardingGuide({
     if (isCurrentStepImage) return
 
     const subscription = currentPlayer.addListener("playingChange", (status: any) => {
+      if (resettingRef.current) return// ignore playingChange listener while resetting
       if (!status.isPlaying && currentPlayer.currentTime >= currentPlayer.duration - 0.1) {
         if (step.transition) {
           handleNext(false)

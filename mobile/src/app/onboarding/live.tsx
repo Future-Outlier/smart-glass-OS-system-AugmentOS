@@ -149,6 +149,16 @@ export default function MentraLiveOnboarding() {
       transition: false,
       title: translate("onboarding:livePauseMusic"),
       subtitle: translate("onboarding:liveDoubleTapTouchpad"),
+      waitFn: (): Promise<void> => {
+        return new Promise<void>((resolve) => {
+          const unsub = CoreModule.addListener("touch_event", (data: TouchEvent) => {
+            if (data?.gesture_name === "double_tap") {
+              unsub.remove()
+              resolve()
+            }
+          })
+        })
+      },
     },
     {
       type: "video",
