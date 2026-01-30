@@ -9,12 +9,12 @@
  * - React to REST updates by updating the snapshot.
  * - Bridge specific keys to legacy behaviors to preserve backward compatibility:
  *   - metric_system (boolean) → broadcast legacy "augmentos_settings_update" with { metricSystemEnabled }
+ *   - timezone (string) → update userSession.userTimezone and broadcast to subscribed apps
  *   - default_wearable (string) → delegate to DeviceManager to update model/capabilities immediately
  *
  * Notes:
  * - This manager does not persist settings; persistence happens in the REST layer (user-settings.api.ts).
  * - Legacy WS settings are not written to UserSettings; they continue to flow on their old path.
- * - Only metric_system is bridged in this phase. Other keys are not broadcast.
  */
 
 import type { Logger } from "pino";
@@ -48,10 +48,19 @@ export class UserSettingsManager {
       const doc = await UserSettings.findOne({ email });
       const settings = doc?.getSettings() || {};
       this.snapshot = { ...settings };
+
+      // Load timezone if present
+      if (this.snapshot.timezone) {
+        this.userSession.userTimezone = this.snapshot.timezone;
+        this.logger.info({ userId: email, timezone: this.snapshot.timezone }, "User timezone loaded");
+      }
+
+      // Load default wearable if present
       if (this.snapshot.default_wearable) {
         this.logger.info({ userId: email, wearableId: this.snapshot.default_wearable }, "Default wearable loaded");
         await this.userSession.deviceManager.setCurrentModel(this.snapshot.default_wearable);
       }
+
       this.logger.info({ userId: email, keys: Object.keys(this.snapshot) }, "User settings snapshot loaded");
     } catch (error) {
       this.logger.error(error as Error, "Error loading user settings snapshot from database");
@@ -95,6 +104,7 @@ export class UserSettingsManager {
 
       // Bridge specific keys to legacy behavior for backward compatibility
       await this.bridgeMetricSystemIfPresent(updated);
+      await this.bridgeTimezoneIfPresent(updated);
       await this.applyDefaultWearableIfPresent(updated);
 
       // Optionally log diff (debug)
@@ -185,6 +195,76 @@ export class UserSettingsManager {
       );
     } catch (error) {
       this.logger.error(error as Error, "Error bridging metric_system to legacy augmentos_settings_update");
+    }
+  }
+
+  /**
+   * Bridge for timezone (string) → update session and broadcast to subscribed apps
+   * - Updates userSession.userTimezone immediately
+   * - Broadcasts "augmentos_settings_update" with { userTimezone } to subscribed apps
+   */
+  private async bridgeTimezoneIfPresent(updated: Record<string, any>): Promise<void> {
+    if (!Object.prototype.hasOwnProperty.call(updated, "timezone")) return;
+
+    try {
+      const timezone = updated["timezone"];
+      if (typeof timezone !== "string" || !timezone) {
+        this.logger.warn({ userId: this.userSession.userId }, "timezone provided but empty or invalid; ignoring");
+        return;
+      }
+
+      // Update session property
+      this.userSession.userTimezone = timezone;
+
+      // Broadcast to subscribed apps
+      const legacyKey = "userTimezone";
+      const subscribedApps = this.userSession.subscriptionManager.getSubscribedAppsForAugmentosSetting(legacyKey);
+
+      if (!subscribedApps || subscribedApps.length === 0) {
+        this.logger.info(
+          {
+            userId: this.userSession.userId,
+            legacyKey,
+            value: timezone,
+          },
+          "No Apps subscribed to userTimezone setting; skipping broadcast",
+        );
+        return;
+      }
+
+      const timestamp = new Date();
+      const payload = {
+        type: "augmentos_settings_update",
+        settings: { [legacyKey]: timezone },
+        timestamp,
+      };
+
+      for (const packageName of subscribedApps) {
+        const ws = this.userSession.appWebsockets.get(packageName);
+        if (!ws || ws.readyState !== WebSocketReadyState.OPEN) continue;
+
+        const message = {
+          ...payload,
+          sessionId: `${this.userSession.sessionId}-${packageName}`,
+        };
+
+        try {
+          ws.send(JSON.stringify(message));
+        } catch (sendError) {
+          this.logger.error(sendError as Error, `Error sending timezone update to App ${packageName}`);
+        }
+      }
+
+      this.logger.info(
+        {
+          userId: this.userSession.userId,
+          timezone,
+          appCount: subscribedApps.length,
+        },
+        "Bridged timezone to apps",
+      );
+    } catch (error) {
+      this.logger.error(error as Error, "Error bridging timezone setting");
     }
   }
 

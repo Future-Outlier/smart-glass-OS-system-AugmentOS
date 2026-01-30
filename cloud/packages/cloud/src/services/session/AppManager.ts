@@ -1230,6 +1230,8 @@ export class AppManager {
         preferredMic: settingsSnapshot.preferred_mic ?? "auto",
         // Legacy key for backward compat (derived from preferred_mic)
         useOnboardMic: settingsSnapshot.preferred_mic === "glasses",
+        // User's timezone (IANA name like "America/New_York")
+        userTimezone: this.userSession.userTimezone || settingsSnapshot.timezone || null,
       };
 
       // Send connection acknowledgment with capabilities
