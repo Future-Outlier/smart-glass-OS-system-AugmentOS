@@ -3642,9 +3642,14 @@ extension MentraLive {
     }
 
     func sendButtonVideoRecordingSettings() {
-        let width = GlassesStore.shared.get("core", "button_video_width") as? Int ?? 1280
-        let height = GlassesStore.shared.get("core", "button_video_height") as? Int ?? 720
-        let fps = GlassesStore.shared.get("core", "button_video_fps") as? Int ?? 30
+        let settings = GlassesStore.shared.get("core", "button_video_settings") as? [String: Any] ?? [
+            "width": 1280,
+            "height": 720,
+            "fps": 30,
+        ]
+        let width = settings["width"] as? Int ?? 1280
+        let height = settings["height"] as? Int ?? 720
+        let fps = settings["fps"] as? Int ?? 30
 
         // Use defaults if not set
         let finalWidth = width > 0 ? width : 1280

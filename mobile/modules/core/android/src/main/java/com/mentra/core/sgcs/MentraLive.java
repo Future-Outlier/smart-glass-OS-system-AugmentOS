@@ -3988,9 +3988,13 @@ public class MentraLive extends SGCManager {
 
     @Override
     public void sendButtonVideoRecordingSettings() {
-        int videoWidth = (Integer) GlassesStore.INSTANCE.get("core", "button_video_width");
-        int videoHeight = (Integer) GlassesStore.INSTANCE.get("core", "button_video_height");
-        int videoFps = (Integer) GlassesStore.INSTANCE.get("core", "button_video_fps");
+        JSONObject settings = GlassesStore.INSTANCE.get("core", "button_video_settings") as JSONObject;
+        int videoWidth = settings.getInt("width");
+        int videoHeight = settings.getInt("height");
+        int videoFps = settings.getInt("fps");
+        // int videoWidth = (Integer) GlassesStore.INSTANCE.get("core", "button_video_width");
+        // int videoHeight = (Integer) GlassesStore.INSTANCE.get("core", "button_video_height");
+        // int videoFps = (Integer) GlassesStore.INSTANCE.get("core", "button_video_fps");
 
         Bridge.log("LIVE: 🎥 [SETTINGS_SYNC] Sending button video recording settings: " + videoWidth + "x" + videoHeight + "@" + videoFps + "fps");
 

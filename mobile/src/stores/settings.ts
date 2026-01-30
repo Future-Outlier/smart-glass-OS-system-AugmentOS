@@ -329,13 +329,6 @@ export const SETTINGS: Record<string, Setting> = {
     saveOnServer: true,
     persist: true,
   },
-  button_video_settings_width: {
-    key: "button_video_settings_width",
-    defaultValue: () => 1920,
-    writable: true,
-    saveOnServer: true,
-    persist: true,
-  },
   button_max_recording_time: {
     key: "button_max_recording_time",
     defaultValue: () => 10,
