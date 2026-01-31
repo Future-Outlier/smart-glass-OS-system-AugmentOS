@@ -579,8 +579,12 @@ public class OtaHelper {
                 Log.d(TAG, "Finding matching MTK patch");
                 // Find matching MTK patch (MTK requires sequential updates)
                 // Skip if MTK was already updated this session (A/B updates don't change version until reboot)
+                // OR if MTK update is currently in progress
                 if (wasMtkUpdatedThisSession()) {
                     Log.i(TAG, "📱 MTK already updated this session - skipping MTK check (reboot required to apply)");
+                    mtkPatch = null;
+                } else if (isMtkOtaInProgress()) {
+                    Log.i(TAG, "📱 MTK update currently in progress - skipping MTK check");
                     mtkPatch = null;
                 } else if (rootJson.has("mtk_patches")) {
                     String currentMtkVersion = SysProp.getProperty(context, "ro.custom.ota.version");
@@ -628,9 +632,37 @@ public class OtaHelper {
                     Log.i(TAG, "MTK update available - applying");
                     checkAndUpdateMtkFirmware(mtkPatch, context);
                 } else if (besUpdateAvailable) {
-                    // Only BES - apply normally (triggers power-cycle)
-                    Log.i(TAG, "BES update available - applying");
-                    checkAndUpdateBesFirmware(rootJson.getJSONObject("bes_firmware"), context);
+                    // Only BES - check if MTK is in progress first
+                    if (isMtkOtaInProgress()) {
+                        // MTK system is still processing - can't start BES yet
+                        if (wasMtkUpdatedThisSession()) {
+                            // MTK was already "completed" from phone's perspective, but system still processing
+                            // Don't queue BES, just tell phone no updates right now
+                            Log.i(TAG, "BES update available but MTK system still processing - try again later");
+                            if (isPhoneInitiatedOta) {
+                                sendProgressToPhone("install", 100, 0, 0, "FINISHED", null);
+                            }
+                        } else {
+                            // MTK is actively being installed - queue BES for after
+                            Log.i(TAG, "BES update available but MTK in progress - BES will start after MTK completes");
+                            if (!hasPendingBesUpdate()) {
+                                setPendingBesUpdate(rootJson.getJSONObject("bes_firmware"));
+                            }
+                            if (isPhoneInitiatedOta) {
+                                sendProgressToPhone("install", -1, 0, 0, "IN_PROGRESS", "mtk");
+                            }
+                        }
+                    } else {
+                        // Only BES - apply normally (triggers power-cycle)
+                        Log.i(TAG, "BES update available - applying");
+                        checkAndUpdateBesFirmware(rootJson.getJSONObject("bes_firmware"), context);
+                    }
+                } else if (isMtkOtaInProgress() && !wasMtkUpdatedThisSession()) {
+                    // MTK is actively in progress (not just system processing after completion)
+                    Log.i(TAG, "MTK update currently in progress");
+                    if (isPhoneInitiatedOta) {
+                        sendProgressToPhone("install", -1, 0, 0, "IN_PROGRESS", "mtk");
+                    }
                 } else {
                     Log.i(TAG, "No firmware updates available");
                     // Send FINISHED to phone since no more updates
@@ -1658,19 +1690,27 @@ public class OtaHelper {
             boolean downloaded = downloadMtkFirmware(firmwareUrl, firmwareInfo, context);
             
             if (downloaded) {
-                Log.i(TAG, "✅ MTK firmware download complete - beginning installation");
+                Log.i(TAG, "✅ MTK firmware download complete");
                 
                 // Set flag before starting update
                 isMtkOtaInProgress = true;
                 
-                // Post started event
-                EventBus.getDefault().post(com.mentra.asg_client.io.ota.events.MtkOtaProgressEvent.createStarted());
+                // Mark MTK as updated this session (install will happen in background)
+                setMtkUpdatedThisSession();
                 
-                // Trigger MTK OTA installation via system broadcast
-                Log.i(TAG, "Starting MTK firmware update from: " + OtaConstants.MTK_FIRMWARE_PATH);
-                com.mentra.asg_client.SysControl.installOTA(context, OtaConstants.MTK_FIRMWARE_PATH);
+                // Send install FINISHED to phone BEFORE starting install
+                // MTK install happens in background with no progress tracking
+                sendMtkInstallProgressToPhone("FINISHED", 100, null);
+                Log.i(TAG, "📱 Sent MTK install FINISHED to phone - waiting 1s before starting install");
                 
-                Log.i(TAG, "MTK firmware update initiated - system will handle installation");
+                // Wait 1 second for phone to process FINISHED, then start install
+                final Context ctx = context;
+                new android.os.Handler(android.os.Looper.getMainLooper()).postDelayed(() -> {
+                    Log.i(TAG, "Starting MTK firmware update from: " + OtaConstants.MTK_FIRMWARE_PATH);
+                    com.mentra.asg_client.SysControl.installOTA(ctx, OtaConstants.MTK_FIRMWARE_PATH);
+                    Log.i(TAG, "MTK firmware update initiated - system will handle in background");
+                }, 1000); // 1 second delay
+                
                 return true;
             } else {
                 Log.e(TAG, "Failed to download MTK firmware");

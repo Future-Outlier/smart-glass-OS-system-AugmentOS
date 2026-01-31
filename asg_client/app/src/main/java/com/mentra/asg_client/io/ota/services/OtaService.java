@@ -182,58 +182,38 @@ public class OtaService extends Service {
                 progress = Integer.parseInt(event.getMessage());
             }
         } catch (NumberFormatException e) {
-            // Message is not a number, use 0
+            // Message is not a number (e.g., "info" messages), ignore
         }
         
+        // MTK install progress is NOT sent to phone - phone already received FINISHED before install started
+        // We only update local notifications and handle SUCCESS/ERROR
         switch (event.getStatus()) {
             case STARTED:
                 updateNotification("MTK firmware update started");
-                if (otaHelper != null) {
-                    otaHelper.sendMtkInstallProgressToPhone("STARTED", 0, null);
-                }
                 break;
             case WRITE_PROGRESS:
                 updateNotification("Writing MTK firmware: " + progress + "%");
-                if (otaHelper != null) {
-                    otaHelper.sendMtkInstallProgressToPhone("PROGRESS", progress, null);
-                }
                 break;
             case UPDATE_PROGRESS:
                 updateNotification("Installing MTK firmware: " + progress + "%");
-                if (otaHelper != null) {
-                    otaHelper.sendMtkInstallProgressToPhone("PROGRESS", progress, null);
-                }
                 break;
             case SUCCESS:
                 updateNotification("MTK firmware updated successfully");
+                Log.i(TAG, "📱 MTK system SUCCESS received - reboot required to apply");
                 
-                // Mark MTK as updated this session to prevent re-update before reboot
-                OtaHelper.setMtkUpdatedThisSession();
+                // Note: FINISHED already sent to phone before install started (in OtaHelper)
+                // Note: mtkUpdatedThisSession already set in OtaHelper before install
                 
-                if (otaHelper != null) {
-                    otaHelper.sendMtkInstallProgressToPhone("FINISHED", 100, null);
-                }
-                // Delay 1 second to ensure FINISHED message is sent over BLE before proceeding
-                Log.i(TAG, "📱 MTK update success - waiting 1 second before checking for BES update");
-                new android.os.Handler(android.os.Looper.getMainLooper()).postDelayed(() -> {
-                    // Send broadcast to notify app that MTK update is complete
-                    sendMtkUpdateCompleteMessage();
-                    
-                    // MTK A/B updates are staged - no reboot needed yet
-                    // Check if BES update is pending and start it
-                    // BES update will power-cycle the system, which also applies MTK A/B slot switch
-                    if (otaHelper != null && otaHelper.hasPendingBesUpdate()) {
-                        Log.i(TAG, "📱 MTK complete - starting pending BES update");
-                        new android.os.Handler(android.os.Looper.getMainLooper()).postDelayed(() -> {
-                            otaHelper.startPendingBesUpdate();
-                        }, 2000); // 2 second delay to let phone process MTK FINISHED
-                    } else {
-                        Log.i(TAG, "📱 MTK complete - no BES update pending, user must reboot manually");
-                    }
-                }, 1000);
+                // Send broadcast to notify app that MTK update is complete
+                sendMtkUpdateCompleteMessage();
+                
+                // MTK A/B updates are staged - reboot required to apply
+                // BES update (if needed) will be initiated by phone separately
+                Log.i(TAG, "📱 MTK complete - user must reboot to apply, BES initiated by phone if needed");
                 break;
             case ERROR:
                 updateNotification("MTK firmware update failed: " + event.getMessage());
+                // Send FAILED to phone so user knows something went wrong
                 if (otaHelper != null) {
                     otaHelper.sendMtkInstallProgressToPhone("FAILED", 0, event.getMessage());
                 }
