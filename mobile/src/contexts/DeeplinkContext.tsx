@@ -213,11 +213,13 @@ const deepLinkRoutes: DeepLinkRoute[] = [
         }
 
         // Small delay to ensure auth state propagates
+        // Use replace() instead of replaceAll() to avoid POP_TO_TOP errors
+        // when the navigation stack is empty (coming back from browser)
         console.log("[LOGIN DEBUG] About to set timeout for navigation")
         BackgroundTimer.setTimeout(() => {
-          console.log("[LOGIN DEBUG] Inside setTimeout, about to call router.replace('/')")
+          console.log("[LOGIN DEBUG] Inside setTimeout, navigating to index")
           try {
-            navObject.replaceAll("/")
+            navObject.replace("/")
             console.log("[LOGIN DEBUG] router.replace called successfully")
           } catch (navError) {
             console.error("[LOGIN DEBUG] Error calling router.replace:", navError)
@@ -407,7 +409,7 @@ export const DeeplinkProvider: FC<{children: ReactNode}> = ({children}) => {
 
   useEffect(() => {
     Linking.addEventListener("url", handleUrlRaw)
-    Linking.getInitialURL().then(url => {
+    Linking.getInitialURL().then((url) => {
       console.log("@@@@@@@@@@@@@ INITIAL URL @@@@@@@@@@@@@@@", url)
       if (url) {
         processUrl(url, true)
@@ -475,7 +477,7 @@ export const DeeplinkProvider: FC<{children: ReactNode}> = ({children}) => {
     try {
       // Add delay to ensure Root Layout is mounted
       if (initial) {
-        await new Promise(resolve => setTimeout(resolve, 1000))
+        await new Promise((resolve) => setTimeout(resolve, 1000))
       }
 
       console.log("[LOGIN DEBUG] Deep link received:", url)
