@@ -15,7 +15,7 @@ const RETRY_INTERVAL_MS = 5000 // 5 seconds between retries
 
 export default function OtaProgressScreen() {
   const {theme} = useAppTheme()
-  const {pushPrevious} = useNavigationHistory()
+  const {push} = useNavigationHistory()
   const otaProgress = useGlassesStore((state) => state.otaProgress)
   const glassesConnected = useGlassesStore((state) => state.connected)
   const buildNumber = useGlassesStore((state) => state.buildNumber)
@@ -189,48 +189,39 @@ export default function OtaProgressScreen() {
         mtkOnlyTimeoutRef.current = null
       }
 
-      if (otaProgress.stage === "download") {
+      // MTK: Always show "Installing..." regardless of stage (no download progress shown)
+      if (otaProgress.currentUpdate === "mtk") {
+        console.log("🔍 OTA EFFECT: MTK update - always show installing state")
+        setProgressState("installing")
+      } else if (otaProgress.stage === "download") {
         console.log("🔍 OTA EFFECT: Setting progressState to 'downloading'")
         setProgressState("downloading")
       } else if (otaProgress.stage === "install") {
         console.log("🔍 OTA EFFECT: Setting progressState to 'installing'")
         setProgressState("installing")
-
-        // MTK doesn't send install FINISHED - detect completion via progress reaching 100%
-        // Wait 2 seconds after 100% to ensure install is truly done, then proceed to BES
-        if (otaProgress.currentUpdate === "mtk" && otaProgress.progress === 100) {
-          console.log("OTA: MTK install reached 100% - waiting 2s then triggering completion")
-
-          // Clear any existing timeout to prevent duplicates
-          if (mtkOnlyTimeoutRef.current) {
-            clearTimeout(mtkOnlyTimeoutRef.current)
-          }
-
-          mtkOnlyTimeoutRef.current = setTimeout(() => {
-            // Mark MTK as updated this session
-            useGlassesStore.getState().setMtkUpdatedThisSession(true)
-            console.log("OTA: MTK install complete - marked as updated this session")
-
-            // Wait up to 10 seconds for BES to start
-            console.log("OTA: Waiting up to 10s for BES update to start")
-            mtkOnlyTimeoutRef.current = setTimeout(() => {
-              console.log("OTA: No BES update started after MTK - showing restarting state (manual restart needed)")
-              setProgressState("restarting")
-            }, 10000)
-          }, 2000)
-        }
       }
     } else if (otaProgress.status === "FINISHED") {
       const updateType = otaProgress.currentUpdate
       const stage = otaProgress.stage
 
-      // MTK doesn't send install FINISHED - we handle it via progress reaching 100% (see below)
-      // Only handle FINISHED for download stage (to log it) and for BES/APK install stage
+      // MTK: Install FINISHED is sent after download completes (before system install starts)
+      // Show "Restart required" screen immediately
       if (updateType === "mtk") {
-        if (stage === "download") {
-          console.log("OTA: MTK download FINISHED - waiting for install progress")
+        if (stage === "install") {
+          console.log("OTA: MTK install FINISHED received - showing restart required")
+
+          // Clear any existing timeout
+          if (mtkOnlyTimeoutRef.current) {
+            clearTimeout(mtkOnlyTimeoutRef.current)
+          }
+
+          // Mark MTK as updated this session
+          useGlassesStore.getState().setMtkUpdatedThisSession(true)
+
+          // Show restart required screen immediately
+          setProgressState("restarting")
         }
-        // MTK install FINISHED is not reliably sent - we use progress 100% instead
+        // Ignore download FINISHED - only care about install FINISHED
         return
       }
 
@@ -280,10 +271,9 @@ export default function OtaProgressScreen() {
   }, [])
 
   const handleContinue = () => {
-    // After firmware updates complete (or staged), go back to previous screen
-    // OtaUpdateChecker will prompt for any remaining updates when glasses reconnect
-    console.log("OTA: Continue pressed - returning to previous screen")
-    pushPrevious(1)
+    // After firmware update complete, navigate to check-for-updates to check for more updates (e.g., BES after MTK)
+    console.log("OTA: Continue pressed - navigating to check-for-updates")
+    push("/ota/check-for-updates")
   }
 
   const progress = otaProgress?.progress ?? 0
@@ -356,11 +346,12 @@ export default function OtaProgressScreen() {
       )
     }
 
-    // Installing state - show percentage for BES/MTK firmware updates, spinner-only for APK
+    // Installing state - show percentage for BES firmware updates, spinner-only for APK/MTK
     if (progressState === "installing") {
       const componentName = getComponentName(currentUpdate)
-      // BES and MTK firmware updates report install progress, APK does not
-      const showProgress = currentUpdate === "bes" || currentUpdate === "mtk"
+      // Only BES firmware updates report install progress
+      // MTK install happens in background on glasses - no progress tracking
+      const showProgress = currentUpdate === "bes"
       console.log(
         "🔍 OTA INSTALLING STATE: componentName =",
         componentName,
@@ -393,20 +384,18 @@ export default function OtaProgressScreen() {
     // Restarting state - for MTK/BES updates that require reboot/power cycle
     if (progressState === "restarting") {
       const updateType = otaProgress?.currentUpdate
+      const componentName = getComponentName(updateType)
       const isBes = updateType === "bes"
 
       // Determine the appropriate message based on update type
       let statusMessage: string
-      let showSpinner = false
 
       if (isBes) {
         // BES update causes automatic power off
         statusMessage = "Your glasses will power off. Please turn them back on to continue."
-        showSpinner = false // No spinner - user action required, not system action
       } else {
         // MTK-only update (or MTK completed, no BES) - needs manual restart
-        statusMessage = "Update staged. Please restart your glasses to apply the update."
-        showSpinner = false
+        statusMessage = "Please restart your glasses to apply the update."
       }
 
       return (
@@ -414,15 +403,9 @@ export default function OtaProgressScreen() {
           <View className="flex-1 items-center justify-center px-6">
             <Icon name="check" size={64} color={theme.colors.primary} />
             <View className="h-6" />
-            <Text text="Update Installed" className="font-semibold text-xl text-center" />
+            <Text text={`${componentName} Installed`} className="font-semibold text-xl text-center" />
             <View className="h-2" />
             <Text text={statusMessage} className="text-sm text-center" style={{color: theme.colors.textDim}} />
-            {showSpinner && (
-              <>
-                <View className="h-4" />
-                <ActivityIndicator size="large" color={theme.colors.secondary_foreground} />
-              </>
-            )}
           </View>
 
           <View className="justify-center items-center">
@@ -434,15 +417,16 @@ export default function OtaProgressScreen() {
 
     // Completed state
     if (progressState === "completed") {
+      const componentName = getComponentName(currentUpdate)
       return (
         <>
           <View className="flex-1 items-center justify-center px-6">
             <Icon name="check" size={64} color={theme.colors.primary} />
             <View className="h-6" />
-            <Text tx="ota:updateComplete" className="font-semibold text-xl text-center" />
+            <Text text={`${componentName} Update Complete`} className="font-semibold text-xl text-center" />
             <View className="h-2" />
             <Text
-              tx="ota:updateCompleteMessage"
+              text="Press continue to check for additional updates."
               className="text-sm text-center"
               style={{color: theme.colors.textDim}}
             />
@@ -457,14 +441,21 @@ export default function OtaProgressScreen() {
 
     // Disconnected state
     if (progressState === "disconnected") {
+      const disconnectedComponentName = getComponentName(currentUpdate)
       return (
         <>
           <View className="flex-1 items-center justify-center px-6">
             <Icon name="bluetooth-off" size={64} color={theme.colors.error} />
             <View className="h-6" />
-            <Text tx="ota:glassesDisconnected" className="font-semibold text-xl text-center" />
+            <Text
+              text={`${disconnectedComponentName} Update Interrupted`}
+              className="font-semibold text-xl text-center"
+            />
             <View className="h-2" />
-            <Text tx="ota:glassesDisconnectedMessage" className="text-sm text-center text-secondary-foreground" />
+            <Text
+              text="Glasses disconnected during update. Please reconnect and try again."
+              className="text-sm text-center text-secondary-foreground"
+            />
           </View>
 
           <View className="justify-center items-center">
@@ -475,12 +466,13 @@ export default function OtaProgressScreen() {
     }
 
     // Failed state
+    const failedComponentName = getComponentName(currentUpdate)
     return (
       <>
         <View className="flex-1 items-center justify-center px-6">
           <Icon name="warning" size={64} color={theme.colors.error} />
           <View className="h-6" />
-          <Text tx="ota:updateFailed" className="font-semibold text-xl text-center" />
+          <Text text={`${failedComponentName} Update Failed`} className="font-semibold text-xl text-center" />
           {errorMessage ? (
             <>
               <View className="h-2" />
@@ -488,7 +480,7 @@ export default function OtaProgressScreen() {
             </>
           ) : null}
           <View className="h-2" />
-          <Text tx="ota:updateFailedMessage" className="text-sm text-center text-secondary-foreground" />
+          <Text text="Please try again later." className="text-sm text-center text-secondary-foreground" />
         </View>
 
         <View className="justify-center items-center">
