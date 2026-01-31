@@ -221,7 +221,7 @@ export function NavigationHistoryProvider({children}: {children: React.ReactNode
   }
 
   const getPreviousRoute = (index: number = 0) => {
-    if (historyRef.current.length < (2 + index)) {
+    if (historyRef.current.length < 2 + index) {
       return null
     }
     return historyRef.current[historyRef.current.length - (2 + index)]
@@ -232,18 +232,23 @@ export function NavigationHistoryProvider({children}: {children: React.ReactNode
     historyRef.current = []
     historyParamsRef.current = []
     setDebugHistory([...historyRef.current])
+
+    // Only attempt dismiss operations if there are screens to dismiss
+    // This prevents POP_TO_TOP errors when navigation stack is empty
     try {
-      router.dismissAll()
-    } catch (_e) {}
+      if (router.canDismiss()) {
+        router.dismissAll()
+      }
+    } catch {
+      // Silently ignore - may fail if no screens to dismiss
+    }
     try {
-      router.dismissTo("/home")
-      // router.dismissTo("/")
-      // router.replace("/")
-      // router.
-    } catch (_e) {}
-    // try {
-    //   router.dismissTo("/")
-    // } catch (_e) {}
+      if (router.canDismiss()) {
+        router.dismissTo("/home")
+      }
+    } catch {
+      // Silently ignore - may fail if already at home or no screens
+    }
   }
 
   const setPendingRoute = (route: string | null) => {
@@ -265,15 +270,18 @@ export function NavigationHistoryProvider({children}: {children: React.ReactNode
     console.info("NAV: clearHistoryAndGoHome()")
     clearHistory()
     try {
-      // router.dismissAll()
-      // router.dismissTo("/")
-      // router.navigate("/")
-      router.replace("/home")
+      // Set history state before navigation to prevent race conditions
       historyRef.current = ["/home"]
       historyParamsRef.current = [undefined]
       setDebugHistory([...historyRef.current])
+      router.replace("/home")
     } catch (error) {
-      console.error("NAV: clearHistoryAndGoHome() error", error)
+      // Log but don't throw - navigation may recover on its own
+      console.warn("NAV: clearHistoryAndGoHome() warning:", error)
+      // Ensure history state is consistent even if navigation failed
+      historyRef.current = ["/home"]
+      historyParamsRef.current = [undefined]
+      setDebugHistory([...historyRef.current])
     }
   }
 
@@ -282,20 +290,15 @@ export function NavigationHistoryProvider({children}: {children: React.ReactNode
   const replaceAll = (path: string, params?: any) => {
     console.info("NAV: replaceAll()", path)
     clearHistory()
-    // try {
-    //   // router.dismissAll()
-    //   // router.dismissTo("/")
-    //   // router.navigate("/")
-    //   // router.dismissAll()
-    //   // router.replace("/")
-    // } catch (_e) {
-    // }
-    // replace(path, params)
-    // push(path, params)
+    // Set history state before navigation to prevent race conditions
     historyRef.current = [path]
     historyParamsRef.current = [params]
     setDebugHistory([...historyRef.current])
-    router.replace({pathname: path as any, params: params as any})
+    try {
+      router.replace({pathname: path as any, params: params as any})
+    } catch (error) {
+      console.warn("NAV: replaceAll() warning:", error)
+    }
   }
 
   const pushUnder = (path: string, params?: any) => {
