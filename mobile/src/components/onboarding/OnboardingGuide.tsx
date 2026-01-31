@@ -1,7 +1,7 @@
 import {Image, ImageSource} from "expo-image"
 import {useVideoPlayer, VideoView, VideoSource, VideoPlayer} from "expo-video"
 import {useState, useCallback, useEffect, useMemo, useRef} from "react"
-import {View, ViewStyle, ActivityIndicator, Platform} from "react-native"
+import {View, ViewStyle, ActivityIndicator, Platform, Animated} from "react-native"
 
 import {MentraLogoStandalone} from "@/components/brands/MentraLogoStandalone"
 import {Text, Button, Header, Icon} from "@/components/ignite"
@@ -14,6 +14,7 @@ import {translate} from "@/i18n/translate"
 interface BaseStep {
   name: string
   transition: boolean
+  fadeTransition?: boolean // defaults to true - fade out/in when transitioning to this step
   title?: string
   subtitle?: string
   subtitle2?: string
@@ -100,6 +101,7 @@ export function OnboardingGuide({
   const [waitState, setWaitState] = useState(false)
   const resettingRef = useRef(false)
   const navigatingRef = useRef(false)
+  const fadeOpacity = useRef(new Animated.Value(1)).current
 
   // Initialize players with first video sources found
   const initialSource1 = useMemo(() => findNextVideoSource(steps, 0), [steps])
@@ -186,76 +188,95 @@ export function OnboardingGuide({
 
       const nextIndex = currentIndex < steps.length - 1 ? currentIndex + 1 : 0
       const nextStep = steps[nextIndex]
+      const shouldFade = nextStep.fadeTransition !== false
 
       console.log(`ONBOARD: current: ${currentIndex} next: ${nextIndex}`)
 
-      setShowNextButton(false)
-      setShowReplayButton(false)
-      setCurrentIndex(nextIndex)
-      setPlayCount(0)
+      // Helper to perform the actual step change
+      const performStepChange = () => {
+        setShowNextButton(false)
+        setShowReplayButton(false)
+        setCurrentIndex(nextIndex)
+        setPlayCount(0)
 
-      if (nextStep.transition) {
-        setTransitionCount(transitionCount + 1)
+        if (nextStep.transition) {
+          setTransitionCount(transitionCount + 1)
+        }
+
+        // If next step is an image, just pause current player and preload next video
+        if (nextStep.type === "image") {
+          player1.pause()
+          player2.pause()
+
+          // Preload next video source into inactive player
+          const nextVideoSource = findNextVideoSource(steps, nextIndex + 1)
+          if (nextVideoSource) {
+            if (activePlayer === 1) {
+              player2.replaceAsync(nextVideoSource)
+              setPlayer2Loading(true)
+            } else {
+              player1.replaceAsync(nextVideoSource)
+              setPlayer1Loading(true)
+            }
+          }
+          return
+        }
+
+        // Next step is a video - handle player swapping
+        const nextNextVideoSource = findNextVideoSource(steps, nextIndex + 1)
+
+        try {
+          if (activePlayer === 1) {
+            setActivePlayer(2)
+            player2.replaceAsync(nextStep.source)
+            player2.play()
+            if (nextNextVideoSource) {
+              player1.replaceAsync(nextNextVideoSource)
+              setPlayer1Loading(true)
+            }
+            player1.pause()
+          } else {
+            setActivePlayer(1)
+            player1.replaceAsync(nextStep.source)
+            player1.play()
+            if (nextNextVideoSource) {
+              player2.replaceAsync(nextNextVideoSource)
+              setPlayer2Loading(true)
+            }
+            player2.pause()
+          }
+        } catch (error) {
+          console.error("ONBOARD: Error during player swap:", error)
+        }
+
+        console.log(`ONBOARD: current is now ${nextIndex}`)
       }
 
-      // If next step is an image, just pause current player and preload next video
-      if (nextStep.type === "image") {
-        player1.pause()
-        player2.pause()
-
-        // Preload next video source into inactive player
-        const nextVideoSource = findNextVideoSource(steps, nextIndex + 1)
-        if (nextVideoSource) {
-          if (activePlayer === 1) {
-            player2.replaceAsync(nextVideoSource)
-            setPlayer2Loading(true)
-          } else {
-            player1.replaceAsync(nextVideoSource)
-            setPlayer1Loading(true)
-          }
-        }
-        // Allow next navigation after a short delay
+      if (shouldFade) {
+        // Fade out, swap, fade in
+        Animated.timing(fadeOpacity, {
+          toValue: 0,
+          duration: 450,
+          useNativeDriver: true,
+        }).start(() => {
+          performStepChange()
+          Animated.timing(fadeOpacity, {
+            toValue: 1,
+            duration: 450,
+            useNativeDriver: true,
+          }).start(() => {
+            navigatingRef.current = false
+          })
+        })
+      } else {
+        // No fade, just swap immediately
+        performStepChange()
         setTimeout(() => {
           navigatingRef.current = false
         }, 100)
-        return
       }
-
-      // Next step is a video - handle player swapping
-      const nextNextVideoSource = findNextVideoSource(steps, nextIndex + 1)
-
-      try {
-        if (activePlayer === 1) {
-          setActivePlayer(2)
-          player2.replaceAsync(nextStep.source)
-          player2.play()
-          if (nextNextVideoSource) {
-            player1.replaceAsync(nextNextVideoSource)
-            setPlayer1Loading(true)
-          }
-          player1.pause()
-        } else {
-          setActivePlayer(1)
-          player1.replaceAsync(nextStep.source)
-          player1.play()
-          if (nextNextVideoSource) {
-            player2.replaceAsync(nextNextVideoSource)
-            setPlayer2Loading(true)
-          }
-          player2.pause()
-        }
-      } catch (error) {
-        console.error("ONBOARD: Error during player swap:", error)
-      }
-
-      console.log(`ONBOARD: current is now ${nextIndex}`)
-
-      // Allow next navigation after a short delay to let player operations complete
-      setTimeout(() => {
-        navigatingRef.current = false
-      }, 100)
     },
-    [currentIndex, activePlayer, uiIndex, steps, transitionCount, clearHistoryAndGoHome],
+    [currentIndex, activePlayer, uiIndex, steps, transitionCount, clearHistoryAndGoHome, fadeOpacity],
   )
 
   const handleEndButton = useCallback(() => {
@@ -807,7 +828,7 @@ export function OnboardingGuide({
     )
   }
 
-  const showCounter = hasStarted && steps.length > 1
+  const showCounter = hasStarted && steps.length > 1 && !isLastStep
   const showContent = step.title || step.subtitle || step.info
 
   return (
@@ -817,8 +838,8 @@ export function OnboardingGuide({
           <Header
             leftIcon={showCloseButton ? "x" : undefined}
             RightActionComponent={
-              <View className={`flex flex-row gap-2 items-center justify-center ${!hasStarted ? "flex-1" : ""}`}>
-                <Text className="text-center text-sm font-medium" text={showCounter ? counter : ""} />
+              <View className={`flex flex-row gap-2 items-center justify-center ${!hasStarted || isLastStep ? "flex-1" : ""}`}>
+                {showCounter && <Text className="text-center text-sm font-medium" text={counter} />}
                 <MentraLogoStandalone />
               </View>
             }
@@ -827,7 +848,8 @@ export function OnboardingGuide({
         )}
         <View id="top">
           {showContent && renderStepContent()}
-          <View className="-mx-6">
+          <View className="-mx-7">
+          <Animated.View style={{opacity: fadeOpacity}}>
             <View className="relative" style={{width: "100%", aspectRatio: 1}}>
               {renderContent()}
             </View>
@@ -836,13 +858,14 @@ export function OnboardingGuide({
                 <Button preset="secondary" className="min-w-24" tx="onboarding:replay" onPress={handleReplay} />
               </View>
             )}
+          </Animated.View>
           </View>
           <View className="flex-shrink">{renderStepCheck()}</View>
           {renderBullets()}
           {renderNumberedBullets()}
         </View>
 
-        <View id="bottom" className={`flex justify-end flex-shrink min-h-12`}>
+        <View id="bottom" className={`flex justify-end flex-shrink min-h-12 mb-6`}>
 
           {!hasStarted && (
             <View className="flex-col">

@@ -27,8 +27,8 @@ export default function DeviceInfoScreen() {
   const bluetoothId = bluetoothName?.split("_").pop() || bluetoothName
 
   return (
-    <Screen preset="fixed">
-      <Header titleTx="deviceInfo:title" leftIcon="chevron-left" onLeftPress={goBack} />
+    <Screen preset="fixed" safeAreaEdges={["top"]}>
+      <Header safeAreaEdges={[]} titleTx="deviceInfo:title" leftIcon="chevron-left" onLeftPress={goBack} />
       <ScrollView>
         <View className="flex flex-col gap-6 pt-6">
           {/* Device Identity */}

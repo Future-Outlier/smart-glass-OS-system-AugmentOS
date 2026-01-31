@@ -161,36 +161,37 @@ export default function MentraLiveOnboarding() {
         })
       },
     },
-    // {
-    //   type: "video",
-    //   source: `${CDN_BASE}/ONB10_cord.mp4`,
-    //   poster: require("@assets/onboarding/live/thumbnails/ONB10_cord.jpg"),
-    //   name: "Cord",
-    //   playCount: 1,//99999,
-    //   transition: false,
-    //   title: translate("onboarding:liveConnectCable"),
-    //   subtitle: translate("onboarding:liveCableDescription"),
-    //   info: translate("onboarding:liveCableInfo"),
-    //   waitFn: (): Promise<void> => {
-    //     return new Promise<void>((resolve) => {
-    //       // Check if already charging
-    //       if (useGlassesStore.getState().charging) {
-    //         resolve()
-    //         return
-    //       }
-    //       // Wait for charging state to become true
-    //       const unsub = useGlassesStore.subscribe(
-    //         (state) => state.charging,
-    //         (charging) => {
-    //           if (charging) {
-    //             unsub()
-    //             resolve()
-    //           }
-    //         },
-    //       )
-    //     })
-    //   },
-    // },
+    {
+      type: "video",
+      source: `${CDN_BASE}/ONB10_cord.mp4`,
+      poster: require("@assets/onboarding/live/thumbnails/ONB10_cord.jpg"),
+      name: "Cord",
+      playCount: 1,//99999,
+      transition: false,
+      title: translate("onboarding:liveConnectCable"),
+      subtitle: translate("onboarding:liveCableDescription"),
+      info: translate("onboarding:liveCableInfo"),
+      replayable: false,
+      // waitFn: (): Promise<void> => {
+      //   return new Promise<void>((resolve) => {
+      //     // Check if already charging
+      //     if (useGlassesStore.getState().charging) {
+      //       resolve()
+      //       return
+      //     }
+      //     // Wait for charging state to become true
+      //     const unsub = useGlassesStore.subscribe(
+      //       (state) => state.charging,
+      //       (charging) => {
+      //         if (charging) {
+      //           unsub()
+      //           resolve()
+      //         }
+      //       },
+      //     )
+      //   })
+      // },
+    },
     {
       type: "video",
       source: `${CDN_BASE}/ONB11_end.mp4`,

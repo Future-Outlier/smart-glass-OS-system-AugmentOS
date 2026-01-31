@@ -13,8 +13,9 @@ export default function BackgroundAppsScreen() {
   const {goBack} = useNavigationHistory()
 
   return (
-    <Screen preset="fixed">
+    <Screen preset="fixed" safeAreaEdges={["top"]}>
       <Header
+        safeAreaEdges={[]}
         leftIcon="chevron-left"
         onLeftPress={goBack}
         titleTx="home:backgroundApps"
