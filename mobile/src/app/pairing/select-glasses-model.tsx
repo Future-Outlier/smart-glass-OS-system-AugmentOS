@@ -1,7 +1,7 @@
 import {DeviceTypes} from "@/../../cloud/packages/types/src"
 import CoreModule from "core"
 import {useFocusEffect} from "expo-router"
-import {useCallback} from "react"
+import {useCallback, useMemo} from "react"
 import {View, TouchableOpacity, Platform, ScrollView, Image, ViewStyle, ImageStyle, TextStyle} from "react-native"
 
 import {EvenRealitiesLogo} from "@/components/brands/EvenRealitiesLogo"
@@ -13,6 +13,7 @@ import {Screen} from "@/components/ignite/Screen"
 import {Spacer} from "@/components/ui/Spacer"
 import {useNavigationHistory} from "@/contexts/NavigationHistoryContext"
 import {useAppTheme} from "@/contexts/ThemeContext"
+import {SETTINGS, useSetting} from "@/stores/settings"
 import {ThemedStyle} from "@/theme"
 import {getGlassesImage} from "@/utils/getGlassesImage"
 
@@ -21,6 +22,7 @@ import {getGlassesImage} from "@/utils/getGlassesImage"
 export default function SelectGlassesModelScreen() {
   const {theme, themed} = useAppTheme()
   const {push, goBack} = useNavigationHistory()
+  const [devMode] = useSetting(SETTINGS.dev_mode.key)
 
   // when this screen is focused, forget any glasses that may be paired:
   useFocusEffect(
@@ -47,27 +49,35 @@ export default function SelectGlassesModelScreen() {
   }
 
   // Platform-specific glasses options
-  const glassesOptions =
-    Platform.OS === "ios"
-      ? [
-          // {modelName: DeviceTypes.SIMULATED, key: DeviceTypes.SIMULATED},
-          {modelName: DeviceTypes.G1, key: "evenrealities_g1"},
-          {modelName: DeviceTypes.LIVE, key: "mentra_live"},
-          {modelName: DeviceTypes.MACH1, key: "mentra_mach1"},
-          {modelName: DeviceTypes.Z100, key: "vuzix-z100"},
-          {modelName: DeviceTypes.NEX, key: "mentra_nex"},
-          //{modelName: "Brilliant Labs Frame", key: "frame"},
-        ]
-      : [
-          // Android:
-          // {modelName: DeviceTypes.SIMULATED, key: DeviceTypes.SIMULATED},
-          {modelName: DeviceTypes.G1, key: "evenrealities_g1"},
-          {modelName: DeviceTypes.LIVE, key: "mentra_live"},
-          {modelName: DeviceTypes.MACH1, key: "mentra_mach1"},
-          {modelName: DeviceTypes.Z100, key: "vuzix-z100"},
-          {modelName: DeviceTypes.NEX, key: "mentra_nex"},
-          // {modelName: "Brilliant Labs Frame", key: "frame"},
-        ]
+  // Mentra Nex is only available when developer mode is enabled
+  const glassesOptions = useMemo(() => {
+    const baseOptions =
+      Platform.OS === "ios"
+        ? [
+            // {modelName: DeviceTypes.SIMULATED, key: DeviceTypes.SIMULATED},
+            {modelName: DeviceTypes.G1, key: "evenrealities_g1"},
+            {modelName: DeviceTypes.LIVE, key: "mentra_live"},
+            {modelName: DeviceTypes.MACH1, key: "mentra_mach1"},
+            {modelName: DeviceTypes.Z100, key: "vuzix-z100"},
+            //{modelName: "Brilliant Labs Frame", key: "frame"},
+          ]
+        : [
+            // Android:
+            // {modelName: DeviceTypes.SIMULATED, key: DeviceTypes.SIMULATED},
+            {modelName: DeviceTypes.G1, key: "evenrealities_g1"},
+            {modelName: DeviceTypes.LIVE, key: "mentra_live"},
+            {modelName: DeviceTypes.MACH1, key: "mentra_mach1"},
+            {modelName: DeviceTypes.Z100, key: "vuzix-z100"},
+            // {modelName: "Brilliant Labs Frame", key: "frame"},
+          ]
+
+    // Add Mentra Nex only when developer mode is enabled
+    if (devMode) {
+      baseOptions.push({modelName: DeviceTypes.NEX, key: "mentra_nex"})
+    }
+
+    return baseOptions
+  }, [devMode])
 
   const triggerGlassesPairingGuide = async (modelName: string) => {
     push("/pairing/prep", {modelName: modelName})
@@ -86,7 +96,7 @@ export default function SelectGlassesModelScreen() {
       <Spacer className="h-4" />
       <ScrollView style={{marginRight: -theme.spacing.s4, paddingRight: theme.spacing.s4}}>
         <View style={{flexDirection: "column", gap: theme.spacing.s4}}>
-          {glassesOptions.map(glasses => (
+          {glassesOptions.map((glasses) => (
             <TouchableOpacity
               key={glasses.key}
               style={themed($settingItem)}
