@@ -18,6 +18,7 @@ object GlassesStore {
 
         // GLASSES STATE:
         store.set("glasses", "batteryLevel", -1)
+        store.set("glasses", "charging", false)
         store.set("glasses", "ready", false)
         store.set("glasses", "connected", false)
         store.set("glasses", "connectionState", "disconnected")

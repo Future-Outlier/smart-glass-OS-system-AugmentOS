@@ -31,6 +31,7 @@ interface VideoStep extends BaseStep {
   playCount: number
   containerStyle?: ViewStyle
   containerClassName?: string
+  replayable?: boolean // defaults to true
 }
 
 interface ImageStep extends BaseStep {
@@ -98,6 +99,7 @@ export function OnboardingGuide({
   const [showPoster, setShowPoster] = useState(false)
   const [waitState, setWaitState] = useState(false)
   const resettingRef = useRef(false)
+  const navigatingRef = useRef(false)
 
   // Initialize players with first video sources found
   const initialSource1 = useMemo(() => findNextVideoSource(steps, 0), [steps])
@@ -115,7 +117,7 @@ export function OnboardingGuide({
   const currentPlayer = activePlayer === 1 ? player1 : player2
 
   const nonTransitionVideoFiles = steps.filter((step) => !step.transition)
-  const counter = `${uiIndex} / ${nonTransitionVideoFiles.length}`
+  const counter = `Step ${uiIndex} / ${nonTransitionVideoFiles.length}`
   const step = steps[currentIndex]
   const isCurrentStepImage = step.type === "image"
   const isCurrentStepVideo = step.type === "video"
@@ -165,7 +167,15 @@ export function OnboardingGuide({
     (manual: boolean = false) => {
       console.log(`ONBOARD: handleNext(${manual})`)
 
+      // Prevent multiple rapid calls from corrupting player state
+      if (navigatingRef.current) {
+        console.log("ONBOARD: handleNext blocked - navigation in progress")
+        return
+      }
+      navigatingRef.current = true
+
       if (currentIndex === steps.length - 1) {
+        navigatingRef.current = false
         handleExit()
         return
       }
@@ -204,33 +214,46 @@ export function OnboardingGuide({
             setPlayer1Loading(true)
           }
         }
+        // Allow next navigation after a short delay
+        setTimeout(() => {
+          navigatingRef.current = false
+        }, 100)
         return
       }
 
       // Next step is a video - handle player swapping
       const nextNextVideoSource = findNextVideoSource(steps, nextIndex + 1)
 
-      if (activePlayer === 1) {
-        setActivePlayer(2)
-        player2.replaceAsync(nextStep.source)
-        player2.play()
-        if (nextNextVideoSource) {
-          player1.replaceAsync(nextNextVideoSource)
-          setPlayer1Loading(true)
+      try {
+        if (activePlayer === 1) {
+          setActivePlayer(2)
+          player2.replaceAsync(nextStep.source)
+          player2.play()
+          if (nextNextVideoSource) {
+            player1.replaceAsync(nextNextVideoSource)
+            setPlayer1Loading(true)
+          }
+          player1.pause()
+        } else {
+          setActivePlayer(1)
+          player1.replaceAsync(nextStep.source)
+          player1.play()
+          if (nextNextVideoSource) {
+            player2.replaceAsync(nextNextVideoSource)
+            setPlayer2Loading(true)
+          }
+          player2.pause()
         }
-        player1.pause()
-      } else {
-        setActivePlayer(1)
-        player1.replaceAsync(nextStep.source)
-        player1.play()
-        if (nextNextVideoSource) {
-          player2.replaceAsync(nextNextVideoSource)
-          setPlayer2Loading(true)
-        }
-        player2.pause()
+      } catch (error) {
+        console.error("ONBOARD: Error during player swap:", error)
       }
 
       console.log(`ONBOARD: current is now ${nextIndex}`)
+
+      // Allow next navigation after a short delay to let player operations complete
+      setTimeout(() => {
+        navigatingRef.current = false
+      }, 100)
     },
     [currentIndex, activePlayer, uiIndex, steps, transitionCount, clearHistoryAndGoHome],
   )
@@ -743,7 +766,7 @@ export function OnboardingGuide({
         {step.info && (
           <View className="flex flex-row gap-2 justify-start items-center">
             <Icon name="info" size={20} color={theme.colors.muted_foreground} />
-            <Text className="text-start text-sm font-medium text-muted-foreground" text={step.info} numberOfLines={2} />
+            <Text className="flex-1 text-start text-sm font-medium text-muted-foreground" text={step.info} numberOfLines={2} />
           </View>
         )}
       </View>
@@ -808,7 +831,7 @@ export function OnboardingGuide({
             <View className="relative" style={{width: "100%", aspectRatio: 1}}>
               {renderContent()}
             </View>
-            {showReplayButton && isCurrentStepVideo && (
+            {showReplayButton && isCurrentStepVideo && (step as VideoStep).replayable !== false && (
               <View className="absolute bottom-1 left-0 right-0 items-center z-10">
                 <Button preset="secondary" className="min-w-24" tx="onboarding:replay" onPress={handleReplay} />
               </View>
@@ -830,9 +853,9 @@ export function OnboardingGuide({
             </View>
           )}
 
-          {hasStarted && (
+          {hasStarted && (superMode || !step.waitFn) && (
             <View className="flex-row gap-4">
-              {!isFirstStep && <Button flex preset="secondary" tx="common:back" onPress={handleBack} />}
+              {superMode && !isFirstStep && <Button flex preset="secondary" tx="common:back" onPress={handleBack} />}
               {!isLastStep ? renderContinueButton() : <Button flex text={endButtonText} onPress={handleEndButton} />}
             </View>
           )}
