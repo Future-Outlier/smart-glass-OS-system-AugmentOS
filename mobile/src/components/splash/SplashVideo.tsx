@@ -1,10 +1,11 @@
-import {useVideoPlayer, VideoView} from "expo-video"
-import {useEffect, useState} from "react"
-import {StyleSheet, View, useColorScheme} from "react-native"
+import {StyleSheet, View} from "react-native"
+import {MentraLogoStandalone} from "@/components/brands/MentraLogoStandalone"
+import {useAppTheme} from "@/contexts/ThemeContext"
 
-// Videos for light and dark themes
-const LIGHT_VIDEO = require("@assets/splash/loading_animation_light.mp4")
-const DARK_VIDEO = require("@assets/splash/loading_animation_dark.mp4")
+// TODO: Replace with animated SVG from designer
+// Videos for light and dark themes (keeping for future use)
+// const LIGHT_VIDEO = require("@assets/splash/loading_animation_light.mp4")
+// const DARK_VIDEO = require("@assets/splash/loading_animation_dark.mp4")
 
 interface SplashVideoProps {
   onFinished?: () => void
@@ -12,34 +13,11 @@ interface SplashVideoProps {
 }
 
 export function SplashVideo({onFinished, loop = true}: SplashVideoProps) {
-  const colorScheme = useColorScheme()
-  const isDark = colorScheme === "dark"
-  const [isReady, setIsReady] = useState(false)
-
-  // Select video based on theme
-  const videoSource = isDark ? DARK_VIDEO : LIGHT_VIDEO
-
-  const player = useVideoPlayer(videoSource, (p) => {
-    p.loop = loop
-    p.play()
-    setIsReady(true)
-  })
-
-  useEffect(() => {
-    if (!loop && onFinished) {
-      const subscription = player.addListener("playToEnd", () => {
-        onFinished()
-      })
-      return () => subscription.remove()
-    }
-  }, [player, loop, onFinished])
-
-  // Background color based on theme to match the video
-  const backgroundColor = isDark ? "#2D2C2F" : "#fffaf0"
+  const {theme} = useAppTheme()
 
   return (
-    <View style={[styles.container, {backgroundColor}]}>
-      <VideoView player={player} style={styles.video} contentFit="contain" nativeControls={false} />
+    <View style={[styles.container, {backgroundColor: theme.colors.background}]}>
+      <MentraLogoStandalone width={100} height={48} />
     </View>
   )
 }
@@ -49,9 +27,5 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
-  },
-  video: {
-    width: 150,
-    height: 150,
   },
 })
