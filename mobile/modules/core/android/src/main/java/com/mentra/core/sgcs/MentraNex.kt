@@ -383,12 +383,12 @@ class MentraNex : SGCManager() {
     }
 
     override fun disconnect() {
-        GlassesStore.apply("glasses", "ready", false)
+        GlassesStore.apply("glasses", "isFullyBooted", false)
         destroy();
     }
 
     override fun forget() {
-        GlassesStore.apply("glasses", "ready", false)
+        GlassesStore.apply("glasses", "isFullyBooted", false)
         destroy();
         CoreManager.getInstance().handleConnectionStateChanged();
     }
@@ -1228,22 +1228,22 @@ class MentraNex : SGCManager() {
     }
 
     private fun updateConnectionState() {
-        val previousReady: Boolean = ready
+        val previousIsFullyBooted: Boolean = isFullyBooted
         if (isMainConnected) {
             GlassesStore.apply("glasses", "connectionState", ConnTypes.CONNECTED)
             Bridge.log("Nex: Main glasses connected")
             lastConnectionTimestamp = System.currentTimeMillis()
-            GlassesStore.apply("glasses", "ready", true)
+            GlassesStore.apply("glasses", "isFullyBooted", true)
             // Removed commented sleep code as it's not needed
             // connectionEvent(it)
         } else {
             GlassesStore.apply("glasses", "connectionState", ConnTypes.DISCONNECTED)
             Bridge.log("Nex: No Main glasses connected")
-            GlassesStore.apply("glasses", "ready", false)
+            GlassesStore.apply("glasses", "isFullyBooted", false)
             // connectionEvent(it)
         }
 
-        if (previousReady != ready) {
+        if (previousIsFullyBooted != isFullyBooted) {
             CoreManager.getInstance().handleConnectionStateChanged();
         }
     }

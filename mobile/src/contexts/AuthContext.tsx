@@ -5,7 +5,7 @@ import {FC, createContext, useEffect, useState, useContext} from "react"
 import {LogoutUtils} from "@/utils/LogoutUtils"
 import mentraAuth from "@/utils/auth/authClient"
 import {MentraAuthSession, MentraAuthUser} from "@/utils/auth/authProvider.types"
-import { SETTINGS, useSetting } from "@/stores/settings"
+import {SETTINGS, useSetting} from "@/stores/settings"
 
 interface AuthContextProps {
   user: MentraAuthUser | null

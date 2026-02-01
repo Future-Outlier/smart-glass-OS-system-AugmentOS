@@ -10,6 +10,7 @@ import {useAppTheme} from "@/contexts/ThemeContext"
 import {SETTINGS, useSetting} from "@/stores/settings"
 import Toast from "react-native-toast-message"
 import {translate} from "@/i18n/translate"
+import {getGlassesImage} from "@/utils/getGlassesImage"
 
 interface BaseStep {
   name: string
@@ -43,7 +44,13 @@ interface ImageStep extends BaseStep {
   duration?: number // ms before showing next button, undefined = immediate
 }
 
-export type OnboardingStep = VideoStep | ImageStep
+interface GlassesStep extends BaseStep {
+  type: "glasses"
+  containerStyle?: ViewStyle
+  containerClassName?: string
+}
+
+export type OnboardingStep = VideoStep | ImageStep | GlassesStep
 
 interface OnboardingGuideProps {
   steps: OnboardingStep[]
@@ -84,6 +91,7 @@ export function OnboardingGuide({
   const {clearHistoryAndGoHome} = useNavigationHistory()
   const {theme} = useAppTheme()
   const [superMode] = useSetting(SETTINGS.super_mode.key)
+  const [defaultWearable] = useSetting(SETTINGS.default_wearable.key)
 
   const [currentIndex, setCurrentIndex] = useState(0)
   const [showNextButton, setShowNextButton] = useState(false)
@@ -123,29 +131,37 @@ export function OnboardingGuide({
   const step = steps[currentIndex]
   const isCurrentStepImage = step.type === "image"
   const isCurrentStepVideo = step.type === "video"
+  const isCurrentStepGlasses = step.type === "glasses"
 
-  // Handle image step timing
+  // Handle image/glasses step timing
+  const isStaticStep = isCurrentStepImage || isCurrentStepGlasses
   useEffect(() => {
-    if (!hasStarted || !isCurrentStepImage) return
+    if (!hasStarted || !isStaticStep) return
 
     if (step.transition) {
       // Auto-advance transition images
-      const timer = setTimeout(() => {
-        handleNext(false)
-      }, step.duration ?? 500)
+      const timer = setTimeout(
+        () => {
+          handleNext(false)
+        },
+        (step as ImageStep).duration ?? 500,
+      )
       return () => clearTimeout(timer)
     }
 
-    if (step.duration) {
-      const timer = setTimeout(() => {
-        setShowNextButton(true)
-      }, step.duration)
+    if ((step as ImageStep).duration) {
+      const timer = setTimeout(
+        () => {
+          setShowNextButton(true)
+        },
+        (step as ImageStep).duration,
+      )
       return () => clearTimeout(timer)
     } else {
       setShowNextButton(true)
     }
     return () => {}
-  }, [currentIndex, hasStarted, isCurrentStepImage])
+  }, [currentIndex, hasStarted, isStaticStep])
 
   const handleExit = useCallback(() => {
     if (exitFn) {
@@ -290,7 +306,7 @@ export function OnboardingGuide({
   const handleBack = useCallback(() => {
     setUiIndex(uiIndex - 1)
     setPlayCount(0)
-    
+
     // The start is a special case
     if (currentIndex === 0 || currentIndex === 1) {
       resettingRef.current = true
@@ -384,7 +400,7 @@ export function OnboardingGuide({
 
   // Video status change listener
   useEffect(() => {
-    if (isCurrentStepImage) return
+    if (isStaticStep) return
 
     const subscription = currentPlayer.addListener("statusChange", (status: any) => {
       console.log("ONBOARD: statusChange", status)
@@ -398,7 +414,7 @@ export function OnboardingGuide({
     })
 
     return () => subscription.remove()
-  }, [currentPlayer, currentIndex, autoStart, isCurrentStepImage])
+  }, [currentPlayer, currentIndex, autoStart, isStaticStep])
 
   useEffect(() => {
     const sub1 = player1.addListener("sourceLoad", (_status: any) => {
@@ -419,10 +435,10 @@ export function OnboardingGuide({
 
   // Video playing change listener
   useEffect(() => {
-    if (isCurrentStepImage) return
+    if (isStaticStep) return
 
     const subscription = currentPlayer.addListener("playingChange", (status: any) => {
-      if (resettingRef.current) return// ignore playingChange listener while resetting
+      if (resettingRef.current) return // ignore playingChange listener while resetting
       if (!status.isPlaying && currentPlayer.currentTime >= currentPlayer.duration - 0.1) {
         if (step.transition) {
           handleNext(false)
@@ -441,7 +457,7 @@ export function OnboardingGuide({
     })
 
     return () => subscription.remove()
-  }, [currentPlayer, step, handleNext, playCount, isCurrentStepImage])
+  }, [currentPlayer, step, handleNext, playCount, isStaticStep])
 
   const handleReplay = useCallback(() => {
     if (isCurrentStepVideo) {
@@ -664,6 +680,22 @@ export function OnboardingGuide({
       )
     }
 
+    if (isCurrentStepGlasses) {
+      const glassesImage = getGlassesImage(defaultWearable)
+      return (
+        <View style={step.containerStyle} className={`${step.containerClassName} px-8`}>
+          <Image
+            source={glassesImage}
+            style={{
+              width: "100%",
+              height: "100%",
+            }}
+            contentFit="contain"
+          />
+        </View>
+      )
+    }
+
     if (superMode && Platform.OS === "ios") {
       return renderDebugVideos()
     }
@@ -787,7 +819,11 @@ export function OnboardingGuide({
         {step.info && (
           <View className="flex flex-row gap-2 justify-start items-center">
             <Icon name="info" size={20} color={theme.colors.muted_foreground} />
-            <Text className="flex-1 text-start text-sm font-medium text-muted-foreground" text={step.info} numberOfLines={2} />
+            <Text
+              className="flex-1 text-start text-sm font-medium text-muted-foreground"
+              text={step.info}
+              numberOfLines={2}
+            />
           </View>
         )}
       </View>
@@ -838,7 +874,8 @@ export function OnboardingGuide({
           <Header
             leftIcon={showCloseButton ? "x" : undefined}
             RightActionComponent={
-              <View className={`flex flex-row gap-2 items-center justify-center ${!hasStarted || isLastStep ? "flex-1" : ""}`}>
+              <View
+                className={`flex flex-row gap-2 items-center justify-center ${!hasStarted || isLastStep ? "flex-1" : ""}`}>
                 {showCounter && <Text className="text-center text-sm font-medium" text={counter} />}
                 <MentraLogoStandalone />
               </View>
@@ -849,16 +886,16 @@ export function OnboardingGuide({
         <View id="top">
           {showContent && renderStepContent()}
           <View className="-mx-7">
-          <Animated.View style={{opacity: fadeOpacity}}>
-            <View className="relative" style={{width: "100%", aspectRatio: 1}}>
-              {renderContent()}
-            </View>
-            {showReplayButton && isCurrentStepVideo && (step as VideoStep).replayable !== false && (
-              <View className="absolute bottom-1 left-0 right-0 items-center z-10">
-                <Button preset="secondary" className="min-w-24" tx="onboarding:replay" onPress={handleReplay} />
+            <Animated.View style={{opacity: fadeOpacity}}>
+              <View className="relative" style={{width: "100%", aspectRatio: 1}}>
+                {renderContent()}
               </View>
-            )}
-          </Animated.View>
+              {showReplayButton && isCurrentStepVideo && (step as VideoStep).replayable !== false && (
+                <View className="absolute bottom-1 left-0 right-0 items-center z-10">
+                  <Button preset="secondary" className="min-w-24" tx="onboarding:replay" onPress={handleReplay} />
+                </View>
+              )}
+            </Animated.View>
           </View>
           <View className="flex-shrink">{renderStepCheck()}</View>
           {renderBullets()}
@@ -866,7 +903,6 @@ export function OnboardingGuide({
         </View>
 
         <View id="bottom" className={`flex justify-end flex-shrink min-h-12 mb-6`}>
-
           {!hasStarted && (
             <View className="flex-col">
               <View className="absolute w-full bottom-15 z-10">

@@ -609,7 +609,7 @@ extension MentraLive: CBCentralManagerDelegate {
         isConnecting = false
 
         connectedPeripheral = nil
-        ready = false
+        isFullyBooted = false
         connected = false
         connectionState = ConnTypes.DISCONNECTED
         rgbLedAuthorityClaimed = false
@@ -979,9 +979,9 @@ class MentraLive: NSObject, SGCManager {
     // Glasses send version_info in 2 chunks to fit within BLE MTU limits
     private var pendingVersionInfoChunk1: [String: Any]?
 
-    private var ready: Bool {
-        get { GlassesStore.shared.get("glasses", "ready") as? Bool ?? false }
-        set { GlassesStore.shared.apply("glasses", "ready", newValue) }
+    private var isFullyBooted: Bool {
+        get { GlassesStore.shared.get("glasses", "isFullyBooted") as? Bool ?? false }
+        set { GlassesStore.shared.apply("glasses", "isFullyBooted", newValue) }
     }
 
     private var connected: Bool {
@@ -1890,9 +1890,13 @@ class MentraLive: NSObject, SGCManager {
                 let voltage = bodyObj["vt"] as? Int ?? 0
                 let charging = (bodyObj["charg"] as? Int ?? 0) == 1
 
-                // Check for low battery during pairing
-                if percentage > 0, percentage <= 20 {
-                    if !ready {
+                // SOC is still booting - notify UI to show "Glasses are booting up..." message
+                if readyResponse == 0 {
+                    Bridge.log("K900 SOC not ready (ready=0), notifying UI")
+                    GlassesStore.shared.set("core", "shouldShowBootingMessage", true)
+
+                    // Check for low battery during pairing
+                    if percentage > 0, percentage <= 20 {
                         Bridge.sendPairFailureEvent("errors:pairingBatteryTooLow")
                         return
                     }
@@ -1913,8 +1917,8 @@ class MentraLive: NSObject, SGCManager {
                     Bridge.log("K900 SOC ready")
                     // Only send phone_ready if we haven't already established connection
                     // This prevents re-initialization on every heartbeat after initial connection
-                    // The ready flag is reset on disconnect/reconnect, so this won't prevent proper reconnection
-                    if !ready {
+                    // The isFullyBooted flag is reset on disconnect/reconnect, so this won't prevent proper reconnection
+                    if !isFullyBooted {
                         let readyMsg: [String: Any] = [
                             "type": "phone_ready",
                             "timestamp": Int64(Date().timeIntervalSince1970 * 1000),
@@ -2117,7 +2121,7 @@ class MentraLive: NSObject, SGCManager {
         // Start heartbeat
         startHeartbeat()
 
-        ready = true
+        isFullyBooted = true
         connected = true
         connectionState = ConnTypes.CONNECTED
         // maybe add audio monitoring here?
@@ -2999,8 +3003,8 @@ class MentraLive: NSObject, SGCManager {
     }
 
     private func sendHeartbeat() {
-        guard ready, connectionState == ConnTypes.CONNECTED else {
-            Bridge.log("LIVE: Skipping heartbeat - glasses not ready or not connected")
+        guard isFullyBooted, connectionState == ConnTypes.CONNECTED else {
+            Bridge.log("LIVE: Skipping heartbeat - glasses not fully booted or not connected")
             return
         }
 
@@ -3032,7 +3036,7 @@ class MentraLive: NSObject, SGCManager {
         stopReadinessCheckLoop()
 
         readinessCheckCounter = 0
-        ready = false
+        isFullyBooted = false
         connected = false
 
         Bridge.log("LIVE: 🔄 Starting glasses SOC readiness check loop")
@@ -3463,7 +3467,7 @@ extension MentraLive {
         offtime: Int,
         count: Int
     ) {
-        guard connectionState == ConnTypes.CONNECTED, ready else {
+        guard connectionState == ConnTypes.CONNECTED, isFullyBooted else {
             Bridge.log("LIVE: Cannot handle RGB LED control - glasses not connected")
             Bridge.sendRgbLedControlResponse(
                 requestId: requestId, success: false, error: "glasses_not_connected"

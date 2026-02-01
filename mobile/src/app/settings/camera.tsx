@@ -44,7 +44,7 @@ export default function CameraSettingsScreen() {
   const [videoSettings, setVideoSettings] = useSetting(SETTINGS.button_video_settings.key)
   const [maxRecordingTime, setMaxRecordingTime] = useSetting(SETTINGS.button_max_recording_time.key)
   const [defaultWearable] = useSetting(SETTINGS.default_wearable.key)
-  const glassesConnected = useGlassesStore(state => state.connected)
+  const glassesConnected = useGlassesStore((state) => state.connected)
 
   // Derive video resolution from settings
   const videoResolution: VideoResolution = (() => {

@@ -256,8 +256,8 @@ export default function NexDeveloperSettings() {
   const {theme, themed} = useAppTheme()
   const {push} = useNavigationHistory()
   const [defaultWearable] = useSetting(SETTINGS.default_wearable.key)
-  const glassesConnected = useGlassesStore(state => state.connected)
-  const deviceModel = useGlassesStore(state => state.deviceModel)
+  const glassesConnected = useGlassesStore((state) => state.connected)
+  const deviceModel = useGlassesStore((state) => state.deviceModel)
   const features: Capabilities = getModelCapabilities(defaultWearable)
 
   // Mentra Nex BLE test state variables
@@ -523,7 +523,7 @@ export default function NexDeveloperSettings() {
                     {label: "32×32", value: "32x32"},
                     {label: "160×160", value: "160x160"},
                     {label: "240×240", value: "240x240"},
-                  ].map(size => (
+                  ].map((size) => (
                     <PillButton
                       key={size.value}
                       text={size.label}
@@ -543,7 +543,7 @@ export default function NexDeveloperSettings() {
                     {label: "Pattern", value: "pattern"},
                     {label: "Checkerboard", value: "checkerboard"},
                     {label: "Solid Color", value: "solid"},
-                  ].map(image => (
+                  ].map((image) => (
                     <PillButton
                       key={image.value}
                       text={image.label}

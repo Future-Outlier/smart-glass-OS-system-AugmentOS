@@ -355,7 +355,7 @@ class NetworkConnectivityService {
    */
   private notifyListeners() {
     const status = this.getStatus()
-    this.listeners.forEach(listener => {
+    this.listeners.forEach((listener) => {
       try {
         listener(status)
       } catch (error) {

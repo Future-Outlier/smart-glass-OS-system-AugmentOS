@@ -1,4 +1,4 @@
-import { GlassesStatus, OtaProgress, OtaUpdateInfo } from "core"
+import {GlassesStatus, OtaProgress, OtaUpdateInfo} from "core"
 import {create} from "zustand"
 import {subscribeWithSelector} from "zustand/middleware"
 
@@ -31,7 +31,7 @@ export const getGlasesInfoPartial = (state: GlassesStatus) => {
 
 const initialState: GlassesStatus = {
   // state:
-  ready: false,
+  isFullyBooted: true,
   connected: false,
   micEnabled: false,
   connectionState: "disconnected",
@@ -71,12 +71,12 @@ const initialState: GlassesStatus = {
 }
 
 export const useGlassesStore = create<GlassesState>()(
-  subscribeWithSelector(set => ({
+  subscribeWithSelector((set) => ({
     ...initialState,
 
-    setGlassesInfo: info => set(state => ({...state, ...info})),
+    setGlassesInfo: (info) => set((state) => ({...state, ...info})),
 
-    setConnected: connected => set({connected}),
+    setConnected: (connected) => set({connected}),
 
     setBatteryInfo: (batteryLevel, charging, caseBatteryLevel, caseCharging) =>
       set({
@@ -104,7 +104,7 @@ export const useGlassesStore = create<GlassesState>()(
     setOtaUpdateAvailable: (info: OtaUpdateInfo | null) => set({otaUpdateAvailable: info}),
 
     setOtaProgress: (progress: OtaProgress | null) =>
-      set(_state => {
+      set((_state) => {
         // Auto-detect otaInProgress from status
         const otaInProgress = progress !== null && progress.status !== "FINISHED" && progress.status !== "FAILED"
         return {otaProgress: progress, otaInProgress}
@@ -128,7 +128,7 @@ export const waitForGlassesState = <K extends keyof GlassesStatus>(
   predicate: (value: GlassesStatus[K]) => boolean,
   timeoutMs = 1000,
 ): Promise<boolean> => {
-  return new Promise(resolve => {
+  return new Promise((resolve) => {
     const state = useGlassesStore.getState()
     if (predicate(state[key])) {
       resolve(true)
@@ -136,8 +136,8 @@ export const waitForGlassesState = <K extends keyof GlassesStatus>(
     }
 
     const unsubscribe = useGlassesStore.subscribe(
-      s => s[key],
-      value => {
+      (s) => s[key],
+      (value) => {
         if (predicate(value)) {
           unsubscribe()
           resolve(true)

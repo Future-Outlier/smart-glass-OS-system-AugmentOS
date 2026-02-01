@@ -19,7 +19,7 @@ object GlassesStore {
         // GLASSES STATE:
         store.set("glasses", "batteryLevel", -1)
         store.set("glasses", "charging", false)
-        store.set("glasses", "ready", false)
+        store.set("glasses", "isFullyBooted", false)
         store.set("glasses", "connected", false)
         store.set("glasses", "connectionState", "disconnected")
         store.set("glasses", "deviceModel", "")
@@ -52,6 +52,8 @@ object GlassesStore {
         store.set("core", "wifiScanResults", emptyList<Any>())
         store.set("core", "micRanking", MicMap.map["auto"]!!)
         store.set("core", "lastLog", mutableListOf<String>())
+        // UI hints:
+        store.set("core", "shouldShowBootingMessage", false)
 
         // CORE SETTINGS:
         store.set("core", "default_wearable", "")
@@ -102,7 +104,7 @@ object GlassesStore {
 
         // Trigger hardware updates based on setting changes
         when (category to key) {
-            "glasses" to "ready" -> {
+            "glasses" to "isFullyBooted" -> {
                 if (value is Boolean) {
                     if (value) {
                         CoreManager.getInstance().handleDeviceReady()

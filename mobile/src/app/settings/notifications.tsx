@@ -44,7 +44,7 @@ export default function NotificationSettingsScreen() {
 
       // set any apps in the blocklist to be disabled
       // TODO: fix this
-      sortedApps.forEach(app => {
+      sortedApps.forEach((app) => {
         if (blocklist.includes(app.packageName)) {
           app.isBlocked = true
         }
@@ -90,7 +90,7 @@ export default function NotificationSettingsScreen() {
         Toast.show({
           type: newBlockedState ? "info" : "success",
           text1: newBlockedState ? "Notifications blocked" : "Notifications enabled",
-          text2: apps.find(a => a.packageName === packageName)?.appName || packageName,
+          text2: apps.find((a) => a.packageName === packageName)?.appName || packageName,
         })
       } catch (error) {
         console.error("Error toggling app:", error)
@@ -180,7 +180,7 @@ export default function NotificationSettingsScreen() {
   const filteredApps = useMemo(
     () =>
       apps.filter(
-        app =>
+        (app) =>
           app.appName.toLowerCase().includes(searchQuery.toLowerCase()) ||
           app.packageName.toLowerCase().includes(searchQuery.toLowerCase()),
       ),
@@ -281,7 +281,7 @@ export default function NotificationSettingsScreen() {
           borderBottomColor: theme.colors.border,
         }}>
         <Text style={{fontSize: 12, color: theme.colors.textDim, fontWeight: "500"}}>
-          {filteredApps.filter(app => !app.isBlocked).length} of {filteredApps.length} apps enabled
+          {filteredApps.filter((app) => !app.isBlocked).length} of {filteredApps.length} apps enabled
         </Text>
       </View>
 

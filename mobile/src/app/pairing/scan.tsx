@@ -1,4 +1,4 @@
-import CoreModule from "core"
+import CoreModule, {DeviceSearchResult} from "core"
 import {useLocalSearchParams} from "expo-router"
 import {useEffect, useRef, useState} from "react"
 import {ActivityIndicator, Image, Platform, ScrollView, TouchableOpacity, View} from "react-native"
@@ -18,7 +18,6 @@ import {PermissionFeatures, requestFeaturePermissions} from "@/utils/Permissions
 import {getGlassesOpenImage} from "@/utils/getGlassesImage"
 import {SETTINGS, useSetting} from "@/stores/settings"
 import {useCoreStore} from "@/stores/core"
-import {DeviceSearchResult} from "core"
 
 export default function SelectGlassesBluetoothScreen() {
   const {deviceModel}: {deviceModel: string} = useLocalSearchParams()

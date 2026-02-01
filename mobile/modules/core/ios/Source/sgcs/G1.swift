@@ -358,12 +358,12 @@ class G1: NSObject, SGCManager {
     )
     private var writeCompletionCount = 0
 
-    private var _ready: Bool = false
-    var ready: Bool {
-        get { GlassesStore.shared.get("glasses", "ready") as? Bool ?? false }
+    private var _isFullyBooted: Bool = false
+    var isFullyBooted: Bool {
+        get { GlassesStore.shared.get("glasses", "isFullyBooted") as? Bool ?? false }
         set {
-            let oldValue = GlassesStore.shared.get("glasses", "ready") as? Bool ?? false
-            GlassesStore.shared.apply("glasses", "ready", newValue)
+            let oldValue = GlassesStore.shared.get("glasses", "isFullyBooted") as? Bool ?? false
+            GlassesStore.shared.apply("glasses", "isFullyBooted", newValue)
             if !newValue {
                 // Reset battery levels when disconnected
                 batteryLevel = -1
@@ -941,9 +941,9 @@ class G1: NSObject, SGCManager {
         }
 
         //         CoreCommsService.log("g1Ready set to \(leftReady) \(rightReady) \(leftReady && rightReady) left: \(left), right: \(right)")
-        ready = leftReady && rightReady
+        isFullyBooted = leftReady && rightReady
         connected = leftReady && rightReady
-        if ready {
+        if isFullyBooted {
             stopReconnectionTimer()
         }
     }
@@ -1485,7 +1485,7 @@ extension G1 {
 
         var heartbeatArray = heartbeatData.map { UInt8($0) }
 
-        if ready {
+        if isFullyBooted {
             queueChunks([heartbeatArray])
         }
 
@@ -2223,7 +2223,7 @@ extension G1: CBCentralManagerDelegate, CBPeripheralDelegate {
                 guard let self else { return false }
 
                 // Check if already connected
-                if await MainActor.run(body: { self.ready }) {
+                if await MainActor.run(body: { self.isFullyBooted }) {
                     Bridge.log("G1: Already connected, stopping reconnection")
                     return true // Returning true stops the reconnection loop
                 }

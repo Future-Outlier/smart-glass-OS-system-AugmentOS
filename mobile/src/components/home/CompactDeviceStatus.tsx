@@ -1,7 +1,7 @@
 import {DeviceTypes, getModelCapabilities} from "@/../../cloud/packages/types/src"
 import CoreModule from "core"
 import {useState} from "react"
-import {ActivityIndicator, Image, ImageStyle, TextStyle, TouchableOpacity, View, ViewStyle} from "react-native"
+import {ActivityIndicator, Image, ImageStyle, Linking, TextStyle, TouchableOpacity, View, ViewStyle} from "react-native"
 
 import {BatteryStatus} from "@/components/glasses/info/BatteryStatus"
 import {Button, Icon, Text} from "@/components/ignite"
@@ -45,7 +45,8 @@ export const CompactDeviceStatus = ({style}: {style?: ViewStyle}) => {
   const [showSimulatedGlasses, setShowSimulatedGlasses] = useState(false)
   const [isExpanded, setIsExpanded] = useState(false)
   const glassesConnected = useGlassesStore((state) => state.connected)
-  const glassesReady = useGlassesStore((state) => state.ready)
+  const isFullyBooted = useGlassesStore((state) => state.isFullyBooted)
+  const shouldShowBootingMessage = useCoreStore((state) => state.shouldShowBootingMessage)
   const glassesStyle = useGlassesStore((state) => state.style)
   const color = useGlassesStore((state) => state.color)
   const caseRemoved = useGlassesStore((state) => state.caseRemoved)
@@ -112,13 +113,12 @@ export const CompactDeviceStatus = ({style}: {style?: ViewStyle}) => {
 
   let isSearching = searching || isCheckingConnectivity
   let connectingText = translate("home:connectingGlasses")
-  if (glassesConnected && !glassesReady) {
-    // connectingText = connectionState
-    // console.log("CONNECTION STATE:", connectionState)
+  // Only show booting message if glasses explicitly reported ready=0
+  if (shouldShowBootingMessage) {
     connectingText = "Glasses are booting..."
   }
 
-  if (!glassesConnected || !glassesReady || isSearching) {
+  if (!glassesConnected || !isFullyBooted || isSearching) {
     return (
       <View style={[themed($disconnectedContainer), style]}>
         <View style={themed($header)}>
@@ -143,7 +143,20 @@ export const CompactDeviceStatus = ({style}: {style?: ViewStyle}) => {
           }}>
           {!isSearching ? (
             <>
-              <Button compact tx="home:getSupport" preset="alternate" />
+              <Button
+                compact
+                tx="home:getSupport"
+                preset="alternate"
+                onPress={() => {
+                  showAlert(translate("home:getSupport"), translate("home:getSupportMessage"), [
+                    {text: translate("common:cancel"), style: "cancel"},
+                    {
+                      text: translate("common:continue"),
+                      onPress: () => Linking.openURL("https://mentraglass.com/contact"),
+                    },
+                  ])
+                }}
+              />
               <Button compact flex tx="home:connectGlasses" preset="primary" onPress={connectGlasses} />
             </>
           ) : (

@@ -194,7 +194,7 @@ class MentraNexSGC: NSObject, CBCentralManagerDelegate, CBPeripheralDelegate, SG
 
     // Protocol-required properties
     var type: String = DeviceTypes.NEX
-    var ready: Bool {
+    var isFullyBooted: Bool {
         get { nexReady }
         set { nexReady = newValue }
     }

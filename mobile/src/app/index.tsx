@@ -4,6 +4,7 @@ import {View, ActivityIndicator, Platform, Linking, TextStyle, ViewStyle} from "
 import semver from "semver"
 
 import {Button, Icon, Screen, Text} from "@/components/ignite"
+import {SplashVideo} from "@/components/splash/SplashVideo"
 import {useAuth} from "@/contexts/AuthContext"
 import {useDeeplink} from "@/contexts/DeeplinkContext"
 import {useNavigationHistory} from "@/contexts/NavigationHistoryContext"
@@ -247,13 +248,7 @@ export default function InitScreen() {
 
   // Render
   if (state === "loading") {
-    return (
-      <Screen preset="fixed" safeAreaEdges={["bottom"]}>
-        <View style={themed($centerContainer)}>
-          <ActivityIndicator size="large" color={theme.colors.foreground} />
-        </View>
-      </Screen>
-    )
+    return <SplashVideo loop={true} />
   }
 
   const statusConfig = getStatusConfig()
@@ -333,12 +328,6 @@ export default function InitScreen() {
 }
 
 // Styles
-const $centerContainer: ThemedStyle<ViewStyle> = () => ({
-  flex: 1,
-  justifyContent: "center",
-  alignItems: "center",
-})
-
 const $mainContainer: ThemedStyle<ViewStyle> = ({spacing}) => ({
   flex: 1,
   padding: spacing.s6,

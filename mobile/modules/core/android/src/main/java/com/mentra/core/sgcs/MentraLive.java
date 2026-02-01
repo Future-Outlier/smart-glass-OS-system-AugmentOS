@@ -570,10 +570,10 @@ public class MentraLive extends SGCManager {
         GlassesStore.INSTANCE.apply("glasses", "connectionState", state);
 
         if (state.equals(ConnTypes.CONNECTED)) {
-            GlassesStore.INSTANCE.apply("glasses", "ready", true);
+            GlassesStore.INSTANCE.apply("glasses", "isFullyBooted", true);
             // CoreManager.getInstance().handleConnectionStateChanged();
         } else if (state.equals(ConnTypes.DISCONNECTED)) {
-            GlassesStore.INSTANCE.apply("glasses", "ready", false);
+            GlassesStore.INSTANCE.apply("glasses", "isFullyBooted", false);
             // CoreManager.getInstance().handleConnectionStateChanged();
         }
     }
@@ -2725,10 +2725,16 @@ public class MentraLive extends SGCManager {
 
                         int batteryPercentage = bodyObj.optInt("pt", -1);
                         int ready = bodyObj.optInt("ready", 0);
-                        if (ready == 0 && batteryPercentage > 0 && batteryPercentage <= 20) {
-                            Bridge.log("LIVE: K900 battery percentage: " + batteryPercentage);
-                            Bridge.sendPairFailureEvent("errors:pairingBatteryTooLow");
-                            return;
+                        if (ready == 0) {
+                            // SOC is still booting - notify UI to show "Glasses are booting up..." message
+                            Bridge.log("LIVE: K900 SOC not ready (ready=0), notifying UI");
+                            GlassesStore.INSTANCE.set("core", "shouldShowBootingMessage", true);
+
+                            if (batteryPercentage > 0 && batteryPercentage <= 20) {
+                                Bridge.log("LIVE: K900 battery percentage: " + batteryPercentage);
+                                Bridge.sendPairFailureEvent("errors:pairingBatteryTooLow");
+                                return;
+                            }
                         }
                         if (ready == 1) {
                             Bridge.log("LIVE: K900 SOC ready");
@@ -3357,7 +3363,7 @@ public class MentraLive extends SGCManager {
     public void connectToSmartGlasses() {
         Bridge.log("LIVE: Connecting to Mentra Live glasses");
         updateConnectionState(ConnTypes.CONNECTING);
-        
+
         // Clear reconnection mode when user manually initiates connection
         isReconnecting = false;
 
@@ -3982,7 +3988,7 @@ public class MentraLive extends SGCManager {
         reconnectAttempts = 0;
         isReconnecting = false;
         glassesReady = false;
-        GlassesStore.INSTANCE.apply("glasses", "ready", false);
+        GlassesStore.INSTANCE.apply("glasses", "isFullyBooted", false);
         updateConnectionState(ConnTypes.DISCONNECTED);
 
         // Note: We don't null context here to prevent race conditions with BLE callbacks

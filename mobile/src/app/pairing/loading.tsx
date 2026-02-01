@@ -10,6 +10,7 @@ import {Screen} from "@/components/ignite/Screen"
 import GlassesPairingLoader from "@/components/glasses/GlassesPairingLoader"
 import GlassesTroubleshootingModal from "@/components/glasses/GlassesTroubleshootingModal"
 import {focusEffectPreventBack, useNavigationHistory} from "@/contexts/NavigationHistoryContext"
+import {useCoreStore} from "@/stores/core"
 import {useGlassesStore} from "@/stores/glasses"
 import GlobalEventEmitter from "@/utils/GlobalEventEmitter"
 
@@ -22,7 +23,8 @@ export default function GlassesPairingLoadingScreen() {
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const failureErrorRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const hasAlertShownRef = useRef(false)
-  const glassesReady = useGlassesStore((state) => state.ready)
+  const isFullyBooted = useGlassesStore((state) => state.isFullyBooted)
+  const shouldShowBootingMessage = useCoreStore((state) => state.shouldShowBootingMessage)
 
   focusEffectPreventBack()
 
@@ -43,7 +45,7 @@ export default function GlassesPairingLoadingScreen() {
     setPairingInProgress(true)
 
     timerRef.current = setTimeout(() => {
-      if (!glassesReady && !hasAlertShownRef.current) {
+      if (!isFullyBooted && !hasAlertShownRef.current) {
         hasAlertShownRef.current = true
       }
     }, 30000)
@@ -55,11 +57,11 @@ export default function GlassesPairingLoadingScreen() {
   }, [])
 
   useEffect(() => {
-    if (!glassesReady) return
+    if (!isFullyBooted) return
     if (timerRef.current) clearTimeout(timerRef.current)
     if (failureErrorRef.current) clearTimeout(failureErrorRef.current)
     replace("/pairing/success", {deviceModel: deviceModel})
-  }, [glassesReady, replace, deviceModel])
+  }, [isFullyBooted, replace, deviceModel])
 
   if (pairingInProgress) {
     return (
@@ -67,7 +69,12 @@ export default function GlassesPairingLoadingScreen() {
         <Header leftIcon="chevron-left" onLeftPress={goBack} />
         <View className="flex-1 pb-6">
           <View className="flex-1 justify-center">
-            <GlassesPairingLoader deviceModel={deviceModel} deviceName={deviceName} onCancel={goBack} />
+            <GlassesPairingLoader
+              deviceModel={deviceModel}
+              deviceName={deviceName}
+              onCancel={goBack}
+              isBooting={shouldShowBootingMessage}
+            />
           </View>
           <Button
             preset="secondary"

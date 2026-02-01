@@ -10,7 +10,7 @@ declare class CoreModule extends NativeModule<CoreModuleEvents> {
   getGlassesStatus(): GlassesStatus
   getCoreStatus(): CoreStatus
   update(category: string, values: Record<string, any>): Promise<void>
-  
+
   // Display Commands
   displayEvent(params: Record<string, any>): Promise<void>
   displayText(params: Record<string, any>): Promise<void>
