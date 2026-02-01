@@ -19,7 +19,7 @@ export default function PairingSuccessScreen() {
   const [defaultWearable] = useSetting(SETTINGS.default_wearable.key)
   const {push} = useNavigationHistory()
   const [onboardingOsCompleted] = useSetting(SETTINGS.onboarding_os_completed.key)
-  
+
   focusEffectPreventBack()
 
   // Get manufacturer logo component
@@ -42,11 +42,11 @@ export default function PairingSuccessScreen() {
   const handleContinue = async () => {
     if (defaultWearable === DeviceTypes.LIVE) {
       const stack = []
-      const order = ["/pairing/btclassic", "/wifi/scan", "/ota/check-for-updates", "/onboarding/live", "/onboarding/os"]
+      const order = ["/pairing/btclassic", "/wifi/scan", "/onboarding/live", "/onboarding/os"]
 
       let btcConnected = await waitForGlassesState("btcConnected", (value) => value === true, 1000)
       console.log("PAIR_SUCCESS: btcConnected", btcConnected)
-      
+
       if (!btcConnected) {
         stack.push("/pairing/btclassic")
       }
@@ -56,7 +56,7 @@ export default function PairingSuccessScreen() {
       if (!wifiConnected) {
         stack.push("/wifi/scan")
       }
-      stack.push("/ota/check-for-updates")
+      // OTA check is pushed by wifi/connecting after WiFi success - not pre-built in stack
       if (!onboardingOsCompleted) {
         stack.push("/onboarding/os")
       }

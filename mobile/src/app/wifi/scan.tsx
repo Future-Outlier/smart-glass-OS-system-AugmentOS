@@ -18,7 +18,7 @@ import GlobalEventEmitter from "@/utils/GlobalEventEmitter"
 import WifiCredentialsService from "@/utils/wifi/WifiCredentialsService"
 import {translate} from "@/i18n"
 import {ConnectionOverlay} from "@/components/glasses/ConnectionOverlay"
-import { BackgroundTimer } from "@/utils/timers"
+import {BackgroundTimer} from "@/utils/timers"
 
 interface NetworkInfo {
   ssid: string
@@ -46,7 +46,6 @@ export default function WifiScanScreen() {
 
   const secondLastRoute = getPreviousRoute(1)
   const showBack = backableRoutes.includes(getPreviousRoute() || "") || backableRoutes.includes(secondLastRoute || "")
-  const showSkip = !showBack
 
   const handleBack = () => {
     if (showBack) {
@@ -322,12 +321,8 @@ export default function WifiScanScreen() {
           )}
         </View>
 
-        <Button
-          tx="wifi:enterNetworkManually"
-          preset={showSkip ? "primary" : "secondary"}
-          onPress={handleManualEntry}
-        />
-        {showSkip && <Button tx="common:skip" preset="secondary" onPress={handleBack} className="mt-3" />}
+        <Button tx="wifi:enterNetworkManually" preset="primary" onPress={handleManualEntry} />
+        {/* Skip button removed during onboarding - WiFi is mandatory for OTA */}
       </View>
     </Screen>
   )

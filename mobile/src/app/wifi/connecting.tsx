@@ -26,7 +26,7 @@ export default function WifiConnectingScreen() {
   const connectionTimeoutRef = useRef<number | null>(null)
   const failureGracePeriodRef = useRef<number | null>(null)
 
-  const {goBack, navigate, pushPrevious: _pushPrevious} = useNavigationHistory()
+  const {goBack, push} = useNavigationHistory()
   const wifiConnected = useGlassesStore((state) => state.wifiConnected)
   const wifiSsid = useGlassesStore((state) => state.wifiSsid)
 
@@ -108,9 +108,9 @@ export default function WifiConnectingScreen() {
   }
 
   const handleSuccess = useCallback(() => {
-    // Navigate to OTA check-for-updates after successful WiFi connection
-    navigate("/ota/check-for-updates")
-  }, [navigate])
+    // Push to OTA check-for-updates after successful WiFi connection
+    push("/ota/check-for-updates")
+  }, [push])
 
   const handleHeaderBack = useCallback(() => {
     goBack()

@@ -1,4 +1,5 @@
-import {useEffect, useState} from "react"
+import {useFocusEffect} from "expo-router"
+import {useEffect, useState, useCallback} from "react"
 import {View, ActivityIndicator} from "react-native"
 
 import {MentraLogoStandalone} from "@/components/brands/MentraLogoStandalone"
@@ -15,7 +16,7 @@ type CheckState = "checking" | "update_available" | "no_update" | "error"
 
 export default function OtaCheckForUpdatesScreen() {
   const {theme} = useAppTheme()
-  const {pushPrevious, push} = useNavigationHistory()
+  const {push, clearHistoryAndGoHome} = useNavigationHistory()
   const otaVersionUrl = useGlassesStore((state) => state.otaVersionUrl)
   const currentBuildNumber = useGlassesStore((state) => state.buildNumber)
   const mtkFwVersion = useGlassesStore((state) => state.mtkFwVersion)
@@ -24,20 +25,32 @@ export default function OtaCheckForUpdatesScreen() {
   const deviceName = defaultWearable || "Glasses"
   const glassesConnected = useGlassesStore((state) => state.connected)
   const wifiConnected = useGlassesStore((state) => state.wifiConnected)
+  const [onboardingLiveCompleted] = useSetting(SETTINGS.onboarding_live_completed.key)
 
   const [checkState, setCheckState] = useState<CheckState>("checking")
   const [availableUpdates, setAvailableUpdates] = useState<string[]>([])
+  const [checkKey, setCheckKey] = useState(0)
 
   focusEffectPreventBack()
 
-  // Perform OTA check on mount with minimum display time
+  // Re-run OTA check when screen gains focus (for iterative updates: APK → MTK → BES)
+  useFocusEffect(
+    useCallback(() => {
+      console.log("OTA: Screen focused - triggering re-check")
+      setCheckState("checking")
+      setAvailableUpdates([])
+      setCheckKey((k) => k + 1)
+    }, []),
+  )
+
+  // Perform OTA check when checkKey changes (on mount and on focus)
   useEffect(() => {
     const MIN_DISPLAY_TIME_MS = 1100
 
     const performCheck = async () => {
       if (!otaVersionUrl || !currentBuildNumber || !glassesConnected || !wifiConnected) {
-        console.log("OTA: No version URL or build number, glasses connected, or wifi connected, skipping check")
-        handleSkip()
+        console.log("OTA: Missing requirements for OTA check - proceeding to next step")
+        handleContinue()
         return
       }
 
@@ -92,11 +105,28 @@ export default function OtaCheckForUpdatesScreen() {
     }
 
     performCheck()
-  }, [])
+  }, [checkKey])
 
-  const handleSkip = () => {
-    console.log("OTA: handleSkip()")
-    pushPrevious()
+  // Navigate to next step based on onboarding status
+  const handleContinue = () => {
+    console.log("OTA: handleContinue() - onboardingLiveCompleted:", onboardingLiveCompleted)
+    if (!onboardingLiveCompleted) {
+      // Fresh pairing - go to onboarding
+      console.log("OTA: Fresh pairing - navigating to onboarding")
+      push("/onboarding/live")
+    } else {
+      // Not fresh pairing - go home
+      console.log("OTA: Onboarding already done - navigating home")
+      clearHistoryAndGoHome()
+    }
+  }
+
+  // Retry OTA check
+  const handleRetry = () => {
+    console.log("OTA: handleRetry()")
+    setCheckState("checking")
+    setAvailableUpdates([])
+    setCheckKey((k) => k + 1)
   }
 
   const handleUpdateNow = () => {
@@ -106,7 +136,7 @@ export default function OtaCheckForUpdatesScreen() {
   }
 
   const renderContent = () => {
-    // Checking state
+    // Checking state - no skip button, OTA is mandatory
     if (checkState === "checking") {
       return (
         <>
@@ -122,9 +152,8 @@ export default function OtaCheckForUpdatesScreen() {
             <ActivityIndicator size="large" color={theme.colors.secondary_foreground} />
           </View>
 
-          <View className="justify-center items-center">
-            <Button preset="primary" tx="common:skip" flexContainer onPress={handleSkip} />
-          </View>
+          {/* No skip button - OTA check is mandatory */}
+          <View className="h-12" />
         </>
       )
     }
@@ -150,7 +179,7 @@ export default function OtaCheckForUpdatesScreen() {
 
           <View className="gap-3 pb-2">
             <Button preset="primary" tx="ota:updateNow" onPress={handleUpdateNow} />
-            {__DEV__ && <Button preset="secondary" text="Update Later (dev mode only)" onPress={handleSkip} />}
+            {__DEV__ && <Button preset="secondary" text="Skip (dev only)" onPress={handleContinue} />}
           </View>
         </>
       )
@@ -169,13 +198,13 @@ export default function OtaCheckForUpdatesScreen() {
           </View>
 
           <View className="justify-center items-center">
-            <Button preset="primary" tx="common:continue" flexContainer onPress={handleSkip} />
+            <Button preset="primary" tx="common:continue" flexContainer onPress={handleContinue} />
           </View>
         </>
       )
     }
 
-    // Error state
+    // Error state - retry only, no skip (except dev mode)
     return (
       <>
         <View className="flex-1 items-center justify-center px-6">
@@ -186,8 +215,9 @@ export default function OtaCheckForUpdatesScreen() {
           <Text tx="ota:checkFailedMessage" className="text-sm text-center" style={{color: theme.colors.textDim}} />
         </View>
 
-        <View className="justify-center items-center">
-          <Button preset="primary" tx="common:continue" flexContainer onPress={handleSkip} />
+        <View className="gap-3 pb-2">
+          <Button preset="primary" tx="common:retry" flexContainer onPress={handleRetry} />
+          {__DEV__ && <Button preset="secondary" text="Skip (dev only)" onPress={handleContinue} />}
         </View>
       </>
     )

@@ -15,7 +15,7 @@ const RETRY_INTERVAL_MS = 5000 // 5 seconds between retries
 
 export default function OtaProgressScreen() {
   const {theme} = useAppTheme()
-  const {push} = useNavigationHistory()
+  const {replace} = useNavigationHistory()
   const otaProgress = useGlassesStore((state) => state.otaProgress)
   const glassesConnected = useGlassesStore((state) => state.connected)
   const buildNumber = useGlassesStore((state) => state.buildNumber)
@@ -272,8 +272,18 @@ export default function OtaProgressScreen() {
 
   const handleContinue = () => {
     // After firmware update complete, navigate to check-for-updates to check for more updates (e.g., BES after MTK)
-    console.log("OTA: Continue pressed - navigating to check-for-updates")
-    push("/ota/check-for-updates")
+    // Use replace() to avoid stacking duplicate screens
+    console.log("OTA: Continue pressed - replacing with check-for-updates")
+    replace("/ota/check-for-updates")
+  }
+
+  const handleRetry = () => {
+    // Reset state and retry the update
+    console.log("OTA: Retry pressed - resetting state")
+    setProgressState("starting")
+    setRetryCount(0)
+    setErrorMessage(null)
+    hasReceivedProgress.current = false
   }
 
   const progress = otaProgress?.progress ?? 0
@@ -439,7 +449,7 @@ export default function OtaProgressScreen() {
       )
     }
 
-    // Disconnected state
+    // Disconnected state - retry only
     if (progressState === "disconnected") {
       const disconnectedComponentName = getComponentName(currentUpdate)
       return (
@@ -458,14 +468,15 @@ export default function OtaProgressScreen() {
             />
           </View>
 
-          <View className="justify-center items-center">
-            <Button preset="primary" tx="common:continue" flexContainer onPress={handleContinue} />
+          <View className="gap-3 pb-2">
+            <Button preset="primary" tx="common:retry" flexContainer onPress={handleRetry} />
+            {__DEV__ && <Button preset="secondary" text="Skip (dev only)" onPress={handleContinue} />}
           </View>
         </>
       )
     }
 
-    // Failed state
+    // Failed state - retry only
     const failedComponentName = getComponentName(currentUpdate)
     return (
       <>
@@ -480,11 +491,12 @@ export default function OtaProgressScreen() {
             </>
           ) : null}
           <View className="h-2" />
-          <Text text="Please try again later." className="text-sm text-center text-secondary-foreground" />
+          <Text text="Please try again." className="text-sm text-center text-secondary-foreground" />
         </View>
 
-        <View className="justify-center items-center">
-          <Button preset="primary" tx="common:continue" flexContainer onPress={handleContinue} />
+        <View className="gap-3 pb-2">
+          <Button preset="primary" tx="common:retry" flexContainer onPress={handleRetry} />
+          {__DEV__ && <Button preset="secondary" text="Skip (dev only)" onPress={handleContinue} />}
         </View>
       </>
     )
