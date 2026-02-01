@@ -14,6 +14,7 @@ import restComms from "@/services/RestComms"
 import socketComms from "@/services/SocketComms"
 import {SETTINGS, useSetting} from "@/stores/settings"
 import {SplashVideo} from "@/components/splash/SplashVideo"
+import { BackgroundTimer } from "@/utils/timers"
 
 // Types
 type ScreenState = "loading" | "connection" | "auth" | "outdated" | "success"
@@ -28,14 +29,14 @@ interface StatusConfig {
 // Constants
 const APP_STORE_URL = "https://mentra.glass/os"
 const PLAY_STORE_URL = "https://play.google.com/store/apps/details?id=com.mentra.mentra"
-const NAVIGATION_DELAY = 100
+const NAVIGATION_DELAY = 300
 const DEEPLINK_DELAY = 1000
 
 export default function InitScreen() {
   // Hooks
   const {theme} = useAppTheme()
   const {user, session, loading: authLoading} = useAuth()
-  const {replaceAll, getPendingRoute, setPendingRoute, clearHistoryAndGoHome} = useNavigationHistory()
+  const {replaceAll, getPendingRoute, setPendingRoute, clearHistoryAndGoHome, setAnimation} = useNavigationHistory()
   const {processUrl} = useDeeplink()
   const rootNavigationState = useRootNavigationState()
   const isNavigationReady = rootNavigationState?.key != null
@@ -68,6 +69,12 @@ export default function InitScreen() {
     const isCustom = backendUrl !== defaultUrl
     setIsUsingCustomUrl(isCustom)
     return isCustom
+  }
+
+  const setAnimationDelayed = () => {
+    BackgroundTimer.setTimeout(() => {
+      setAnimation("fade")
+    }, 250)
   }
 
   const navigateToDestination = async () => {

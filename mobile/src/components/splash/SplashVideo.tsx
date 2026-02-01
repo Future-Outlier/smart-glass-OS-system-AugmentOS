@@ -1,4 +1,4 @@
-import {View} from "react-native"
+import {Platform, View} from "react-native"
 import {MentraLogoStandalone} from "@/components/brands/MentraLogoStandalone"
 
 // TODO: Replace with animated SVG from designer
@@ -12,6 +12,17 @@ import {MentraLogoStandalone} from "@/components/brands/MentraLogoStandalone"
 // }
 
 export function SplashVideo() {
+  // stretch vertically slightly to compensate for native splash screen scaling on ios:
+  // TBD if this is needed for android as well
+  if (Platform.OS === "ios") {
+    return (
+      <View
+        style={{transform: [{scaleY: 1.12}, {scaleX: 1}]}}
+        className="flex-1 justify-center items-center bg-background">
+        <MentraLogoStandalone width={100} height={48} />
+      </View>
+    )
+  }
   return (
     <View className="flex-1 justify-center items-center bg-background">
       <MentraLogoStandalone width={100} height={48} />

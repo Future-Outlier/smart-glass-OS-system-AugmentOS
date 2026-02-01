@@ -138,7 +138,7 @@ export const AllProviders = withWrappers(
     )
   },
   (props) => {
-    const {preventBack} = useNavigationHistory()
+    const {preventBack, animation} = useNavigationHistory()
     return (
       <>
         {props.children}
@@ -147,7 +147,7 @@ export const AllProviders = withWrappers(
             headerShown: false,
             gestureEnabled: !preventBack,
             gestureDirection: "horizontal",
-            animation: "simple_push",
+            animation: animation,
           }}
         />
       </>

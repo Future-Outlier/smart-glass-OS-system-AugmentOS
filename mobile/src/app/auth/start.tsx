@@ -1,5 +1,4 @@
 // eslint-disable-next-line import/no-unresolved
-import LogoSvg from "@assets/logo/logo.svg"
 import {useLocalSearchParams} from "expo-router"
 import * as WebBrowser from "expo-web-browser"
 import {useEffect} from "react"
@@ -16,6 +15,7 @@ import mentraAuth from "@/utils/auth/authClient"
 import {mapAuthError} from "@/utils/auth/authErrors"
 import AppleIcon from "assets/icons/component/AppleIcon"
 import GoogleIcon from "assets/icons/component/GoogleIcon"
+import { MentraLogoStandalone } from "@/components/brands/MentraLogoStandalone"
 
 export default function LoginScreen() {
   const {push} = useNavigationHistory()
@@ -63,7 +63,7 @@ export default function LoginScreen() {
       <View className="flex-1">
         <View className="flex-1 justify-center p-4">
           <View className="items-center justify-center mb-4">
-            <LogoSvg width={100} height={100} />
+            <MentraLogoStandalone width={100} height={48} />
           </View>
 
           <Text
