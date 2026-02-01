@@ -171,18 +171,22 @@ export function OnboardingGuide({
     }
   }, [exitFn, clearHistoryAndGoHome])
 
+  // Only show poster if video takes longer than 2 seconds to load (fallback for slow connections)
   useEffect(() => {
-    if (player1Loading && activePlayer === 1) {
-      setShowPoster(true)
-    } else if (player2Loading && activePlayer === 2) {
-      setShowPoster(true)
+    const isLoading = (player1Loading && activePlayer === 1) || (player2Loading && activePlayer === 2)
+
+    if (isLoading) {
+      const timer = setTimeout(() => {
+        setShowPoster(true)
+      }, 2000)
+      return () => clearTimeout(timer)
     } else {
       setShowPoster(false)
     }
   }, [player1Loading, player2Loading, activePlayer])
 
   const handleNext = useCallback(
-    (manual: boolean = false) => {
+    async (manual: boolean = false) => {
       console.log(`ONBOARD: handleNext(${manual})`)
 
       // Prevent multiple rapid calls from corrupting player state
@@ -209,7 +213,7 @@ export function OnboardingGuide({
       console.log(`ONBOARD: current: ${currentIndex} next: ${nextIndex}`)
 
       // Helper to perform the actual step change
-      const performStepChange = () => {
+      const performStepChange = async () => {
         setShowNextButton(false)
         setShowReplayButton(false)
         setCurrentIndex(nextIndex)
@@ -219,8 +223,8 @@ export function OnboardingGuide({
           setTransitionCount(transitionCount + 1)
         }
 
-        // If next step is an image, just pause current player and preload next video
-        if (nextStep.type === "image") {
+        // If next step is an image or glasses, just pause current player and preload next video
+        if (nextStep.type === "image" || nextStep.type === "glasses") {
           player1.pause()
           player2.pause()
 
@@ -243,8 +247,9 @@ export function OnboardingGuide({
 
         try {
           if (activePlayer === 1) {
+            // Load video first, then switch active player to avoid poster flash
+            await player2.replaceAsync(nextStep.source)
             setActivePlayer(2)
-            player2.replaceAsync(nextStep.source)
             player2.play()
             if (nextNextVideoSource) {
               player1.replaceAsync(nextNextVideoSource)
@@ -252,8 +257,9 @@ export function OnboardingGuide({
             }
             player1.pause()
           } else {
+            // Load video first, then switch active player to avoid poster flash
+            await player1.replaceAsync(nextStep.source)
             setActivePlayer(1)
-            player1.replaceAsync(nextStep.source)
             player1.play()
             if (nextNextVideoSource) {
               player2.replaceAsync(nextNextVideoSource)
@@ -274,8 +280,8 @@ export function OnboardingGuide({
           toValue: 0,
           duration: 450,
           useNativeDriver: true,
-        }).start(() => {
-          performStepChange()
+        }).start(async () => {
+          await performStepChange()
           Animated.timing(fadeOpacity, {
             toValue: 1,
             duration: 450,
@@ -286,7 +292,7 @@ export function OnboardingGuide({
         })
       } else {
         // No fade, just swap immediately
-        performStepChange()
+        await performStepChange()
         setTimeout(() => {
           navigatingRef.current = false
         }, 100)
