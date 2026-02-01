@@ -1,6 +1,6 @@
 import {useRootNavigationState} from "expo-router"
 import {useState, useEffect} from "react"
-import {View, ActivityIndicator, Platform, Linking, TextStyle, ViewStyle} from "react-native"
+import {View, ActivityIndicator, Platform, Linking} from "react-native"
 import semver from "semver"
 
 import {Button, Icon, Screen, Text} from "@/components/ignite"
@@ -13,7 +13,7 @@ import mantle from "@/services/MantleManager"
 import restComms from "@/services/RestComms"
 import socketComms from "@/services/SocketComms"
 import {SETTINGS, useSetting} from "@/stores/settings"
-import {ThemedStyle} from "@/theme"
+import {SplashVideo} from "@/components/splash/SplashVideo"
 
 // Types
 type ScreenState = "loading" | "connection" | "auth" | "outdated" | "success"
@@ -33,7 +33,7 @@ const DEEPLINK_DELAY = 1000
 
 export default function InitScreen() {
   // Hooks
-  const {theme, themed} = useAppTheme()
+  const {theme} = useAppTheme()
   const {user, session, loading: authLoading} = useAuth()
   const {replaceAll, getPendingRoute, setPendingRoute, clearHistoryAndGoHome} = useNavigationHistory()
   const {processUrl} = useDeeplink()
@@ -248,10 +248,8 @@ export default function InitScreen() {
   // Render
   if (state === "loading") {
     return (
-      <Screen preset="fixed" safeAreaEdges={["bottom"]}>
-        <View style={themed($centerContainer)}>
-          <ActivityIndicator size="large" color={theme.colors.foreground} />
-        </View>
+      <Screen preset="fixed">
+        <SplashVideo />
       </Screen>
     )
   }
@@ -260,29 +258,35 @@ export default function InitScreen() {
 
   return (
     <Screen preset="fixed" safeAreaEdges={["bottom"]}>
-      <View style={themed($mainContainer)}>
-        <View style={themed($infoContainer)}>
-          <View style={themed($iconContainer)}>
+      <View className="flex-1 p-6">
+        <View className="flex-1 items-center justify-center pt-8">
+          <View className="mb-8">
             <Icon name={statusConfig.icon} size={80} color={statusConfig.iconColor} />
           </View>
 
-          <Text style={themed($title)}>{statusConfig.title}</Text>
-          <Text style={themed($description)}>{statusConfig.description}</Text>
+          <Text className="text-2xl font-bold text-center mb-4">{statusConfig.title}</Text>
+          <Text className="text-sm text-center mb-4 line-height-6 px-6 text-muted-foreground">
+            {statusConfig.description}
+          </Text>
 
           {state === "outdated" && (
             <>
-              {localVersion && <Text style={themed($versionText)}>Local: v{localVersion}</Text>}
-              {cloudVersion && <Text style={themed($versionText)}>Latest: v{cloudVersion}</Text>}
+              {localVersion && (
+                <Text className="text-sm text-center mb-2 text-muted-foreground">Local: v{localVersion}</Text>
+              )}
+              {cloudVersion && (
+                <Text className="text-sm text-center mb-2 text-muted-foreground">Latest: v{cloudVersion}</Text>
+              )}
             </>
           )}
 
-          <View style={themed($buttonContainer)}>
+          <View className="w-full items-center pb-8 gap-8">
             {state === "connection" ||
               (state === "auth" && (
                 <Button
                   flexContainer
                   onPress={() => checkCloudVersion(true)}
-                  style={themed($primaryButton)}
+                  className="w-full"
                   text={isRetrying ? translate("versionCheck:retrying") : translate("versionCheck:retryConnection")}
                   disabled={isRetrying}
                   LeftAccessory={
@@ -305,7 +309,7 @@ export default function InitScreen() {
               <Button
                 flexContainer
                 onPress={handleResetUrl}
-                style={themed($secondaryButton)}
+                className="w-full"
                 tx={isRetrying ? "versionCheck:resetting" : "versionCheck:resetUrl"}
                 preset="secondary"
                 disabled={isRetrying}
@@ -331,65 +335,3 @@ export default function InitScreen() {
     </Screen>
   )
 }
-
-// Styles
-const $centerContainer: ThemedStyle<ViewStyle> = () => ({
-  flex: 1,
-  justifyContent: "center",
-  alignItems: "center",
-})
-
-const $mainContainer: ThemedStyle<ViewStyle> = ({spacing}) => ({
-  flex: 1,
-  padding: spacing.s6,
-})
-
-const $infoContainer: ThemedStyle<ViewStyle> = ({spacing}) => ({
-  flex: 1,
-  justifyContent: "center",
-  alignItems: "center",
-  paddingTop: spacing.s8,
-})
-
-const $iconContainer: ThemedStyle<ViewStyle> = ({spacing}) => ({
-  marginBottom: spacing.s8,
-})
-
-const $title: ThemedStyle<TextStyle> = ({colors, spacing}) => ({
-  fontSize: 28,
-  fontWeight: "bold",
-  textAlign: "center",
-  marginBottom: spacing.s4,
-  color: colors.text,
-})
-
-const $description: ThemedStyle<TextStyle> = ({colors, spacing}) => ({
-  fontSize: 16,
-  textAlign: "center",
-  marginBottom: spacing.s8,
-  lineHeight: 24,
-  paddingHorizontal: spacing.s6,
-  color: colors.textDim,
-})
-
-const $versionText: ThemedStyle<TextStyle> = ({colors, spacing}) => ({
-  fontSize: 14,
-  textAlign: "center",
-  marginBottom: spacing.s2,
-  color: colors.textDim,
-})
-
-const $buttonContainer: ThemedStyle<ViewStyle> = ({spacing}) => ({
-  width: "100%",
-  alignItems: "center",
-  paddingBottom: spacing.s8,
-  gap: spacing.s8,
-})
-
-const $primaryButton: ThemedStyle<ViewStyle> = () => ({
-  width: "100%",
-})
-
-const $secondaryButton: ThemedStyle<ViewStyle> = () => ({
-  width: "100%",
-})
