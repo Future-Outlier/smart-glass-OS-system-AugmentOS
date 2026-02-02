@@ -1751,9 +1751,9 @@ class MentraLive: NSObject, SGCManager {
             let gestureName = json["gesture_name"] as? String ?? "unknown"
             let timestamp = parseTimestamp(json["timestamp"])
             let deviceModel = json["device_model"] as? String ?? deviceModel
-            //Bridge.sendTouchEvent(
+            // Bridge.sendTouchEvent(
             //    deviceModel: deviceModel, gestureName: gestureName, timestamp: timestamp
-            //)
+            // )
 
         case "swipe_volume_status":
             let enabled = json["enabled"] as? Bool ?? false
@@ -1957,11 +1957,12 @@ class MentraLive: NSObject, SGCManager {
         case "sr_tpevt":
             // K900 touchpad event - convert to touch_event for frontend
             if let bodyObj = json["B"] as? [String: Any],
-               let gestureType = bodyObj["type"] as? Int {
+               let gestureType = bodyObj["type"] as? Int
+            {
                 if let gestureName = mapK900GestureType(gestureType) {
                     Bridge.log("LIVE: 👆 K900 touchpad event - Type: \(gestureType) -> \(gestureName)")
                     Bridge.sendTouchEvent(
-                        deviceModel: getDeviceModel(),
+                        deviceModel: deviceModel,
                         gestureName: gestureName,
                         timestamp: Int64(Date().timeIntervalSince1970 * 1000)
                     )
@@ -2177,7 +2178,6 @@ class MentraLive: NSObject, SGCManager {
             androidVersion: androidVersion, otaVersionUrl: otaVersionUrl, firmwareVersion: firmwareVersion,
             btMacAddress: btMacAddress
         )
-
     }
 
     private func handleAck(_: [String: Any]) {

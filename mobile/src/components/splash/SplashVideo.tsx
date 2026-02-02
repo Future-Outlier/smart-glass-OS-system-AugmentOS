@@ -1,31 +1,26 @@
-import {StyleSheet, View} from "react-native"
+import {Platform, View} from "react-native"
 import {MentraLogoStandalone} from "@/components/brands/MentraLogoStandalone"
-import {useAppTheme} from "@/contexts/ThemeContext"
 
 // TODO: Replace with animated SVG from designer
 // Videos for light and dark themes (keeping for future use)
 // const LIGHT_VIDEO = require("@assets/splash/loading_animation_light.mp4")
 // const DARK_VIDEO = require("@assets/splash/loading_animation_dark.mp4")
 
-interface SplashVideoProps {
-  onFinished?: () => void
-  loop?: boolean
-}
-
-export function SplashVideo({onFinished, loop = true}: SplashVideoProps) {
-  const {theme} = useAppTheme()
-
+export function SplashVideo() {
+  // stretch vertically slightly to compensate for native splash screen scaling on ios:
+  // TBD if this is needed for android as well
+  if (Platform.OS === "ios") {
+    return (
+      <View
+        style={{transform: [{scaleY: 1.12}, {scaleX: 1}]}}
+        className="flex-1 justify-center items-center bg-background">
+        <MentraLogoStandalone width={100} height={48} />
+      </View>
+    )
+  }
   return (
-    <View style={[styles.container, {backgroundColor: theme.colors.background}]}>
+    <View className="flex-1 justify-center items-center bg-background">
       <MentraLogoStandalone width={100} height={48} />
     </View>
   )
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-})
