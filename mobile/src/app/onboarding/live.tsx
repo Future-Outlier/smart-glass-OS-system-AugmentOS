@@ -22,6 +22,7 @@ export default function MentraLiveOnboarding() {
       name: "Start Onboarding",
       playCount: 1,
       transition: true,
+      fadeOut: true,
       title: translate("onboarding:liveWelcomeTitle"),
       subtitle: translate("onboarding:liveWelcomeSubtitle"),
     },
@@ -30,8 +31,9 @@ export default function MentraLiveOnboarding() {
       source: `${CDN_BASE}/ONB4_action_button_click.mp4`,
       poster: require("@assets/onboarding/live/thumbnails/ONB4_action_button_click.jpg"),
       name: "Action Button Click",
-      playCount: 99999, //2,
+      playCount: -1, //2,
       transition: false,
+      fadeOut: true,
       title: translate("onboarding:liveTakeAPhoto"),
       subtitle: translate("onboarding:livePressActionButton"),
       info: translate("onboarding:liveLedFlashWarning"),
@@ -54,6 +56,7 @@ export default function MentraLiveOnboarding() {
       name: "Action Button Record",
       playCount: -1, // 2,
       transition: false,
+      fadeOut: true,
       title: translate("onboarding:liveStartRecording"),
       subtitle: translate("onboarding:livePressAndHold"),
       info: translate("onboarding:liveLedFlashWarning"),
@@ -75,6 +78,7 @@ export default function MentraLiveOnboarding() {
       name: "Action Button Stop Recording",
       playCount: -1, // 2,
       transition: false,
+      fadeOut: true,
       title: translate("onboarding:liveStopRecording"),
       subtitle: translate("onboarding:livePressAndHoldAgain"),
       info: translate("onboarding:liveLedFlashWarning"),
@@ -96,6 +100,7 @@ export default function MentraLiveOnboarding() {
       name: "Transition Trackpad",
       playCount: -1, // 1,
       transition: true,
+      fadeOut: true,
       // show next slide's title and subtitle:
       title: translate("onboarding:livePlayMusic"),
       subtitle: translate("onboarding:liveDoubleTapTouchpad"),
@@ -107,6 +112,7 @@ export default function MentraLiveOnboarding() {
       name: "Trackpad Tap",
       playCount: -1, // 1,
       transition: false,
+      fadeOut: true,
       title: translate("onboarding:livePlayMusic"),
       subtitle: translate("onboarding:liveDoubleTapTouchpad"),
       waitFn: (): Promise<void> => {
@@ -127,6 +133,7 @@ export default function MentraLiveOnboarding() {
       name: "Trackpad Volume Slide",
       playCount: -1, // 1,
       transition: false,
+      fadeOut: true,
       title: translate("onboarding:liveAdjustVolume"),
       subtitle: translate("onboarding:liveSwipeTouchpadUp"),
       subtitle2: translate("onboarding:liveSwipeTouchpadDown"),
@@ -148,6 +155,7 @@ export default function MentraLiveOnboarding() {
       name: "Trackpad Pause",
       playCount: -1, // 1,
       transition: false,
+      fadeOut: true,
       title: translate("onboarding:livePauseMusic"),
       subtitle: translate("onboarding:liveDoubleTapTouchpad"),
       waitFn: (): Promise<void> => {
@@ -168,6 +176,7 @@ export default function MentraLiveOnboarding() {
       name: "Cord",
       playCount: 1,
       transition: false,
+      fadeOut: true,
       title: translate("onboarding:liveConnectCable"),
       subtitle: translate("onboarding:liveCableDescription"),
       info: translate("onboarding:liveCableInfo"),
@@ -202,6 +211,8 @@ export default function MentraLiveOnboarding() {
       replayable: false,
       title: translate("onboarding:liveEndTitle"),
       subtitle: translate("onboarding:liveEndMessage"),
+      titleCentered: true,
+      subtitleCentered: true,
     },
   ]
 
@@ -214,6 +225,17 @@ export default function MentraLiveOnboarding() {
   // if (__DEV__) {
   //   steps = steps.slice(0, 2)
   // }
+
+
+  const handleExit = () => {
+    // setOnboardingLiveCompleted(true)
+    pushPrevious()
+  }
+
+  const handleEndButton = () => {
+    setOnboardingLiveCompleted(true)
+    pushPrevious()
+  }
 
   return (
     <Screen preset="fixed" safeAreaEdges={["bottom"]}>

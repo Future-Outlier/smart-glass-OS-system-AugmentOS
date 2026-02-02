@@ -222,6 +222,8 @@ const en = {
     osEnd: "End",
     osEndBullet1: "TODO1",
     osEndBullet2: "TODO2",
+    osEndOnboardingTitle: "End Onboarding",
+    osEndOnboardingMessage: "Are you sure you want to end the onboarding?",
     learnAboutOs: "Learn about Mentra OS",
     btClassicStep1: "Tap open settings",
     btClassicStep2: "Tap Bluetooth",
@@ -688,6 +690,7 @@ const en = {
     tryAgain: "Try again",
     connect: "Connect",
     ignore: "Ignore",
+    exit: "Exit",
   },
   developer: {
     dev: "Dev",

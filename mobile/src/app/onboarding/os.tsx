@@ -3,6 +3,8 @@ import {OnboardingGuide, OnboardingStep} from "@/components/onboarding/Onboardin
 import {useNavigationHistory} from "@/contexts/NavigationHistoryContext"
 import {translate} from "@/i18n"
 import {SETTINGS, useSetting} from "@/stores/settings"
+import showAlert from "@/utils/AlertUtils"
+import {useCallback} from "react"
 
 const CDN_BASE = "https://mentra-videos-cdn.mentraglass.com/onboarding/mentraos/light"
 
@@ -19,7 +21,7 @@ export default function MentraOSOnboarding() {
       source: `${CDN_BASE}/start_stop_apps.mp4`,
       poster: require("@assets/onboarding/os/thumbnails/start_stop_apps.jpg"),
       containerClassName: "bg-background",
-      transition: true,
+      transition: false,
       playCount: 1,
       title: translate("onboarding:osWelcomeTitle"),
       subtitle: translate("onboarding:osWelcomeSubtitle"),
@@ -66,19 +68,20 @@ export default function MentraOSOnboarding() {
         translate("onboarding:osBackgroundAppsBullet2"),
       ],
     },
-    // {
-    //   type: "video",
-    //   name: "Foreground and Background Apps",
-    //   source: `${CDN_BASE}/foreground_background_apps.mov`,
-    //   containerClassName: "bg-background",
-    //   transition: false,
-    //   playCount: 2,
-    //   bullets: [
-    //     translate("onboarding:osForegroundAndBackgroundApps"),
-    //     translate("onboarding:osForegroundAndBackgroundAppsBullet1"),
-    //     translate("onboarding:osForegroundAndBackgroundAppsBullet2"),
-    //   ],
-    // },
+    {
+      type: "video",
+      name: "Foreground and Background Apps",
+      source: `${CDN_BASE}/foreground_background_apps.mov`,
+      poster: require("@assets/onboarding/os/thumbnails/background_apps.jpg"),
+      containerClassName: "bg-background",
+      transition: false,
+      playCount: 2,
+      bullets: [
+        translate("onboarding:osForegroundAndBackgroundApps"),
+        translate("onboarding:osForegroundAndBackgroundAppsBullet1"),
+        translate("onboarding:osForegroundAndBackgroundAppsBullet2"),
+      ],
+    },
     // {
     //   type: "video",
     //   name: "Mentra AI",
@@ -104,30 +107,47 @@ export default function MentraOSOnboarding() {
     //   title: translate("onboarding:osEndTitle"),
     //   subtitle: translate("onboarding:osEndSubtitle"),
     // },
-    {
-      type: "glasses",
-      name: "end",
-      containerClassName: "bg-background",
-      transition: false,
-      title: translate("onboarding:osEndTitle"),
-      subtitle: translate("onboarding:osEndSubtitle"),
-    },
+    // {
+    //   type: "image",
+    //   name: "end",
+    //   // containerClassName: "bg-background",
+    //   transition: false,
+    //   title: translate("onboarding:osEndTitle"),
+    //   subtitle: translate("onboarding:osEndSubtitle"),
+    // },
   ]
+
+  const handleCloseButton = () => {
+    // showAlert(translate("onboarding:osEndOnboardingTitle"), translate("onboarding:osEndOnboardingMessage"), [
+    //   {text: translate("common:cancel"), onPress: () => {}},
+    //   {
+    //     text: translate("common:exit"),
+    //     onPress: () => {
+    //       handleExit()
+    //     },
+    //   },
+    // ])
+  }
+
+  const handleExit = () => {
+    // setOnboardingOsCompleted(true)
+    pushPrevious()
+  }
+
+  const handleEndButton = () => {
+    setOnboardingOsCompleted(true)
+    pushPrevious()
+  }
 
   return (
     <Screen preset="fixed" safeAreaEdges={["bottom"]}>
       <OnboardingGuide
         steps={steps}
-        autoStart={false}
-        showCloseButton={false}
+        autoStart={true}
+        showCloseButton={true}
         preventBack={true}
-        exitFn={() => {
-          pushPrevious()
-        }}
-        endButtonFn={() => {
-          setOnboardingOsCompleted(true)
-          pushPrevious()
-        }}
+        exitFn={handleCloseButton}
+        endButtonFn={handleExit}
         startButtonText={translate("onboarding:continueOnboarding")}
         endButtonText={translate("common:continue")}
       />

@@ -208,7 +208,8 @@ export default function DeveloperSettingsScreen() {
 
           <StoreUrl />
 
-          {superMode && <RouteButton label="Super Settings" onPress={() => push("/settings/super")} />}
+          {true && <RouteButton label="Super Settings" onPress={() => push("/settings/super")} />}
+          
 
           <Spacer height={theme.spacing.s12} />
         </View>
@@ -216,31 +217,3 @@ export default function DeveloperSettingsScreen() {
     </Screen>
   )
 }
-
-const $warningContainer: ThemedStyle<ViewStyle> = ({colors, spacing, isDark}) => ({
-  borderRadius: spacing.s3,
-  paddingHorizontal: spacing.s4,
-  paddingVertical: spacing.s3,
-  borderWidth: spacing.s0_5,
-  borderColor: colors.destructive,
-  backgroundColor: isDark ? "#2B1E1A" : "#FEEBE7",
-})
-
-const $warningContent: ThemedStyle<ViewStyle> = () => ({
-  alignItems: "center",
-  flexDirection: "row",
-  marginBottom: 4,
-})
-
-const $warningTitle: ThemedStyle<TextStyle> = ({colors}) => ({
-  fontSize: 16,
-  fontWeight: "bold",
-  marginLeft: 6,
-  color: colors.text,
-})
-
-const $warningSubtitle: ThemedStyle<TextStyle> = ({colors}) => ({
-  fontSize: 14,
-  marginLeft: 22,
-  color: colors.text,
-})
