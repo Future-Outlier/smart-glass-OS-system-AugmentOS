@@ -66,6 +66,11 @@ The fix: just send the timezone name once, use the existing settings system.
   - [x] Added `buildMentraosSettings()` as single source of truth for key mapping
   - [x] Added `getAllAppsWithAugmentosSubscriptions()` to SubscriptionManager
   - [x] Updated AppManager to use shared `buildMentraosSettings()` method
+- [x] PR Review fix (PR #1984 - base branch)
+  - [x] Added `getIndexedSetting()` for device-indexed keys like `preferred_mic:<deviceId>`
+  - [x] Added `waitForLoad()` to fix race condition where CONNECTION_ACK sent before settings loaded
+  - [x] Updated `buildMentraosSettings()` to use `getIndexedSetting("preferred_mic")`
+  - [x] Updated `UserSession.createOrReconnect()` to await settings load
 - [ ] Testing
 
 ## Changes Summary
@@ -84,6 +89,8 @@ The fix: just send the timezone name once, use the existing settings system.
 - `userSession.userTimezone` property
 - `UserSettingsManager.buildMentraosSettings()` - single source of truth for settings mapping
 - `UserSettingsManager.broadcastSettingsUpdate()` - sends full snapshot to subscribed apps
+- `UserSettingsManager.getIndexedSetting()` - handles device-indexed keys like `preferred_mic:<deviceId>`
+- `UserSettingsManager.waitForLoad()` - ensures settings are loaded before use
 - `SubscriptionManager.getAllAppsWithAugmentosSubscriptions()` - helper for broadcast
 - `userTimezone` in `mentraosSettings` (CONNECTION_ACK)
 - Dashboard reads timezone from settings system
@@ -101,7 +108,7 @@ The PR review flagged a critical issue: the original implementation sent only th
 ```typescript
 // BEFORE (broken): Only sends the single changed key
 settings: {
-  userTimezone: timezone;
+  userTimezone: timezone
 }
 ```
 
@@ -111,7 +118,7 @@ The SDK's `updateMentraosSettings()` replaces the entire settings object, so app
 
 ```typescript
 // AFTER (fixed): Sends complete snapshot
-settings: buildMentraosSettings(); // All settings included
+settings: buildMentraosSettings() // All settings included
 ```
 
 ### Files Changed
@@ -128,3 +135,22 @@ settings: buildMentraosSettings(); // All settings included
 2. **No data loss** - Apps always receive complete settings, SDK replace behavior is safe
 3. **Simpler code** - One broadcast method instead of per-setting bridge methods
 4. **Easier to extend** - Adding new settings only requires updating `buildMentraosSettings()`
+
+## PR #1984 Review Fixes (Base Branch)
+
+Additional fixes from the base settings-cleanup PR review:
+
+### Fix 1: Indexed `preferred_mic` keys
+
+Mobile stores `preferred_mic` with a device-specific indexer (e.g., `preferred_mic:G1` or `preferred_mic:Frame`). The plain `preferred_mic` key doesn't exist, so apps were always getting the default `"auto"`.
+
+- Added `getIndexedSetting(key, indexer?)` method to `UserSettingsManager`
+- Updated `buildMentraosSettings()` to use `getIndexedSetting("preferred_mic")`
+
+### Fix 2: Race condition on settings load
+
+`UserSettingsManager.load()` was async but not awaited, so CONNECTION_ACK could be sent before settings were loaded from the database.
+
+- Added `loadPromise` and `waitForLoad()` method to `UserSettingsManager`
+- Added `isLoaded()` method for checking load status
+- Updated `UserSession.createOrReconnect()` to await `waitForLoad()` before returning
