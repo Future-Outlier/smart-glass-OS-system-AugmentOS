@@ -358,8 +358,8 @@ class G1: NSObject, SGCManager {
     )
     private var writeCompletionCount = 0
 
-    private var _ready: Bool = false
-    var ready: Bool {
+    private var _fullyBooted: Bool = false
+    var fullyBooted: Bool {
         get { GlassesStore.shared.get("glasses", "fullyBooted") as? Bool ?? false }
         set {
             let oldValue = GlassesStore.shared.get("glasses", "fullyBooted") as? Bool ?? false
@@ -941,9 +941,9 @@ class G1: NSObject, SGCManager {
         }
 
         //         CoreCommsService.log("g1Ready set to \(leftReady) \(rightReady) \(leftReady && rightReady) left: \(left), right: \(right)")
-        ready = leftReady && rightReady
+        fullyBooted = leftReady && rightReady
         connected = leftReady && rightReady
-        if ready {
+        if fullyBooted {
             stopReconnectionTimer()
         }
     }
@@ -1485,7 +1485,7 @@ extension G1 {
 
         var heartbeatArray = heartbeatData.map { UInt8($0) }
 
-        if ready {
+        if fullyBooted {
             queueChunks([heartbeatArray])
         }
 
@@ -2223,7 +2223,7 @@ extension G1: CBCentralManagerDelegate, CBPeripheralDelegate {
                 guard let self else { return false }
 
                 // Check if already connected
-                if await MainActor.run(body: { self.ready }) {
+                if await MainActor.run(body: { self.fullyBooted }) {
                     Bridge.log("G1: Already connected, stopping reconnection")
                     return true // Returning true stops the reconnection loop
                 }

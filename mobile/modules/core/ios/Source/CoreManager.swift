@@ -699,8 +699,8 @@ struct ViewState {
                 return
             }
 
-            var ready = sgc?.ready ?? false
-            if !ready {
+            var fullyBooted = sgc?.fullyBooted ?? false
+            if !fullyBooted {
                 return
             }
 

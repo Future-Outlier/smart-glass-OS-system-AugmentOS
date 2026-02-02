@@ -677,8 +677,8 @@ class CoreManager {
             return
         }
 
-        var ready = sgc?.ready ?: false
-        if (!ready) {
+        var fullyBooted = sgc?.fullyBooted ?: false
+        if (!fullyBooted) {
             Bridge.log("MAN: CoreManager.sendCurrentState(): sgc not ready")
             return
         }
