@@ -10,6 +10,7 @@ import {useAppTheme} from "@/contexts/ThemeContext"
 import {SETTINGS, useSetting} from "@/stores/settings"
 import Toast from "react-native-toast-message"
 import {translate} from "@/i18n/translate"
+import {BackgroundTimer} from "@/utils/timers"
 
 interface BaseStep {
   name: string
@@ -98,6 +99,7 @@ export function OnboardingGuide({
   const [showPoster, setShowPoster] = useState(false)
   const [waitState, setWaitState] = useState(false)
   const resettingRef = useRef(false)
+  const [exitRequested, setExitRequested] = useState(false)
 
   // Initialize players with first video sources found
   const initialSource1 = useMemo(() => findNextVideoSource(steps, 0), [steps])
@@ -144,6 +146,7 @@ export function OnboardingGuide({
   }, [currentIndex, hasStarted, isCurrentStepImage])
 
   const handleExit = useCallback(() => {
+    setExitRequested(true)
     if (exitFn) {
       exitFn()
     } else {
@@ -236,6 +239,7 @@ export function OnboardingGuide({
   )
 
   const handleEndButton = useCallback(() => {
+    setExitRequested(true)
     if (endButtonFn) {
       endButtonFn()
     } else {
@@ -246,7 +250,7 @@ export function OnboardingGuide({
   const handleBack = useCallback(() => {
     setUiIndex(uiIndex - 1)
     setPlayCount(0)
-    
+
     // The start is a special case
     if (currentIndex === 0 || currentIndex === 1) {
       resettingRef.current = true
@@ -378,7 +382,7 @@ export function OnboardingGuide({
     if (isCurrentStepImage) return
 
     const subscription = currentPlayer.addListener("playingChange", (status: any) => {
-      if (resettingRef.current) return// ignore playingChange listener while resetting
+      if (resettingRef.current) return // ignore playingChange listener while resetting
       if (!status.isPlaying && currentPlayer.currentTime >= currentPlayer.duration - 0.1) {
         if (step.transition) {
           handleNext(false)
@@ -466,36 +470,30 @@ export function OnboardingGuide({
 
   const renderComposedVideo = () => {
     let s = step as VideoStep
+    let showPlayer1 = activePlayer === 1 && !showPoster && !exitRequested
+    let showPlayer2 = activePlayer === 2 && !showPoster && !exitRequested
     return (
       <>
-        <View
-          className={`absolute top-0 left-0 right-0 bottom-0 ${s.containerClassName}`}
-          style={{
-            zIndex: activePlayer === 1 ? 1 : 0,
-          }}>
+        <View className={`absolute top-0 left-0 right-0 bottom-0 ${s.containerClassName}`}>
           <VideoView
             player={player1}
             style={{
               width: "100%",
               height: "100%",
-              marginLeft: activePlayer === 1 && !showPoster ? 0 : "100%",
+              marginLeft: showPlayer1 ? 0 : "100%",
             }}
             nativeControls={false}
             allowsVideoFrameAnalysis={false}
             onFirstFrameRender={() => {}}
           />
         </View>
-        <View
-          className={`absolute top-0 left-0 right-0 bottom-0 ${s.containerClassName}`}
-          style={{
-            zIndex: activePlayer === 2 ? 1 : 0,
-          }}>
+        <View className={`absolute top-0 left-0 right-0 bottom-0 ${s.containerClassName}`}>
           <VideoView
             player={player2}
             style={{
               width: "100%",
               height: "100%",
-              marginLeft: activePlayer === 2 && !showPoster ? 0 : "100%",
+              marginLeft: showPlayer2 ? 0 : "100%",
             }}
             nativeControls={false}
             allowsVideoFrameAnalysis={false}
@@ -787,6 +785,10 @@ export function OnboardingGuide({
   const showCounter = hasStarted && steps.length > 1
   const showContent = step.title || step.subtitle || step.info
 
+  if (exitRequested) {
+    return null
+  }
+
   return (
     <>
       <View id="main" className="flex-1 justify-between">
@@ -820,7 +822,6 @@ export function OnboardingGuide({
         </View>
 
         <View id="bottom" className={`flex justify-end flex-shrink min-h-12`}>
-
           {!hasStarted && (
             <View className="flex-col">
               <View className="absolute w-full bottom-15 z-10">

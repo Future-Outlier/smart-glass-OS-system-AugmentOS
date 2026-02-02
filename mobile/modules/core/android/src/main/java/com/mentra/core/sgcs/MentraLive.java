@@ -570,9 +570,10 @@ public class MentraLive extends SGCManager {
         GlassesStore.INSTANCE.apply("glasses", "connectionState", state);
 
         if (state.equals(ConnTypes.CONNECTED)) {
-            GlassesStore.INSTANCE.apply("glasses", "ready", true);
+            GlassesStore.INSTANCE.apply("glasses", "connected", true);
             // CoreManager.getInstance().handleConnectionStateChanged();
         } else if (state.equals(ConnTypes.DISCONNECTED)) {
+            GlassesStore.INSTANCE.apply("glasses", "connected", false);
             GlassesStore.INSTANCE.apply("glasses", "ready", false);
             // CoreManager.getInstance().handleConnectionStateChanged();
         }
@@ -2260,6 +2261,7 @@ public class MentraLive extends SGCManager {
                 // Set the ready flag to stop any future readiness checks
                 glassesReady = true;
                 glassesReadyReceived = true;
+                GlassesStore.INSTANCE.apply("glasses", "ready", true);
 
                 // Stop the readiness check loop since we got confirmation
                 stopReadinessCheckLoop();
@@ -2725,9 +2727,14 @@ public class MentraLive extends SGCManager {
 
                         int batteryPercentage = bodyObj.optInt("pt", -1);
                         int ready = bodyObj.optInt("ready", 0);
-                        if (ready == 0 && batteryPercentage > 0 && batteryPercentage <= 20) {
-                            Bridge.log("LIVE: K900 battery percentage: " + batteryPercentage);
-                            Bridge.sendPairFailureEvent("errors:pairingBatteryTooLow");
+                        if (ready == 0) {
+                            Bridge.log("LIVE: K900 SOC not ready (ready=0)");
+                            GlassesStore.INSTANCE.apply("glasses", "ready", false);
+                            if (batteryPercentage > 0 && batteryPercentage <= 20) {
+                                Bridge.log("LIVE: K900 battery percentage: " + batteryPercentage);
+                                Bridge.sendPairFailureEvent("errors:pairingBatteryTooLow");
+                                return;
+                            }
                             return;
                         }
                         if (ready == 1) {

@@ -1,7 +1,7 @@
 import {DeviceTypes, getModelCapabilities} from "@/../../cloud/packages/types/src"
 import CoreModule from "core"
 import {useState} from "react"
-import {ActivityIndicator, Image, ImageStyle, TextStyle, TouchableOpacity, View, ViewStyle} from "react-native"
+import {ActivityIndicator, Image, ImageStyle, Linking, TextStyle, TouchableOpacity, View, ViewStyle} from "react-native"
 
 import {BatteryStatus} from "@/components/glasses/info/BatteryStatus"
 import {Button, Icon, Text} from "@/components/ignite"
@@ -118,6 +118,16 @@ export const CompactDeviceStatus = ({style}: {style?: ViewStyle}) => {
     connectingText = "Glasses are booting..."
   }
 
+  const handleGetSupport = () => {
+    showAlert(translate("home:getSupport"), translate("home:getSupportMessage"), [
+      {text: translate("common:cancel"), style: "cancel"},
+      {
+        text: translate("common:continue"),
+        onPress: () => Linking.openURL("https://mentraglass.com/contact"),
+      },
+    ])
+  }
+
   if (!glassesConnected || !glassesReady || isSearching) {
     return (
       <View style={[themed($disconnectedContainer), style]}>
@@ -143,7 +153,7 @@ export const CompactDeviceStatus = ({style}: {style?: ViewStyle}) => {
           }}>
           {!isSearching ? (
             <>
-              <Button compact tx="home:getSupport" preset="alternate" />
+              <Button compact tx="home:getSupport" preset="alternate" onPress={handleGetSupport} />
               <Button compact flex tx="home:connectGlasses" preset="primary" onPress={connectGlasses} />
             </>
           ) : (

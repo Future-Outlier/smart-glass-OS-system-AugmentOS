@@ -1890,9 +1890,13 @@ class MentraLive: NSObject, SGCManager {
                 let voltage = bodyObj["vt"] as? Int ?? 0
                 let charging = (bodyObj["charg"] as? Int ?? 0) == 1
 
-                // Check for low battery during pairing
-                if percentage > 0, percentage <= 20 {
-                    if !ready {
+                // SOC is still booting
+                if readyResponse == 0 {
+                    Bridge.log("LIVE: K900 SOC not ready (ready=0)")
+                    GlassesStore.shared.apply("glasses", "ready", false)
+
+                    // Check for low battery during pairing
+                    if percentage > 0, percentage <= 20 {
                         Bridge.sendPairFailureEvent("errors:pairingBatteryTooLow")
                         return
                     }
