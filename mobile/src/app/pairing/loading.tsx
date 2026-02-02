@@ -10,25 +10,27 @@ import {Screen} from "@/components/ignite/Screen"
 import GlassesPairingLoader from "@/components/glasses/GlassesPairingLoader"
 import GlassesTroubleshootingModal from "@/components/glasses/GlassesTroubleshootingModal"
 import {focusEffectPreventBack, useNavigationHistory} from "@/contexts/NavigationHistoryContext"
+import {useCoreStore} from "@/stores/core"
 import {useGlassesStore} from "@/stores/glasses"
 import GlobalEventEmitter from "@/utils/GlobalEventEmitter"
 
 export default function GlassesPairingLoadingScreen() {
   const {replace, goBack} = useNavigationHistory()
   const route = useRoute()
-  const {modelName, deviceName} = route.params as {modelName: string; deviceName?: string}
+  const {deviceModel, deviceName} = route.params as {deviceModel: string; deviceName?: string}
   const [showTroubleshootingModal, setShowTroubleshootingModal] = useState(false)
   const [pairingInProgress, setPairingInProgress] = useState(true)
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const failureErrorRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const hasAlertShownRef = useRef(false)
-  const glassesConnected = useGlassesStore((state) => state.connected)
+  const isFullyBooted = useGlassesStore((state) => state.isFullyBooted)
+  const shouldShowBootingMessage = useCoreStore((state) => state.shouldShowBootingMessage)
 
   focusEffectPreventBack()
 
   const handlePairFailure = (error: string) => {
     CoreModule.forget()
-    replace("/pairing/failure", {error: error, modelName: modelName})
+    replace("/pairing/failure", {error: error, deviceModel: deviceModel})
   }
 
   useEffect(() => {
@@ -43,7 +45,7 @@ export default function GlassesPairingLoadingScreen() {
     setPairingInProgress(true)
 
     timerRef.current = setTimeout(() => {
-      if (!glassesConnected && !hasAlertShownRef.current) {
+      if (!isFullyBooted && !hasAlertShownRef.current) {
         hasAlertShownRef.current = true
       }
     }, 30000)
@@ -55,11 +57,11 @@ export default function GlassesPairingLoadingScreen() {
   }, [])
 
   useEffect(() => {
-    if (!glassesConnected) return
+    if (!isFullyBooted) return
     if (timerRef.current) clearTimeout(timerRef.current)
     if (failureErrorRef.current) clearTimeout(failureErrorRef.current)
-    replace("/pairing/success", {modelName: modelName})
-  }, [glassesConnected, replace, modelName])
+    replace("/pairing/success", {deviceModel: deviceModel})
+  }, [isFullyBooted, replace, deviceModel])
 
   if (pairingInProgress) {
     return (
@@ -67,7 +69,12 @@ export default function GlassesPairingLoadingScreen() {
         <Header leftIcon="chevron-left" onLeftPress={goBack} />
         <View className="flex-1 pb-6">
           <View className="flex-1 justify-center">
-            <GlassesPairingLoader modelName={modelName} deviceName={deviceName} onCancel={goBack} />
+            <GlassesPairingLoader
+              deviceModel={deviceModel}
+              deviceName={deviceName}
+              onCancel={goBack}
+              isBooting={shouldShowBootingMessage}
+            />
           </View>
           <Button
             preset="secondary"
@@ -79,7 +86,7 @@ export default function GlassesPairingLoadingScreen() {
         <GlassesTroubleshootingModal
           isVisible={showTroubleshootingModal}
           onClose={() => setShowTroubleshootingModal(false)}
-          modelName={modelName}
+          deviceModel={deviceModel}
         />
       </Screen>
     )
@@ -107,7 +114,7 @@ export default function GlassesPairingLoadingScreen() {
       <GlassesTroubleshootingModal
         isVisible={showTroubleshootingModal}
         onClose={() => setShowTroubleshootingModal(false)}
-        modelName={modelName}
+        deviceModel={deviceModel}
       />
     </Screen>
   )

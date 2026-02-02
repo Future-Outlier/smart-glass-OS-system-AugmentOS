@@ -17,13 +17,13 @@ const STATUS_CONFIG: Record<DisplayStatus, {icon: string; label: () => string; b
   connected: {
     icon: "wifi",
     label: () => translate("connection:connected"),
-    bgClass: "bg-green-500",
+    bgClass: "bg-primary",
     iconColor: "#fff",
   },
   warning: {
     icon: "wifi",
     label: () => translate("connection:connecting"),
-    bgClass: "bg-orange-500",
+    bgClass: "bg-chart-3",
     iconColor: "#fff",
   },
   disconnected: {
