@@ -2022,21 +2022,6 @@ class MentraLive: NSObject, SGCManager {
         }
     }
 
-    /// Maps K900 gesture type codes to gesture names
-    private func mapK900GestureType(_ type: Int) -> String? {
-        switch type {
-        case 0: return "single_tap"
-        case 1: return "double_tap"
-        case 2: return "triple_tap"
-        case 3: return "long_press"
-        case 4: return "forward_swipe"
-        case 5: return "backward_swipe"
-        case 6: return "up_swipe"
-        case 7: return "down_swipe"
-        default: return nil
-        }
-    }
-
     // commands to send to the glasses:
 
     func requestWifiScan() {
