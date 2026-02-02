@@ -30,7 +30,7 @@ export function ConnectionOverlay() {
     <Modal transparent animationType="fade" visible={showOverlay}>
       <View className="flex-1 justify-center items-center" style={{backgroundColor: "rgba(0, 0, 0, 0.7)"}}>
         <View className="rounded-2xl p-8 mx-6 items-center" style={{backgroundColor: theme.colors.background}}>
-          <ActivityIndicator size="large" color={theme.colors.primary} />
+          <ActivityIndicator size="large" color={theme.colors.foreground} />
           <Text className="text-xl font-semibold text-text text-center mt-6 mb-2" tx="glasses:glassesAreReconnecting" />
           <Text className="text-base text-text-dim text-center mb-6" tx="glasses:glassesAreReconnectingMessage" />
           <Button tx="common:cancel" preset="secondary" onPress={handleCancel} />

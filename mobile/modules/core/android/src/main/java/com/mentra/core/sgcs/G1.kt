@@ -202,14 +202,14 @@
 //     private var isDisconnecting = false
 
 //     // Properties - Glasses Info
-//     var glassesAppVersion = ""
-//     var glassesBuildNumber = ""
-//     var glassesDeviceModel = ""
-//     var glassesAndroidVersion = ""
-//     var glassesOtaVersionUrl = ""
-//     var glassesSerialNumber = ""
-//     var glassesStyle = ""
-//     var glassesColor = ""
+//     var appVersion = ""
+//     var buildNumber = ""
+//     var deviceModel = ""
+//     var androidVersion = ""
+//     var otaVersionUrl = ""
+//     var serialNumber = ""
+//     var style = ""
+//     var color = ""
 //     var wifiSsid = ""
 //     var wifiConnected = false
 //     var wifiLocalIp = ""

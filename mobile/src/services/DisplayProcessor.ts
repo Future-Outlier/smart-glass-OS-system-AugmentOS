@@ -28,6 +28,8 @@ import {
 } from "@mentra/display-utils"
 
 import {useGlassesStore} from "@/stores/glasses"
+import {SETTINGS, useSettingsStore} from "@/stores/settings"
+import CoreModule, {GlassesStatus} from "core"
 
 // =============================================================================
 // Types
@@ -276,6 +278,20 @@ export class DisplayProcessor {
     this.helpers = toolkit.helpers
     this.composer = new ColumnComposer(toolkit.profile, this.options.breakMode)
     this.profile = toolkit.profile
+
+    // initialize with default wearable
+    const defaultWearable = useSettingsStore.getState().getSetting(SETTINGS.default_wearable.key)
+    if (defaultWearable) {
+      this.setDeviceModel(defaultWearable)
+      console.log(`[MantleBridge] Initialized DisplayProcessor with default wearable: ${defaultWearable}`)
+    }
+
+    // subscribe to core status changes:
+    CoreModule.addListener("glasses_status", (changed: Partial<GlassesStatus>) => {
+      if (changed.deviceModel) {
+        this.setDeviceModel(changed.deviceModel)
+      }
+    })
   }
 
   /**
@@ -693,13 +709,5 @@ export class DisplayProcessor {
   }
 }
 
-// =============================================================================
-// Singleton Export
-// =============================================================================
-
-/**
- * Default DisplayProcessor instance
- */
 export const displayProcessor = DisplayProcessor.getInstance()
-
 export default displayProcessor

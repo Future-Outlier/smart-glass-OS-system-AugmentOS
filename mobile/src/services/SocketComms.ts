@@ -2,7 +2,7 @@ import CoreModule from "core"
 
 import {push} from "@/contexts/NavigationRef"
 import audioPlaybackService from "@/services/AudioPlaybackService"
-import {displayProcessor} from "@/services/display"
+import displayProcessor from "@/services/DisplayProcessor"
 import mantle from "@/services/MantleManager"
 import udp from "@/services/UdpManager"
 import ws from "@/services/WebSocketManager"
@@ -109,7 +109,7 @@ class SocketComms {
   }
 
   public sendGlassesConnectionState(): void {
-    let modelName = useSettingsStore.getState().getSetting(SETTINGS.default_wearable.key)
+    let deviceModel = useSettingsStore.getState().getSetting(SETTINGS.default_wearable.key)
     const glassesInfo = useGlassesStore.getState()
 
     // Always include WiFi info - null means "unknown", false means "explicitly disconnected"
@@ -123,7 +123,8 @@ class SocketComms {
     ws.sendText(
       JSON.stringify({
         type: "glasses_connection_state",
-        modelName: modelName,
+        modelName: deviceModel, // TODO: remove this
+        deviceModel: deviceModel,
         status: connected ? "CONNECTED" : "DISCONNECTED",
         timestamp: new Date(),
         wifi: wifiInfo,
@@ -430,9 +431,8 @@ class SocketComms {
   private async configureAudioFormat(): Promise<void> {
     const backendUrl = useSettingsStore.getState().getSetting(SETTINGS.backend_url.key)
     const coreToken = useSettingsStore.getState().getSetting(SETTINGS.core_token.key)
-    const frameSizeBytes = useSettingsStore.getState().getSetting(SETTINGS.lc3_frame_size.key) || 20
-    const bypassEncoding =
-      useSettingsStore.getState().getSetting(SETTINGS.bypass_audio_encoding_for_debugging.key) || false
+    const frameSizeBytes = useSettingsStore.getState().getSetting(SETTINGS.lc3_frame_size.key)
+    const bypassEncoding = useSettingsStore.getState().getSetting(SETTINGS.bypass_audio_encoding_for_debugging.key)
 
     if (!backendUrl || !coreToken) {
       console.log("SOCKET: Cannot configure audio format - missing backend URL or token")
@@ -442,17 +442,6 @@ class SocketComms {
     // Determine format based on bypass setting
     const audioFormat = bypassEncoding ? "pcm" : "lc3"
     console.log(`SOCKET: Configuring audio format: ${audioFormat} (bypass=${bypassEncoding})`)
-
-    // Configure the native encoder frame size first (only needed for LC3)
-    if (!bypassEncoding) {
-      try {
-        await CoreModule.setLC3FrameSize(frameSizeBytes)
-        console.log(`SOCKET: Native LC3 encoder configured to ${frameSizeBytes} bytes/frame`)
-      } catch (err) {
-        console.error("SOCKET: Failed to configure native LC3 encoder:", err)
-        // Continue anyway - cloud config is more important
-      }
-    }
 
     try {
       const body: any = {
@@ -547,22 +536,6 @@ class SocketComms {
       return
     }
 
-    // DEBUG: Log incoming event before processing
-    const deviceModel = displayProcessor.getDeviceModel()
-    const profile = displayProcessor.getProfile()
-    console.log(`[DisplayProcessor DEBUG] ========================================`)
-    console.log(`[DisplayProcessor DEBUG] Device Model: ${deviceModel}`)
-    console.log(
-      `[DisplayProcessor DEBUG] Profile: ${profile.id} (width: ${profile.displayWidthPx}px, lines: ${profile.maxLines})`,
-    )
-    console.log(`[DisplayProcessor DEBUG] Incoming layoutType: ${msg.layout?.layoutType || msg.layoutType}`)
-    console.log(`[DisplayProcessor DEBUG] Incoming text length: ${(msg.layout?.text || msg.text || "").length}`)
-    console.log(
-      `[DisplayProcessor DEBUG] Incoming text preview: "${(msg.layout?.text || msg.text || "").substring(0, 100)}..."`,
-    )
-
-    // Process the display event through DisplayProcessor for pixel-accurate wrapping
-    // This ensures the preview matches exactly what the glasses will show
     let processedEvent
     try {
       processedEvent = displayProcessor.processDisplayEvent(msg)
@@ -571,25 +544,7 @@ class SocketComms {
       processedEvent = msg
     }
 
-    // DEBUG: Log processed event
-    console.log(
-      `[DisplayProcessor DEBUG] Processed layoutType: ${processedEvent.layout?.layoutType || processedEvent.layoutType}`,
-    )
-    console.log(
-      `[DisplayProcessor DEBUG] Processed text length: ${(processedEvent.layout?.text || processedEvent.text || "").length}`,
-    )
-    console.log(
-      `[DisplayProcessor DEBUG] Processed text preview: "${(processedEvent.layout?.text || processedEvent.text || "").substring(0, 200)}..."`,
-    )
-    console.log(
-      `[DisplayProcessor DEBUG] _processed: ${processedEvent._processed}, _profile: ${processedEvent._profile}`,
-    )
-    console.log(`[DisplayProcessor DEBUG] ========================================`)
-
-    // Send processed event to native SGC
     CoreModule.displayEvent(processedEvent)
-
-    // Update the Zustand store with the processed display content
     const displayEventStr = JSON.stringify(processedEvent)
     useDisplayStore.getState().setDisplayEvent(displayEventStr)
   }

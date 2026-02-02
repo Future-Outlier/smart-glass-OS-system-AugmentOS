@@ -33,6 +33,9 @@ The mobile client migrated from native "core" (WebSocket-based settings) to Reac
 - [x] Phase 1: Fix key mismatch in UserSettingsManager
 - [x] Phase 2: Fix CONNECTION_ACK field name and data source
 - [x] Phase 3: Remove dead code from User model
+- [x] Phase 4: PR review fixes
+  - [x] Fix indexed `preferred_mic` keys (stored as `preferred_mic:<deviceId>`)
+  - [x] Fix race condition where CONNECTION_ACK could be sent before settings loaded
 - [ ] Testing
 
 ## Changes Made
@@ -55,3 +58,20 @@ The mobile client migrated from native "core" (WebSocket-based settings) to Reac
 - Removed `updateAugmentosSettings()` method (~25 lines)
 - Removed `getAugmentosSettings()` method (~5 lines)
 - Total: ~95 lines of dead code removed
+
+### Phase 4: PR Review Fixes
+
+**Fix 1: Indexed `preferred_mic` keys**
+
+Mobile stores `preferred_mic` with a device-specific indexer (e.g., `preferred_mic:G1` or `preferred_mic:Frame`). The plain `preferred_mic` key doesn't exist, so apps were always getting the default `"auto"`.
+
+- Added `getIndexedSetting(key, indexer?)` method to `UserSettingsManager`
+- Updated `AppManager` to use `getIndexedSetting("preferred_mic")` instead of `snapshot.preferred_mic`
+
+**Fix 2: Race condition on settings load**
+
+`UserSettingsManager.load()` was async but not awaited, so CONNECTION_ACK could be sent before settings were loaded from the database.
+
+- Added `loadPromise` and `waitForLoad()` method to `UserSettingsManager`
+- Added `isLoaded()` method for checking load status
+- Updated `UserSession.createOrReconnect()` to await `waitForLoad()` before returning

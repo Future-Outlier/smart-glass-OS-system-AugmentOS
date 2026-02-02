@@ -3,11 +3,9 @@ import CoreModule from "core"
 import {useEffect, useState} from "react"
 import {ScrollView, TextInput, TextStyle, TouchableOpacity, View, ViewStyle} from "react-native"
 
-import bridge from "@/bridge/MantleBridge"
 import {Text, PillButton} from "@/components/ignite"
 import ToggleSetting from "@/components/settings/ToggleSetting"
 import {RouteButton} from "@/components/ui/RouteButton"
-import {useCoreStatus} from "@/contexts/CoreStatusProvider"
 import {useNavigationHistory} from "@/contexts/NavigationHistoryContext"
 import {useAppTheme} from "@/contexts/ThemeContext"
 import {translate} from "@/i18n/translate"
@@ -256,11 +254,10 @@ interface BleCommand {
 
 export default function NexDeveloperSettings() {
   const {theme, themed} = useAppTheme()
-  const {status} = useCoreStatus()
   const {push} = useNavigationHistory()
   const [defaultWearable] = useSetting(SETTINGS.default_wearable.key)
-  const glassesConnected = useGlassesStore(state => state.connected)
-  const modelName = useGlassesStore(state => state.modelName)
+  const glassesConnected = useGlassesStore((state) => state.connected)
+  const deviceModel = useGlassesStore((state) => state.deviceModel)
   const features: Capabilities = getModelCapabilities(defaultWearable)
 
   // Mentra Nex BLE test state variables
@@ -280,9 +277,9 @@ export default function NexDeveloperSettings() {
   // LC3 Audio Control state
   const [lc3AudioEnabled, setLc3AudioEnabled] = useState(true)
 
-  // Get both protobuf versions from core status
-  const protobufSchemaVersion = status.core_info.protobuf_schema_version || "Unknown"
-  const glassesProtobufVersion = status.core_info.glasses_protobuf_version || "Unknown"
+  // // // Get both protobuf versions from core status
+  // const protobufSchemaVersion = status.core_info.protobuf_schema_version || "Unknown"
+  // const glassesProtobufVersion = status.core_info.glasses_protobuf_version || "Unknown"
 
   // BLE Command display state variables
   const [showFullSenderCommand, setShowFullSenderCommand] = useState(false)
@@ -394,7 +391,7 @@ export default function NexDeveloperSettings() {
   const onLc3AudioToggle = async (enabled: boolean) => {
     setLc3AudioEnabled(enabled)
     if (glassesConnected) {
-      await bridge.setLc3AudioEnabled(enabled)
+      await CoreModule.setLc3AudioEnabled(enabled)
     }
   }
 
@@ -416,10 +413,10 @@ export default function NexDeveloperSettings() {
           </Text>
           <View style={themed($versionContainer)}>
             <Text style={themed($versionBadge)}>Interface v{NEX_INTERFACE_VERSION}</Text>
-            <Text style={themed($protobufVersionBadge)}>App Protobuf {protobufSchemaVersion.split(" | ")[0]}</Text>
+            {/* <Text style={themed($protobufVersionBadge)}>App Protobuf {protobufSchemaVersion.split(" | ")[0]}</Text>
             <Text style={themed($glassesProtobufVersionBadge)}>
               Glasses Protobuf {glassesProtobufVersion.split(" | ")[0]}
-            </Text>
+            </Text> */}
           </View>
         </View>
 
@@ -436,7 +433,7 @@ export default function NexDeveloperSettings() {
         )}
 
         {/* Mentra Nex BLE Test Section - Only show when connected to Mentra Nex */}
-        {modelName === "Mentra Nex" ? (
+        {deviceModel === "Mentra Nex" ? (
           <>
             {/* Custom Display Text Settings */}
             <View style={themed($settingsGroup)}>
@@ -526,7 +523,7 @@ export default function NexDeveloperSettings() {
                     {label: "32×32", value: "32x32"},
                     {label: "160×160", value: "160x160"},
                     {label: "240×240", value: "240x240"},
-                  ].map(size => (
+                  ].map((size) => (
                     <PillButton
                       key={size.value}
                       text={size.label}
@@ -546,7 +543,7 @@ export default function NexDeveloperSettings() {
                     {label: "Pattern", value: "pattern"},
                     {label: "Checkerboard", value: "checkerboard"},
                     {label: "Solid Color", value: "solid"},
-                  ].map(image => (
+                  ].map((image) => (
                     <PillButton
                       key={image.value}
                       text={image.label}
