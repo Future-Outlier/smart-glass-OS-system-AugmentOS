@@ -1,10 +1,10 @@
-import {router, useFocusEffect, useNavigationContainerRef, usePathname, useSegments, useNavigation} from "expo-router"
+import {router, useFocusEffect, usePathname, useSegments, useNavigation} from "expo-router"
 import {createContext, useContext, useEffect, useRef, useCallback, useState} from "react"
 import {BackHandler} from "react-native"
 import {CommonActions} from "@react-navigation/native"
 
 import {navigationRef} from "@/contexts/NavigationRef"
-import { StackAnimationTypes } from "react-native-screens"
+import {StackAnimationTypes} from "react-native-screens"
 
 export type NavigationHistoryPush = (path: string, params?: any) => void
 export type NavigationHistoryReplace = (path: string, params?: any) => void
