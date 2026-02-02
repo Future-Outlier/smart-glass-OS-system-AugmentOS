@@ -1214,6 +1214,8 @@ export class AppManager {
       // Map from REST keys (snake_case) to SDK keys (camelCase) for backward compatibility
       // Keys must match exactly what mobile sends (see mobile/src/stores/settings.ts)
       const settingsSnapshot = this.userSession.userSettingsManager.getSnapshot();
+      // preferred_mic is indexed by device (stored as preferred_mic:<deviceId>)
+      const preferredMic = this.userSession.userSettingsManager.getIndexedSetting("preferred_mic") ?? "auto";
       const mentraosSettings = {
         // Primary settings apps care about
         metricSystemEnabled: settingsSnapshot.metric_system ?? false,
@@ -1226,10 +1228,10 @@ export class AppManager {
         // Mobile uses "_for_debugging" suffix for these keys
         bypassVad: settingsSnapshot.bypass_vad_for_debugging ?? false,
         bypassAudioEncoding: settingsSnapshot.bypass_audio_encoding_for_debugging ?? false,
-        // Mobile uses preferred_mic instead of useOnboardMic
-        preferredMic: settingsSnapshot.preferred_mic ?? "auto",
+        // Mobile uses preferred_mic indexed by device (e.g., preferred_mic:G1)
+        preferredMic: preferredMic,
         // Legacy key for backward compat (derived from preferred_mic)
-        useOnboardMic: settingsSnapshot.preferred_mic === "glasses",
+        useOnboardMic: preferredMic === "glasses",
       };
 
       // Send connection acknowledgment with capabilities
