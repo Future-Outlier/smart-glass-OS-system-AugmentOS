@@ -1,7 +1,7 @@
 import {Image, ImageSource} from "expo-image"
 import {useVideoPlayer, VideoView, VideoSource, VideoPlayer} from "expo-video"
 import {useState, useCallback, useEffect, useMemo, useRef} from "react"
-import {View, ViewStyle, ActivityIndicator, Platform} from "react-native"
+import {View, ViewStyle, ActivityIndicator, Platform, Animated} from "react-native"
 
 import {MentraLogoStandalone} from "@/components/brands/MentraLogoStandalone"
 import {Text, Button, Header, Icon} from "@/components/ignite"
@@ -10,11 +10,12 @@ import {useAppTheme} from "@/contexts/ThemeContext"
 import {SETTINGS, useSetting} from "@/stores/settings"
 import Toast from "react-native-toast-message"
 import {translate} from "@/i18n/translate"
-import {BackgroundTimer} from "@/utils/timers"
+import {getGlassesImage} from "@/utils/getGlassesImage"
 
 interface BaseStep {
   name: string
   transition: boolean
+  fadeTransition?: boolean // defaults to true - fade out/in when transitioning to this step
   title?: string
   subtitle?: string
   subtitle2?: string
@@ -22,7 +23,6 @@ interface BaseStep {
   info?: string
   bullets?: string[]
   numberedBullets?: string[]
-  fadeOut?: boolean // if true, the step will fade out after the duration
   waitFn?: () => Promise<void>
 }
 
@@ -33,6 +33,7 @@ interface VideoStep extends BaseStep {
   playCount: number
   containerStyle?: ViewStyle
   containerClassName?: string
+  replayable?: boolean // defaults to true
 }
 
 interface ImageStep extends BaseStep {
@@ -43,7 +44,13 @@ interface ImageStep extends BaseStep {
   duration?: number // ms before showing next button, undefined = immediate
 }
 
-export type OnboardingStep = VideoStep | ImageStep
+interface GlassesStep extends BaseStep {
+  type: "glasses"
+  containerStyle?: ViewStyle
+  containerClassName?: string
+}
+
+export type OnboardingStep = VideoStep | ImageStep | GlassesStep
 
 interface OnboardingGuideProps {
   steps: OnboardingStep[]
@@ -84,6 +91,7 @@ export function OnboardingGuide({
   const {clearHistoryAndGoHome} = useNavigationHistory()
   const {theme} = useAppTheme()
   const [superMode] = useSetting(SETTINGS.super_mode.key)
+  const [defaultWearable] = useSetting(SETTINGS.default_wearable.key)
 
   const [currentIndex, setCurrentIndex] = useState(0)
   const [showNextButton, setShowNextButton] = useState(false)
@@ -101,7 +109,7 @@ export function OnboardingGuide({
   const [waitState, setWaitState] = useState(false)
   const resettingRef = useRef(false)
   const navigatingRef = useRef(false)
-  const [exitRequested, setExitRequested] = useState(false)
+  const fadeOpacity = useRef(new Animated.Value(1)).current
 
   // Initialize players with first video sources found
   const initialSource1 = useMemo(() => findNextVideoSource(steps, 0), [steps])
@@ -119,36 +127,37 @@ export function OnboardingGuide({
   const currentPlayer = activePlayer === 1 ? player1 : player2
 
   const nonTransitionVideoFiles = steps.filter((step) => !step.transition)
-  const counter = translate("onboarding:stepCounter", {index: uiIndex, total: nonTransitionVideoFiles.length})
+  const counter = `Step ${uiIndex} / ${nonTransitionVideoFiles.length}`
   const step = steps[currentIndex]
   const isCurrentStepImage = step.type === "image"
   const isCurrentStepVideo = step.type === "video"
+  const isCurrentStepGlasses = step.type === "glasses"
 
-  // Handle image step timing
+  // Handle image/glasses step timing
+  const isStaticStep = isCurrentStepImage || isCurrentStepGlasses
   useEffect(() => {
-    if (!hasStarted || !isCurrentStepImage) return
+    if (!hasStarted || !isStaticStep) return
 
     if (step.transition) {
       // Auto-advance transition images
-      const timer = BackgroundTimer.setTimeout(() => {
+      const timer = setTimeout(() => {
         handleNext(false)
-      }, step.duration ?? 500)
+      }, (step as ImageStep).duration ?? 500)
       return () => clearTimeout(timer)
     }
 
-    if (step.duration) {
-      const timer = BackgroundTimer.setTimeout(() => {
+    if ((step as ImageStep).duration) {
+      const timer = setTimeout(() => {
         setShowNextButton(true)
-      }, step.duration)
+      }, (step as ImageStep).duration)
       return () => clearTimeout(timer)
     } else {
       setShowNextButton(true)
     }
     return () => {}
-  }, [currentIndex, hasStarted, isCurrentStepImage])
+  }, [currentIndex, hasStarted, isStaticStep])
 
   const handleExit = useCallback(() => {
-    setExitRequested(true)
     if (exitFn) {
       exitFn()
     } else {
@@ -160,19 +169,18 @@ export function OnboardingGuide({
   useEffect(() => {
     const isLoading = (player1Loading && activePlayer === 1) || (player2Loading && activePlayer === 2)
 
-    if (!isLoading) {
+    if (isLoading) {
+      const timer = setTimeout(() => {
+        setShowPoster(true)
+      }, 2000)
+      return () => clearTimeout(timer)
+    } else {
       setShowPoster(false)
-      return
     }
-
-    const timer = BackgroundTimer.setTimeout(() => {
-      setShowPoster(true)
-    }, 2000)
-    return () => BackgroundTimer.clearTimeout(timer)
   }, [player1Loading, player2Loading, activePlayer])
 
   const handleNext = useCallback(
-    (manual: boolean = false) => {
+    async (manual: boolean = false) => {
       console.log(`ONBOARD: handleNext(${manual})`)
 
       // Prevent multiple rapid calls from corrupting player state
@@ -194,75 +202,100 @@ export function OnboardingGuide({
 
       const nextIndex = currentIndex < steps.length - 1 ? currentIndex + 1 : 0
       const nextStep = steps[nextIndex]
+      const shouldFade = nextStep.fadeTransition !== false
 
       console.log(`ONBOARD: current: ${currentIndex} next: ${nextIndex}`)
 
-      setShowNextButton(false)
-      setShowReplayButton(false)
-      setCurrentIndex(nextIndex)
-      setPlayCount(0)
+      // Helper to perform the actual step change
+      const performStepChange = async () => {
+        setShowNextButton(false)
+        setShowReplayButton(false)
+        setCurrentIndex(nextIndex)
+        setPlayCount(0)
 
-      if (nextStep.transition) {
-        setTransitionCount(transitionCount + 1)
+        if (nextStep.transition) {
+          setTransitionCount(transitionCount + 1)
+        }
+
+        // If next step is an image or glasses, just pause current player and preload next video
+        if (nextStep.type === "image" || nextStep.type === "glasses") {
+          player1.pause()
+          player2.pause()
+
+          // Preload next video source into inactive player
+          const nextVideoSource = findNextVideoSource(steps, nextIndex + 1)
+          if (nextVideoSource) {
+            if (activePlayer === 1) {
+              player2.replaceAsync(nextVideoSource)
+              setPlayer2Loading(true)
+            } else {
+              player1.replaceAsync(nextVideoSource)
+              setPlayer1Loading(true)
+            }
+          }
+          return
+        }
+
+        // Next step is a video - handle player swapping
+        const nextNextVideoSource = findNextVideoSource(steps, nextIndex + 1)
+
+        try {
+          if (activePlayer === 1) {
+            // Load video first, then switch active player to avoid poster flash
+            await player2.replaceAsync(nextStep.source)
+            setActivePlayer(2)
+            player2.play()
+            if (nextNextVideoSource) {
+              player1.replaceAsync(nextNextVideoSource)
+              setPlayer1Loading(true)
+            }
+            player1.pause()
+          } else {
+            // Load video first, then switch active player to avoid poster flash
+            await player1.replaceAsync(nextStep.source)
+            setActivePlayer(1)
+            player1.play()
+            if (nextNextVideoSource) {
+              player2.replaceAsync(nextNextVideoSource)
+              setPlayer2Loading(true)
+            }
+            player2.pause()
+          }
+        } catch (error) {
+          console.error("ONBOARD: Error during player swap:", error)
+        }
+
+        console.log(`ONBOARD: current is now ${nextIndex}`)
       }
 
-      // If next step is an image, just pause current player and preload next video
-      if (nextStep.type === "image") {
-        player1.pause()
-        player2.pause()
-
-        // Preload next video source into inactive player
-        const nextVideoSource = findNextVideoSource(steps, nextIndex + 1)
-        if (nextVideoSource) {
-          if (activePlayer === 1) {
-            player2.replaceAsync(nextVideoSource)
-            setPlayer2Loading(true)
-          } else {
-            player1.replaceAsync(nextVideoSource)
-            setPlayer1Loading(true)
-          }
-        }
-        // Allow next navigation after a short delay
+      if (shouldFade) {
+        // Fade out, swap, fade in
+        Animated.timing(fadeOpacity, {
+          toValue: 0,
+          duration: 450,
+          useNativeDriver: true,
+        }).start(async () => {
+          await performStepChange()
+          Animated.timing(fadeOpacity, {
+            toValue: 1,
+            duration: 450,
+            useNativeDriver: true,
+          }).start(() => {
+            navigatingRef.current = false
+          })
+        })
+      } else {
+        // No fade, just swap immediately
+        await performStepChange()
         setTimeout(() => {
           navigatingRef.current = false
         }, 100)
-        return
       }
-
-      // Next step is a video - handle player swapping
-      const nextNextVideoSource = findNextVideoSource(steps, nextIndex + 1)
-
-      if (activePlayer === 1) {
-        setActivePlayer(2)
-        player2.replaceAsync(nextStep.source)
-        player2.play()
-        if (nextNextVideoSource) {
-          player1.replaceAsync(nextNextVideoSource)
-          setPlayer1Loading(true)
-        }
-        player1.pause()
-      } else {
-        setActivePlayer(1)
-        player1.replaceAsync(nextStep.source)
-        player1.play()
-        if (nextNextVideoSource) {
-          player2.replaceAsync(nextNextVideoSource)
-          setPlayer2Loading(true)
-        }
-        player2.pause()
-      }
-
-      // Allow next navigation after a short delay
-      setTimeout(() => {
-        navigatingRef.current = false
-      }, 100)
-      console.log(`ONBOARD: current is now ${nextIndex}`)
     },
-    [currentIndex, activePlayer, uiIndex, steps, transitionCount, clearHistoryAndGoHome],
+    [currentIndex, activePlayer, uiIndex, steps, transitionCount, clearHistoryAndGoHome, fadeOpacity],
   )
 
   const handleEndButton = useCallback(() => {
-    setExitRequested(true)
     if (endButtonFn) {
       endButtonFn()
     } else {
@@ -297,7 +330,7 @@ export function OnboardingGuide({
         player2.currentTime = 0
         player2.pause()
       }
-      BackgroundTimer.setTimeout(() => {
+      setTimeout(() => {
         resettingRef.current = false
       }, 0)
       return
@@ -367,7 +400,7 @@ export function OnboardingGuide({
 
   // Video status change listener
   useEffect(() => {
-    if (isCurrentStepImage) return
+    if (isStaticStep) return
 
     const subscription = currentPlayer.addListener("statusChange", (status: any) => {
       console.log("ONBOARD: statusChange", status)
@@ -381,7 +414,7 @@ export function OnboardingGuide({
     })
 
     return () => subscription.remove()
-  }, [currentPlayer, currentIndex, autoStart, isCurrentStepImage])
+  }, [currentPlayer, currentIndex, autoStart, isStaticStep])
 
   useEffect(() => {
     const sub1 = player1.addListener("sourceLoad", (_status: any) => {
@@ -402,7 +435,7 @@ export function OnboardingGuide({
 
   // Video playing change listener
   useEffect(() => {
-    if (isCurrentStepImage) return
+    if (isStaticStep) return
 
     const subscription = currentPlayer.addListener("playingChange", (status: any) => {
       if (resettingRef.current) return // ignore playingChange listener while resetting
@@ -411,7 +444,7 @@ export function OnboardingGuide({
           handleNext(false)
           return
         }
-        // -1 means play forever
+        // -1 means loop forever:
         if (step.type === "video" && (playCount < step.playCount - 1 || step.playCount === -1)) {
           setShowNextButton(true)
           setPlayCount((prev) => prev + 1)
@@ -425,7 +458,7 @@ export function OnboardingGuide({
     })
 
     return () => subscription.remove()
-  }, [currentPlayer, step, handleNext, playCount, isCurrentStepImage])
+  }, [currentPlayer, step, handleNext, playCount, isStaticStep])
 
   const handleReplay = useCallback(() => {
     if (isCurrentStepVideo) {
@@ -494,30 +527,36 @@ export function OnboardingGuide({
 
   const renderComposedVideo = () => {
     let s = step as VideoStep
-    let showPlayer1 = activePlayer === 1 && !showPoster && !exitRequested
-    let showPlayer2 = activePlayer === 2 && !showPoster && !exitRequested
     return (
       <>
-        <View className={`absolute top-0 left-0 right-0 bottom-0 ${s.containerClassName}`}>
+        <View
+          className={`absolute top-0 left-0 right-0 bottom-0 ${s.containerClassName}`}
+          style={{
+            zIndex: activePlayer === 1 ? 1 : 0,
+          }}>
           <VideoView
             player={player1}
             style={{
               width: "100%",
               height: "100%",
-              marginLeft: showPlayer1 ? 0 : "100%",
+              marginLeft: activePlayer === 1 && !showPoster ? 0 : "100%",
             }}
             nativeControls={false}
             allowsVideoFrameAnalysis={false}
             onFirstFrameRender={() => {}}
           />
         </View>
-        <View className={`absolute top-0 left-0 right-0 bottom-0 ${s.containerClassName}`}>
+        <View
+          className={`absolute top-0 left-0 right-0 bottom-0 ${s.containerClassName}`}
+          style={{
+            zIndex: activePlayer === 2 ? 1 : 0,
+          }}>
           <VideoView
             player={player2}
             style={{
               width: "100%",
               height: "100%",
-              marginLeft: showPlayer2 ? 0 : "100%",
+              marginLeft: activePlayer === 2 && !showPoster ? 0 : "100%",
             }}
             nativeControls={false}
             allowsVideoFrameAnalysis={false}
@@ -642,6 +681,22 @@ export function OnboardingGuide({
       )
     }
 
+    if (isCurrentStepGlasses) {
+      const glassesImage = getGlassesImage(defaultWearable)
+      return (
+        <View style={step.containerStyle} className={`${step.containerClassName} px-8`}>
+          <Image
+            source={glassesImage}
+            style={{
+              width: "100%",
+              height: "100%",
+            }}
+            contentFit="contain"
+          />
+        </View>
+      )
+    }
+
     if (superMode && Platform.OS === "ios") {
       return renderDebugVideos()
     }
@@ -655,7 +710,7 @@ export function OnboardingGuide({
       setWaitState(true)
       step.waitFn().then(() => {
         setWaitState(false)
-        BackgroundTimer.setTimeout(() => {
+        setTimeout(() => {
           handleNext(true)
         }, 1500)
       })
@@ -765,7 +820,12 @@ export function OnboardingGuide({
         {step.info && (
           <View className="flex flex-row gap-2 justify-start items-center">
             <Icon name="info" size={20} color={theme.colors.muted_foreground} />
-            <Text className="text-start text-sm font-medium text-muted-foreground" text={step.info} numberOfLines={2} />
+            <Text
+              className="flex-1 text-start text-sm font-medium text-muted-foreground"
+              style={{lineHeight: 16}}
+              text={step.info}
+              numberOfLines={2}
+            />
           </View>
         )}
       </View>
@@ -780,6 +840,7 @@ export function OnboardingGuide({
       // if (step.waitFn) {
       return <View className="h-12" />
       // }
+      return null
     }
     return (
       <View id="bottom" className={`flex justify-end h-12 ${superMode ? "bg-chart-4" : ""}`}>
@@ -805,12 +866,8 @@ export function OnboardingGuide({
     )
   }
 
-  const showCounter = hasStarted && steps.length > 1
+  const showCounter = hasStarted && steps.length > 1 && !isLastStep
   const showContent = step.title || step.subtitle || step.info
-
-  if (exitRequested) {
-    return null
-  }
 
   return (
     <>
@@ -819,8 +876,11 @@ export function OnboardingGuide({
           <Header
             leftIcon={showCloseButton ? "x" : undefined}
             RightActionComponent={
-              <View className={`flex flex-row gap-2 items-center justify-center ${!hasStarted ? "flex-1" : ""}`}>
-                <Text className="text-center text-sm font-medium" text={showCounter ? counter : ""} />
+              <View
+                className={`flex flex-row gap-2 items-center justify-center ${
+                  !hasStarted || isLastStep ? "flex-1" : ""
+                }`}>
+                {showCounter && <Text className="text-center text-sm font-medium" text={counter} />}
                 <MentraLogoStandalone />
               </View>
             }
@@ -829,22 +889,24 @@ export function OnboardingGuide({
         )}
         <View id="top">
           {showContent && renderStepContent()}
-          <View className="-mx-6">
-            <View className="relative" style={{width: "100%", aspectRatio: 1}}>
-              {renderContent()}
-            </View>
-            {showReplayButton && isCurrentStepVideo && (
-              <View className="absolute bottom-1 left-0 right-0 items-center z-10">
-                <Button preset="secondary" className="min-w-24" tx="onboarding:replay" onPress={handleReplay} />
+          <View className="-mx-7">
+            <Animated.View style={{opacity: fadeOpacity}}>
+              <View className="relative" style={{width: "100%", aspectRatio: 1}}>
+                {renderContent()}
               </View>
-            )}
+              {showReplayButton && isCurrentStepVideo && (step as VideoStep).replayable !== false && (
+                <View className="absolute bottom-1 left-0 right-0 items-center z-10">
+                  <Button preset="secondary" className="min-w-24" tx="onboarding:replay" onPress={handleReplay} />
+                </View>
+              )}
+            </Animated.View>
           </View>
           <View className="flex-shrink">{renderStepCheck()}</View>
           {renderBullets()}
           {renderNumberedBullets()}
         </View>
 
-        <View id="bottom" className={`flex justify-end flex-shrink min-h-12`}>
+        <View id="bottom" className={`flex justify-end flex-shrink min-h-12 mb-6`}>
           {!hasStarted && (
             <View className="flex-col">
               <View className="absolute w-full bottom-15 z-10">
@@ -854,7 +916,7 @@ export function OnboardingGuide({
             </View>
           )}
 
-          {hasStarted && (
+          {hasStarted && (superMode || !step.waitFn) && (
             <View className="flex-row gap-4">
               {superMode && !isFirstStep && <Button flex preset="secondary" tx="common:back" onPress={handleBack} />}
               {!isLastStep ? renderContinueButton() : <Button flex text={endButtonText} onPress={handleEndButton} />}
