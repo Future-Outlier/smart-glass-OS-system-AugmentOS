@@ -8,7 +8,7 @@
 @MainActor
 class Simulated: SGCManager {
     init() {
-        GlassesStore.shared.apply("glasses", "ready", true)
+        GlassesStore.shared.apply("glasses", "fullyBooted", true)
         GlassesStore.shared.apply("glasses", "connected", true)
         GlassesStore.shared.apply("glasses", "connectionState", ConnTypes.CONNECTED)
         GlassesStore.shared.apply("glasses", "micEnabled", false)

@@ -106,9 +106,9 @@ public class Mach1 extends SGCManager {
         GlassesStore.INSTANCE.apply("glasses", "connectionState", state);
 
         if (state.equals(ConnTypes.CONNECTED)) {
-            GlassesStore.INSTANCE.apply("glasses", "ready", true);
+            GlassesStore.INSTANCE.apply("glasses", "fullyBooted", true);
         } else if (state.equals(ConnTypes.DISCONNECTED)) {
-            GlassesStore.INSTANCE.apply("glasses", "ready", false);
+            GlassesStore.INSTANCE.apply("glasses", "fullyBooted", false);
         }
     }
 

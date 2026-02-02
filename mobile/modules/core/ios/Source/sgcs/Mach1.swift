@@ -110,10 +110,10 @@ class Mach1: UltraliteBaseViewController, SGCManager {
     @Published var batteryLevel: Int = -1
     @Published var isConnected: Bool = false
     var ready: Bool {
-        get { GlassesStore.shared.get("glasses", "ready") as? Bool ?? false }
+        get { GlassesStore.shared.get("glasses", "fullyBooted") as? Bool ?? false }
         set {
-            let oldValue = GlassesStore.shared.get("glasses", "ready") as? Bool ?? false
-            GlassesStore.shared.apply("glasses", "ready", newValue)
+            let oldValue = GlassesStore.shared.get("glasses", "fullyBooted") as? Bool ?? false
+            GlassesStore.shared.apply("glasses", "fullyBooted", newValue)
         }
     }
     private var connected: Bool {

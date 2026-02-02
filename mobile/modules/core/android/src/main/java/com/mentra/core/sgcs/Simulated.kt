@@ -10,7 +10,7 @@ class Simulated : SGCManager() {
 
     init {
         type = DeviceTypes.SIMULATED
-        GlassesStore.apply("glasses", "ready", true)
+        GlassesStore.apply("glasses", "fullyBooted", true)
         GlassesStore.apply("glasses", "connected", true)
         GlassesStore.apply("glasses", "connectionState", ConnTypes.CONNECTED)
         GlassesStore.apply("glasses", "micEnabled", false)

@@ -573,7 +573,7 @@ public class MentraLive extends SGCManager {
             GlassesStore.INSTANCE.apply("glasses", "connected", true);
         } else if (state.equals(ConnTypes.DISCONNECTED)) {
             GlassesStore.INSTANCE.apply("glasses", "connected", false);
-            GlassesStore.INSTANCE.apply("glasses", "ready", false);
+            GlassesStore.INSTANCE.apply("glasses", "fullyBooted", false);
         }
     }
 
@@ -2281,7 +2281,7 @@ public class MentraLive extends SGCManager {
                 // Set the ready flag to stop any future readiness checks
                 glassesReady = true;
                 glassesReadyReceived = true;
-                GlassesStore.INSTANCE.apply("glasses", "ready", true);
+                GlassesStore.INSTANCE.apply("glasses", "fullyBooted", true);
 
                 // Stop the readiness check loop since we got confirmation
                 stopReadinessCheckLoop();
@@ -2746,10 +2746,10 @@ public class MentraLive extends SGCManager {
                     if (bodyObj != null) {
 
                         int batteryPercentage = bodyObj.optInt("pt", -1);
-                        int ready = bodyObj.optInt("ready", 0);
+                        int ready = bodyObj.optInt("fullyBooted", 0);
                         if (ready == 0) {
                             Bridge.log("LIVE: K900 SOC not ready (ready=0)");
-                            GlassesStore.INSTANCE.apply("glasses", "ready", false);
+                            GlassesStore.INSTANCE.apply("glasses", "fullyBooted", false);
                             if (batteryPercentage > 0 && batteryPercentage <= 20) {
                                 Bridge.log("LIVE: K900 battery percentage: " + batteryPercentage);
                                 Bridge.sendPairFailureEvent("errors:pairingBatteryTooLow");
@@ -4009,7 +4009,7 @@ public class MentraLive extends SGCManager {
         reconnectAttempts = 0;
         isReconnecting = false;
         glassesReady = false;
-        GlassesStore.INSTANCE.apply("glasses", "ready", false);
+        GlassesStore.INSTANCE.apply("glasses", "fullyBooted", false);
         updateConnectionState(ConnTypes.DISCONNECTED);
 
         // Note: We don't null context here to prevent race conditions with BLE callbacks

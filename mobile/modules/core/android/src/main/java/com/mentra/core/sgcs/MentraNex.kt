@@ -383,12 +383,12 @@ class MentraNex : SGCManager() {
     }
 
     override fun disconnect() {
-        GlassesStore.apply("glasses", "ready", false)
+        GlassesStore.apply("glasses", "fullyBooted", false)
         destroy();
     }
 
     override fun forget() {
-        GlassesStore.apply("glasses", "ready", false)
+        GlassesStore.apply("glasses", "fullyBooted", false)
         destroy();
     }
 
@@ -1231,14 +1231,14 @@ class MentraNex : SGCManager() {
             GlassesStore.apply("glasses", "connectionState", ConnTypes.CONNECTED)
             Bridge.log("Nex: Main glasses connected")
             lastConnectionTimestamp = System.currentTimeMillis()
-            GlassesStore.apply("glasses", "ready", true)
+            GlassesStore.apply("glasses", "fullyBooted", true)
             GlassesStore.apply("glasses", "connected", true)
             // Removed commented sleep code as it's not needed
             // connectionEvent(it)
         } else {
             GlassesStore.apply("glasses", "connectionState", ConnTypes.DISCONNECTED)
             Bridge.log("Nex: No Main glasses connected")
-            GlassesStore.apply("glasses", "ready", false)
+            GlassesStore.apply("glasses", "fullyBooted", false)
             GlassesStore.apply("glasses", "connected", false)
             // connectionEvent(it)
         }

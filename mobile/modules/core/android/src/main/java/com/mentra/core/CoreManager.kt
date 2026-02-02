@@ -1169,7 +1169,7 @@ class CoreManager {
         shouldSendTranscript = false
         setMicState(shouldSendPcmData, shouldSendTranscript, bypassVad)
         shouldSendBootingMessage = true // Reset for next first connect
-        GlassesStore.apply("glasses", "ready", false)
+        GlassesStore.apply("glasses", "fullyBooted", false)
         GlassesStore.apply("glasses", "connected", false)
     }
 

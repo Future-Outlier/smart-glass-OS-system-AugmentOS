@@ -45,7 +45,7 @@ export const CompactDeviceStatus = ({style}: {style?: ViewStyle}) => {
   const [showSimulatedGlasses, setShowSimulatedGlasses] = useState(false)
   const [isExpanded, setIsExpanded] = useState(false)
   const glassesConnected = useGlassesStore((state) => state.connected)
-  const glassesReady = useGlassesStore((state) => state.ready)
+  const glassesFullyBooted = useGlassesStore((state) => state.fullyBooted)
   const glassesStyle = useGlassesStore((state) => state.style)
   const color = useGlassesStore((state) => state.color)
   const caseRemoved = useGlassesStore((state) => state.caseRemoved)
@@ -112,7 +112,7 @@ export const CompactDeviceStatus = ({style}: {style?: ViewStyle}) => {
 
   let isSearching = searching || isCheckingConnectivity
   let connectingText = translate("home:connectingGlasses")
-  let glassesBooting = glassesConnected && !glassesReady
+  let glassesBooting = glassesConnected && !glassesFullyBooted
   if (glassesBooting) {
     connectingText = "Glasses are booting..."
   }

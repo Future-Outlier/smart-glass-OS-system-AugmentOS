@@ -769,17 +769,17 @@ public class G1 extends SGCManager {
             connectionState = SmartGlassesConnectionState.CONNECTED;
             Bridge.log("G1: Both glasses connected");
             lastConnectionTimestamp = System.currentTimeMillis();
-            GlassesStore.INSTANCE.apply("glasses", "ready", true);
+            GlassesStore.INSTANCE.apply("glasses", "fullyBooted", true);
             GlassesStore.INSTANCE.apply("glasses", "connected", true);
         } else if (isLeftConnected || isRightConnected) {
             connectionState = SmartGlassesConnectionState.CONNECTING;
             Bridge.log("G1: One glass connected");
-            GlassesStore.INSTANCE.apply("glasses", "ready", false);
+            GlassesStore.INSTANCE.apply("glasses", "fullyBooted", false);
             GlassesStore.INSTANCE.apply("glasses", "connected", false);
         } else {
             connectionState = SmartGlassesConnectionState.DISCONNECTED;
             Bridge.log("G1: No glasses connected");
-            GlassesStore.INSTANCE.apply("glasses", "ready", false);
+            GlassesStore.INSTANCE.apply("glasses", "fullyBooted", false);
             GlassesStore.INSTANCE.apply("glasses", "connected", false);
         }
     }
@@ -1669,13 +1669,13 @@ public class G1 extends SGCManager {
 
     @Override
     public void disconnect() {
-        GlassesStore.INSTANCE.apply("glasses", "ready", false);
+        GlassesStore.INSTANCE.apply("glasses", "fullyBooted", false);
         destroy();
     }
 
     @Override
     public void forget() {
-        GlassesStore.INSTANCE.apply("glasses", "ready", false);
+        GlassesStore.INSTANCE.apply("glasses", "fullyBooted", false);
         destroy();
     }
 
@@ -2110,7 +2110,7 @@ public class G1 extends SGCManager {
         Bridge.log("G1: EvenRealitiesG1SGC ONDESTROY");
         showHomeScreen();
         isKilled = true;
-        GlassesStore.INSTANCE.apply("glasses", "ready", false);
+        GlassesStore.INSTANCE.apply("glasses", "fullyBooted", false);
 
         // Reset battery levels
         batteryLeft = -1;

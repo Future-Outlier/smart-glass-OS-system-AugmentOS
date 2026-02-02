@@ -20,7 +20,7 @@ export default function GlassesPairingLoadingScreen() {
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const failureErrorRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const hasAlertShownRef = useRef(false)
-  const glassesReady = useGlassesStore((state) => state.ready)
+  const glassesReady = useGlassesStore((state) => state.fullyBooted)
 
   focusEffectPreventBack()
 

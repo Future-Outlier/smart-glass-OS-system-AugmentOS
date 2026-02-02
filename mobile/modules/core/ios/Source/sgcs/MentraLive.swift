@@ -992,8 +992,8 @@ class MentraLive: NSObject, SGCManager {
     private var pendingVersionInfoChunk1: [String: Any]?
 
     private var ready: Bool {
-        get { GlassesStore.shared.get("glasses", "ready") as? Bool ?? false }
-        set { GlassesStore.shared.apply("glasses", "ready", newValue) }
+        get { GlassesStore.shared.get("glasses", "fullyBooted") as? Bool ?? false }
+        set { GlassesStore.shared.apply("glasses", "fullyBooted", newValue) }
     }
 
     private var connected: Bool {
@@ -1928,7 +1928,7 @@ class MentraLive: NSObject, SGCManager {
         switch command {
         case "sr_hrt":
             if let bodyObj = json["B"] as? [String: Any] {
-                let readyResponse = bodyObj["ready"] as? Int ?? 0
+                let readyResponse = bodyObj["fullyBooted"] as? Int ?? 0
 
                 // Extract battery info from heartbeat
                 let percentage = bodyObj["pt"] as? Int ?? 0
@@ -1938,7 +1938,7 @@ class MentraLive: NSObject, SGCManager {
                 // SOC is still booting
                 if readyResponse == 0 {
                     Bridge.log("LIVE: K900 SOC not ready (ready=0)")
-                    GlassesStore.shared.apply("glasses", "ready", false)
+                    GlassesStore.shared.apply("glasses", "fullyBooted", false)
 
                     // Check for low battery during pairing
                     if percentage > 0, percentage <= 20 {

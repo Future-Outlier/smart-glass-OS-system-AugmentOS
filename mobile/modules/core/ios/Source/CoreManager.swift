@@ -1206,7 +1206,7 @@ struct ViewState {
         shouldSendTranscript = false
         setMicState(shouldSendPcmData, shouldSendTranscript, bypassVad)
         shouldSendBootingMessage = true // Reset for next first connect
-        GlassesStore.shared.apply("glasses", "ready", false)
+        GlassesStore.shared.apply("glasses", "fullyBooted", false)
         GlassesStore.shared.apply("glasses", "connected", false)
     }
 

@@ -17,7 +17,7 @@ class GlassesStore {
         // CORE STATE is camelCase
 
         // GLASSES STATE:
-        store.set("glasses", "ready", false)
+        store.set("glasses", "fullyBooted", false)
         store.set("glasses", "batteryLevel", -1)
         store.set("glasses", "charging", false)
         store.set("glasses", "connected", false)
@@ -102,7 +102,7 @@ class GlassesStore {
 
         // Trigger hardware updates based on setting changes
         switch (category, key) {
-        case ("glasses", "ready"):
+        case ("glasses", "fullyBooted"):
             Bridge.log("MAN: Glasses ready changed to \(value)")
             if let ready = value as? Bool {
                 if ready {

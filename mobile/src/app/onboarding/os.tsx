@@ -142,7 +142,7 @@ export default function MentraOSOnboarding() {
     <Screen preset="fixed" safeAreaEdges={["bottom"]}>
       <OnboardingGuide
         steps={steps}
-        autoStart={true}
+        autoStart={false}
         showCloseButton={true}
         preventBack={true}
         skipFn={handleCloseButton}

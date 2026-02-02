@@ -360,10 +360,10 @@ class G1: NSObject, SGCManager {
 
     private var _ready: Bool = false
     var ready: Bool {
-        get { GlassesStore.shared.get("glasses", "ready") as? Bool ?? false }
+        get { GlassesStore.shared.get("glasses", "fullyBooted") as? Bool ?? false }
         set {
-            let oldValue = GlassesStore.shared.get("glasses", "ready") as? Bool ?? false
-            GlassesStore.shared.apply("glasses", "ready", newValue)
+            let oldValue = GlassesStore.shared.get("glasses", "fullyBooted") as? Bool ?? false
+            GlassesStore.shared.apply("glasses", "fullyBooted", newValue)
             if !newValue {
                 // Reset battery levels when disconnected
                 batteryLevel = -1

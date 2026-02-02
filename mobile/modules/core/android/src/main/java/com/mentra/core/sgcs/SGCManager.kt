@@ -85,7 +85,7 @@ abstract class SGCManager {
 
     // GlassesStore-backed read-only getters for convenience
     val ready: Boolean
-        get() = GlassesStore.get("glasses", "ready") as? Boolean ?: false
+        get() = GlassesStore.get("glasses", "fullyBooted") as? Boolean ?: false
 
     val connected: Boolean
         get() = GlassesStore.get("glasses", "connected") as? Boolean ?: false

@@ -2227,7 +2227,7 @@ class MentraNexSGC: NSObject, CBCentralManagerDelegate, CBPeripheralDelegate, SG
         setupCommandQueue()
 
         // Emit device ready event to React Native
-        emitDeviceReady()
+        // emitDeviceReady()
     }
 
     // MARK: - Device Initialization (ported from Java MentraNexSGC)

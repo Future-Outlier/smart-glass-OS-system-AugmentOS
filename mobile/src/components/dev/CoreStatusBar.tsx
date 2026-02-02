@@ -23,7 +23,7 @@ export default function CoreStatusBar() {
   }, [lastLog])
 
   const glassesConnected = useGlassesStore((state) => state.connected)
-  const glassesReady = useGlassesStore((state) => state.ready)
+  const glassesFullyBooted = useGlassesStore((state) => state.fullyBooted)
 
   return (
     <View className="flex-col bg-primary-foreground p-2 bottom-2 rounded-xl items-center self-center align-middle justify-center gap-2 w-full">
@@ -87,7 +87,7 @@ export default function CoreStatusBar() {
         <View className="flex-row items-center self-center align-middle justify-center py-1 px-2 rounded-full bg-primary">
           <Icon name="bluetooth" size={14} color={theme.colors.secondary_foreground} />
           <Text className="text-secondary-foreground text-sm font-medium ml-2">
-            {glassesReady ? "Ready" : "Not ready"}
+            {glassesFullyBooted ? "Fully Booted" : "Not fully booted"}
           </Text>
         </View>
       </View>

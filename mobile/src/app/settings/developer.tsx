@@ -128,6 +128,14 @@ export default function DeveloperSettingsScreen() {
                 push("/onboarding/os")
               }}
             />
+
+           <RouteButton
+              label="Test switcher"
+              onPress={() => {
+                clearHistoryAndGoHome()
+                push("/test/switcher")
+              }}
+            />
           </Group>
 
           <Group title="Misc">

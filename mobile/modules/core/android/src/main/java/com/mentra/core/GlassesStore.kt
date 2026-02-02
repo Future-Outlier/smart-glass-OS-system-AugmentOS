@@ -19,7 +19,7 @@ object GlassesStore {
         // GLASSES STATE:
         store.set("glasses", "batteryLevel", -1)
         store.set("glasses", "charging", false)
-        store.set("glasses", "ready", false)
+        store.set("glasses", "fullyBooted", false)
         store.set("glasses", "connected", false)
         store.set("glasses", "connectionState", "disconnected")
         store.set("glasses", "deviceModel", "")
@@ -102,7 +102,7 @@ object GlassesStore {
 
         // Trigger hardware updates based on setting changes
         when (category to key) {
-            "glasses" to "ready" -> {
+            "glasses" to "fullyBooted" -> {
                 if (value is Boolean) {
                     if (value) {
                         CoreManager.getInstance().handleDeviceReady()
