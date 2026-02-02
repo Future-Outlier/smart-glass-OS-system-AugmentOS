@@ -1,4 +1,4 @@
-import CoreModule from "core"
+import CoreModule, {WifiSearchResult} from "core"
 import {useFocusEffect} from "expo-router"
 import {useCallback, useEffect, useRef, useState} from "react"
 import {ActivityIndicator, ScrollView, TouchableOpacity, View} from "react-native"
@@ -18,7 +18,6 @@ import WifiCredentialsService from "@/utils/wifi/WifiCredentialsService"
 import {translate} from "@/i18n"
 import {ConnectionOverlay} from "@/components/glasses/ConnectionOverlay"
 import {BackgroundTimer} from "@/utils/timers"
-import {WifiSearchResult} from "core"
 import {useCoreStore} from "@/stores/core"
 
 export default function WifiScanScreen() {

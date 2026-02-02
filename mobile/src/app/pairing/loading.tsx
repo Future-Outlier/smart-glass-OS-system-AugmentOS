@@ -1,11 +1,10 @@
 import {useRoute} from "@react-navigation/native"
 import CoreModule from "core"
 import {useEffect, useRef, useState} from "react"
-import {ScrollView, TouchableOpacity, View} from "react-native"
+import {View} from "react-native"
 
-import {Button, Icon, Text} from "@/components/ignite"
+import {Button} from "@/components/ignite"
 import {Header} from "@/components/ignite/Header"
-import {PillButton} from "@/components/ignite/PillButton"
 import {Screen} from "@/components/ignite/Screen"
 import GlassesPairingLoader from "@/components/glasses/GlassesPairingLoader"
 import GlassesTroubleshootingModal from "@/components/glasses/GlassesTroubleshootingModal"
@@ -41,7 +40,7 @@ export default function GlassesPairingLoadingScreen() {
     hasAlertShownRef.current = false
 
     timerRef.current = setTimeout(() => {
-      if (!glassesReady && !hasAlertShownRef.current) {
+      if (!isFullyBooted && !hasAlertShownRef.current) {
         hasAlertShownRef.current = true
       }
     }, 30000)

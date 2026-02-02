@@ -5,7 +5,7 @@ import {useEffect} from "react"
 import {Platform, TouchableOpacity, View} from "react-native"
 import {focusEffectPreventBack} from "@/contexts/NavigationHistoryContext"
 
-import {Button, Icon, Screen, Text} from "@/components/ignite"
+import {Button, Icon, Text, Screen} from "@/components/ignite"
 import {useNavigationHistory} from "@/contexts/NavigationHistoryContext"
 import {useAppTheme} from "@/contexts/ThemeContext"
 import {translate} from "@/i18n"
@@ -15,7 +15,7 @@ import mentraAuth from "@/utils/auth/authClient"
 import {mapAuthError} from "@/utils/auth/authErrors"
 import AppleIcon from "assets/icons/component/AppleIcon"
 import GoogleIcon from "assets/icons/component/GoogleIcon"
-import { MentraLogoStandalone } from "@/components/brands/MentraLogoStandalone"
+import {MentraLogoStandalone} from "@/components/brands/MentraLogoStandalone"
 
 export default function LoginScreen() {
   const {push} = useNavigationHistory()

@@ -183,7 +183,7 @@ export default function AppStoreWeb() {
             setIsAuthReady(true)
           }}
           onError={handleError}
-          onNavigationStateChange={navState => setCanGoBack(navState.canGoBack)}
+          onNavigationStateChange={(navState) => setCanGoBack(navState.canGoBack)}
           onMessage={handleWebViewMessage}
           javaScriptEnabled={true}
           domStorageEnabled={true}

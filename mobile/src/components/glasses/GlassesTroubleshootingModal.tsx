@@ -76,11 +76,7 @@ export const getModelSpecificTips = (model: string): PairingTip[] => {
         },
         {
           title: "Pairing Mode",
-          body: "Check that your Mentra Live is in pairing mode.",
-        },
-        {
-          title: "Check Connected Apps",
-          body: "Ensure no other app is currently connected to your glasses.",
+          body: "Check that your Mentra Live isn't already connected to another phone.",
         },
         {
           title: "Restart Glasses",

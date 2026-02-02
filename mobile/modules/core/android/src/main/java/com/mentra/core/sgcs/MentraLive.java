@@ -2821,6 +2821,26 @@ public class MentraLive extends SGCManager {
                 updateConnectionState(ConnTypes.DISCONNECTED);
                 break;
 
+            case "sr_tpevt":
+                // K900 touchpad event - convert to touch_event for frontend
+                try {
+                    JSONObject bodyObj = json.optJSONObject("B");
+                    if (bodyObj != null) {
+                        int gestureType = bodyObj.optInt("type", -1);
+                        String gestureName = mapK900GestureType(gestureType);
+
+                        if (gestureName != null) {
+                            Bridge.log("LIVE: 👆 K900 touchpad event - Type: " + gestureType + " -> " + gestureName);
+                            Bridge.sendTouchEvent(getDeviceModel(), gestureName, System.currentTimeMillis());
+                        } else {
+                            Log.d(TAG, "Unknown K900 gesture type: " + gestureType);
+                        }
+                    }
+                } catch (Exception e) {
+                    Log.e(TAG, "Error parsing sr_tpevt", e);
+                }
+                break;
+
             default:
                 Log.d(TAG, "Unknown K900 command: " + command);
 
@@ -3366,7 +3386,7 @@ public class MentraLive extends SGCManager {
     public void connectToSmartGlasses() {
         Bridge.log("LIVE: Connecting to Mentra Live glasses");
         updateConnectionState(ConnTypes.CONNECTING);
-        
+
         // Clear reconnection mode when user manually initiates connection
         isReconnecting = false;
 
@@ -3991,7 +4011,7 @@ public class MentraLive extends SGCManager {
         reconnectAttempts = 0;
         isReconnecting = false;
         glassesReady = false;
-        GlassesStore.INSTANCE.apply("glasses", "ready", false);
+        GlassesStore.INSTANCE.apply("glasses", "isFullyBooted", false);
         updateConnectionState(ConnTypes.DISCONNECTED);
 
         // Note: We don't null context here to prevent race conditions with BLE callbacks

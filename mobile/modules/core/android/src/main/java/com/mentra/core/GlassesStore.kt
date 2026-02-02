@@ -102,7 +102,7 @@ object GlassesStore {
 
         // Trigger hardware updates based on setting changes
         when (category to key) {
-            "glasses" to "ready" -> {
+            "glasses" to "isFullyBooted" -> {
                 if (value is Boolean) {
                     if (value) {
                         CoreManager.getInstance().handleDeviceReady()

@@ -12,6 +12,7 @@ interface GlassesPairingLoaderProps {
   deviceModel: string
   deviceName?: string
   onCancel?: () => void
+  isBooting?: boolean
 }
 
 const GlassesPairingLoader: React.FC<GlassesPairingLoaderProps> = ({deviceModel, deviceName, onCancel}) => {

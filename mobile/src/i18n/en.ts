@@ -81,6 +81,7 @@ const en = {
     pairingGuide: "Pairing Guide",
     pairing: "Pairing",
     needMoreHelp: "I need more help",
+    glassesBooting: "Glasses are booting up...",
     simulatedGlassesDescription: "Simulated Glasses allows you to run MentraOS without physical smart glasses.",
     permissionRequired: "Permission Required",
     bluetoothPermissionRequiredTitle: "Permission Required",

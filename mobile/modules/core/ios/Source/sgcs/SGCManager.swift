@@ -94,8 +94,8 @@ extension SGCManager {
 
     // MARK: - Default GlassesStore-backed property implementations
 
-    var ready: Bool {
-        get { GlassesStore.shared.get("glasses", "ready") as? Bool ?? false }
+    var isFullyBooted: Bool {
+        get { GlassesStore.shared.get("glasses", "isFullyBooted") as? Bool ?? false }
     }
 
     var connected: Bool {

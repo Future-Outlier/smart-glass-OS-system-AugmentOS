@@ -1,5 +1,6 @@
 import {DeviceTypes} from "@/../../cloud/packages/types/src"
 import {Platform} from "react-native"
+import {useRoute} from "@react-navigation/native"
 
 import {Screen} from "@/components/ignite"
 import {focusEffectPreventBack, useNavigationHistory} from "@/contexts/NavigationHistoryContext"
@@ -12,21 +13,31 @@ import {useEffect, useState} from "react"
 
 export default function PairingSuccessScreen() {
   const {clearHistoryAndGoHome, pushUnder} = useNavigationHistory()
+  const route = useRoute()
+  const {deviceModel: routeDeviceModel} = (route.params as {deviceModel?: string}) || {}
   const [defaultWearable] = useSetting(SETTINGS.default_wearable.key)
   const {push} = useNavigationHistory()
   const [onboardingOsCompleted] = useSetting(SETTINGS.onboarding_os_completed.key)
   const [buttonText, setButtonText] = useState<string>(translate("common:continue"))
   const [stack, setStack] = useState<string[]>([])
 
+  // Use route params first (immediately available), fall back to settings store
+  const deviceModel = routeDeviceModel || defaultWearable
+  if (!routeDeviceModel) {
+    console.warn("PAIR_SUCCESS: No deviceModel in route params, falling back to defaultWearable:", defaultWearable)
+  } else {
+    console.log("PAIR_SUCCESS: Using deviceModel from route params:", routeDeviceModel)
+  }
+
   focusEffectPreventBack()
 
-  const glassesImage = getGlassesImage(defaultWearable)
+  const glassesImage = getGlassesImage(deviceModel)
 
   const getStack = async () => {
     const order = ["/pairing/btclassic", "/wifi/scan", "/ota/check-for-updates", "/onboarding/live", "/onboarding/os"]
     let newStack: string[] = []
 
-    if (defaultWearable === DeviceTypes.LIVE) {
+    if (deviceModel === DeviceTypes.LIVE) {
       let btcConnected = await waitForGlassesState("btcConnected", (value) => value === true, 1000)
       console.log("PAIR_SUCCESS: btcConnected", btcConnected)
       if (Platform.OS === "android") {
@@ -51,7 +62,7 @@ export default function PairingSuccessScreen() {
       // sort the stack by the order:
       newStack.sort((a, b) => order.indexOf(a) - order.indexOf(b))
     }
-    if (defaultWearable === DeviceTypes.G1) {
+    if (deviceModel === DeviceTypes.G1) {
       if (!onboardingOsCompleted) {
         newStack.push("/onboarding/os")
       }
@@ -80,7 +91,7 @@ export default function PairingSuccessScreen() {
 
   let steps: OnboardingStep[] = []
 
-  switch (defaultWearable) {
+  switch (deviceModel) {
     case DeviceTypes.LIVE:
       steps = [
         {

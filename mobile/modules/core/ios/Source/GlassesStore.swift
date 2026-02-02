@@ -17,7 +17,7 @@ class GlassesStore {
         // CORE STATE is camelCase
 
         // GLASSES STATE:
-        store.set("glasses", "ready", false)
+        store.set("glasses", "isFullyBooted", false)
         store.set("glasses", "batteryLevel", -1)
         store.set("glasses", "charging", false)
         store.set("glasses", "connected", false)
@@ -102,17 +102,17 @@ class GlassesStore {
 
         // Trigger hardware updates based on setting changes
         switch (category, key) {
-        case ("glasses", "ready"):
-            Bridge.log("MAN: Glasses ready changed to \(value)")
-            if let ready = value as? Bool {
-                if ready {
+        case ("glasses", "isFullyBooted"):
+            Bridge.log("MAN: Glasses isFullyBooted changed to \(value)")
+            if let isFullyBooted = value as? Bool {
+                if isFullyBooted {
                     CoreManager.shared.handleDeviceReady()
                 } else {
                     CoreManager.shared.handleDeviceDisconnected()
                 }
                 // also set the connected state to the same value
-                // if ready is true, set connected to true
-                if ready {
+                // if isFullyBooted is true, set connected to true
+                if isFullyBooted {
                     GlassesStore.shared.set("glasses", "connected", value)
                 }
             }

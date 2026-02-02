@@ -617,7 +617,7 @@ extension MentraLive: CBCentralManagerDelegate {
         isConnecting = false
 
         connectedPeripheral = nil
-        ready = false
+        isFullyBooted = false
         connected = false
         connectionState = ConnTypes.DISCONNECTED
         rgbLedAuthorityClaimed = false
@@ -991,9 +991,9 @@ class MentraLive: NSObject, SGCManager {
     // Glasses send version_info in 2 chunks to fit within BLE MTU limits
     private var pendingVersionInfoChunk1: [String: Any]?
 
-    private var ready: Bool {
-        get { GlassesStore.shared.get("glasses", "ready") as? Bool ?? false }
-        set { GlassesStore.shared.apply("glasses", "ready", newValue) }
+    private var isFullyBooted: Bool {
+        get { GlassesStore.shared.get("glasses", "isFullyBooted") as? Bool ?? false }
+        set { GlassesStore.shared.apply("glasses", "isFullyBooted", newValue) }
     }
 
     private var connected: Bool {
@@ -1962,8 +1962,8 @@ class MentraLive: NSObject, SGCManager {
                     Bridge.log("K900 SOC ready")
                     // Only send phone_ready if we haven't already established connection
                     // This prevents re-initialization on every heartbeat after initial connection
-                    // The ready flag is reset on disconnect/reconnect, so this won't prevent proper reconnection
-                    if !ready {
+                    // The isFullyBooted flag is reset on disconnect/reconnect, so this won't prevent proper reconnection
+                    if !isFullyBooted {
                         let readyMsg: [String: Any] = [
                             "type": "phone_ready",
                             "timestamp": Int64(Date().timeIntervalSince1970 * 1000),
@@ -1999,9 +1999,41 @@ class MentraLive: NSObject, SGCManager {
             // Notify the system that glasses are intentionally disconnected
             connectionState = ConnTypes.DISCONNECTED
 
+        case "sr_tpevt":
+            // K900 touchpad event - convert to touch_event for frontend
+            if let bodyObj = json["B"] as? [String: Any],
+               let gestureType = bodyObj["type"] as? Int
+            {
+                if let gestureName = mapK900GestureType(gestureType) {
+                    Bridge.log("LIVE: 👆 K900 touchpad event - Type: \(gestureType) -> \(gestureName)")
+                    Bridge.sendTouchEvent(
+                        deviceModel: deviceModel,
+                        gestureName: gestureName,
+                        timestamp: Int64(Date().timeIntervalSince1970 * 1000)
+                    )
+                } else {
+                    Bridge.log("Unknown K900 gesture type: \(gestureType)")
+                }
+            }
+
         default:
             // Bridge.log("Unknown K900 command: \(command)")
             break
+        }
+    }
+
+    /// Maps K900 gesture type codes to gesture names
+    private func mapK900GestureType(_ type: Int) -> String? {
+        switch type {
+        case 0: return "single_tap"
+        case 1: return "double_tap"
+        case 2: return "triple_tap"
+        case 3: return "long_press"
+        case 4: return "forward_swipe"
+        case 5: return "backward_swipe"
+        case 6: return "up_swipe"
+        case 7: return "down_swipe"
+        default: return nil
         }
     }
 
@@ -2135,7 +2167,7 @@ class MentraLive: NSObject, SGCManager {
         // Start heartbeat
         startHeartbeat()
 
-        ready = true
+        isFullyBooted = true
         connected = true
         connectionState = ConnTypes.CONNECTED
         // maybe add audio monitoring here?
@@ -2192,7 +2224,6 @@ class MentraLive: NSObject, SGCManager {
             firmwareVersion: firmwareVersion,
             btMacAddress: btMacAddress
         )
-
     }
 
     private func handleAck(_: [String: Any]) {
@@ -3018,8 +3049,8 @@ class MentraLive: NSObject, SGCManager {
     }
 
     private func sendHeartbeat() {
-        guard ready, connectionState == ConnTypes.CONNECTED else {
-            Bridge.log("LIVE: Skipping heartbeat - glasses not ready or not connected")
+        guard isFullyBooted, connectionState == ConnTypes.CONNECTED else {
+            Bridge.log("LIVE: Skipping heartbeat - glasses not fully booted or not connected")
             return
         }
 
@@ -3051,7 +3082,7 @@ class MentraLive: NSObject, SGCManager {
         stopReadinessCheckLoop()
 
         readinessCheckCounter = 0
-        ready = false
+        isFullyBooted = false
         connected = false
 
         Bridge.log("LIVE: 🔄 Starting glasses SOC readiness check loop")
@@ -3482,7 +3513,7 @@ extension MentraLive {
         offtime: Int,
         count: Int
     ) {
-        guard connectionState == ConnTypes.CONNECTED, ready else {
+        guard connectionState == ConnTypes.CONNECTED, isFullyBooted else {
             Bridge.log("LIVE: Cannot handle RGB LED control - glasses not connected")
             Bridge.sendRgbLedControlResponse(
                 requestId: requestId, success: false, error: "glasses_not_connected"

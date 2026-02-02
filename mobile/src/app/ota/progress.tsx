@@ -16,9 +16,9 @@ const RETRY_INTERVAL_MS = 5000 // 5 seconds between retries
 export default function OtaProgressScreen() {
   const {theme} = useAppTheme()
   const {pushPrevious} = useNavigationHistory()
-  const otaProgress = useGlassesStore(state => state.otaProgress)
-  const glassesConnected = useGlassesStore(state => state.connected)
-  const buildNumber = useGlassesStore(state => state.buildNumber)
+  const otaProgress = useGlassesStore((state) => state.otaProgress)
+  const glassesConnected = useGlassesStore((state) => state.connected)
+  const buildNumber = useGlassesStore((state) => state.buildNumber)
 
   const [progressState, setProgressState] = useState<ProgressState>("starting")
   const [retryCount, setRetryCount] = useState(0)
@@ -66,7 +66,7 @@ export default function OtaProgressScreen() {
         if (!hasReceivedProgress.current && progressState === "starting") {
           if (retryCount < MAX_RETRIES - 1) {
             console.log("OTA: No progress received, retrying...")
-            setRetryCount(prev => prev + 1)
+            setRetryCount((prev) => prev + 1)
           } else {
             console.log("OTA: Max retries reached, failing")
             setErrorMessage("Unable to start update. Glasses did not respond.")
@@ -77,7 +77,7 @@ export default function OtaProgressScreen() {
     } catch (error) {
       console.error("OTA: Failed to send start command:", error)
       if (retryCount < MAX_RETRIES - 1) {
-        setRetryCount(prev => prev + 1)
+        setRetryCount((prev) => prev + 1)
       } else {
         setErrorMessage("Failed to communicate with glasses.")
         setProgressState("failed")

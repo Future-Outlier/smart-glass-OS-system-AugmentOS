@@ -764,24 +764,24 @@ public class G1 extends SGCManager {
     }
 
     private void updateConnectionState() {
-        Boolean previousReady = getReady();
+        Boolean previousIsFullyBooted = isFullyBooted();
         SmartGlassesConnectionState previousConnectionState = connectionState;
         if (isLeftConnected && isRightConnected) {
             connectionState = SmartGlassesConnectionState.CONNECTED;
             Bridge.log("G1: Both glasses connected");
             lastConnectionTimestamp = System.currentTimeMillis();
-            GlassesStore.INSTANCE.apply("glasses", "ready", true);
+            GlassesStore.INSTANCE.apply("glasses", "isFullyBooted", true);
         } else if (isLeftConnected || isRightConnected) {
             connectionState = SmartGlassesConnectionState.CONNECTING;
             Bridge.log("G1: One glass connected");
-            GlassesStore.INSTANCE.apply("glasses", "ready", false);
+            GlassesStore.INSTANCE.apply("glasses", "isFullyBooted", false);
         } else {
             connectionState = SmartGlassesConnectionState.DISCONNECTED;
             Bridge.log("G1: No glasses connected");
-            GlassesStore.INSTANCE.apply("glasses", "ready", false);
+            GlassesStore.INSTANCE.apply("glasses", "isFullyBooted", false);
         }
-        // Notify if either ready state or connection state changed
-        if (previousReady != getReady() || !previousConnectionState.equals(connectionState)) {
+        // Notify if either isFullyBooted state or connection state changed
+        if (previousIsFullyBooted != isFullyBooted() || !previousConnectionState.equals(connectionState)) {
             CoreManager.getInstance().handleConnectionStateChanged();
         }
     }
@@ -1671,14 +1671,14 @@ public class G1 extends SGCManager {
 
     @Override
     public void disconnect() {
-        GlassesStore.INSTANCE.apply("glasses", "ready", false);
+        GlassesStore.INSTANCE.apply("glasses", "isFullyBooted", false);
         destroy();
         // CoreManager.getInstance().handleConnectionStateChanged();
     }
 
     @Override
     public void forget() {
-        GlassesStore.INSTANCE.apply("glasses", "ready", false);
+        GlassesStore.INSTANCE.apply("glasses", "isFullyBooted", false);
         destroy();
         CoreManager.getInstance().handleConnectionStateChanged();
     }
@@ -2114,7 +2114,7 @@ public class G1 extends SGCManager {
         Bridge.log("G1: EvenRealitiesG1SGC ONDESTROY");
         showHomeScreen();
         isKilled = true;
-        GlassesStore.INSTANCE.apply("glasses", "ready", false);
+        GlassesStore.INSTANCE.apply("glasses", "isFullyBooted", false);
 
         // Reset battery levels
         batteryLeft = -1;

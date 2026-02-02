@@ -193,10 +193,10 @@ export default function TranscriptionSettingsScreen() {
 
       await STTModelManager.downloadModel(
         targetModelId,
-        progress => {
+        (progress) => {
           setDownloadProgress(progress.percentage)
         },
-        progress => {
+        (progress) => {
           setExtractionProgress(progress.percentage)
         },
       )

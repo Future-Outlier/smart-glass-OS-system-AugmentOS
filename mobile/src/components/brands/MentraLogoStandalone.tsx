@@ -1,4 +1,5 @@
 import Svg, {Rect, Path, SvgProps} from "react-native-svg"
+import {useAppTheme} from "@/contexts/ThemeContext"
 
 interface LogoProps extends SvgProps {
   width?: number

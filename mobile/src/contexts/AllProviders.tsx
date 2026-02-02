@@ -2,14 +2,13 @@ import {BottomSheetModalProvider} from "@gorhom/bottom-sheet"
 import * as Sentry from "@sentry/react-native"
 import {Stack} from "expo-router"
 import {PostHogProvider} from "posthog-react-native"
-import {Suspense} from "react"
+import {Suspense, FunctionComponent, PropsWithChildren} from "react"
 import {View} from "react-native"
 import ErrorBoundary from "react-native-error-boundary"
 import {GestureHandlerRootView} from "react-native-gesture-handler"
 import {KeyboardProvider} from "react-native-keyboard-controller"
 import {SafeAreaProvider, useSafeAreaInsets} from "react-native-safe-area-context"
 import Toast from "react-native-toast-message"
-import {FunctionComponent, PropsWithChildren} from "react"
 
 // import {ErrorBoundary} from "@/components/error"
 import {Text} from "@/components/ignite"
@@ -154,8 +153,6 @@ export const AllProviders = withWrappers(
     )
   },
 )
-
-
 
 type WrapperComponent = FunctionComponent<{children: React.ReactNode}>
 

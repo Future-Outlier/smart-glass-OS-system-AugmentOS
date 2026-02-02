@@ -213,9 +213,11 @@ const deepLinkRoutes: DeepLinkRoute[] = [
         }
 
         // Small delay to ensure auth state propagates
+        // Use replace() instead of replaceAll() to avoid POP_TO_TOP errors
+        // when the navigation stack is empty (coming back from browser)
         console.log("[LOGIN DEBUG] About to set timeout for navigation")
         BackgroundTimer.setTimeout(() => {
-          console.log("[LOGIN DEBUG] Inside setTimeout, about to call router.replace('/')")
+          console.log("[LOGIN DEBUG] Inside setTimeout, navigating to index")
           try {
             // navObject.setAnimation("none")
             navObject.replaceAll("/")

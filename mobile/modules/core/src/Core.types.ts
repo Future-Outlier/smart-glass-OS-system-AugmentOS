@@ -1,4 +1,3 @@
-
 // Core Event Types
 export type ButtonPressEvent = {
   type: "button_press"
@@ -280,7 +279,6 @@ export type CoreModuleEvents = {
   version_info: (event: VersionInfoEvent) => void
 }
 
-
 export type GlassesConnectionState = "disconnected" | "connected" | "connecting"
 
 // OTA update status types
@@ -307,27 +305,27 @@ export interface OtaProgress {
 
 export interface GlassesStatus {
   // state:
-  ready: boolean,
-  connected: boolean,
-  micEnabled: boolean,
-  connectionState: string,
-  btcConnected: boolean,
+  isFullyBooted: boolean
+  connected: boolean
+  micEnabled: boolean
+  connectionState: string
+  btcConnected: boolean
   // device info
-  deviceModel: string,
-  androidVersion: string,
-  fwVersion: string,
-  btMacAddress: string,
-  buildNumber: string,
-  otaVersionUrl: string,
-  appVersion: string,
-  bluetoothName: string,
-  serialNumber: string,
-  style: string,
-  color: string,
+  deviceModel: string
+  androidVersion: string
+  fwVersion: string
+  btMacAddress: string
+  buildNumber: string
+  otaVersionUrl: string
+  appVersion: string
+  bluetoothName: string
+  serialNumber: string
+  style: string
+  color: string
   // wifi info
-  wifiConnected: boolean,
-  wifiSsid: string,
-  wifiLocalIp: string,
+  wifiConnected: boolean
+  wifiSsid: string
+  wifiLocalIp: string
   // battery info
   batteryLevel: number
   charging: boolean
@@ -337,13 +335,13 @@ export interface GlassesStatus {
   caseRemoved: boolean
   // hotspot info
   hotspotEnabled: boolean
-  hotspotSsid: string,
-  hotspotPassword: string,
-  hotspotGatewayIp: string,
+  hotspotSsid: string
+  hotspotPassword: string
+  hotspotGatewayIp: string
   // OTA update info
-  otaUpdateAvailable: OtaUpdateInfo | null,
-  otaProgress: OtaProgress | null,
-  otaInProgress: boolean,
+  otaUpdateAvailable: OtaUpdateInfo | null
+  otaProgress: OtaProgress | null
+  otaInProgress: boolean
 }
 
 export type MicRanking = "auto" | "phone" | "glasses" | "bluetooth"

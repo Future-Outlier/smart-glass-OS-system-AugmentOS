@@ -8,7 +8,6 @@ import CoreModule from "core"
 import {SETTINGS, useSetting} from "@/stores/settings"
 import {SettingsNavigationUtils} from "@/utils/SettingsNavigationUtils"
 
-
 export default function BtClassicPairingScreen() {
   const {pushPrevious, goBack} = useNavigationHistory()
   const btcConnected = useGlassesStore((state) => state.btcConnected)

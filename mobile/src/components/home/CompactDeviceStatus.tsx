@@ -112,9 +112,8 @@ export const CompactDeviceStatus = ({style}: {style?: ViewStyle}) => {
 
   let isSearching = searching || isCheckingConnectivity
   let connectingText = translate("home:connectingGlasses")
-  if (glassesConnected && !glassesReady) {
-    // connectingText = connectionState
-    // console.log("CONNECTION STATE:", connectionState)
+  let glassesBooting = glassesConnected && !glassesReady
+  if (glassesBooting) {
     connectingText = "Glasses are booting..."
   }
 
