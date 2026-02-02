@@ -1,5 +1,5 @@
 import {DeviceTypes} from "@/../../cloud/packages/types/src"
-import {ScrollView, View, ViewStyle, TextStyle} from "react-native"
+import {ScrollView, View} from "react-native"
 
 import BackendUrl from "@/components/dev/BackendUrl"
 import StoreUrl from "@/components/dev/StoreUrl"
@@ -13,7 +13,6 @@ import {useNavigationHistory} from "@/contexts/NavigationHistoryContext"
 import {useAppTheme} from "@/contexts/ThemeContext"
 import {translate} from "@/i18n"
 import {SETTINGS, useSetting} from "@/stores/settings"
-import {ThemedStyle} from "@/theme"
 import ws from "@/services/WebSocketManager"
 import socketComms from "@/services/SocketComms"
 
@@ -209,7 +208,7 @@ export default function DeveloperSettingsScreen() {
           <StoreUrl />
 
           {superMode && <RouteButton label="Super Settings" onPress={() => push("/settings/super")} />}
-          
+
           <Spacer height={theme.spacing.s12} />
         </View>
       </ScrollView>
