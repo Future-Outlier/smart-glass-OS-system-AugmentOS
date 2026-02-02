@@ -1055,6 +1055,8 @@ public class MentraLive extends SGCManager {
                         Bridge.log("LIVE: ✅ Core TX/RX and LC3 TX/RX characteristics found - BLE connection ready");
                         Bridge.log("LIVE: 🔄 Waiting for glasses SOC to become ready...");
 
+                        GlassesStore.INSTANCE.apply("glasses", "connected", true);
+
                         // Keep the state as CONNECTING until the glasses SOC responds
                         // connectionEvent(SmartGlassesConnectionState.CONNECTING);
 
@@ -2213,17 +2215,17 @@ public class MentraLive extends SGCManager {
                 Bridge.sendGalleryStatus(photoCount, videoCount, totalCount, totalSize, hasContent);
                 break;
 
-            case "touch_event":
-                // Process touch event from glasses (swipes, taps, long press)
-                String gestureName = json.optString("gesture_name", "unknown");
-                long touchTimestamp = json.optLong("timestamp", System.currentTimeMillis());
-                String touchDeviceModel = json.optString("device_model", getDeviceModel());
+            // case "touch_event":
+            //     // Process touch event from glasses (swipes, taps, long press)
+            //     String gestureName = json.optString("gesture_name", "unknown");
+            //     long touchTimestamp = json.optLong("timestamp", System.currentTimeMillis());
+            //     String touchDeviceModel = json.optString("device_model", getDeviceModel());
 
-                Log.d(TAG, "👆 Received touch event - Gesture: " + gestureName);
+            //     Log.d(TAG, "👆 Received touch event - Gesture: " + gestureName);
 
-                // Send touch event to React Native
-                // Bridge.sendTouchEvent(touchDeviceModel, gestureName, touchTimestamp);
-                break;
+            //     // Send touch event to React Native
+            //     // Bridge.sendTouchEvent(touchDeviceModel, gestureName, touchTimestamp);
+            //     break;
                 
                 case "sr_tpevt":
                     // K900 touchpad event - convert to touch_event for frontend

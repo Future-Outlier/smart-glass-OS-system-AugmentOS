@@ -22,6 +22,7 @@ interface BaseStep {
   info?: string
   bullets?: string[]
   numberedBullets?: string[]
+  fadeOut?: boolean // if true, the step will fade out after the duration
   waitFn?: () => Promise<void>
 }
 
@@ -779,7 +780,6 @@ export function OnboardingGuide({
       // if (step.waitFn) {
       return <View className="h-12" />
       // }
-      return null
     }
     return (
       <View id="bottom" className={`flex justify-end h-12 ${superMode ? "bg-chart-4" : ""}`}>
