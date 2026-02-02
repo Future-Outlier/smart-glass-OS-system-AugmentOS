@@ -4,7 +4,6 @@ import {View, ActivityIndicator, Platform, Linking} from "react-native"
 import semver from "semver"
 
 import {Button, Icon, Screen, Text} from "@/components/ignite"
-import {SplashVideo} from "@/components/splash/SplashVideo"
 import {useAuth} from "@/contexts/AuthContext"
 import {useDeeplink} from "@/contexts/DeeplinkContext"
 import {useNavigationHistory} from "@/contexts/NavigationHistoryContext"
