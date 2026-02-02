@@ -59,7 +59,7 @@ export default function MentraLiveOnboarding() {
       waitFn: (): Promise<void> => {
         return new Promise<void>((resolve) => {
           const unsub = CoreModule.addListener("button_press", (data: any) => {
-            if (data?.type === "button_press" && data?.pressType === "long") {
+            if (data?.type === "button_press" && (data?.pressType === "long" || data?.pressType === "short")) {
               unsub.remove()
               resolve()
             }

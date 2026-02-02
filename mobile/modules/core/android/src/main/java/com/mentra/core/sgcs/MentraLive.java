@@ -2222,9 +2222,29 @@ public class MentraLive extends SGCManager {
                 Log.d(TAG, "👆 Received touch event - Gesture: " + gestureName);
 
                 // Send touch event to React Native
-                Bridge.sendTouchEvent(touchDeviceModel, gestureName, touchTimestamp);
+                // Bridge.sendTouchEvent(touchDeviceModel, gestureName, touchTimestamp);
                 break;
-
+                
+                case "sr_tpevt":
+                    // K900 touchpad event - convert to touch_event for frontend
+                    try {
+                        JSONObject bodyObj = json.optJSONObject("B");
+                        if (bodyObj != null) {
+                            int gestureType = bodyObj.optInt("type", -1);
+                            String gestureName = mapK900GestureType(gestureType);
+    
+                            if (gestureName != null) {
+                                Bridge.log("LIVE: 👆 K900 touchpad event - Type: " + gestureType + " -> " + gestureName);
+                                Bridge.sendTouchEvent(getDeviceModel(), gestureName, System.currentTimeMillis());
+                            } else {
+                                Log.d(TAG, "Unknown K900 gesture type: " + gestureType);
+                            }
+                        }
+                    } catch (Exception e) {
+                        Log.e(TAG, "Error parsing sr_tpevt", e);
+                    }
+                    break;
+            
             case "swipe_volume_status":
                 // Process swipe volume control status from glasses
                 boolean swipeVolumeEnabled = json.optBoolean("enabled", false);
@@ -2829,6 +2849,24 @@ public class MentraLive extends SGCManager {
                     // dataObservable.onNext(json);
                 // }
                 break;
+        }
+    }
+
+    /**
+     * Map K900 sr_tpevt gesture type codes to gesture names.
+     * These match the gesture_name values sent by ASG Client in touch_event messages.
+     */
+    private String mapK900GestureType(int type) {
+        switch (type) {
+            case 0: return "single_tap";
+            case 1: return "double_tap";
+            case 2: return "triple_tap";
+            case 3: return "long_press";
+            case 4: return "forward_swipe";
+            case 5: return "backward_swipe";
+            case 6: return "up_swipe";
+            case 7: return "down_swipe";
+            default: return null;
         }
     }
 
@@ -3996,14 +4034,16 @@ public class MentraLive extends SGCManager {
     @Override
     public void sendButtonVideoRecordingSettings() {
         try {
-            JSONObject videoSettings = (JSONObject) GlassesStore.INSTANCE.get("core", "button_video_settings");
-            int videoWidth = videoSettings.getInt("width");
-            int videoHeight = videoSettings.getInt("height");
-            int videoFps = videoSettings.getInt("fps");
-            // int videoWidth = (Integer) GlassesStore.INSTANCE.get("core", "button_video_width");
-            // int videoHeight = (Integer) GlassesStore.INSTANCE.get("core", "button_video_height");
-            // int videoFps = (Integer) GlassesStore.INSTANCE.get("core", "button_video_fps");
+            Object videoSettingsObj = GlassesStore.INSTANCE.get("core", "button_video_settings");
+            int videoWidth = 1920;  // defaults
+            int videoHeight = 1080;
+            int videoFps = 30;
 
+            Map<String, Object> videoSettings = (Map<String, Object>) videoSettingsObj;
+            videoWidth = ((Number) videoSettings.getOrDefault("width", 1920)).intValue();
+            videoHeight = ((Number) videoSettings.getOrDefault("height", 1080)).intValue();
+            videoFps = ((Number) videoSettings.getOrDefault("fps", 30)).intValue();
+            
             Bridge.log("LIVE: 🎥 [SETTINGS_SYNC] Sending button video recording settings: " + videoWidth + "x" + videoHeight + "@" + videoFps + "fps");
 
             JSONObject json = new JSONObject();

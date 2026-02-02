@@ -99,6 +99,7 @@ export function OnboardingGuide({
   const [showPoster, setShowPoster] = useState(false)
   const [waitState, setWaitState] = useState(false)
   const resettingRef = useRef(false)
+  const navigatingRef = useRef(false)
   const [exitRequested, setExitRequested] = useState(false)
 
   // Initialize players with first video sources found
@@ -117,7 +118,7 @@ export function OnboardingGuide({
   const currentPlayer = activePlayer === 1 ? player1 : player2
 
   const nonTransitionVideoFiles = steps.filter((step) => !step.transition)
-  const counter = `${uiIndex} / ${nonTransitionVideoFiles.length}`
+  const counter = translate("onboarding:stepCounter", {index: uiIndex, total: nonTransitionVideoFiles.length})
   const step = steps[currentIndex]
   const isCurrentStepImage = step.type === "image"
   const isCurrentStepVideo = step.type === "video"
@@ -128,14 +129,14 @@ export function OnboardingGuide({
 
     if (step.transition) {
       // Auto-advance transition images
-      const timer = setTimeout(() => {
+      const timer = BackgroundTimer.setTimeout(() => {
         handleNext(false)
       }, step.duration ?? 500)
       return () => clearTimeout(timer)
     }
 
     if (step.duration) {
-      const timer = setTimeout(() => {
+      const timer = BackgroundTimer.setTimeout(() => {
         setShowNextButton(true)
       }, step.duration)
       return () => clearTimeout(timer)
@@ -154,21 +155,34 @@ export function OnboardingGuide({
     }
   }, [exitFn, clearHistoryAndGoHome])
 
+  // Only show poster if video takes longer than 2 seconds to load (fallback for slow connections)
   useEffect(() => {
-    if (player1Loading && activePlayer === 1) {
-      setShowPoster(true)
-    } else if (player2Loading && activePlayer === 2) {
-      setShowPoster(true)
-    } else {
+    const isLoading = (player1Loading && activePlayer === 1) || (player2Loading && activePlayer === 2)
+
+    if (!isLoading) {
       setShowPoster(false)
+      return
     }
+
+    const timer = BackgroundTimer.setTimeout(() => {
+      setShowPoster(true)
+    }, 2000)
+    return () => BackgroundTimer.clearTimeout(timer)
   }, [player1Loading, player2Loading, activePlayer])
 
   const handleNext = useCallback(
     (manual: boolean = false) => {
       console.log(`ONBOARD: handleNext(${manual})`)
 
+      // Prevent multiple rapid calls from corrupting player state
+      if (navigatingRef.current) {
+        console.log("ONBOARD: handleNext blocked - navigation in progress")
+        return
+      }
+      navigatingRef.current = true
+
       if (currentIndex === steps.length - 1) {
+        navigatingRef.current = false
         handleExit()
         return
       }
@@ -207,6 +221,10 @@ export function OnboardingGuide({
             setPlayer1Loading(true)
           }
         }
+        // Allow next navigation after a short delay
+        setTimeout(() => {
+          navigatingRef.current = false
+        }, 100)
         return
       }
 
@@ -233,6 +251,10 @@ export function OnboardingGuide({
         player2.pause()
       }
 
+      // Allow next navigation after a short delay
+      setTimeout(() => {
+        navigatingRef.current = false
+      }, 100)
       console.log(`ONBOARD: current is now ${nextIndex}`)
     },
     [currentIndex, activePlayer, uiIndex, steps, transitionCount, clearHistoryAndGoHome],
@@ -274,7 +296,7 @@ export function OnboardingGuide({
         player2.currentTime = 0
         player2.pause()
       }
-      setTimeout(() => {
+      BackgroundTimer.setTimeout(() => {
         resettingRef.current = false
       }, 0)
       return
@@ -388,7 +410,8 @@ export function OnboardingGuide({
           handleNext(false)
           return
         }
-        if (step.type === "video" && playCount < step.playCount - 1) {
+        // -1 means play forever
+        if (step.type === "video" && (playCount < step.playCount - 1 || step.playCount === -1)) {
           setShowNextButton(true)
           setPlayCount((prev) => prev + 1)
           currentPlayer.currentTime = 0
@@ -631,7 +654,7 @@ export function OnboardingGuide({
       setWaitState(true)
       step.waitFn().then(() => {
         setWaitState(false)
-        setTimeout(() => {
+        BackgroundTimer.setTimeout(() => {
           handleNext(true)
         }, 1500)
       })
@@ -833,7 +856,7 @@ export function OnboardingGuide({
 
           {hasStarted && (
             <View className="flex-row gap-4">
-              {!isFirstStep && <Button flex preset="secondary" tx="common:back" onPress={handleBack} />}
+              {superMode && !isFirstStep && <Button flex preset="secondary" tx="common:back" onPress={handleBack} />}
               {!isLastStep ? renderContinueButton() : <Button flex text={endButtonText} onPress={handleEndButton} />}
             </View>
           )}
