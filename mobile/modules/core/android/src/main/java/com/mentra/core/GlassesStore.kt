@@ -102,17 +102,21 @@ object GlassesStore {
 
         // Trigger hardware updates based on setting changes
         when (category to key) {
-            "glasses" to "isFullyBooted" -> {
+            "glasses" to "ready" -> {
                 if (value is Boolean) {
                     if (value) {
                         CoreManager.getInstance().handleDeviceReady()
                     } else {
                         CoreManager.getInstance().handleDeviceDisconnected()
                     }
-                    // if ready is true, set connected to true
-                    if (value) {
-                        store.set("glasses", "connected", true)
-                    }
+                    // // if ready is true, set connected to true
+                    // if (value) {
+                    //     store.set("glasses", "connected", true)
+                    // }
+                    // // if ready is false, set connected to false
+                    // if (!value) {
+                    //     store.set("glasses", "connected", false)
+                    // }
                 }
             }
             "glasses" to "headUp" -> {

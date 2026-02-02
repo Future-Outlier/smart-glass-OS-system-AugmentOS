@@ -29,7 +29,7 @@ const IGNORED_LOGS = [
 LogBox.ignoreLogs(IGNORED_LOGS);
 
 if (__DEV__) {
-  const withoutIgnored = (logger) => (...args) => {
+  const withoutIgnored = (logger: any) => (...args: any[]) => {
     const output = args.join(' ');
 
     if (!IGNORED_LOGS.some(log => log.test(output))) {

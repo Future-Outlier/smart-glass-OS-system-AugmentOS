@@ -305,7 +305,7 @@ export interface OtaProgress {
 
 export interface GlassesStatus {
   // state:
-  isFullyBooted: boolean
+  ready: boolean
   connected: boolean
   micEnabled: boolean
   connectionState: string

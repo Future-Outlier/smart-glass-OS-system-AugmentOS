@@ -40,7 +40,7 @@ export default function GlassesPairingLoadingScreen() {
     hasAlertShownRef.current = false
 
     timerRef.current = setTimeout(() => {
-      if (!isFullyBooted && !hasAlertShownRef.current) {
+      if (!glassesReady && !hasAlertShownRef.current) {
         hasAlertShownRef.current = true
       }
     }, 30000)
