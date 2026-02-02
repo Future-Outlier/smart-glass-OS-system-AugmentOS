@@ -16,6 +16,7 @@ Fix calendar time display and clean up the poorly-designed `userDatetime` + `cus
 ## Key Context
 
 The root issue is simple: we need to know the user's timezone to display times correctly. Someone "solved" this by designing a system to constantly send the user's current datetime, which is:
+
 1. Immediately stale (time keeps ticking)
 2. Wasteful (constant network traffic)
 3. Architecturally wrong (invented `custom_message` instead of using settings)
@@ -38,7 +39,7 @@ The fix: just send the timezone name once, use the existing settings system.
 - [x] Confirmed: **Nothing calls set-datetime** - entire system is dead code
 - [x] Cloud implementation complete
   - [x] Added `userTimezone` to UserSession
-  - [x] Added timezone loading/bridging in UserSettingsManager
+  - [x] Added timezone loading in UserSettingsManager
   - [x] Added `userTimezone` to mentraosSettings in CONNECTION_ACK
   - [x] Removed `userDatetime` property
   - [x] Deleted `routes/user-data.routes.ts` (express)
@@ -59,24 +60,71 @@ The fix: just send the timezone name once, use the existing settings system.
 - [x] Mobile implementation
   - [x] Added `syncTimezone()` to MantleManager
   - [x] Sends device timezone on app init via `writeUserSettings({ timezone })`
+- [x] PR Review fix (PR #1986)
+  - [x] Fixed settings broadcast to send full snapshot instead of single key
+  - [x] Refactored UserSettingsManager to use single `broadcastSettingsUpdate()` method
+  - [x] Added `buildMentraosSettings()` as single source of truth for key mapping
+  - [x] Added `getAllAppsWithAugmentosSubscriptions()` to SubscriptionManager
+  - [x] Updated AppManager to use shared `buildMentraosSettings()` method
 - [ ] Testing
 
 ## Changes Summary
 
 **Remove:**
+
 - `userSession.userDatetime` property
 - `POST /api/user-data/set-datetime` endpoint (both express and hono)
 - `routes/user-data.routes.ts` file entirely
 - `custom_message` relay for datetime in `app-message-handler.ts`
 - Dashboard's `custom_message` handler and `extractTimezoneFromISO()`
+- Separate bridge methods (`bridgeMetricSystemIfPresent`, `bridgeTimezoneIfPresent`)
 
 **Add:**
+
 - `userSession.userTimezone` property
-- `timezone` bridging in `UserSettingsManager.ts`
+- `UserSettingsManager.buildMentraosSettings()` - single source of truth for settings mapping
+- `UserSettingsManager.broadcastSettingsUpdate()` - sends full snapshot to subscribed apps
+- `SubscriptionManager.getAllAppsWithAugmentosSubscriptions()` - helper for broadcast
 - `userTimezone` in `mentraosSettings` (CONNECTION_ACK)
 - Dashboard reads timezone from settings system
 
 **Deprecate (SDK):**
+
 - `CloudToAppMessageType.CUSTOM_MESSAGE`
 - `StreamType.CUSTOM_MESSAGE`
 - `onCustomMessage()` in EventManager
+
+## PR #1986 Review Fix
+
+The PR review flagged a critical issue: the original implementation sent only the changed setting key in `augmentos_settings_update` messages:
+
+```typescript
+// BEFORE (broken): Only sends the single changed key
+settings: {
+  userTimezone: timezone;
+}
+```
+
+The SDK's `updateMentraosSettings()` replaces the entire settings object, so apps would lose all other settings (metricSystemEnabled, brightness, etc.) when receiving a partial update.
+
+**Fix:** Refactored to always broadcast the **full settings snapshot**:
+
+```typescript
+// AFTER (fixed): Sends complete snapshot
+settings: buildMentraosSettings(); // All settings included
+```
+
+### Files Changed
+
+| File                     | Change                                                                                           |
+| ------------------------ | ------------------------------------------------------------------------------------------------ |
+| `UserSettingsManager.ts` | Added `buildMentraosSettings()`, replaced bridge methods with single `broadcastSettingsUpdate()` |
+| `SubscriptionManager.ts` | Added `getAllAppsWithAugmentosSubscriptions()` helper                                            |
+| `AppManager.ts`          | Now uses `userSettingsManager.buildMentraosSettings()` for CONNECTION_ACK                        |
+
+### Key Benefits
+
+1. **Single source of truth** - `buildMentraosSettings()` defines the snake_case → camelCase mapping once
+2. **No data loss** - Apps always receive complete settings, SDK replace behavior is safe
+3. **Simpler code** - One broadcast method instead of per-setting bridge methods
+4. **Easier to extend** - Adding new settings only requires updating `buildMentraosSettings()`

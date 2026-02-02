@@ -6,11 +6,10 @@
  * Session-scoped manager that integrates REST-based user settings with the active session.
  * Responsibilities:
  * - Maintain a session snapshot of user settings (loaded from UserSettings if requested).
- * - React to REST updates by updating the snapshot.
- * - Bridge specific keys to legacy behaviors to preserve backward compatibility:
- *   - metric_system (boolean) → broadcast legacy "augmentos_settings_update" with { metricSystemEnabled }
- *   - timezone (string) → update userSession.userTimezone and broadcast to subscribed apps
- *   - default_wearable (string) → delegate to DeviceManager to update model/capabilities immediately
+ * - React to REST updates by updating the snapshot and broadcasting to connected apps.
+ * - Handle special settings that require additional actions:
+ *   - timezone (string) → update userSession.userTimezone
+ *   - default_wearable (string) → delegate to DeviceManager to update model/capabilities
  *
  * Notes:
  * - This manager does not persist settings; persistence happens in the REST layer (user-settings.api.ts).
@@ -40,7 +39,7 @@ export class UserSettingsManager {
 
   /**
    * Optionally load current settings from the canonical UserSettings model.
-   * This is not required for the bridge to function, but useful for diagnostics.
+   * This is not required for broadcasting to function, but useful for diagnostics.
    */
   async load(): Promise<void> {
     try {
@@ -75,8 +74,35 @@ export class UserSettingsManager {
   }
 
   /**
+   * Build the full mentraosSettings object for SDK apps.
+   * Maps from REST keys (snake_case) to SDK keys (camelCase).
+   * This must stay in sync with AppManager.handleAppInit() CONNECTION_ACK.
+   */
+  buildMentraosSettings(): Record<string, any> {
+    return {
+      // Primary settings apps care about
+      metricSystemEnabled: this.snapshot.metric_system ?? false,
+      contextualDashboard: this.snapshot.contextual_dashboard ?? true,
+      headUpAngle: this.snapshot.head_up_angle ?? 45,
+      brightness: this.snapshot.brightness ?? 50,
+      autoBrightness: this.snapshot.auto_brightness ?? true,
+      sensingEnabled: this.snapshot.sensing_enabled ?? true,
+      alwaysOnStatusBar: this.snapshot.always_on_status_bar ?? false,
+      // Mobile uses "_for_debugging" suffix for these keys
+      bypassVad: this.snapshot.bypass_vad_for_debugging ?? false,
+      bypassAudioEncoding: this.snapshot.bypass_audio_encoding_for_debugging ?? false,
+      // Mobile uses preferred_mic instead of useOnboardMic
+      preferredMic: this.snapshot.preferred_mic ?? "auto",
+      // Legacy key for backward compat (derived from preferred_mic)
+      useOnboardMic: this.snapshot.preferred_mic === "glasses",
+      // User's timezone (IANA name like "America/New_York")
+      userTimezone: this.userSession.userTimezone || this.snapshot.timezone || null,
+    };
+  }
+
+  /**
    * Called after REST persistence to update the in-session snapshot
-   * and trigger any necessary legacy bridges or session updates.
+   * and broadcast to connected apps.
    *
    * @param updated Partial map of keys updated via REST
    */
@@ -102,10 +128,20 @@ export class UserSettingsManager {
         "Applied REST user settings update to session snapshot",
       );
 
-      // Bridge specific keys to legacy behavior for backward compatibility
-      await this.bridgeMetricSystemIfPresent(updated);
-      await this.bridgeTimezoneIfPresent(updated);
-      await this.applyDefaultWearableIfPresent(updated);
+      // Handle special settings that require additional actions
+      if (Object.prototype.hasOwnProperty.call(updated, "timezone")) {
+        const timezone = updated["timezone"];
+        if (typeof timezone === "string" && timezone) {
+          this.userSession.userTimezone = timezone;
+        }
+      }
+
+      if (Object.prototype.hasOwnProperty.call(updated, "default_wearable")) {
+        await this.applyDefaultWearable(updated["default_wearable"]);
+      }
+
+      // Broadcast full settings snapshot to all connected apps
+      await this.broadcastSettingsUpdate();
 
       // Optionally log diff (debug)
       if (this.shouldDebug()) {
@@ -124,147 +160,53 @@ export class UserSettingsManager {
   }
 
   /**
-   * Cleanup manager state (called from UserSession.dispose)
+   * Broadcast the full mentraosSettings snapshot to all connected apps.
+   * Sends to any app that has subscribed to any augmentos setting.
    */
-  dispose(): void {
-    this.snapshot = {};
-  }
-
-  // ===== Internal helpers =====
-
-  /**
-   * Bridge for metric_system (boolean) → legacy AugmentOS settings update
-   * - Maps to metricSystemEnabled (camelCase) and broadcasts "augmentos_settings_update"
-   * - Targets Apps that are subscribed to the specific augmentos key
-   */
-  private async bridgeMetricSystemIfPresent(updated: Record<string, any>): Promise<void> {
-    if (!Object.prototype.hasOwnProperty.call(updated, "metric_system")) return;
-
+  private async broadcastSettingsUpdate(): Promise<void> {
     try {
-      const raw = updated["metric_system"];
-      const next = typeof raw === "string" ? raw.toLowerCase() === "true" : Boolean(raw);
-
-      const legacyKey = "metricSystemEnabled";
-      const subscribedApps = this.userSession.subscriptionManager.getSubscribedAppsForAugmentosSetting(legacyKey);
+      // Get all apps that have any augmentos setting subscription
+      const subscribedApps = this.userSession.subscriptionManager.getAllAppsWithAugmentosSubscriptions();
 
       if (!subscribedApps || subscribedApps.length === 0) {
-        this.logger.info(
-          {
-            userId: this.userSession.userId,
-            legacyKey,
-            value: next,
-          },
-          "No Apps subscribed to augmentos setting; skipping legacy broadcast",
+        this.logger.debug(
+          { userId: this.userSession.userId },
+          "No apps subscribed to augmentos settings; skipping broadcast",
         );
         return;
       }
 
+      const mentraosSettings = this.buildMentraosSettings();
       const timestamp = new Date();
-      const payload = {
-        type: "augmentos_settings_update",
-        // Maintain legacy sessionId format: `${sessionId}-${packageName}`
-        // We'll set this per-app send loop.
-        settings: { [legacyKey]: next },
-        timestamp,
-      };
 
       for (const packageName of subscribedApps) {
         const ws = this.userSession.appWebsockets.get(packageName);
         if (!ws || ws.readyState !== WebSocketReadyState.OPEN) continue;
 
         const message = {
-          ...payload,
+          type: "augmentos_settings_update",
           sessionId: `${this.userSession.sessionId}-${packageName}`,
+          settings: mentraosSettings,
+          timestamp,
         };
 
         try {
           ws.send(JSON.stringify(message));
         } catch (sendError) {
-          this.logger.error(sendError as Error, `Error sending augmentos_settings_update to App ${packageName}`);
+          this.logger.error(sendError as Error, `Error sending settings update to App ${packageName}`);
         }
       }
 
       this.logger.info(
         {
           userId: this.userSession.userId,
-          legacyKey,
-          value: next,
           appCount: subscribedApps.length,
+          settingsKeys: Object.keys(mentraosSettings),
         },
-        "Bridged metric_system to legacy augmentos_settings_update",
+        "Broadcast settings update to apps",
       );
     } catch (error) {
-      this.logger.error(error as Error, "Error bridging metric_system to legacy augmentos_settings_update");
-    }
-  }
-
-  /**
-   * Bridge for timezone (string) → update session and broadcast to subscribed apps
-   * - Updates userSession.userTimezone immediately
-   * - Broadcasts "augmentos_settings_update" with { userTimezone } to subscribed apps
-   */
-  private async bridgeTimezoneIfPresent(updated: Record<string, any>): Promise<void> {
-    if (!Object.prototype.hasOwnProperty.call(updated, "timezone")) return;
-
-    try {
-      const timezone = updated["timezone"];
-      if (typeof timezone !== "string" || !timezone) {
-        this.logger.warn({ userId: this.userSession.userId }, "timezone provided but empty or invalid; ignoring");
-        return;
-      }
-
-      // Update session property
-      this.userSession.userTimezone = timezone;
-
-      // Broadcast to subscribed apps
-      const legacyKey = "userTimezone";
-      const subscribedApps = this.userSession.subscriptionManager.getSubscribedAppsForAugmentosSetting(legacyKey);
-
-      if (!subscribedApps || subscribedApps.length === 0) {
-        this.logger.info(
-          {
-            userId: this.userSession.userId,
-            legacyKey,
-            value: timezone,
-          },
-          "No Apps subscribed to userTimezone setting; skipping broadcast",
-        );
-        return;
-      }
-
-      const timestamp = new Date();
-      const payload = {
-        type: "augmentos_settings_update",
-        settings: { [legacyKey]: timezone },
-        timestamp,
-      };
-
-      for (const packageName of subscribedApps) {
-        const ws = this.userSession.appWebsockets.get(packageName);
-        if (!ws || ws.readyState !== WebSocketReadyState.OPEN) continue;
-
-        const message = {
-          ...payload,
-          sessionId: `${this.userSession.sessionId}-${packageName}`,
-        };
-
-        try {
-          ws.send(JSON.stringify(message));
-        } catch (sendError) {
-          this.logger.error(sendError as Error, `Error sending timezone update to App ${packageName}`);
-        }
-      }
-
-      this.logger.info(
-        {
-          userId: this.userSession.userId,
-          timezone,
-          appCount: subscribedApps.length,
-        },
-        "Bridged timezone to apps",
-      );
-    } catch (error) {
-      this.logger.error(error as Error, "Error bridging timezone setting");
+      this.logger.error(error as Error, "Error broadcasting settings update");
     }
   }
 
@@ -274,10 +216,7 @@ export class UserSettingsManager {
    * - Sends CAPABILITIES_UPDATE and stops incompatible Apps (via DeviceManager)
    * - Updates User.glassesModels, PostHog, and analytics per DeviceManager's behavior
    */
-  private async applyDefaultWearableIfPresent(updated: Record<string, any>): Promise<void> {
-    if (!Object.prototype.hasOwnProperty.call(updated, "default_wearable")) return;
-
-    const raw = updated["default_wearable"];
+  private async applyDefaultWearable(raw: any): Promise<void> {
     const modelName = typeof raw === "string" ? raw.trim() : raw ? String(raw) : "";
 
     if (!modelName) {
@@ -290,6 +229,13 @@ export class UserSettingsManager {
     } catch (error) {
       this.logger.error(error as Error, "Error applying default_wearable via DeviceManager");
     }
+  }
+
+  /**
+   * Cleanup manager state (called from UserSession.dispose)
+   */
+  dispose(): void {
+    this.snapshot = {};
   }
 
   private shouldDebug(): boolean {
