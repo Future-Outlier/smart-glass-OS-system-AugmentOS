@@ -19,7 +19,7 @@ import "@/global.css"
 // prevent the annoying warning box at the bottom of the screen from getting in the way:
 const IGNORED_LOGS = [
   /Failed to open debugger. Please check that the dev server is running and reload the app./,
-  // /Require cycle:/,
+  /Require cycle:/,
   /is missing the required default export./,
   /Attempted to import the module/,
   /The action 'RESET' with payload/,

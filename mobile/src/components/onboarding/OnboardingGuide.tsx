@@ -105,6 +105,8 @@ export function OnboardingGuide({
   const resettingRef = useRef(false)
   const navigatingRef = useRef(false)
   const [exitRequested, setExitRequested] = useState(false)
+  const [showStepSkipButton, setShowStepSkipButton] = useState(false)
+  const stepSkipTimeoutRef = useRef<number | null>(null)
 
   // Fade animation state
   const fadeOpacity = useRef(new Animated.Value(1)).current
@@ -204,6 +206,11 @@ export function OnboardingGuide({
       setShowReplayButton(false)
       setCurrentIndex(nextIndex)
       setPlayCount(0)
+      setShowStepSkipButton(false)
+      if (stepSkipTimeoutRef.current) {
+        BackgroundTimer.clearTimeout(stepSkipTimeoutRef.current)
+        stepSkipTimeoutRef.current = null
+      }
 
       if (nextStep.transition) {
         setTransitionCount(transitionCount + 1)
@@ -277,7 +284,7 @@ export function OnboardingGuide({
       transitionCount,
       clearHistoryAndGoHome,
       fadeOpacity,
-      handleExit,
+      handleClose,
       player1,
       player2,
       step.transition,
@@ -740,7 +747,21 @@ export function OnboardingGuide({
   //   showContinue = true
   // }
 
+  useEffect(() => {
+    if (step.waitFn) {
+      stepSkipTimeoutRef.current = BackgroundTimer.setTimeout(() => {
+        setShowStepSkipButton(true)
+      }, 10000)
+    } else {
+      setShowStepSkipButton(false)
+      if (stepSkipTimeoutRef.current) { 
+        BackgroundTimer.clearTimeout(stepSkipTimeoutRef.current)
+      }
+    }
+  }, [step.waitFn])
+
   const renderContinueButton = () => {
+
     let showLoader = (waitState && step.waitFn) || !showNextButton
     // the wait state should take precedence over the show next flag:
     // if (showLoader && step.waitFn && !waitState) {
@@ -751,10 +772,22 @@ export function OnboardingGuide({
     //   showLoader = false
     // }
 
-    // console.log("ONBOARD: waitState", waitState)
-    // console.log("ONBOARD: showNextButton", showNextButton)
-    // console.log("ONBOARD: showLoader", showLoader)
-    // console.log("ONBOARD: step.waitFn", step.waitFn)
+    if (showStepSkipButton) {
+      return (
+        <Button
+          flex
+          tx="common:skip"
+          preset="secondary"
+          onPress={() => {
+            handleNext(true)
+          }}
+        />
+      )
+    }
+
+    if (step.waitFn && !superMode) {
+      return null
+    }
 
     if (showLoader && !superMode) {
       return null
@@ -764,7 +797,7 @@ export function OnboardingGuide({
       return (
         <Button
           flex
-          text="Continue"
+          tx="common:continue"
           style={{backgroundColor: theme.colors.chart_4}}
           textStyle={{fontWeight: "bold"}}
           preset="primary"
@@ -824,18 +857,18 @@ export function OnboardingGuide({
       <View id="step-content" className="flex mb-4 h-34 gap-3 w-full justify-start">
         {step.title && (
           <Text
-            className={`${step.titleCentered ?? false ? "text-center" : "text-start"} text-2xl font-semibold`}
+            className={`${step.titleCentered ?? false ? "text-center" : "text-start"} text-2xl font-semibold text-foreground`}
             text={step.title}
           />
         )}
         {step.subtitle && (
           <Text
-            className={`${step.subtitleCentered ?? false ? "text-center" : "text-start"} text-[18px]`}
+            className={`${step.subtitleCentered ?? false ? "text-center" : "text-start"} text-[18px] text-foreground`}
             text={step.subtitle}
           />
         )}
         {step.info && (
-          <View className="flex flex-row gap-2 justify-start items-center">
+          <View className="flex flex-row gap-2 justify-start">
             <Icon name="info" size={20} color={theme.colors.muted_foreground} />
             {/* TODO: why is this text escaping it's container?? */}
             <Text
@@ -865,8 +898,8 @@ export function OnboardingGuide({
         {showCheck && (
           <View className="flex-1 justify-center">
             <View className="flex flex-row justify-center items-center">
-              <View className="bg-primary rounded-full p-1">
-                <Icon name="check" size={20} color={theme.colors.background} />
+              <View className="bg-primary rounded-full p-1.5">
+                <Icon name="check" size={24} color={theme.colors.background} />
               </View>
             </View>
           </View>
@@ -896,11 +929,11 @@ export function OnboardingGuide({
       <View id="main" className="flex-1 justify-between">
         {showHeader && (
           <Header
-            leftIcon={showCloseButton ? "x" : undefined}
+            leftIcon={showCloseButton && hasStarted ? "x" : undefined}
             RightActionComponent={
-              <View className={`flex flex-row gap-2 items-center justify-center ${!hasStarted ? "flex-1" : ""}`}>
-                <Text className="text-center text-sm font-medium" text={showCounter ? counter : ""} />
-                <MentraLogoStandalone />
+              <View className={`flex flex-row gap-2 bg-red-500 items-center justify-center ${!hasStarted ? "flex-1" : ""}`}>
+                {/* <Text className="text-center text-sm font-medium" text={showCounter ? counter : ""} /> */}
+                <MentraLogoStandalone style={{width: 300, flex: 1, backgroundColor: "green"}} />
               </View>
             }
             onLeftPress={handleClose}

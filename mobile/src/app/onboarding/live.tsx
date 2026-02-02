@@ -4,6 +4,7 @@ import {useNavigationHistory} from "@/contexts/NavigationHistoryContext"
 import {translate} from "@/i18n"
 import {useGlassesStore} from "@/stores/glasses"
 import {SETTINGS, useSetting} from "@/stores/settings"
+import showAlert from "@/utils/AlertUtils"
 import CoreModule, {TouchEvent} from "core"
 import {Platform} from "react-native"
 
@@ -25,6 +26,8 @@ export default function MentraLiveOnboarding() {
       fadeOut: true,
       title: translate("onboarding:liveWelcomeTitle"),
       subtitle: translate("onboarding:liveWelcomeSubtitle"),
+      titleCentered: true,
+      subtitleCentered: true,
     },
     {
       type: "video",
@@ -135,8 +138,8 @@ export default function MentraLiveOnboarding() {
       transition: false,
       fadeOut: true,
       title: translate("onboarding:liveAdjustVolume"),
-      subtitle: translate("onboarding:liveSwipeTouchpadUp"),
-      subtitle2: translate("onboarding:liveSwipeTouchpadDown"),
+      subtitle: translate("onboarding:liveSwipeTouchpadUp") + "\n" + translate("onboarding:liveSwipeTouchpadDown"),
+      // subtitle2: translate("onboarding:liveSwipeTouchpadDown"),
       waitFn: (): Promise<void> => {
         return new Promise<void>((resolve) => {
           const unsub = CoreModule.addListener("touch_event", (data: TouchEvent) => {
@@ -226,9 +229,19 @@ export default function MentraLiveOnboarding() {
   //   steps = steps.slice(0, 2)
   // }
 
+  const handleCloseButton = () => {
+    showAlert(translate("onboarding:liveEndOnboardingTitle"), translate("onboarding:liveEndOnboardingMessage"), [
+      {text: translate("common:cancel"), onPress: () => {}},
+      {
+        text: translate("common:exit"),
+        onPress: () => {
+          handleExit()
+        },
+      },
+    ])
+  }
 
   const handleExit = () => {
-    // setOnboardingLiveCompleted(true)
     pushPrevious()
   }
 
@@ -242,15 +255,10 @@ export default function MentraLiveOnboarding() {
       <OnboardingGuide
         steps={steps}
         autoStart={false}
-        showCloseButton={false}
+        showCloseButton={true}
         preventBack={true}
-        exitFn={() => {
-          pushPrevious()
-        }}
-        endButtonFn={() => {
-          setOnboardingLiveCompleted(true)
-          pushPrevious()
-        }}
+        skipFn={handleCloseButton}
+        endButtonFn={handleEndButton}
         startButtonText={translate("onboarding:continueOnboarding")}
         endButtonText={translate("common:continue")}
       />

@@ -130,7 +130,6 @@ export default function MentraOSOnboarding() {
   }
 
   const handleExit = () => {
-    // setOnboardingOsCompleted(true)
     pushPrevious()
   }
 

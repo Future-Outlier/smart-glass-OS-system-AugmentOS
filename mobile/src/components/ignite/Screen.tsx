@@ -253,38 +253,44 @@ export function Screen(props: ScreenProps) {
     statusBarStyle,
   } = props
 
-  const $containerInsets = useSafeAreaInsetsStyle(safeAreaEdges)
+  let $containerInsets = useSafeAreaInsetsStyle(safeAreaEdges)
   const {theme} = useAppTheme()
   // const [debugCoreStatusBarEnabled] = useSetting(SETTINGS.debug_core_status_bar.key)
+
+  
+  if (Platform.OS === "android") {
+    
+    if ($containerInsets.paddingTop) {
+      $containerInsets.paddingTop += theme.spacing.s4
+    } else {
+      $containerInsets.paddingTop = theme.spacing.s4
+    }
+    if ($containerInsets.paddingBottom) {
+      $containerInsets.paddingBottom += theme.spacing.s6
+    } else {
+      $containerInsets.paddingBottom = theme.spacing.s6
+    }
+  }
 
   return (
     <View
       style={[
         {paddingHorizontal: theme.spacing.s6},
-        $containerStyle,
-        {backgroundColor: backgroundColor || colors.background} /*, $containerInsets*/,
+        {backgroundColor: colors.background},
+        {...$containerInsets},
+        {flex: 1},
       ]}>
-      {/*<BackgroundGradient colors={props.gradientColors}>*/}
-      <View style={[$containerInsets, {flex: 1}]}>
-        <StatusBar style={statusBarStyle || (themeContext === "dark" ? "light" : "dark")} {...StatusBarProps} />
-        <KeyboardAvoidingView
-          behavior={isIos ? "padding" : "height"}
-          keyboardVerticalOffset={keyboardOffset}
-          {...KeyboardAvoidingViewProps}
-          style={[$styles.flex1, KeyboardAvoidingViewProps?.style]}>
-          {isNonScrolling(props.preset) ? <ScreenWithoutScrolling {...props} /> : <ScreenWithScrolling {...props} />}
-        </KeyboardAvoidingView>
-        {/* {debugCoreStatusBarEnabled && <CoreStatusBar />} */}
-      </View>
-      {/*</BackgroundGradient>*/}
+      <StatusBar style={statusBarStyle || (themeContext === "dark" ? "light" : "dark")} {...StatusBarProps} />
+      <KeyboardAvoidingView
+        behavior={isIos ? "padding" : "height"}
+        keyboardVerticalOffset={keyboardOffset}
+        {...KeyboardAvoidingViewProps}
+        style={[$styles.flex1, KeyboardAvoidingViewProps?.style]}>
+        {isNonScrolling(props.preset) ? <ScreenWithoutScrolling {...props} /> : <ScreenWithScrolling {...props} />}
+      </KeyboardAvoidingView>
+      {/* {debugCoreStatusBarEnabled && <CoreStatusBar />} */}
     </View>
   )
-}
-
-const $containerStyle: ViewStyle = {
-  flex: 1,
-  height: "100%",
-  width: "100%",
 }
 
 const $outerStyle: ViewStyle = {
