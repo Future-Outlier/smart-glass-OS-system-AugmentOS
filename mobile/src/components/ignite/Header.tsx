@@ -272,7 +272,7 @@ const $wrapper: ThemedStyle<ViewStyle> = ({spacing}) => ({
   flexDirection: "row",
   alignItems: "center",
   justifyContent: "space-between",
-  minHeight: 44,
+  minHeight: 48,
   // paddingBottom: spacing.s3,
 })
 

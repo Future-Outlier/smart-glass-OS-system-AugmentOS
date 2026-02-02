@@ -208,9 +208,8 @@ export default function DeveloperSettingsScreen() {
 
           <StoreUrl />
 
-          {true && <RouteButton label="Super Settings" onPress={() => push("/settings/super")} />}
+          {superMode && <RouteButton label="Super Settings" onPress={() => push("/settings/super")} />}
           
-
           <Spacer height={theme.spacing.s12} />
         </View>
       </ScrollView>
