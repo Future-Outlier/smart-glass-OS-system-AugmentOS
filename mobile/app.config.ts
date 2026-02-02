@@ -136,11 +136,12 @@ module.exports = ({config}: ConfigContext): Partial<ExpoConfig> => {
       [
         "expo-splash-screen",
         {
-          image: "./assets/splash/splash.png",
+          image: "./assets/logo/logo.png",
           resizeMode: "contain",
-          backgroundColor: "#fffaf0",
+          imageWidth: 100,
+          backgroundColor: "#fff",
           dark: {
-            backgroundColor: "#2D2C2F",
+            backgroundColor: "#171717",
           },
         },
       ],

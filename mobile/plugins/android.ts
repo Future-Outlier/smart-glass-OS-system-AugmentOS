@@ -14,7 +14,7 @@ import {
  * Expo Config Plugin to apply android-working modifications
  * This ensures that after running expo prebuild, all custom Android configurations are preserved
  */
-const withAndroidWorkingConfig: ConfigPlugin = config => {
+const withAndroidWorkingConfig: ConfigPlugin = (config) => {
   // Apply all modifications in sequence
   config = withAppBuildGradleModifications(config)
   config = withAndroidManifestModifications(config)
@@ -29,7 +29,7 @@ const withAndroidWorkingConfig: ConfigPlugin = config => {
  * Modify app/build.gradle to add custom configurations
  */
 function withAppBuildGradleModifications(config: any) {
-  return withAppBuildGradle(config, config => {
+  return withAppBuildGradle(config, (config) => {
     let buildGradle = config.modResults.contents
 
     // 1. Add release credentials and conditional Sentry script (after jscFlavor)
@@ -83,7 +83,7 @@ if (project.hasProperty("sentryUploadEnabled") && project.property("sentryUpload
 
       buildGradle = buildGradle.replace(
         /def jscFlavor = ['"]io\.github\.react-native-community:jsc-android:[^'"]*['"]/,
-        match => `${match}\n${credentialsAndSentry}`,
+        (match) => `${match}\n${credentialsAndSentry}`,
       )
     }
 
@@ -165,7 +165,7 @@ if (project.hasProperty("sentryUploadEnabled") && project.property("sentryUpload
  * Modify AndroidManifest.xml to add additional permissions and configurations
  */
 function withAndroidManifestModifications(config: any) {
-  return withAndroidManifest(config, config => {
+  return withAndroidManifest(config, (config) => {
     const manifest: any = config.modResults.manifest
 
     // Add permissions that need to be added
@@ -196,7 +196,7 @@ function withAndroidManifestModifications(config: any) {
     }
 
     // Add each permission if it doesn't exist
-    permissionsToAdd.forEach(perm => {
+    permissionsToAdd.forEach((perm) => {
       const existingPerm = manifest["uses-permission"].find((p: any) => p.$["android:name"] === perm.name)
 
       if (!existingPerm) {
@@ -279,7 +279,7 @@ function withAndroidManifestModifications(config: any) {
  * Uses dangerous mod to directly write files to the filesystem
  */
 function withXmlResourceFiles(config: any) {
-  return withAndroidManifest(config, config => {
+  return withAndroidManifest(config, (config) => {
     const projectRoot = config.modRequest.projectRoot
     const androidResPath = path.join(projectRoot, "android", "app", "src", "main", "res", "xml")
 
@@ -351,11 +351,11 @@ function withXmlResourceFiles(config: any) {
  * Modify gradle.properties to add Sentry configuration and node path
  */
 function withGradlePropertiesModifications(config: any) {
-  return withGradleProperties(config, config => {
+  return withGradleProperties(config, (config) => {
     let props = config.modResults
 
     // Add Sentry configuration if not present
-    if (!props.find(p => p.type === "property" && p.key === "sentryUploadEnabled")) {
+    if (!props.find((p) => p.type === "property" && p.key === "sentryUploadEnabled")) {
       props.push({
         type: "comment",
         value: " Sentry configuration",
@@ -378,7 +378,7 @@ function withGradlePropertiesModifications(config: any) {
       const nodePath = path.dirname(nodeExecutable)
 
       // Find existing org.gradle.jvmargs property
-      const jvmArgsIndex = props.findIndex(p => p.type === "property" && p.key === "org.gradle.jvmargs")
+      const jvmArgsIndex = props.findIndex((p) => p.type === "property" && p.key === "org.gradle.jvmargs")
 
       if (jvmArgsIndex !== -1) {
         // Append nodePath to existing jvmargs if not already present

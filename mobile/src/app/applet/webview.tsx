@@ -205,7 +205,7 @@ export default function AppWebView() {
           retry={() => {
             // Reset state and retry token generation
             setTokenError(null)
-            setRetryTrigger(prev => prev + 1) // Trigger useEffect to retry
+            setRetryTrigger((prev) => prev + 1) // Trigger useEffect to retry
           }}
           message={tokenError}
         />
