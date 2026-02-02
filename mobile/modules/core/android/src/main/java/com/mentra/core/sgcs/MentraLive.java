@@ -2746,7 +2746,7 @@ public class MentraLive extends SGCManager {
                     if (bodyObj != null) {
 
                         int batteryPercentage = bodyObj.optInt("pt", -1);
-                        int ready = bodyObj.optInt("fullyBooted", 0);
+                        int ready = bodyObj.optInt("ready", 0);
                         if (ready == 0) {
                             Bridge.log("LIVE: K900 SOC not ready (ready=0)");
                             GlassesStore.INSTANCE.apply("glasses", "fullyBooted", false);
