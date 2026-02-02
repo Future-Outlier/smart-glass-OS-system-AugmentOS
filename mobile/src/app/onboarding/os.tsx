@@ -119,9 +119,9 @@ export default function MentraOSOnboarding() {
 
   const handleCloseButton = () => {
     showAlert(translate("onboarding:osEndOnboardingTitle"), translate("onboarding:osEndOnboardingMessage"), [
-      {text: translate("common:cancel"), onPress: () => {}},
+      {text: translate("common:no"), onPress: () => {}},
       {
-        text: translate("common:exit"),
+        text: translate("onboarding:confirmSkip"),
         onPress: () => {
           handleExit()
         },

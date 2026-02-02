@@ -726,14 +726,22 @@ export function OnboardingGuide({
 
   // when a step has a waitFn, set the wait state to true, and when it resolves, set it to false
   useEffect(() => {
-    if (step.waitFn) {
-      setWaitState(true)
-      step.waitFn().then(() => {
-        setWaitState(false)
-        BackgroundTimer.setTimeout(() => {
-          handleNext(true)
-        }, 1500)
-      })
+    if (!step.waitFn) return
+
+    let cancelled = false
+    setWaitState(true)
+
+    step.waitFn().then(() => {
+      if (cancelled) return
+      setWaitState(false)
+      BackgroundTimer.setTimeout(() => {
+        if (cancelled) return
+        handleNext(true)
+      }, 1500)
+    })
+
+    return () => {
+      cancelled = true
     }
   }, [step.waitFn])
 
@@ -754,14 +762,13 @@ export function OnboardingGuide({
       }, 10000)
     } else {
       setShowStepSkipButton(false)
-      if (stepSkipTimeoutRef.current) { 
+      if (stepSkipTimeoutRef.current) {
         BackgroundTimer.clearTimeout(stepSkipTimeoutRef.current)
       }
     }
   }, [step.waitFn])
 
   const renderContinueButton = () => {
-
     let showLoader = (waitState && step.waitFn) || !showNextButton
     // the wait state should take precedence over the show next flag:
     // if (showLoader && step.waitFn && !waitState) {
@@ -857,7 +864,9 @@ export function OnboardingGuide({
       <View id="step-content" className="flex mb-4 h-34 gap-3 w-full justify-start">
         {step.title && (
           <Text
-            className={`${step.titleCentered ?? false ? "text-center" : "text-start"} text-2xl font-semibold text-foreground`}
+            className={`${
+              step.titleCentered ?? false ? "text-center" : "text-start"
+            } text-2xl font-semibold text-foreground`}
             text={step.title}
           />
         )}
@@ -931,9 +940,11 @@ export function OnboardingGuide({
           <Header
             leftIcon={showCloseButton && hasStarted ? "x" : undefined}
             RightActionComponent={
-              <View className={`flex flex-row gap-2 bg-red-500 items-center justify-center ${!hasStarted ? "flex-1" : ""}`}>
+              <View
+                className={`flex flex-row gap-2 items-center justify-center ${!hasStarted ? "flex-1" : ""}`}>
                 {/* <Text className="text-center text-sm font-medium" text={showCounter ? counter : ""} /> */}
-                <MentraLogoStandalone style={{width: 300, flex: 1, backgroundColor: "green"}} />
+                {showCounter && <Text className="text-center text-sm font-medium" text={counter} />}
+                <MentraLogoStandalone />
               </View>
             }
             onLeftPress={handleClose}

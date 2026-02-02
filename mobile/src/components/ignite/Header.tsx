@@ -264,7 +264,8 @@ function HeaderAction(props: HeaderActionProps) {
     )
   }
 
-  return <View style={[$actionFillerContainer, {backgroundColor}]} />
+  return null
+  // return <View style={[$actionFillerContainer, {backgroundColor}]} />
 }
 
 const $wrapper: ThemedStyle<ViewStyle> = ({spacing}) => ({
