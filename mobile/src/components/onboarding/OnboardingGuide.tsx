@@ -55,7 +55,7 @@ interface OnboardingGuideProps {
   startButtonText?: string
   endButtonText?: string
   endButtonFn?: () => void
-  exitFn?: () => void
+  skipFn?: () => void
   showCloseButton?: boolean
   showHeader?: boolean
   preventBack?: boolean
@@ -81,7 +81,7 @@ export function OnboardingGuide({
   startButtonText = "Start",
   endButtonText = "Done",
   endButtonFn,
-  exitFn,
+  skipFn,
   preventBack = false,
 }: OnboardingGuideProps) {
   const {clearHistoryAndGoHome} = useNavigationHistory()
@@ -153,14 +153,14 @@ export function OnboardingGuide({
     return () => {}
   }, [currentIndex, hasStarted, isCurrentStepImage])
 
-  const handleExit = useCallback(() => {
-    setExitRequested(true)
-    if (exitFn) {
-      exitFn()
+  const handleClose = useCallback(() => {
+    // setExitRequested(true)
+    if (skipFn) {
+      skipFn()
     } else {
       clearHistoryAndGoHome()
     }
-  }, [exitFn, clearHistoryAndGoHome])
+  }, [skipFn, clearHistoryAndGoHome])
 
   // Only show poster if video takes longer than 2 seconds to load (fallback for slow connections)
   useEffect(() => {
@@ -184,7 +184,7 @@ export function OnboardingGuide({
 
       if (currentIndex === steps.length - 1) {
         navigatingRef.current = false
-        handleExit()
+        // handleExit()
         return
       }
 
@@ -509,12 +509,12 @@ export function OnboardingGuide({
   }, [currentPlayer, isCurrentStepVideo])
 
   const handleSkip = useCallback(() => {
-    if (exitFn) {
-      exitFn()
+    if (skipFn) {
+      skipFn()
     } else {
       clearHistoryAndGoHome()
     }
-  }, [exitFn, clearHistoryAndGoHome])
+  }, [skipFn, clearHistoryAndGoHome])
 
   const renderNumberedBullets = useCallback(() => {
     if (!step.numberedBullets) {
@@ -903,7 +903,7 @@ export function OnboardingGuide({
                 <MentraLogoStandalone />
               </View>
             }
-            onLeftPress={handleExit}
+            onLeftPress={handleClose}
           />
         )}
         <View id="top">

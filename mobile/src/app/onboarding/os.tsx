@@ -118,15 +118,15 @@ export default function MentraOSOnboarding() {
   ]
 
   const handleCloseButton = () => {
-    // showAlert(translate("onboarding:osEndOnboardingTitle"), translate("onboarding:osEndOnboardingMessage"), [
-    //   {text: translate("common:cancel"), onPress: () => {}},
-    //   {
-    //     text: translate("common:exit"),
-    //     onPress: () => {
-    //       handleExit()
-    //     },
-    //   },
-    // ])
+    showAlert(translate("onboarding:osEndOnboardingTitle"), translate("onboarding:osEndOnboardingMessage"), [
+      {text: translate("common:cancel"), onPress: () => {}},
+      {
+        text: translate("common:exit"),
+        onPress: () => {
+          handleExit()
+        },
+      },
+    ])
   }
 
   const handleExit = () => {
@@ -146,8 +146,8 @@ export default function MentraOSOnboarding() {
         autoStart={true}
         showCloseButton={true}
         preventBack={true}
-        exitFn={handleCloseButton}
-        endButtonFn={handleExit}
+        skipFn={handleCloseButton}
+        endButtonFn={handleEndButton}
         startButtonText={translate("onboarding:continueOnboarding")}
         endButtonText={translate("common:continue")}
       />
