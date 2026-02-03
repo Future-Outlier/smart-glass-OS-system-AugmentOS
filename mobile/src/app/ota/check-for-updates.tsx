@@ -149,7 +149,7 @@ export default function OtaCheckForUpdatesScreen() {
           </View>
 
           <View className="flex-1 items-center justify-center">
-            <ActivityIndicator size="large" color={theme.colors.secondary_foreground} />
+            <ActivityIndicator size="large" color={theme.colors.foreground} />
           </View>
 
           {/* No skip button - OTA check is mandatory */}
@@ -177,7 +177,7 @@ export default function OtaCheckForUpdatesScreen() {
             <Text tx="ota:updateDescription" className="text-sm text-center" style={{color: theme.colors.textDim}} />
           </View>
 
-          <View className="gap-3 pb-2">
+          <View className="gap-3 mb-6">
             <Button preset="primary" tx="ota:updateNow" onPress={handleUpdateNow} />
             {__DEV__ && <Button preset="secondary" text="Skip (dev only)" onPress={handleContinue} />}
           </View>
@@ -197,7 +197,7 @@ export default function OtaCheckForUpdatesScreen() {
             <Text tx="ota:noUpdatesAvailable" className="text-sm text-center" style={{color: theme.colors.textDim}} />
           </View>
 
-          <View className="justify-center items-center">
+          <View className="justify-center items-center mb-6">
             <Button preset="primary" tx="common:continue" flexContainer onPress={handleContinue} />
           </View>
         </>
@@ -215,7 +215,7 @@ export default function OtaCheckForUpdatesScreen() {
           <Text tx="ota:checkFailedMessage" className="text-sm text-center" style={{color: theme.colors.textDim}} />
         </View>
 
-        <View className="gap-3 pb-2">
+        <View className="gap-3 pb-2 mb-6">
           <Button preset="primary" tx="common:retry" flexContainer onPress={handleRetry} />
           {__DEV__ && <Button preset="secondary" text="Skip (dev only)" onPress={handleContinue} />}
         </View>

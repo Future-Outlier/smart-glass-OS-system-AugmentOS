@@ -281,7 +281,7 @@ export const requestBackgroundLocationPermission = async (): Promise<boolean> =>
     }
 
     // Need to show dialog first explaining why we need background location
-    return new Promise(resolve => {
+    return new Promise((resolve) => {
       Alert.alert(
         "Background Location Permission",
         "MentraOS needs access to your location when the app is in the background " +
@@ -348,7 +348,7 @@ export const requestFeaturePermissions = async (featureKey: string): Promise<boo
         if (permission === PERMISSIONS.IOS.LOCATION_ALWAYS && currentStatus === RESULTS.BLOCKED) {
           // if we've already requested this permission before, show the dialog to direct user to Settings
           if (await hasPermissionBeenRequested(permission)) {
-            await handlePreviouslyDeniedPermission(config.name)
+            await handlePreviouslyDeniedPermission(config)
             return false
           }
           await markPermissionRequested(permission)
@@ -363,7 +363,7 @@ export const requestFeaturePermissions = async (featureKey: string): Promise<boo
         if (currentStatus === RESULTS.BLOCKED) {
           console.log(`Permission ${permission} is BLOCKED by system`)
           // Show dialog to direct user to Settings
-          await handlePreviouslyDeniedPermission(config.name)
+          await handlePreviouslyDeniedPermission(config)
           return false // Just return false since we've handled the alert internally
         }
       } catch (error) {
@@ -389,10 +389,10 @@ export const requestFeaturePermissions = async (featureKey: string): Promise<boo
       console.log(`${featureKey} original permissions:`, config.android)
       console.log(
         `${featureKey} permission values:`,
-        config.android.map(p => `${p} (${typeof p})`),
+        config.android.map((p) => `${p} (${typeof p})`),
       )
 
-      const validPermissions = config.android.filter(permission => permission != null)
+      const validPermissions = config.android.filter((permission) => permission != null)
       console.log(`${featureKey} valid permissions after filtering:`, validPermissions)
 
       if (validPermissions.length === 0) {
@@ -424,7 +424,7 @@ export const requestFeaturePermissions = async (featureKey: string): Promise<boo
       // Handle "Never Ask Again" case similar to iOS previouslyDenied
       if (anyNeverAskAgain) {
         // Handle the previously denied permission by showing the alert
-        await handlePreviouslyDeniedPermission(config.name)
+        await handlePreviouslyDeniedPermission(config)
         // Just return false, since we've handled the alert internally
         return false
       }
@@ -445,7 +445,7 @@ export const requestFeaturePermissions = async (featureKey: string): Promise<boo
         return false
       }
 
-      allGranted = Object.values(results).every(value => value === PermissionsAndroid.RESULTS.GRANTED)
+      allGranted = Object.values(results).every((value) => value === PermissionsAndroid.RESULTS.GRANTED)
     } catch (error) {
       console.error(`Error requesting ${featureKey} permissions:`, error)
       return false
@@ -469,7 +469,7 @@ export const requestFeaturePermissions = async (featureKey: string): Promise<boo
 
           // This shouldn't happen as we checked before, but just in case
           if (config.critical) {
-            await handlePreviouslyDeniedPermission(config.name)
+            await handlePreviouslyDeniedPermission(config)
             return false // Just return false since we've handled the alert internally
           }
         } else {
@@ -501,7 +501,7 @@ export const requestFeaturePermissions = async (featureKey: string): Promise<boo
 
 // Display appropriate warning messages
 export const displayPermissionDeniedWarning = (permissionName: string): Promise<boolean> => {
-  return new Promise(resolve => {
+  return new Promise((resolve) => {
     Alert.alert(
       `${permissionName} Permission Limited`,
       `Some features related to ${permissionName.toLowerCase()} may be limited or unavailable. You can enable full access in your device settings.`,
@@ -524,7 +524,7 @@ export const displayPermissionDeniedWarning = (permissionName: string): Promise<
 }
 
 export const displayCriticalPermissionDeniedWarning = (permissionName: string): Promise<boolean> => {
-  return new Promise(resolve => {
+  return new Promise((resolve) => {
     showAlert(
       `${permissionName} Required`,
       `AugmentOS needs ${permissionName.toLowerCase()} permissions to function properly. Please grant these permissions to continue.`,
@@ -540,19 +540,46 @@ export const displayCriticalPermissionDeniedWarning = (permissionName: string): 
 }
 
 // Helper function to handle permissions that were previously denied at the system level
-export const handlePreviouslyDeniedPermission = (permissionName: string): Promise<boolean> => {
-  return new Promise(resolve => {
+export const handlePreviouslyDeniedPermission = (config: PermissionConfig): Promise<boolean> => {
+  console.log("handlePreviouslyDeniedPermission: config", config)
+  if (Platform.OS === "ios" && config.name === PERMISSION_CONFIG[PermissionFeatures.BACKGROUND_LOCATION].name) {
+    // guide the user on how to enable the background location permission:
+    return new Promise((resolve) => {
+      showAlert(
+        translate("permissions:permissionRequired"),
+        "MentraOS needs access to your location when the app is in the background " +
+          `to provide location-based features\n` +
+          `\n\nOn the next screen, select Location, then select "Always" instead of "While Using the App"`,
+        [
+          {
+            text: translate("common:cancel"),
+            style: "cancel",
+            onPress: () => resolve(false),
+          },
+          {
+            text: "Open Settings",
+            onPress: () => {
+              Linking.openSettings()
+              resolve(false)
+            },
+          },
+        ],
+      )
+    })
+  }
+
+  return new Promise((resolve) => {
     showAlert(
-      "Permission Required",
-      `${permissionName} permission is required but has been denied previously. Please enable it in your device settings.`,
+      translate("permissions:permissionRequired"),
+      translate("permissions:permissionRequiredMessage", {name: config.name}),
       [
         {
-          text: "Cancel",
+          text: translate("common:cancel"),
           style: "cancel",
           onPress: () => resolve(false),
         },
         {
-          text: "Open Settings",
+          text: translate("permissions:openSettings"),
           onPress: () => {
             Linking.openSettings()
             // Return false since we don't know if the user actually changed the setting
@@ -646,13 +673,13 @@ export const askPermissionsUI = async (app: AppletInterface, theme: Theme): Prom
   }
 
   // Create a promise that resolves based on user action
-  return new Promise<number>(resolve => {
+  return new Promise<number>((resolve) => {
     showAlert(
       neededPermissions.length > 1
         ? translate("home:permissionsRequiredTitle")
         : translate("home:permissionRequiredTitle"),
       translate("home:permissionMessage", {
-        permissions: neededPermissions.map(perm => PERMISSION_CONFIG[perm]?.name || perm).join(", "),
+        permissions: neededPermissions.map((perm) => PERMISSION_CONFIG[perm]?.name || perm).join(", "),
       }),
       [
         {
@@ -793,7 +820,7 @@ async function isBluetoothEnabled(): Promise<boolean> {
       }
 
       // Wait 50ms before next check
-      await new Promise(resolve => setTimeout(resolve, 50))
+      await new Promise((resolve) => setTimeout(resolve, 50))
     }
 
     // If still unknown after 10 attempts, assume it's available

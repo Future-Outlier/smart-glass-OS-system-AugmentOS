@@ -257,7 +257,7 @@ export async function checkForOtaUpdate(
 //   const [defaultWearable] = useSetting(SETTINGS.default_wearable.key)
 //   const {push} = useNavigationHistory()
 //   // Extract only the specific values we need to watch to avoid re-renders
-//   const glassesModel = useGlassesStore(state => state.modelName)
+//   const glassesModel = useGlassesStore(state => state.deviceModel)
 //   const otaVersionUrl = useGlassesStore(state => state.otaVersionUrl)
 //   const currentBuildNumber = useGlassesStore(state => state.buildNumber)
 //   const glassesWifiConnected = useGlassesStore(state => state.wifiConnected)

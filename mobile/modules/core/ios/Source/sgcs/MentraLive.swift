@@ -609,7 +609,8 @@ extension MentraLive: CBCentralManagerDelegate {
         isConnecting = false
 
         connectedPeripheral = nil
-        ready = false
+        isFullyBooted = false
+        connected = false
         connectionState = ConnTypes.DISCONNECTED
         rgbLedAuthorityClaimed = false
 
@@ -855,10 +856,6 @@ typealias JSONObject = [String: Any]
 class MentraLive: NSObject, SGCManager {
     var connectionState: String = ConnTypes.DISCONNECTED
 
-    var caseBatteryLevel: Int = -1
-    var glassesSerialNumber: String = ""
-    var glassesStyle: String = ""
-    var glassesColor: String = ""
     func setDashboardPosition(_: Int, _: Int) {}
     func setSilentMode(_: Bool) {}
     func exit() {}
@@ -887,14 +884,10 @@ class MentraLive: NSObject, SGCManager {
 
     var type = "Mentra Live"
     var hasMic = true
-    var micEnabled = false
-    var isHeadUp = false
-    var caseOpen = false
-    var caseRemoved = true
-    var caseCharging = false
+
     func setMicEnabled(_ enabled: Bool) {
         Bridge.log("LIVE: setMicEnabled called: \(enabled)")
-        micEnabled = enabled
+        GlassesStore.shared.apply("glasses", "micEnabled", enabled)
         // Only enable if device supports LC3 audio
         guard supportsLC3Audio else {
             Bridge.log("LIVE: Device does not support LC3 audio, ignoring mic enable request")
@@ -981,45 +974,19 @@ class MentraLive: NSObject, SGCManager {
     private var isNewVersion = false
     private var globalMessageId = 0
     private var lastReceivedMessageId = 0
-    var glassesAppVersion: String = ""
-    var glassesBuildNumber: String = ""
-    var glassesOtaVersionUrl: String = ""
-    var glassesFirmwareVersion: String = ""
-    var glassesBtMacAddress: String = ""
-    var glassesDeviceModel: String = ""
-    var glassesAndroidVersion: String = ""
 
     // Version info: Flexible parsing - glasses can send any version_info* message with any fields
     // RN accumulates fields via setGlassesInfo({...state, ...info}) - no chunking/merging needed
 
-    var _ready = false
-    var ready: Bool {
-        get { return _ready }
-        set {
-            let oldValue = _ready
-            _ready = newValue
-            if oldValue != newValue {
-                // Call the callback when state changes
-                CoreManager.shared.handleConnectionStateChanged()
-                Bridge.log("LIVE: connection state changed to: \(newValue)")
-            }
-            if !newValue {
-                // Reset battery levels when disconnected
-                batteryLevel = -1
-            }
-        }
+    private var isFullyBooted: Bool {
+        get { GlassesStore.shared.get("glasses", "isFullyBooted") as? Bool ?? false }
+        set { GlassesStore.shared.apply("glasses", "isFullyBooted", newValue) }
     }
 
-    // Data Properties
-    @Published var batteryLevel: Int = -1
-    @Published var isCharging: Bool = false
-    @Published var wifiConnected: Bool = false
-    @Published var wifiSsid: String = ""
-    @Published var wifiLocalIp: String = ""
-    @Published var isHotspotEnabled: Bool = false
-    @Published var hotspotSsid: String = ""
-    @Published var hotspotPassword: String = ""
-    @Published var hotspotGatewayIp: String = "" // The gateway IP to connect to when on hotspot
+    private var connected: Bool {
+        get { GlassesStore.shared.get("glasses", "connected") as? Bool ?? false }
+        set { GlassesStore.shared.apply("glasses", "connected", newValue) }
+    }
 
     // Queue Management
     private let commandQueue = CommandQueue()
@@ -1705,8 +1672,8 @@ class MentraLive: NSObject, SGCManager {
 
         case "battery_status":
             let level = json["level"] as? Int ?? batteryLevel
-            let charging = json["charging"] as? Bool ?? isCharging
-            updateBatteryStatus(level: level, charging: charging)
+            let isCharging = json["charging"] as? Bool ?? charging
+            updateBatteryStatus(level: level, isCharging: isCharging)
 
         case "wifi_status":
             let connected = json["connected"] as? Bool ?? false
@@ -1758,10 +1725,10 @@ class MentraLive: NSObject, SGCManager {
         case "touch_event":
             let gestureName = json["gesture_name"] as? String ?? "unknown"
             let timestamp = parseTimestamp(json["timestamp"])
-            let deviceModel = json["device_model"] as? String ?? glassesDeviceModel
-            Bridge.sendTouchEvent(
-                deviceModel: deviceModel, gestureName: gestureName, timestamp: timestamp
-            )
+            let deviceModel = json["device_model"] as? String ?? deviceModel
+            // Bridge.sendTouchEvent(
+            //    deviceModel: deviceModel, gestureName: gestureName, timestamp: timestamp
+            // )
 
         case "swipe_volume_status":
             let enabled = json["enabled"] as? Bool ?? false
@@ -1952,9 +1919,13 @@ class MentraLive: NSObject, SGCManager {
                 let voltage = bodyObj["vt"] as? Int ?? 0
                 let charging = (bodyObj["charg"] as? Int ?? 0) == 1
 
-                // Check for low battery during pairing
-                if percentage > 0, percentage <= 20 {
-                    if !ready {
+                // SOC is still booting - notify UI to show "Glasses are booting up..." message
+                if readyResponse == 0 {
+                    Bridge.log("K900 SOC not ready (ready=0), notifying UI")
+                    GlassesStore.shared.set("core", "shouldShowBootingMessage", true)
+
+                    // Check for low battery during pairing
+                    if percentage > 0, percentage <= 20 {
                         Bridge.sendPairFailureEvent("errors:pairingBatteryTooLow")
                         return
                     }
@@ -1962,7 +1933,7 @@ class MentraLive: NSObject, SGCManager {
 
                 // Update battery status if we have valid data
                 if percentage > 0 {
-                    updateBatteryStatus(level: percentage, charging: charging)
+                    updateBatteryStatus(level: percentage, isCharging: charging)
                     if voltage > 0 {
                         let voltageVolts = Double(voltage) / 1000.0
                         // Bridge.log(
@@ -1975,8 +1946,8 @@ class MentraLive: NSObject, SGCManager {
                     Bridge.log("K900 SOC ready")
                     // Only send phone_ready if we haven't already established connection
                     // This prevents re-initialization on every heartbeat after initial connection
-                    // The ready flag is reset on disconnect/reconnect, so this won't prevent proper reconnection
-                    if !ready {
+                    // The isFullyBooted flag is reset on disconnect/reconnect, so this won't prevent proper reconnection
+                    if !isFullyBooted {
                         let readyMsg: [String: Any] = [
                             "type": "phone_ready",
                             "timestamp": Int64(Date().timeIntervalSince1970 * 1000),
@@ -1997,7 +1968,7 @@ class MentraLive: NSObject, SGCManager {
 
                 Bridge.log(
                     "🔋 K900 Battery Status - Voltage: \(voltageVolts)V, Level: \(percentage)%")
-                updateBatteryStatus(level: percentage, charging: isCharging)
+                updateBatteryStatus(level: percentage, isCharging: isCharging)
             }
 
         case "sr_shut":
@@ -2069,9 +2040,41 @@ class MentraLive: NSObject, SGCManager {
                 )
             }
 
+        case "sr_tpevt":
+            // K900 touchpad event - convert to touch_event for frontend
+            if let bodyObj = json["B"] as? [String: Any],
+               let gestureType = bodyObj["type"] as? Int
+            {
+                if let gestureName = mapK900GestureType(gestureType) {
+                    Bridge.log("LIVE: 👆 K900 touchpad event - Type: \(gestureType) -> \(gestureName)")
+                    Bridge.sendTouchEvent(
+                        deviceModel: deviceModel,
+                        gestureName: gestureName,
+                        timestamp: Int64(Date().timeIntervalSince1970 * 1000)
+                    )
+                } else {
+                    Bridge.log("Unknown K900 gesture type: \(gestureType)")
+                }
+            }
+
         default:
             // Bridge.log("Unknown K900 command: \(command)")
             break
+        }
+    }
+
+    /// Maps K900 gesture type codes to gesture names
+    private func mapK900GestureType(_ type: Int) -> String? {
+        switch type {
+        case 0: return "single_tap"
+        case 1: return "double_tap"
+        case 2: return "triple_tap"
+        case 3: return "long_press"
+        case 4: return "forward_swipe"
+        case 5: return "backward_swipe"
+        case 6: return "up_swipe"
+        case 7: return "down_swipe"
+        default: return nil
         }
     }
 
@@ -2154,7 +2157,7 @@ class MentraLive: NSObject, SGCManager {
     }
 
     func sendGalleryMode() {
-        let active = CoreManager.shared.galleryMode
+        let active = GlassesStore.shared.get("core", "gallery_mode") as! Bool
         Bridge.log("LIVE: 📸 Sending gallery mode active to glasses: \(active)")
 
         let json: [String: Any] = [
@@ -2205,7 +2208,8 @@ class MentraLive: NSObject, SGCManager {
         // Start heartbeat
         startHeartbeat()
 
-        ready = true
+        isFullyBooted = true
+        connected = true
         connectionState = ConnTypes.CONNECTED
         // maybe add audio monitoring here?
     }
@@ -2216,12 +2220,9 @@ class MentraLive: NSObject, SGCManager {
         // First, check for enhanced format (networks_neo)
         if let networksNeoArray = json["networks_neo"] as? [[String: Any]] {
             networks = networksNeoArray
-            // Bridge.log(
-            //     "Received enhanced WiFi scan results: \(networks.count) networks with security info"
-            // )
         }
 
-        Bridge.sendWifiScanResults(networks)
+        Bridge.updateWifiScanResults(networks)
     }
 
     private func handleButtonPress(_ json: [String: Any]) {
@@ -2241,14 +2242,14 @@ class MentraLive: NSObject, SGCManager {
         let firmwareVersion = json["firmware_version"] as? String ?? ""
         let btMacAddress = json["bt_mac_address"] as? String ?? ""
 
-        glassesAppVersion = appVersion
-        glassesBuildNumber = buildNumber
-        glassesOtaVersionUrl = otaVersionUrl
-        glassesFirmwareVersion = firmwareVersion
-        glassesBtMacAddress = btMacAddress
+        GlassesStore.shared.apply("glasses", "appVersion", appVersion)
+        GlassesStore.shared.apply("glasses", "buildNumber", buildNumber)
+        GlassesStore.shared.apply("glasses", "otaVersionUrl", otaVersionUrl)
+        GlassesStore.shared.apply("glasses", "fwVersion", firmwareVersion)
+        GlassesStore.shared.apply("glasses", "btMacAddress", btMacAddress)
         isNewVersion = (Int(buildNumber) ?? 0) >= 5
-        glassesDeviceModel = deviceModel
-        glassesAndroidVersion = androidVersion
+        GlassesStore.shared.apply("glasses", "deviceModel", deviceModel)
+        GlassesStore.shared.apply("glasses", "androidVersion", androidVersion)
 
         // Detect LC3 audio support: K901+ devices have microphone, K900 does not
         // supportsLC3Audio = deviceModel != "K900"
@@ -2263,9 +2264,6 @@ class MentraLive: NSObject, SGCManager {
             androidVersion: androidVersion, otaVersionUrl: otaVersionUrl, firmwareVersion: firmwareVersion,
             btMacAddress: btMacAddress
         )
-
-        // Trigger status update so React Native gets the updated glasses info with version details
-        CoreManager.shared.getStatus()
     }
 
     private func handleAck(_: [String: Any]) {
@@ -2807,7 +2805,7 @@ class MentraLive: NSObject, SGCManager {
     private func sendCoreTokenToAsgClient() {
         Bridge.log("Preparing to send coreToken to ASG client")
 
-        let coreToken = CoreManager.shared.coreToken
+        let coreToken = GlassesStore.shared.get("core", "auth_token") as? String ?? ""
         if coreToken.isEmpty {
             Bridge.log("No coreToken available to send to ASG client")
             return
@@ -2824,7 +2822,7 @@ class MentraLive: NSObject, SGCManager {
 
     /// Send stored user email to the ASG client for Sentry crash reporting
     private func sendStoredUserEmailToAsgClient() {
-        let storedEmail = CoreManager.shared.userEmail
+        let storedEmail = GlassesStore.shared.store.get("core", "auth_email") as? String ?? ""
 
         guard !storedEmail.isEmpty else {
             Bridge.log("LIVE: No stored user email to send to ASG client")
@@ -3005,31 +3003,26 @@ class MentraLive: NSObject, SGCManager {
 
     // MARK: - Update Methods
 
-    private func updateBatteryStatus(level: Int, charging: Bool) {
-        batteryLevel = level
-        isCharging = charging
-        CoreManager.shared.getStatus()
-        // emitBatteryLevelEvent(level: level, charging: charging)
+    private func updateBatteryStatus(level: Int, isCharging: Bool) {
+        GlassesStore.shared.apply("glasses", "batteryLevel", level)
+        GlassesStore.shared.apply("glasses", "charging", isCharging)
     }
 
     private func updateWifiStatus(connected: Bool, ssid: String, ip: String) {
         Bridge.log("LIVE: 🌐 Updating WiFi status - connected: \(connected), ssid: \(ssid)")
-        wifiConnected = connected
-        wifiSsid = ssid
-        wifiLocalIp = ip
+        GlassesStore.shared.apply("glasses", "wifiConnected", connected)
+        GlassesStore.shared.apply("glasses", "wifiSsid", ssid)
+        GlassesStore.shared.apply("glasses", "wifiLocalIp", ip)
         emitWifiStatusChange()
     }
 
     private func updateHotspotStatus(enabled: Bool, ssid: String, password: String, ip: String) {
         Bridge.log("LIVE: 🔥 Updating hotspot status - enabled: \(enabled), ssid: \(ssid)")
-        isHotspotEnabled = enabled
-        hotspotSsid = ssid
-        hotspotPassword = password
-        hotspotGatewayIp = ip // This is the gateway IP from glasses
+        GlassesStore.shared.apply("glasses", "hotspotEnabled", enabled)
+        GlassesStore.shared.apply("glasses", "hotspotSsid", ssid)
+        GlassesStore.shared.apply("glasses", "hotspotPassword", password)
+        GlassesStore.shared.apply("glasses", "hotspotGatewayIp", ip) // This is the gateway IP from glasses
         emitHotspotStatusChange()
-
-        // Trigger a full status update so React Native gets the updated glasses_info
-        CoreManager.shared.getStatus()
     }
 
     private func handleHotspotError(errorMessage: String, timestamp: Int64) {
@@ -3053,7 +3046,7 @@ class MentraLive: NSObject, SGCManager {
             "LIVE: 📸 Received gallery status - photos: \(photoCount), videos: \(videoCount), total size: \(totalSize) bytes"
         )
 
-        // Emit gallery status event as CoreMessageEvent like other status events
+        // Emit gallery status event like other status events
         let eventBody =
             [
                 "photos": photoCount,
@@ -3096,8 +3089,8 @@ class MentraLive: NSObject, SGCManager {
     }
 
     private func sendHeartbeat() {
-        guard ready, connectionState == ConnTypes.CONNECTED else {
-            Bridge.log("LIVE: Skipping heartbeat - glasses not ready or not connected")
+        guard isFullyBooted, connectionState == ConnTypes.CONNECTED else {
+            Bridge.log("LIVE: Skipping heartbeat - glasses not fully booted or not connected")
             return
         }
 
@@ -3129,7 +3122,8 @@ class MentraLive: NSObject, SGCManager {
         stopReadinessCheckLoop()
 
         readinessCheckCounter = 0
-        ready = false
+        isFullyBooted = false
+        connected = false
 
         Bridge.log("LIVE: 🔄 Starting glasses SOC readiness check loop")
 
@@ -3220,18 +3214,19 @@ class MentraLive: NSObject, SGCManager {
     private func emitDiscoveredDevice(_ name: String) {
         // Use the standardized typed message function
         let body = [
-            "model_name": "Mentra Live",
+            "device_model": "Mentra Live",
             "device_name": name,
             "device_address": "",
         ]
-        Bridge.sendTypedMessage("compatible_glasses_search_result", body: body)
+        // Bridge.sendTypedMessage("compatible_glasses_search_result", body: body)
+        Bridge.sendDiscoveredDevice("Mentra Live", name)
     }
 
     private func emitStopScanEvent() {
         // Use the standardized typed message function
         let body = [
             "compatible_glasses_search_stop": [
-                "model_name": "Mentra Live",
+                "device_model": "Mentra Live",
             ],
         ]
         Bridge.sendTypedMessage("compatible_glasses_search_stop", body: body)
@@ -3256,7 +3251,7 @@ class MentraLive: NSObject, SGCManager {
 
     private func emitHotspotStatusChange() {
         let eventBody: [String: Any] = [
-            "enabled": isHotspotEnabled,
+            "enabled": hotspotEnabled,
             "ssid": hotspotSsid,
             "password": hotspotPassword,
             "local_ip": hotspotGatewayIp, // Using gateway IP for consistency with Android
@@ -3276,7 +3271,7 @@ class MentraLive: NSObject, SGCManager {
             "timestamp": timestamp,
         ]
 
-        // emitEvent("CoreMessageEvent", body: eventBody)
+        // emitEvent("onCoreEvent", body: eventBody)
     }
 
     private func emitVersionInfo(
@@ -3558,7 +3553,7 @@ extension MentraLive {
         offtime: Int,
         count: Int
     ) {
-        guard connectionState == ConnTypes.CONNECTED, ready else {
+        guard connectionState == ConnTypes.CONNECTED, isFullyBooted else {
             Bridge.log("LIVE: Cannot handle RGB LED control - glasses not connected")
             Bridge.sendRgbLedControlResponse(
                 requestId: requestId, success: false, error: "glasses_not_connected"
@@ -3683,7 +3678,7 @@ extension MentraLive {
     // MARK: - Button Mode Settings
 
     func sendButtonModeSetting() {
-        let mode = CoreManager.shared.buttonPressMode
+        let mode = GlassesStore.shared.get("core", "button_mode") as! String
         Bridge.log("Sending button mode setting to glasses: \(mode)")
 
         guard connectionState == ConnTypes.CONNECTED else {
@@ -3754,7 +3749,8 @@ extension MentraLive {
         sendButtonVideoRecordingSettings()
 
         // Send button max recording time
-        sendButtonMaxRecordingTime(CoreManager.shared.buttonMaxRecordingTime)
+        let maxTime = GlassesStore.shared.get("core", "button_max_recording_time") as! Int
+        sendButtonMaxRecordingTime(maxTime)
 
         // Send button photo settings
         sendButtonPhotoSettings()
@@ -3767,9 +3763,14 @@ extension MentraLive {
     }
 
     func sendButtonVideoRecordingSettings() {
-        let width = CoreManager.shared.buttonVideoWidth
-        let height = CoreManager.shared.buttonVideoHeight
-        let fps = CoreManager.shared.buttonVideoFps
+        let settings = GlassesStore.shared.get("core", "button_video_settings") as? [String: Any] ?? [
+            "width": 1280,
+            "height": 720,
+            "fps": 30,
+        ]
+        let width = settings["width"] as? Int ?? 1280
+        let height = settings["height"] as? Int ?? 720
+        let fps = settings["fps"] as? Int ?? 30
 
         // Use defaults if not set
         let finalWidth = width > 0 ? width : 1280
@@ -3796,7 +3797,7 @@ extension MentraLive {
     }
 
     func sendButtonMaxRecordingTime() {
-        let maxTime = CoreManager.shared.buttonMaxRecordingTime
+        let maxTime = GlassesStore.shared.get("core", "button_max_recording_time") as? Int ?? 10
         Bridge.log("Sending button max recording time: \(maxTime) minutes")
 
         guard connectionState == ConnTypes.CONNECTED else {
@@ -3812,7 +3813,7 @@ extension MentraLive {
     }
 
     func sendButtonPhotoSettings() {
-        let size = CoreManager.shared.buttonPhotoSize
+        let size = GlassesStore.shared.get("core", "button_photo_size") as! String
 
         Bridge.log("Sending button photo setting: \(size)")
 
@@ -3829,7 +3830,7 @@ extension MentraLive {
     }
 
     func sendButtonCameraLedSetting() {
-        let enabled = CoreManager.shared.buttonCameraLed
+        let enabled = GlassesStore.shared.get("core", "button_camera_led") as! Bool
 
         Bridge.log("Sending button camera LED setting: \(enabled)")
 

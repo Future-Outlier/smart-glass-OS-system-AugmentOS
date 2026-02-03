@@ -1,4 +1,3 @@
- 
 // MentraOS/cloud/packages/cloud/src/services/session/UserSettingsManager.ts
 
 /**
@@ -9,13 +8,14 @@
  * - Maintain a session snapshot of user settings (loaded from UserSettings if requested).
  * - React to REST updates by updating the snapshot.
  * - Bridge specific keys to legacy behaviors to preserve backward compatibility:
- *   - metric_system_enabled (boolean) → broadcast legacy "augmentos_settings_update" with { metricSystemEnabled }
+ *   - metric_system (boolean) → broadcast legacy "augmentos_settings_update" with { metricSystemEnabled }
  *   - default_wearable (string) → delegate to DeviceManager to update model/capabilities immediately
  *
  * Notes:
  * - This manager does not persist settings; persistence happens in the REST layer (user-settings.api.ts).
  * - Legacy WS settings are not written to UserSettings; they continue to flow on their old path.
- * - Only metric_system_enabled is bridged in this phase. Other keys are not broadcast.
+ * - Only metric_system is bridged in this phase. Other keys are not broadcast.
+ * - Some settings (like preferred_mic) are indexed by device - use getIndexedSetting() to look them up.
  */
 
 import type { Logger } from "pino";
@@ -25,7 +25,6 @@ import { WebSocketReadyState } from "../websocket/types";
 
 import type UserSession from "./UserSession";
 
-
 export class UserSettingsManager {
   private readonly userSession: UserSession;
   private readonly logger: Logger;
@@ -33,19 +32,36 @@ export class UserSettingsManager {
   // In-session snapshot of user settings (client-defined keys)
   private snapshot: Record<string, any> = {};
 
+  // Promise that resolves when initial load completes
+  private loadPromise: Promise<void>;
+  private loaded: boolean = false;
+
   constructor(userSession: UserSession) {
     this.userSession = userSession;
     this.logger = userSession.logger.child({ service: "UserSettingsManager" });
-    this.logger.info(
-      { userId: userSession.userId },
-      "UserSettingsManager initialized",
-    );
-    this.load();
+    this.logger.info({ userId: userSession.userId }, "UserSettingsManager initialized");
+    // Start loading and store the promise so callers can await it
+    this.loadPromise = this.load();
   }
 
   /**
-   * Optionally load current settings from the canonical UserSettings model.
-   * This is not required for the bridge to function, but useful for diagnostics.
+   * Wait for the initial settings load to complete.
+   * Call this before accessing settings if you need to ensure they're loaded.
+   */
+  async waitForLoad(): Promise<void> {
+    await this.loadPromise;
+  }
+
+  /**
+   * Check if settings have been loaded from the database.
+   */
+  isLoaded(): boolean {
+    return this.loaded;
+  }
+
+  /**
+   * Load current settings from the canonical UserSettings model.
+   * This is called automatically in the constructor; use waitForLoad() to await completion.
    */
   async load(): Promise<void> {
     try {
@@ -53,24 +69,17 @@ export class UserSettingsManager {
       const doc = await UserSettings.findOne({ email });
       const settings = doc?.getSettings() || {};
       this.snapshot = { ...settings };
+
       if (this.snapshot.default_wearable) {
-        this.logger.info(
-          { userId: email, wearableId: this.snapshot.default_wearable },
-          "Default wearable loaded",
-        );
-        await this.userSession.deviceManager.setCurrentModel(
-          this.snapshot.default_wearable,
-        );
+        this.logger.info({ userId: email, wearableId: this.snapshot.default_wearable }, "Default wearable loaded");
+        await this.userSession.deviceManager.setCurrentModel(this.snapshot.default_wearable);
       }
-      this.logger.info(
-        { userId: email, keys: Object.keys(this.snapshot) },
-        "User settings snapshot loaded",
-      );
+
+      this.loaded = true;
+      this.logger.info({ userId: email, keys: Object.keys(this.snapshot) }, "User settings snapshot loaded");
     } catch (error) {
-      this.logger.error(
-        error as Error,
-        "Error loading user settings snapshot from database",
-      );
+      this.loaded = true; // Mark as loaded even on error so we don't block forever
+      this.logger.error(error as Error, "Error loading user settings snapshot from database");
     }
   }
 
@@ -79,6 +88,32 @@ export class UserSettingsManager {
    */
   getSnapshot(): Record<string, any> {
     return { ...this.snapshot };
+  }
+
+  /**
+   * Get a setting value, handling indexed keys (like preferred_mic:<deviceId>).
+   * Some settings on mobile are stored with a device-specific suffix.
+   *
+   * @param key The base setting key (e.g., "preferred_mic")
+   * @param indexer Optional device ID to use as index. If not provided, uses default_wearable.
+   * @returns The setting value, or undefined if not found
+   */
+  getIndexedSetting(key: string, indexer?: string): any {
+    // First try the indexed key if we have an indexer
+    const deviceId = indexer ?? this.snapshot.default_wearable;
+    if (deviceId) {
+      const indexedKey = `${key}:${deviceId}`;
+      if (indexedKey in this.snapshot) {
+        return this.snapshot[indexedKey];
+      }
+    }
+
+    // Fall back to the plain key
+    if (key in this.snapshot) {
+      return this.snapshot[key];
+    }
+
+    return undefined;
   }
 
   /**
@@ -110,7 +145,7 @@ export class UserSettingsManager {
       );
 
       // Bridge specific keys to legacy behavior for backward compatibility
-      await this.bridgeMetricSystemEnabledIfPresent(updated);
+      await this.bridgeMetricSystemIfPresent(updated);
       await this.applyDefaultWearableIfPresent(updated);
 
       // Optionally log diff (debug)
@@ -125,10 +160,7 @@ export class UserSettingsManager {
         );
       }
     } catch (error) {
-      this.logger.error(
-        error as Error,
-        "Error handling onSettingsUpdatedViaRest in UserSettingsManager",
-      );
+      this.logger.error(error as Error, "Error handling onSettingsUpdatedViaRest in UserSettingsManager");
     }
   }
 
@@ -142,26 +174,19 @@ export class UserSettingsManager {
   // ===== Internal helpers =====
 
   /**
-   * Bridge for metric_system_enabled (boolean) → legacy AugmentOS settings update
+   * Bridge for metric_system (boolean) → legacy AugmentOS settings update
    * - Maps to metricSystemEnabled (camelCase) and broadcasts "augmentos_settings_update"
    * - Targets Apps that are subscribed to the specific augmentos key
    */
-  private async bridgeMetricSystemEnabledIfPresent(
-    updated: Record<string, any>,
-  ): Promise<void> {
-    if (!Object.prototype.hasOwnProperty.call(updated, "metric_system_enabled"))
-      return;
+  private async bridgeMetricSystemIfPresent(updated: Record<string, any>): Promise<void> {
+    if (!Object.prototype.hasOwnProperty.call(updated, "metric_system")) return;
 
     try {
-      const raw = updated["metric_system_enabled"];
-      const next =
-        typeof raw === "string" ? raw.toLowerCase() === "true" : Boolean(raw);
+      const raw = updated["metric_system"];
+      const next = typeof raw === "string" ? raw.toLowerCase() === "true" : Boolean(raw);
 
       const legacyKey = "metricSystemEnabled";
-      const subscribedApps =
-        this.userSession.subscriptionManager.getSubscribedAppsForAugmentosSetting(
-          legacyKey,
-        );
+      const subscribedApps = this.userSession.subscriptionManager.getSubscribedAppsForAugmentosSetting(legacyKey);
 
       if (!subscribedApps || subscribedApps.length === 0) {
         this.logger.info(
@@ -196,10 +221,7 @@ export class UserSettingsManager {
         try {
           ws.send(JSON.stringify(message));
         } catch (sendError) {
-          this.logger.error(
-            sendError as Error,
-            `Error sending augmentos_settings_update to App ${packageName}`,
-          );
+          this.logger.error(sendError as Error, `Error sending augmentos_settings_update to App ${packageName}`);
         }
       }
 
@@ -210,13 +232,10 @@ export class UserSettingsManager {
           value: next,
           appCount: subscribedApps.length,
         },
-        "Bridged metric_system_enabled to legacy augmentos_settings_update",
+        "Bridged metric_system to legacy augmentos_settings_update",
       );
     } catch (error) {
-      this.logger.error(
-        error as Error,
-        "Error bridging metric_system_enabled to legacy augmentos_settings_update",
-      );
+      this.logger.error(error as Error, "Error bridging metric_system to legacy augmentos_settings_update");
     }
   }
 
@@ -226,31 +245,21 @@ export class UserSettingsManager {
    * - Sends CAPABILITIES_UPDATE and stops incompatible Apps (via DeviceManager)
    * - Updates User.glassesModels, PostHog, and analytics per DeviceManager's behavior
    */
-  private async applyDefaultWearableIfPresent(
-    updated: Record<string, any>,
-  ): Promise<void> {
-    if (!Object.prototype.hasOwnProperty.call(updated, "default_wearable"))
-      return;
+  private async applyDefaultWearableIfPresent(updated: Record<string, any>): Promise<void> {
+    if (!Object.prototype.hasOwnProperty.call(updated, "default_wearable")) return;
 
     const raw = updated["default_wearable"];
-    const modelName =
-      typeof raw === "string" ? raw.trim() : raw ? String(raw) : "";
+    const modelName = typeof raw === "string" ? raw.trim() : raw ? String(raw) : "";
 
     if (!modelName) {
-      this.logger.warn(
-        { userId: this.userSession.userId },
-        "default_wearable provided but empty; ignoring",
-      );
+      this.logger.warn({ userId: this.userSession.userId }, "default_wearable provided but empty; ignoring");
       return;
     }
 
     try {
       await this.userSession.deviceManager.setCurrentModel(modelName);
     } catch (error) {
-      this.logger.error(
-        error as Error,
-        "Error applying default_wearable via DeviceManager",
-      );
+      this.logger.error(error as Error, "Error applying default_wearable via DeviceManager");
     }
   }
 

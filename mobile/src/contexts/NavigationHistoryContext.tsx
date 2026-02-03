@@ -1,7 +1,6 @@
-import {router, useFocusEffect, useNavigationContainerRef, usePathname, useSegments} from "expo-router"
+import {router, useFocusEffect, useNavigationContainerRef, usePathname, useSegments, useNavigation} from "expo-router"
 import {createContext, useContext, useEffect, useRef, useCallback, useState} from "react"
 import {BackHandler} from "react-native"
-import {useNavigation} from "expo-router"
 import {CommonActions} from "@react-navigation/native"
 
 import {navigationRef} from "@/contexts/NavigationRef"
@@ -378,7 +377,7 @@ export function NavigationHistoryProvider({children}: {children: React.ReactNode
     const n = index + 2
     let updatedRoutes = historyRef.current.slice(0, -n)
     let updatedRoutesParams = historyParamsRef.current.slice(0, -n)
-    
+
     // re-add the last (soon to be new current) route:
     updatedRoutes.push(lastRoute)
     updatedRoutesParams.push(lastRouteParams)

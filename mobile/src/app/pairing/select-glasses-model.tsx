@@ -1,7 +1,7 @@
 import {DeviceTypes} from "@/../../cloud/packages/types/src"
 import CoreModule from "core"
 import {useFocusEffect} from "expo-router"
-import {useCallback, useMemo} from "react"
+import {useCallback} from "react"
 import {View, TouchableOpacity, Platform, ScrollView, Image, ViewStyle, ImageStyle, TextStyle} from "react-native"
 
 import {EvenRealitiesLogo} from "@/components/brands/EvenRealitiesLogo"
@@ -33,8 +33,8 @@ export default function SelectGlassesModelScreen() {
   )
 
   // Get logo component for manufacturer
-  const getManufacturerLogo = (modelName: string) => {
-    switch (modelName) {
+  const getManufacturerLogo = (deviceModel: string) => {
+    switch (deviceModel) {
       case DeviceTypes.G1:
         return <EvenRealitiesLogo color={theme.colors.text} />
       case DeviceTypes.LIVE:
@@ -49,38 +49,30 @@ export default function SelectGlassesModelScreen() {
   }
 
   // Platform-specific glasses options
-  // Mentra Nex is only available when developer mode is enabled
-  const glassesOptions = useMemo(() => {
-    const baseOptions =
-      Platform.OS === "ios"
-        ? [
-            // {modelName: DeviceTypes.SIMULATED, key: DeviceTypes.SIMULATED},
-            {modelName: DeviceTypes.G1, key: "evenrealities_g1"},
-            {modelName: DeviceTypes.LIVE, key: "mentra_live"},
-            {modelName: DeviceTypes.MACH1, key: "mentra_mach1"},
-            {modelName: DeviceTypes.Z100, key: "vuzix-z100"},
-            //{modelName: "Brilliant Labs Frame", key: "frame"},
-          ]
-        : [
-            // Android:
-            // {modelName: DeviceTypes.SIMULATED, key: DeviceTypes.SIMULATED},
-            {modelName: DeviceTypes.G1, key: "evenrealities_g1"},
-            {modelName: DeviceTypes.LIVE, key: "mentra_live"},
-            {modelName: DeviceTypes.MACH1, key: "mentra_mach1"},
-            {modelName: DeviceTypes.Z100, key: "vuzix-z100"},
-            // {modelName: "Brilliant Labs Frame", key: "frame"},
-          ]
+  const glassesOptions =
+    Platform.OS === "ios"
+      ? [
+          // {deviceModel: DeviceTypes.SIMULATED, key: DeviceTypes.SIMULATED},
+          {deviceModel: DeviceTypes.G1, key: "evenrealities_g1"},
+          {deviceModel: DeviceTypes.LIVE, key: "mentra_live"},
+          {deviceModel: DeviceTypes.MACH1, key: "mentra_mach1"},
+          {deviceModel: DeviceTypes.Z100, key: "vuzix-z100"},
+          devMode && {deviceModel: DeviceTypes.NEX, key: "mentra_nex"},
+          //{deviceModel: "Brilliant Labs Frame", key: "frame"},
+        ]
+      : [
+          // Android:
+          // {deviceModel: DeviceTypes.SIMULATED, key: DeviceTypes.SIMULATED},
+          {deviceModel: DeviceTypes.G1, key: "evenrealities_g1"},
+          {deviceModel: DeviceTypes.LIVE, key: "mentra_live"},
+          {deviceModel: DeviceTypes.MACH1, key: "mentra_mach1"},
+          {deviceModel: DeviceTypes.Z100, key: "vuzix-z100"},
+          devMode && {deviceModel: DeviceTypes.NEX, key: "mentra_nex"},
+          // {deviceModel: "Brilliant Labs Frame", key: "frame"},
+        ]
 
-    // Add Mentra Nex only when developer mode is enabled
-    if (devMode) {
-      baseOptions.push({modelName: DeviceTypes.NEX, key: "mentra_nex"})
-    }
-
-    return baseOptions
-  }, [devMode])
-
-  const triggerGlassesPairingGuide = async (modelName: string) => {
-    push("/pairing/prep", {modelName: modelName})
+  const triggerGlassesPairingGuide = async (deviceModel: string) => {
+    push("/pairing/prep", {deviceModel: deviceModel})
   }
 
   return (
@@ -100,11 +92,11 @@ export default function SelectGlassesModelScreen() {
             <TouchableOpacity
               key={glasses.key}
               style={themed($settingItem)}
-              onPress={() => triggerGlassesPairingGuide(glasses.modelName)}>
+              onPress={() => triggerGlassesPairingGuide(glasses.deviceModel)}>
               <View style={themed($cardContent)}>
-                <View style={themed($manufacturerLogo)}>{getManufacturerLogo(glasses.modelName)}</View>
-                <Image source={getGlassesImage(glasses.modelName)} style={themed($glassesImage)} />
-                <Text style={[themed($label)]}>{glasses.modelName}</Text>
+                <View style={themed($manufacturerLogo)}>{getManufacturerLogo(glasses.deviceModel)}</View>
+                <Image source={getGlassesImage(glasses.deviceModel)} style={themed($glassesImage)} />
+                <Text style={[themed($label)]}>{glasses.deviceModel}</Text>
               </View>
             </TouchableOpacity>
           ))}
