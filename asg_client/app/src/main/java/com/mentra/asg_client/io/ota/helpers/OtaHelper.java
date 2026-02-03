@@ -752,10 +752,14 @@ public class OtaHelper {
                     
                     return true;
                 }
+                // Download failed (e.g. after retries) - clear flag so next ota_start can run
+                isUpdating = false;
+                Log.d(TAG, "Download failed, cleared isUpdating for next OTA attempt");
             }
             return false;
         } catch (Exception e) {
             Log.e(TAG, "Failed to update " + packageName, e);
+            isUpdating = false;
             return false;
         }
     }

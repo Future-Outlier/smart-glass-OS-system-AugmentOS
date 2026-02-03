@@ -9,16 +9,25 @@ import {useAppTheme} from "@/contexts/ThemeContext"
 import {useGlassesStore} from "@/stores/glasses"
 import GlobalEventEmitter from "@/utils/GlobalEventEmitter"
 
-type ProgressState = "starting" | "downloading" | "installing" | "completed" | "failed" | "disconnected" | "restarting"
+type ProgressState =
+  | "starting"
+  | "downloading"
+  | "installing"
+  | "completed"
+  | "failed"
+  | "disconnected"
+  | "restarting"
+  | "wifi_disconnected"
 
 const MAX_RETRIES = 3
 const RETRY_INTERVAL_MS = 5000 // 5 seconds between retries
 
 export default function OtaProgressScreen() {
   const {theme} = useAppTheme()
-  const {replace} = useNavigationHistory()
+  const {replace, push} = useNavigationHistory()
   const otaProgress = useGlassesStore((state) => state.otaProgress)
   const glassesConnected = useGlassesStore((state) => state.connected)
+  const wifiConnected = useGlassesStore((state) => state.wifiConnected)
   const buildNumber = useGlassesStore((state) => state.buildNumber)
 
   const [progressState, setProgressState] = useState<ProgressState>("starting")
@@ -41,11 +50,16 @@ export default function OtaProgressScreen() {
 
   focusEffectPreventBack()
 
-  // DEBUG: Log component mount
+  // DEBUG: Log component mount and clear stale OTA state
   useEffect(() => {
     console.log("🔍 OTA PROGRESS SCREEN MOUNTED")
     console.log("🔍 OTA MOUNT: Initial otaProgress =", JSON.stringify(otaProgress))
     console.log("🔍 OTA MOUNT: Initial progressState =", progressState)
+
+    // Clear any stale OTA progress from previous attempts
+    // This ensures we start fresh each time the screen mounts
+    useGlassesStore.getState().setOtaProgress(null)
+
     return () => {
       console.log("🔍 OTA PROGRESS SCREEN UNMOUNTED")
     }
@@ -147,6 +161,26 @@ export default function OtaProgressScreen() {
       }
     }
   }, [glassesConnected, progressState, otaProgress?.currentUpdate])
+
+  // Watch for WiFi disconnection during active download/install
+  useEffect(() => {
+    // Only trigger on WiFi disconnect during downloading or starting states
+    // (installing state for MTK/BES may not need WiFi - data already on glasses)
+    if (
+      !wifiConnected &&
+      (progressState === "downloading" || progressState === "starting") &&
+      progressState !== "wifi_disconnected" &&
+      progressState !== "failed" &&
+      progressState !== "completed"
+    ) {
+      console.log("OTA: WiFi disconnected during download - showing WiFi disconnected state")
+      // Clear any pending retry
+      if (retryTimeoutRef.current) {
+        clearTimeout(retryTimeoutRef.current)
+      }
+      setProgressState("wifi_disconnected")
+    }
+  }, [wifiConnected, progressState])
 
   // Track completion timeout to allow cleanup
   const completionTimeoutRef = useRef<NodeJS.Timeout | null>(null)
@@ -480,7 +514,7 @@ export default function OtaProgressScreen() {
       )
     }
 
-    // Disconnected state - retry only
+    // Disconnected state (BLE) - retry only
     if (progressState === "disconnected") {
       const disconnectedComponentName = getComponentName(currentUpdate)
       return (
@@ -507,7 +541,33 @@ export default function OtaProgressScreen() {
       )
     }
 
-    // Failed state - retry only
+    // WiFi disconnected state - navigate to WiFi setup
+    if (progressState === "wifi_disconnected") {
+      const wifiDisconnectedComponentName = getComponentName(currentUpdate)
+      return (
+        <>
+          <View className="flex-1 items-center justify-center px-6">
+            <Icon name="wifi-off" size={64} color={theme.colors.error} />
+            <View className="h-6" />
+            <Text
+              text={`${wifiDisconnectedComponentName} Update Interrupted`}
+              className="font-semibold text-xl text-center"
+            />
+            <View className="h-2" />
+            <Text
+              text="WiFi disconnected during update. Please reconnect to WiFi to continue."
+              className="text-sm text-center text-secondary-foreground"
+            />
+          </View>
+
+          <View className="gap-3 pb-2">
+            <Button preset="primary" tx="common:continue" flexContainer onPress={() => push("/wifi/scan")} />
+          </View>
+        </>
+      )
+    }
+
+    // Failed state (WiFi still connected) - retry or change WiFi
     const failedComponentName = getComponentName(currentUpdate)
     return (
       <>
@@ -522,12 +582,15 @@ export default function OtaProgressScreen() {
             </>
           ) : null}
           <View className="h-2" />
-          <Text text="Please try again." className="text-sm text-center text-secondary-foreground" />
+          <Text
+            text="Please try again or connect to a different WiFi network."
+            className="text-sm text-center text-secondary-foreground"
+          />
         </View>
 
         <View className="gap-3 pb-2">
-          <Button preset="primary" tx="common:retry" flexContainer onPress={handleRetry} />
-          {__DEV__ && <Button preset="secondary" text="Skip (dev only)" onPress={handleContinue} />}
+          <Button preset="primary" tx="common:retry" flexContainer onPress={() => replace("/ota/check-for-updates")} />
+          <Button preset="secondary" text="Change WiFi" flexContainer onPress={() => push("/wifi/scan")} />
         </View>
       </>
     )

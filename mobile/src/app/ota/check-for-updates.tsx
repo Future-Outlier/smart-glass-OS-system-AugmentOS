@@ -16,7 +16,7 @@ type CheckState = "checking" | "update_available" | "no_update" | "error"
 
 export default function OtaCheckForUpdatesScreen() {
   const {theme} = useAppTheme()
-  const {push, clearHistoryAndGoHome} = useNavigationHistory()
+  const {push, replace, clearHistoryAndGoHome} = useNavigationHistory()
   const otaVersionUrl = useGlassesStore((state) => state.otaVersionUrl)
   const currentBuildNumber = useGlassesStore((state) => state.buildNumber)
   const mtkFwVersion = useGlassesStore((state) => state.mtkFwVersion)
@@ -32,6 +32,7 @@ export default function OtaCheckForUpdatesScreen() {
   const [checkKey, setCheckKey] = useState(0)
   const versionInfoTimeoutRef = useRef<NodeJS.Timeout | null>(null)
   const waitStartTimeRef = useRef<number | null>(null)
+  const hasInitiatedCheckRef = useRef(false) // Track if we've initiated check for this checkKey
 
   focusEffectPreventBack()
 
@@ -47,6 +48,7 @@ export default function OtaCheckForUpdatesScreen() {
         versionInfoTimeoutRef.current = null
       }
       waitStartTimeRef.current = null
+      hasInitiatedCheckRef.current = false // Reset for fresh check
       setCheckKey((k) => k + 1)
     }, []),
   )
@@ -58,24 +60,30 @@ export default function OtaCheckForUpdatesScreen() {
     const MAX_WAIT_FOR_VERSION_INFO_MS = 10000 // Wait up to 10 seconds for version_info
 
     const performCheck = async () => {
-      // If glasses disconnected or WiFi not connected, skip immediately
-      if (!glassesConnected) {
-        console.log("OTA: Glasses not connected - proceeding to next step")
-        if (versionInfoTimeoutRef.current) {
-          clearTimeout(versionInfoTimeoutRef.current)
-          versionInfoTimeoutRef.current = null
+      // Only apply early-exit conditions on the FIRST check attempt for this checkKey
+      // This prevents auto-navigation when WiFi/connection state changes mid-operation
+      if (!hasInitiatedCheckRef.current) {
+        // If glasses disconnected or WiFi not connected on initial check, skip immediately
+        if (!glassesConnected) {
+          console.log("OTA: Glasses not connected - proceeding to next step")
+          if (versionInfoTimeoutRef.current) {
+            clearTimeout(versionInfoTimeoutRef.current)
+            versionInfoTimeoutRef.current = null
+          }
+          hasInitiatedCheckRef.current = true
+          handleContinue()
+          return
         }
-        handleContinue()
-        return
-      }
-      if (!wifiConnected) {
-        console.log("OTA: WiFi not connected - proceeding to next step")
-        if (versionInfoTimeoutRef.current) {
-          clearTimeout(versionInfoTimeoutRef.current)
-          versionInfoTimeoutRef.current = null
+        if (!wifiConnected) {
+          console.log("OTA: WiFi not connected - proceeding to next step")
+          if (versionInfoTimeoutRef.current) {
+            clearTimeout(versionInfoTimeoutRef.current)
+            versionInfoTimeoutRef.current = null
+          }
+          hasInitiatedCheckRef.current = true
+          handleContinue()
+          return
         }
-        handleContinue()
-        return
       }
 
       // Wait for version_info to arrive (contains otaVersionUrl and buildNumber)
@@ -91,6 +99,7 @@ export default function OtaCheckForUpdatesScreen() {
         // Start timeout if not already started
         if (!waitStartTimeRef.current) {
           waitStartTimeRef.current = Date.now()
+          hasInitiatedCheckRef.current = true // Mark as initiated when starting wait
           console.log("OTA: Starting version_info wait timeout (" + MAX_WAIT_FOR_VERSION_INFO_MS + "ms)")
 
           versionInfoTimeoutRef.current = setTimeout(() => {
@@ -112,6 +121,7 @@ export default function OtaCheckForUpdatesScreen() {
         versionInfoTimeoutRef.current = null
       }
       waitStartTimeRef.current = null
+      hasInitiatedCheckRef.current = true // Mark as initiated before starting check
 
       const startTime = Date.now()
 
@@ -198,8 +208,8 @@ export default function OtaCheckForUpdatesScreen() {
 
   const handleUpdateNow = () => {
     console.log("OTA: handleUpdateNow()")
-    // Push to progress screen - it will send the OTA start command
-    push("/ota/progress")
+    // Replace with progress screen to avoid stacking OTA screens
+    replace("/ota/progress")
   }
 
   const renderContent = () => {
