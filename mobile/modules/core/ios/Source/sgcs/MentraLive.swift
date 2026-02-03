@@ -991,7 +991,7 @@ class MentraLive: NSObject, SGCManager {
     // Glasses send version_info in 2 chunks to fit within BLE MTU limits
     private var pendingVersionInfoChunk1: [String: Any]?
 
-    private var ready: Bool {
+    private var fullyBooted: Bool {
         get { GlassesStore.shared.get("glasses", "fullyBooted") as? Bool ?? false }
         set { GlassesStore.shared.apply("glasses", "fullyBooted", newValue) }
     }
@@ -1939,6 +1939,7 @@ class MentraLive: NSObject, SGCManager {
                 if readyResponse == 0 {
                     Bridge.log("LIVE: K900 SOC not ready (ready=0)")
                     GlassesStore.shared.apply("glasses", "fullyBooted", false)
+                    Bridge.sendTypedMessage("glasses_not_ready")
 
                     // Check for low battery during pairing
                     if percentage > 0, percentage <= 20 {
@@ -2152,7 +2153,7 @@ class MentraLive: NSObject, SGCManager {
         // Start heartbeat
         startHeartbeat()
 
-        ready = true
+        fullyBooted = true
         connected = true
         connectionState = ConnTypes.CONNECTED
         // maybe add audio monitoring here?
@@ -3067,7 +3068,7 @@ class MentraLive: NSObject, SGCManager {
         stopReadinessCheckLoop()
 
         readinessCheckCounter = 0
-        ready = false
+        fullyBooted = false
         connected = false
 
         Bridge.log("LIVE: 🔄 Starting glasses SOC readiness check loop")

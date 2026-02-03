@@ -1,5 +1,5 @@
 import {useRoute} from "@react-navigation/native"
-import CoreModule from "core"
+import CoreModule, {PairFailureEvent} from "core"
 import {useEffect, useRef, useState} from "react"
 import {View} from "react-native"
 
@@ -11,6 +11,7 @@ import GlassesTroubleshootingModal from "@/components/glasses/GlassesTroubleshoo
 import {focusEffectPreventBack, useNavigationHistory} from "@/contexts/NavigationHistoryContext"
 import {useGlassesStore} from "@/stores/glasses"
 import GlobalEventEmitter from "@/utils/GlobalEventEmitter"
+import {GlassesNotReadyEvent} from "core"
 
 export default function GlassesPairingLoadingScreen() {
   const {replace, goBack} = useNavigationHistory()
@@ -20,7 +21,17 @@ export default function GlassesPairingLoadingScreen() {
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const failureErrorRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const hasAlertShownRef = useRef(false)
-  const glassesReady = useGlassesStore((state) => state.fullyBooted)
+  const glassesFullyBooted = useGlassesStore((state) => state.fullyBooted)
+  const [showGlassesBooting, setShowGlassesBooting] = useState(false)
+
+  useEffect(() => {
+    let sub = CoreModule.addListener("glasses_not_ready", (event: GlassesNotReadyEvent) => {
+      setShowGlassesBooting(true)
+    })
+    return () => {
+      sub.remove()
+    }
+  }, [])
 
   focusEffectPreventBack()
 
@@ -30,9 +41,11 @@ export default function GlassesPairingLoadingScreen() {
   }
 
   useEffect(() => {
-    GlobalEventEmitter.on("pair_failure", handlePairFailure)
+    let sub = CoreModule.addListener("pair_failure", (event: PairFailureEvent) => {
+      handlePairFailure(event.error)
+    })
     return () => {
-      GlobalEventEmitter.off("pair_failure", handlePairFailure)
+      sub.remove()
     }
   }, [])
 
@@ -40,7 +53,7 @@ export default function GlassesPairingLoadingScreen() {
     hasAlertShownRef.current = false
 
     timerRef.current = setTimeout(() => {
-      if (!glassesReady && !hasAlertShownRef.current) {
+      if (!glassesFullyBooted && !hasAlertShownRef.current) {
         hasAlertShownRef.current = true
       }
     }, 30000)
@@ -52,20 +65,25 @@ export default function GlassesPairingLoadingScreen() {
   }, [])
 
   useEffect(() => {
-    if (!glassesReady) return
+    if (!glassesFullyBooted) return
     if (timerRef.current) clearTimeout(timerRef.current)
     if (failureErrorRef.current) clearTimeout(failureErrorRef.current)
     setTimeout(() => {
       replace("/pairing/success", {deviceModel: deviceModel})
     }, 1000)
-  }, [glassesReady, replace, deviceModel])
+  }, [glassesFullyBooted, replace, deviceModel])
 
   return (
     <Screen preset="fixed" safeAreaEdges={["bottom"]}>
       <Header leftIcon="chevron-left" onLeftPress={goBack} />
       <View className="flex-1 pb-6">
         <View className="flex-1 justify-center">
-          <GlassesPairingLoader deviceModel={deviceModel} deviceName={deviceName} onCancel={goBack} />
+          <GlassesPairingLoader
+            deviceModel={deviceModel}
+            deviceName={deviceName}
+            isBooting={showGlassesBooting}
+            onCancel={goBack}
+          />
         </View>
         <Button
           preset="secondary"

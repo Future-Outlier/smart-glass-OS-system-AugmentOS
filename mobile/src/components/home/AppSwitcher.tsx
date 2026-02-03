@@ -56,15 +56,14 @@ function AppCardItem({app, index, activeIndex, onDismiss, onSelect}: AppCardItem
     .onUpdate((event) => {
       // Only allow upward swipes
       translateY.value = Math.min(0, event.translationY)
-      
+
       // Scale down slightly as card moves up
       const progress = Math.abs(translateY.value) / DISMISS_THRESHOLD
       cardScale.value = interpolate(progress, [0, 1], [1, 0.95], Extrapolation.CLAMP)
       cardOpacity.value = interpolate(progress, [0, 1, 2], [1, 0.8, 0], Extrapolation.CLAMP)
     })
     .onEnd((event) => {
-      const shouldDismiss =
-        translateY.value < DISMISS_THRESHOLD || event.velocityY < VELOCITY_THRESHOLD
+      const shouldDismiss = translateY.value < DISMISS_THRESHOLD || event.velocityY < VELOCITY_THRESHOLD
 
       if (shouldDismiss) {
         translateY.value = withTiming(-SCREEN_HEIGHT, {duration: 250})
@@ -86,35 +85,20 @@ function AppCardItem({app, index, activeIndex, onDismiss, onSelect}: AppCardItem
 
   const cardAnimatedStyle = useAnimatedStyle(() => {
     const distance = Math.abs(index - activeIndex.value)
-    
+
     // 3D perspective effect
-    const rotateY = interpolate(
-      activeIndex.value,
-      [index - 1, index, index + 1],
-      [25, 0, -25],
-      Extrapolation.CLAMP
-    )
+    const rotateY = interpolate(activeIndex.value, [index - 1, index, index + 1], [25, 0, -25], Extrapolation.CLAMP)
 
-    const scale = interpolate(
-      distance,
-      [0, 1, 2],
-      [1, 0.92, 0.85],
-      Extrapolation.CLAMP
-    )
+    const scale = interpolate(distance, [0, 1, 2], [1, 0.92, 0.85], Extrapolation.CLAMP)
 
-    const opacity = interpolate(
-      distance,
-      [0, 2, 3],
-      [1, 0.7, 0.4],
-      Extrapolation.CLAMP
-    )
+    const opacity = interpolate(distance, [0, 2, 3], [1, 0.7, 0.4], Extrapolation.CLAMP)
 
     return {
       transform: [
         {perspective: 1000},
         {translateY: translateY.value},
         {scale: cardScale.value * scale},
-        {rotateY: `${rotateY}deg`},
+        // {rotateY: `${rotateY}deg`},
       ],
       opacity: cardOpacity.value * opacity,
     }
@@ -133,24 +117,19 @@ function AppCardItem({app, index, activeIndex, onDismiss, onSelect}: AppCardItem
             marginHorizontal: CARD_SPACING / 2,
           },
           cardAnimatedStyle,
-        ]}
-      >
+        ]}>
         {/* Card Container with shadow */}
         <View style={styles.cardInner}>
           {/* App Screenshot/Preview Area */}
           <View style={[styles.screenshotArea, {backgroundColor: bgColor}]}>
             {app.screenshot ? (
-              <Image
-                source={{uri: app.screenshot}}
-                style={styles.screenshot}
-                resizeMode="cover"
-              />
+              <Image source={{uri: app.screenshot}} style={styles.screenshot} resizeMode="cover" />
             ) : (
               <View style={styles.placeholderContent}>
                 <Text style={styles.placeholderLetter}>{app.name.charAt(0)}</Text>
               </View>
             )}
-            
+
             {/* Status bar mockup */}
             <View style={styles.statusBar}>
               <Text style={styles.statusTime}>9:41</Text>
@@ -189,14 +168,9 @@ interface AppSwitcherProps {
   onAppDismiss: (id: string) => void
 }
 
-export default function AppSwitcher({
-  visible,
-  onClose,
-  apps,
-  onAppSelect,
-  onAppDismiss,
-}: AppSwitcherProps) {
+export default function AppSwitcher({visible, onClose, apps, onAppSelect, onAppDismiss}: AppSwitcherProps) {
   const translateX = useSharedValue(0)
+  const offsetX = useSharedValue(0)
   const activeIndex = useSharedValue(0)
   const backdropOpacity = useSharedValue(0)
   const containerTranslateY = useSharedValue(100)
@@ -237,16 +211,19 @@ export default function AppSwitcher({
 
   const panGesture = Gesture.Pan()
     .activeOffsetX([-10, 10])
+    .onStart(() => {
+      offsetX.value = translateX.value // Store current position
+    })
     .onUpdate((event) => {
-      const newTranslateX = event.translationX
+      const newTranslateX = offsetX.value + event.translationX // Add to offset
       const maxTranslate = 0
       const minTranslate = -((apps.length - 1) * (CARD_WIDTH + CARD_SPACING))
-      
+
       // Add rubber band effect at edges
       if (newTranslateX > maxTranslate) {
         translateX.value = newTranslateX * 0.3
       } else if (newTranslateX < minTranslate) {
-        translateX.value = minTranslate + (newTranslateX - minTranslate) * 0.3
+        translateX.value = minTranslate + (newTranslateX - minTranslate) * 0.9
       } else {
         translateX.value = newTranslateX
       }
@@ -254,17 +231,17 @@ export default function AppSwitcher({
     .onEnd((event) => {
       const cardWidth = CARD_WIDTH + CARD_SPACING
       const velocity = event.velocityX
-      
+
       // Determine target index based on velocity and position
       let targetIndex = Math.round(-translateX.value / cardWidth)
-      
+
       if (Math.abs(velocity) > 500) {
         targetIndex = velocity > 0 ? targetIndex - 1 : targetIndex + 1
       }
-      
+
       // Clamp to valid range
       targetIndex = Math.max(0, Math.min(targetIndex, apps.length - 1))
-      
+
       translateX.value = withSpring(-targetIndex * cardWidth, {
         damping: 20,
         stiffness: 90,
@@ -276,7 +253,7 @@ export default function AppSwitcher({
     (id: string) => {
       onAppDismiss(id)
     },
-    [onAppDismiss]
+    [onAppDismiss],
   )
 
   const handleSelect = useCallback(
@@ -284,7 +261,7 @@ export default function AppSwitcher({
       onAppSelect(id)
       onClose()
     },
-    [onAppSelect, onClose]
+    [onAppSelect, onClose],
   )
 
   if (!visible && containerOpacity.value === 0) {
@@ -316,8 +293,7 @@ export default function AppSwitcher({
                     paddingHorizontal: (SCREEN_WIDTH - CARD_WIDTH) / 2 - CARD_SPACING / 2,
                   },
                   cardsContainerStyle,
-                ]}
-              >
+                ]}>
                 {apps.map((app, index) => (
                   <AppCardItem
                     key={app.id}
@@ -334,9 +310,7 @@ export default function AppSwitcher({
         ) : (
           <View style={styles.emptyState}>
             <Text style={styles.emptyTitle}>No Apps Open</Text>
-            <Text style={styles.emptySubtitle}>
-              Your recently used apps will appear here
-            </Text>
+            <Text style={styles.emptySubtitle}>Your recently used apps will appear here</Text>
           </View>
         )}
 
@@ -358,13 +332,7 @@ export default function AppSwitcher({
   )
 }
 
-function PageDot({
-  index,
-  activeIndex,
-}: {
-  index: number
-  activeIndex: Animated.SharedValue<number>
-}) {
+function PageDot({index, activeIndex}: {index: number; activeIndex: Animated.SharedValue<number>}) {
   const dotStyle = useAnimatedStyle(() => {
     const isActive = Math.abs(activeIndex.value - index) < 0.5
     return {

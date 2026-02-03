@@ -1,4 +1,9 @@
 // Core Event Types
+export type GlassesNotReadyEvent = {
+  type: "glasses_not_ready"
+  message: string
+}
+
 export type ButtonPressEvent = {
   type: "button_press"
   buttonId: string
@@ -240,12 +245,14 @@ export type CoreEvent =
   | OtaUpdateAvailableEvent
   | OtaProgressEvent
   | VersionInfoEvent
+  | GlassesNotReadyEvent
 
 export type CoreModuleEvents = {
   glasses_status: (changed: Partial<GlassesStatus>) => void
   core_status: (changed: Partial<CoreStatus>) => void
   log: (event: LogEvent) => void
   // Individual event handlers
+  glasses_not_ready: (event: GlassesNotReadyEvent) => void
   button_press: (event: ButtonPressEvent) => void
   touch_event: (event: TouchEvent) => void
   head_up: (event: HeadUpEvent) => void

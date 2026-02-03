@@ -2750,6 +2750,7 @@ public class MentraLive extends SGCManager {
                         if (ready == 0) {
                             Bridge.log("LIVE: K900 SOC not ready (ready=0)");
                             GlassesStore.INSTANCE.apply("glasses", "fullyBooted", false);
+                            Bridge.sendTypedMessage("glasses_not_ready", new HashMap<String, Object>() {});
                             if (batteryPercentage > 0 && batteryPercentage <= 20) {
                                 Bridge.log("LIVE: K900 battery percentage: " + batteryPercentage);
                                 Bridge.sendPairFailureEvent("errors:pairingBatteryTooLow");

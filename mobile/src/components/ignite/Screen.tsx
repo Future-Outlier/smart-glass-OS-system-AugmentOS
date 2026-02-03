@@ -259,7 +259,6 @@ export function Screen(props: ScreenProps) {
 
   
   if (Platform.OS === "android") {
-    
     if ($containerInsets.paddingTop) {
       $containerInsets.paddingTop += theme.spacing.s4
     } else {

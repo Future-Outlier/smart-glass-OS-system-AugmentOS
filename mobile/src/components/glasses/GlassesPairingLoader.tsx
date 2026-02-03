@@ -15,11 +15,8 @@ interface GlassesPairingLoaderProps {
   isBooting?: boolean
 }
 
-const GlassesPairingLoader: React.FC<GlassesPairingLoaderProps> = ({deviceModel, deviceName, onCancel}) => {
+const GlassesPairingLoader: React.FC<GlassesPairingLoaderProps> = ({deviceModel, deviceName, onCancel, isBooting}) => {
   const {theme} = useAppTheme()
-  const glassesFullyBooted = useGlassesStore((state) => state.fullyBooted)
-  const glassesConnected = useGlassesStore((state) => state.connected)
-  const glassesBooting = glassesConnected && !glassesFullyBooted
   const progressAnim = useRef(new Animated.Value(0)).current
   const [currentTipIndex, setCurrentTipIndex] = useState(0)
   const tipTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
