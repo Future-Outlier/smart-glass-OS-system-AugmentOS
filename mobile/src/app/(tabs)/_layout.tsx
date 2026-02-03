@@ -13,7 +13,7 @@ type TabButtonProps = TabTriggerSlotProps & {
 }
 
 export default function Layout() {
-  const {theme, themed} = useAppTheme()
+  const {theme} = useAppTheme()
   const {bottom} = useSafeAreaInsets()
 
   function TabButton({iconName, iconNameFilled, isFocused, label, ...props}: TabButtonProps) {
