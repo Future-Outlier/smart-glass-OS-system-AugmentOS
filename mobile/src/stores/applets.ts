@@ -211,7 +211,13 @@ const startStopOfflineApplet = (applet: ClientAppletInterface, status: boolean):
 let refreshTimeout: ReturnType<typeof setTimeout> | null = null
 // actually turn on or off an applet:
 const startStopApplet = (applet: ClientAppletInterface, status: boolean): AsyncResult<void, Error> => {
+  // Offline apps don't need to wait for server confirmation
+  if (applet.offline) {
+    return startStopOfflineApplet(applet, status)
+  }
+
   // TODO: not the best way to handle this, but it works reliably:
+  // For online apps, schedule a refresh to confirm the state from the server
   if (refreshTimeout) {
     BackgroundTimer.clearTimeout(refreshTimeout)
     refreshTimeout = null
@@ -219,10 +225,6 @@ const startStopApplet = (applet: ClientAppletInterface, status: boolean): AsyncR
   refreshTimeout = BackgroundTimer.setTimeout(() => {
     useAppletStatusStore.getState().refreshApplets()
   }, 2000)
-
-  if (applet.offline) {
-    return startStopOfflineApplet(applet, status)
-  }
 
   if (status) {
     return restComms.startApp(applet.packageName)
@@ -356,10 +358,8 @@ export const useAppletStatusStore = create<AppStatusState>((set, get) => ({
       const runningApps = get().apps.filter((app) => app.running)
 
       for (const app of runningApps) {
-        await startStopApplet(app, false)
+        await get().stopApplet(app.packageName)
       }
-
-      set({apps: get().apps.map((a) => ({...a, running: false}))})
     })
   },
 }))
