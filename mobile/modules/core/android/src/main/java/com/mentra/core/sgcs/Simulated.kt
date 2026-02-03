@@ -165,7 +165,6 @@ class Simulated : SGCManager() {
     }
 
     override fun connectById(id: String) {
-        CoreManager.getInstance().handleConnectionStateChanged()
     }
 
     override fun getConnectedBluetoothName(): String {
