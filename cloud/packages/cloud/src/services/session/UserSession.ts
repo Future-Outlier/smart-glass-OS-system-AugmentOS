@@ -146,8 +146,8 @@ export class UserSession {
   // App health status cache (for client apps API)
   public appHealthCache: Map<string, boolean> = new Map();
 
-  // Other state
-  public userDatetime?: string;
+  // User's timezone (IANA name like "America/New_York")
+  public userTimezone?: string;
 
   // LiveKit transport preference
   public livekitRequested?: boolean;
