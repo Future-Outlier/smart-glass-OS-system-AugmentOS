@@ -270,7 +270,7 @@
       "version": "2.1.29",
       "dependencies": {
         "@logtail/pino": "^0.5.4",
-        "@mentra/display-utils": "workspace:*",
+        "@mentra/display-utils": "^1.0.0",
         "@mentra/types": "^1.0.0-beta.1",
         "axios": "^1.8.1",
         "boxen": "^8.0.1",
