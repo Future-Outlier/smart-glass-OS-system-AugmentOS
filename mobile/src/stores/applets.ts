@@ -172,9 +172,27 @@ export const getMoreAppsApplet = (): ClientAppletInterface => {
   }
 }
 
-const startStopOfflineApplet = (packageName: string, status: boolean): AsyncResult<void, Error> => {
+const startStopOfflineApplet = (applet: ClientAppletInterface, status: boolean): AsyncResult<void, Error> => {
   // await useSettingsStore.getState().setSetting(packageName, status)
   return Res.try_async(async () => {
+    let packageName = applet.packageName
+
+    if (!status && applet.onStop) {
+      const result = await applet.onStop()
+      if (result.is_error()) {
+        console.error(`APPLET: Failed to stop applet onStop() for ${applet.packageName}: ${result.error}`)
+        return
+      }
+    }
+
+    if (status && applet.onStart) {
+      const result = await applet.onStart()
+      if (result.is_error()) {
+        console.error(`APPLET: Failed to start applet onStart() for ${applet.packageName}: ${result.error}`)
+        return
+      }
+    }
+
     // Captions app special handling
     if (packageName === captionsPackageName) {
       console.log(`APPLET: Captions app ${status ? "started" : "stopped"}`)
@@ -203,7 +221,7 @@ const startStopApplet = (applet: ClientAppletInterface, status: boolean): AsyncR
   }, 2000)
 
   if (applet.offline) {
-    return startStopOfflineApplet(applet.packageName, status)
+    return startStopOfflineApplet(applet, status)
   }
 
   if (status) {
@@ -282,14 +300,6 @@ export const useAppletStatusStore = create<AppStatusState>((set, get) => ({
       return
     }
 
-    if (applet.offline && applet.onStart) {
-      const result = await applet.onStart()
-      if (result.is_error()) {
-        console.error(`Failed to start applet ${applet.packageName}: ${result.error}`)
-        return
-      }
-    }
-
     // Handle foreground apps - only one can run at a time
     if (applet.type === "standard") {
       const runningForegroundApps = get().apps.filter(
@@ -331,14 +341,6 @@ export const useAppletStatusStore = create<AppStatusState>((set, get) => ({
     if (!applet) {
       console.error(`Applet with package name ${packageName} not found`)
       return
-    }
-
-    if (applet.offline && applet.onStop) {
-      const result = await applet.onStop()
-      if (result.is_error()) {
-        console.error(`Failed to stop applet ${applet.packageName}: ${result.error}`)
-        return
-      }
     }
 
     let shouldLoad = !applet.offline && !applet.local

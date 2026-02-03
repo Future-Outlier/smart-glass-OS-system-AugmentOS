@@ -617,7 +617,7 @@ extension MentraLive: CBCentralManagerDelegate {
         isConnecting = false
 
         connectedPeripheral = nil
-        ready = false
+        fullyBooted = false
         connected = false
         connectionState = ConnTypes.DISCONNECTED
         rgbLedAuthorityClaimed = false
@@ -1939,7 +1939,7 @@ class MentraLive: NSObject, SGCManager {
                 if readyResponse == 0 {
                     Bridge.log("LIVE: K900 SOC not ready (ready=0)")
                     GlassesStore.shared.apply("glasses", "fullyBooted", false)
-                    Bridge.sendTypedMessage("glasses_not_ready")
+                    Bridge.sendTypedMessage("glasses_not_ready", body: [:])
 
                     // Check for low battery during pairing
                     if percentage > 0, percentage <= 20 {
@@ -1964,7 +1964,7 @@ class MentraLive: NSObject, SGCManager {
                     // Only send phone_ready if we haven't already established connection
                     // This prevents re-initialization on every heartbeat after initial connection
                     // The ready flag is reset on disconnect/reconnect, so this won't prevent proper reconnection
-                    if !ready {
+                    if !fullyBooted {
                         let readyMsg: [String: Any] = [
                             "type": "phone_ready",
                             "timestamp": Int64(Date().timeIntervalSince1970 * 1000),
@@ -3035,7 +3035,7 @@ class MentraLive: NSObject, SGCManager {
     }
 
     private func sendHeartbeat() {
-        guard ready, connectionState == ConnTypes.CONNECTED else {
+        guard fullyBooted, connectionState == ConnTypes.CONNECTED else {
             Bridge.log("LIVE: Skipping heartbeat - glasses not fully booted or not connected")
             return
         }
@@ -3499,7 +3499,7 @@ extension MentraLive {
         offtime: Int,
         count: Int
     ) {
-        guard connectionState == ConnTypes.CONNECTED, ready else {
+        guard connectionState == ConnTypes.CONNECTED, fullyBooted else {
             Bridge.log("LIVE: Cannot handle RGB LED control - glasses not connected")
             Bridge.sendRgbLedControlResponse(
                 requestId: requestId, success: false, error: "glasses_not_connected"
