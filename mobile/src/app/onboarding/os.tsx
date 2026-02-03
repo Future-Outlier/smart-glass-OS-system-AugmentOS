@@ -4,9 +4,9 @@ import {useNavigationHistory} from "@/contexts/NavigationHistoryContext"
 import {translate} from "@/i18n"
 import {SETTINGS, useSetting} from "@/stores/settings"
 import showAlert from "@/utils/AlertUtils"
-import {useCallback} from "react"
 
 const CDN_BASE = "https://mentra-videos-cdn.mentraglass.com/onboarding/mentraos/light"
+
 
 export default function MentraOSOnboarding() {
   const {pushPrevious} = useNavigationHistory()
@@ -16,15 +16,17 @@ export default function MentraOSOnboarding() {
   // NOTE: you can't have 2 transition videos in a row or things will break:
   const steps: OnboardingStep[] = [
     {
-      type: "video",
-      name: "Welcome",
-      source: `${CDN_BASE}/start_stop_apps.mp4`,
-      poster: require("@assets/onboarding/os/thumbnails/start_stop_apps.jpg"),
-      containerClassName: "bg-background",
-      transition: false,
-      playCount: 1,
+      type: "image",
+      // source: `${CDN_BASE}/start_stop_apps.mp4`,
+      source: require("@assets/onboarding/os/thumbnails/start_stop_apps.jpg"),
+      name: "Start Onboarding",
+      // playCount: 1,
+      transition: true,
+      fadeOut: true,
       title: translate("onboarding:osWelcomeTitle"),
       subtitle: translate("onboarding:osWelcomeSubtitle"),
+      titleCentered: true,
+      subtitleCentered: true,
     },
     {
       type: "video",
@@ -33,6 +35,7 @@ export default function MentraOSOnboarding() {
       poster: require("@assets/onboarding/os/thumbnails/start_stop_apps.jpg"),
       containerClassName: "bg-background",
       transition: false,
+      fadeOut: true,
       playCount: 2,
       bullets: [
         translate("onboarding:osStartStopApps"),
@@ -45,8 +48,8 @@ export default function MentraOSOnboarding() {
       name: "Open an app",
       source: `${CDN_BASE}/open_an_app.mp4`,
       poster: require("@assets/onboarding/os/thumbnails/open_an_app.jpg"),
-      containerClassName: "bg-background",
       transition: false,
+      fadeOut: true,
       playCount: 2,
       bullets: [
         translate("onboarding:osOpenApp"),
@@ -59,8 +62,8 @@ export default function MentraOSOnboarding() {
       name: "Background apps",
       source: `${CDN_BASE}/background_apps.mp4`,
       poster: require("@assets/onboarding/os/thumbnails/background_apps.jpg"),
-      containerClassName: "bg-background",
       transition: false,
+      fadeOut: true,
       playCount: 2,
       bullets: [
         translate("onboarding:osBackgroundApps"),
@@ -73,8 +76,8 @@ export default function MentraOSOnboarding() {
       name: "Foreground and Background Apps",
       source: `${CDN_BASE}/foreground_background_apps.mov`,
       poster: require("@assets/onboarding/os/thumbnails/background_apps.jpg"),
-      containerClassName: "bg-background",
       transition: false,
+      fadeOut: true,
       playCount: 2,
       bullets: [
         translate("onboarding:osForegroundAndBackgroundApps"),
@@ -86,7 +89,6 @@ export default function MentraOSOnboarding() {
     //   type: "video",
     //   name: "Mentra AI",
     //   source: `${CDN_BASE}/mentra_ai.mov`,
-    //   containerClassName: "bg-background",
     //   transition: false,
     //   playCount: 2,
     //   bullets: [
@@ -100,7 +102,6 @@ export default function MentraOSOnboarding() {
     //   name: "end",
     //   //source: `${CDN_BASE}/mentra_ai.mov`,
     //   source: `${CDN_BASE}/mentraos_onboard_end.mp4`,
-    //   containerClassName: "bg-background",
     //   transition: false,
     //   playCount: 99999,//2,
     //   replayable: true,
@@ -110,7 +111,6 @@ export default function MentraOSOnboarding() {
     // {
     //   type: "image",
     //   name: "end",
-    //   // containerClassName: "bg-background",
     //   transition: false,
     //   title: translate("onboarding:osEndTitle"),
     //   subtitle: translate("onboarding:osEndSubtitle"),
