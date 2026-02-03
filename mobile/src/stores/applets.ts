@@ -372,9 +372,9 @@ export const useInactiveForegroundApps = () => {
   const [isOffline] = useSetting(SETTINGS.offline_mode.key)
   return useMemo(() => {
     if (isOffline) {
-      return apps.filter((app) => app.type === "standard" && !app.running && app.offline)
+      return apps.filter((app) => (app.type === "standard" || app.type === "background") && !app.running && app.offline)
     }
-    return apps.filter((app) => (app.type === "standard" || !app.type) && !app.running)
+    return apps.filter((app) => (app.type === "standard" || app.type === "background" || !app.type) && !app.running)
   }, [apps, isOffline])
 }
 export const useBackgroundApps = () => {
