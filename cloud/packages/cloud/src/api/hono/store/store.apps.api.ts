@@ -11,7 +11,7 @@ import { User } from "../../../models/user.model";
 import UserSession from "../../../services/session/UserSession";
 import { clientAuth, requireUser } from "../middleware/client.middleware";
 import storeService from "../../../services/core/store.service";
-import { batchEnrichAppsWithProfiles } from "../../../services/core/app-enrichment.util";
+import { batchEnrichAppsWithProfiles } from "../../../services/core/app-enrichment.service";
 
 const logger = rootLogger.child({ service: "store.apps.api" });
 
