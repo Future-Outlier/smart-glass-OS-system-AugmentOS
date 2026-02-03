@@ -276,7 +276,7 @@ export function Screen(props: ScreenProps) {
     <View
       style={[
         {paddingHorizontal: theme.spacing.s6},
-        {backgroundColor: colors.background},
+        {backgroundColor: backgroundColor || colors.background},
         {...$containerInsets},
         {flex: 1},
       ]}>

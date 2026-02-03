@@ -1,12 +1,7 @@
 import {useState, useEffect, useCallback} from "react"
 import {View, Pressable, Text} from "react-native"
 import {Asset} from "expo-asset"
-import Animated, {
-  useSharedValue,
-  useAnimatedStyle,
-  withSpring,
-  withTiming,
-} from "react-native-reanimated"
+import Animated, {useSharedValue, useAnimatedStyle, withSpring, withTiming} from "react-native-reanimated"
 import {GestureHandlerRootView} from "react-native-gesture-handler"
 
 import {Screen, Header} from "@/components/ignite"
@@ -68,55 +63,17 @@ export default function MiniApp() {
   }, [])
 
   return (
-    <GestureHandlerRootView className="flex-1 bg-black">
-      <Screen preset="fixed" safeAreaEdges={[]}>
-        {/* Main Content - scales down when switcher opens */}
-        <Animated.View style={[{flex: 1, backgroundColor: "#000"}, contentStyle]}>
-          <View className="flex-1 bg-white">
-            <Header
-              title="MiniApp"
-              titleMode="center"
-              leftIcon="chevron-left"
-              onLeftPress={() => goBack()}
-              style={{height: 44}}
-            />
-          </View>
+    <Screen preset="fixed">
+      <Header title="App Switcher" leftIcon="chevron-left" onLeftPress={goBack} />
 
-          {/* Home Indicator - tap to open switcher */}
-          <Pressable
-            onPress={handleOpenSwitcher}
-            className="absolute bottom-2 left-0 right-0 items-center py-2"
-          >
-            <View className="w-32 h-1 rounded-full bg-gray-600" />
-          </Pressable>
-        </Animated.View>
-
-        {/* Floating Action Button for easier access */}
-        <Pressable
-          onPress={handleOpenSwitcher}
-          className="absolute bottom-24 right-5 w-14 h-14 rounded-full bg-gray-800 items-center justify-center"
-          style={{
-            shadowColor: "#000",
-            shadowOffset: {width: 0, height: 4},
-            shadowOpacity: 0.4,
-            shadowRadius: 8,
-            elevation: 10,
-          }}
-        >
-          {/* Grid icon representing app switcher */}
-          <View className="items-center justify-center">
-            <View className="flex-row mb-1">
-              <View className="w-2.5 h-2.5 rounded-sm bg-white mr-1" />
-              <View className="w-2.5 h-2.5 rounded-sm bg-white" />
-            </View>
-            <View className="flex-row">
-              <View className="w-2.5 h-2.5 rounded-sm bg-white mr-1" />
-              <View className="w-2.5 h-2.5 rounded-sm bg-white" />
-            </View>
-          </View>
+      <View className="flex-1 justify-center items-center">
+        <Text className="text-white text-2xl font-bold">App Switcher</Text>
+        <Pressable className="bg-blue-500 px-4 py-2 rounded-md" onPress={handleOpenSwitcher}>
+          <Text className="text-white text-lg font-bold">Open Switcher</Text>
         </Pressable>
+      </View>
 
-        {/* App Switcher Overlay */}
+      {/* App Switcher Overlay */}
         <AppSwitcher
           visible={showSwitcher}
           onClose={handleCloseSwitcher}
@@ -124,7 +81,6 @@ export default function MiniApp() {
           onAppSelect={handleAppSelect}
           onAppDismiss={handleAppDismiss}
         />
-      </Screen>
-    </GestureHandlerRootView>
+    </Screen>
   )
 }

@@ -1,5 +1,5 @@
 import React, {useCallback, useEffect} from "react"
-import {View, Text, Image, Dimensions, Pressable, StyleSheet} from "react-native"
+import {View, Text, Image, Dimensions, Pressable} from "react-native"
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
@@ -8,15 +8,14 @@ import Animated, {
   interpolate,
   Extrapolation,
   runOnJS,
-  useAnimatedScrollHandler,
   useDerivedValue,
 } from "react-native-reanimated"
-import {Gesture, GestureDetector, GestureHandlerRootView} from "react-native-gesture-handler"
+import {Gesture, GestureDetector} from "react-native-gesture-handler"
 
 const {width: SCREEN_WIDTH, height: SCREEN_HEIGHT} = Dimensions.get("window")
-const CARD_WIDTH = SCREEN_WIDTH * 0.72
-const CARD_HEIGHT = SCREEN_HEIGHT * 0.55
-const CARD_SPACING = 16
+const CARD_WIDTH = SCREEN_WIDTH * 0.65
+const CARD_HEIGHT = SCREEN_HEIGHT * 0.65
+const CARD_SPACING = 0
 const DISMISS_THRESHOLD = -120
 const VELOCITY_THRESHOLD = -800
 
@@ -34,11 +33,12 @@ interface AppCardItemProps {
   activeIndex: Animated.SharedValue<number>
   onDismiss: (id: string) => void
   onSelect: (id: string) => void
+  translateX: Animated.SharedValue<number>
 }
 
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable)
 
-function AppCardItem({app, index, activeIndex, onDismiss, onSelect}: AppCardItemProps) {
+function AppCardItem({app, index, activeIndex, translateX, onDismiss, onSelect}: AppCardItemProps) {
   const translateY = useSharedValue(0)
   const cardOpacity = useSharedValue(1)
   const cardScale = useSharedValue(1)
@@ -54,10 +54,7 @@ function AppCardItem({app, index, activeIndex, onDismiss, onSelect}: AppCardItem
   const panGesture = Gesture.Pan()
     .activeOffsetY([-10, 10])
     .onUpdate((event) => {
-      // Only allow upward swipes
       translateY.value = Math.min(0, event.translationY)
-
-      // Scale down slightly as card moves up
       const progress = Math.abs(translateY.value) / DISMISS_THRESHOLD
       cardScale.value = interpolate(progress, [0, 1], [1, 0.95], Extrapolation.CLAMP)
       cardOpacity.value = interpolate(progress, [0, 1, 2], [1, 0.8, 0], Extrapolation.CLAMP)
@@ -85,22 +82,68 @@ function AppCardItem({app, index, activeIndex, onDismiss, onSelect}: AppCardItem
 
   const cardAnimatedStyle = useAnimatedStyle(() => {
     const distance = Math.abs(index - activeIndex.value)
-
-    // 3D perspective effect
-    const rotateY = interpolate(activeIndex.value, [index - 1, index, index + 1], [25, 0, -25], Extrapolation.CLAMP)
-
     const scale = interpolate(distance, [0, 1, 2], [1, 0.92, 0.85], Extrapolation.CLAMP)
-
     const opacity = interpolate(distance, [0, 2, 3], [1, 0.7, 0.4], Extrapolation.CLAMP)
+
+    let oneIndex = index + 1
+    let oneActiveIndex = activeIndex.value + 1
+    let count = 6
+    let negativeIndex = count - (index + 1)
+    // console.log("negativeIndex", negativeIndex)
+
+    // card 6: start at -1600px
+    // tX starts at -1600px
+    let base = translateX.value
+    let cardWidth = CARD_WIDTH + CARD_SPACING
+    let totalWidth = (count - 1) * cardWidth
+    let negativeBase = base + totalWidth
+    let normalBase = negativeBase / cardWidth
+
+    // console.log("totalWidth", totalWidth)
+
+    // console.log("base", base)
+
+    let leftBase = base + negativeIndex * cardWidth
+
+    // let res = leftBase - (negativeIndex * -base/10)
+    let stat = leftBase - translateX.value - totalWidth
+
+    // let res = stat + (negativeBase/(count-1) * index)
+
+    // Non-linear version - use a power curve
+    let progress = index / (count - 1) // 0 to 1
+    let nonLinearProgress = Math.pow(progress, 2) // < 1 = spread out more at the front
+    let res = stat + (Math.pow(normalBase, 2) * nonLinearProgress) * cardWidth
+    // console.log(normalBase)
+
+//     let progress = index / (count - 1)
+// let linearPart = progress
+// let nonLinearPart = Math.pow(progress, 0.6) // < 1 spreads front cards, > 1 spreads back cards
+
+// let blend = 0.6 // 0 = fully linear, 1 = fully non-linear
+// let finalProgress = linearPart * (1 - blend) + nonLinearPart * blend
+
+// let res = stat + negativeBase * finalProgress
+    // console.log("res", nonLinearProgress)
+
+    // console.log("res", res)
+    // console.log("leftBase", leftBase)
+
+    // let res = base + (negativeIndex * cardWidth) - (negativeIndex * -base/10)
 
     return {
       transform: [
-        {perspective: 1000},
-        {translateY: translateY.value},
-        {scale: cardScale.value * scale},
-        // {rotateY: `${rotateY}deg`},
+        // {perspective: 1000},
+        // {translateY: translateY.value},
+        // {scale: cardScale.value * scale},
+        // {translateX: -translateX.value / index},
+        // {translateX: translateX.value},
+        // the finger should center on the left side of the card, use the activeIndex and current index to dynamically speed up the card movement:
+        // {translateX: -translateX.value / (activeIndex.value - index) + 1},
+        {translateX: res},
+        // {translateY: (index == activeIndex.value ? 0 : 1) * 300},
       ],
-      opacity: cardOpacity.value * opacity,
+      // opacity: cardOpacity.value * opacity,
     }
   })
 
@@ -109,8 +152,8 @@ function AppCardItem({app, index, activeIndex, onDismiss, onSelect}: AppCardItem
   return (
     <GestureDetector gesture={composedGesture}>
       <AnimatedPressable
+        className="items-center"
         style={[
-          styles.card,
           {
             width: CARD_WIDTH,
             height: CARD_HEIGHT,
@@ -119,39 +162,42 @@ function AppCardItem({app, index, activeIndex, onDismiss, onSelect}: AppCardItem
           cardAnimatedStyle,
         ]}>
         {/* Card Container with shadow */}
-        <View style={styles.cardInner}>
+        <View className="flex-1 w-full rounded-3xl overflow-hidden bg-gray-800 shadow-2xl">
           {/* App Screenshot/Preview Area */}
-          <View style={[styles.screenshotArea, {backgroundColor: bgColor}]}>
+          <View className="flex-1 rounded-3xl overflow-hidden" style={{backgroundColor: bgColor}}>
             {app.screenshot ? (
-              <Image source={{uri: app.screenshot}} style={styles.screenshot} resizeMode="cover" />
+              <Image source={{uri: app.screenshot}} className="w-full h-full" resizeMode="cover" />
             ) : (
-              <View style={styles.placeholderContent}>
-                <Text style={styles.placeholderLetter}>{app.name.charAt(0)}</Text>
+              <View className="flex-1 items-center justify-center">
+                <Text className="text-white text-7xl font-light opacity-80">{app.name.charAt(0)}</Text>
               </View>
             )}
 
             {/* Status bar mockup */}
-            <View style={styles.statusBar}>
-              <Text style={styles.statusTime}>9:41</Text>
+            <View className="absolute top-0 left-0 right-0 h-11 items-center justify-center">
+              <Text className="text-white text-[15px] font-semibold">9:41</Text>
             </View>
           </View>
 
           {/* Swipe indicator */}
-          <View style={styles.swipeIndicator}>
-            <View style={styles.swipeBar} />
+          <View className="absolute top-2 left-0 right-0 items-center">
+            <View className="w-9 h-[5px] rounded-full bg-white/30" />
           </View>
         </View>
 
         {/* App Label Below Card */}
-        <View style={styles.appLabelContainer}>
+        <View className="mt-4 items-center gap-2">
           {app.icon ? (
-            <Image source={{uri: app.icon}} style={styles.appIcon} />
+            <Image source={{uri: app.icon}} className="w-12 h-12 rounded-xl" />
           ) : (
-            <View style={[styles.appIconPlaceholder, {backgroundColor: bgColor}]}>
-              <Text style={styles.appIconLetter}>{app.name.charAt(0)}</Text>
+            <View className="w-12 h-12 rounded-xl items-center justify-center" style={{backgroundColor: bgColor}}>
+              <Text className="text-white text-[22px] font-semibold">{app.name.charAt(0)}</Text>
             </View>
           )}
-          <Text style={styles.appName} numberOfLines={1}>
+          <Text
+            className="text-white text-[13px] font-medium text-center"
+            style={{maxWidth: CARD_WIDTH * 0.8}}
+            numberOfLines={1}>
             {app.name}
           </Text>
         </View>
@@ -179,11 +225,14 @@ export default function AppSwitcher({visible, onClose, apps, onAppSelect, onAppD
   useEffect(() => {
     if (visible) {
       backdropOpacity.value = withTiming(1, {duration: 250})
-      containerTranslateY.value = withSpring(0, {damping: 20, stiffness: 100})
+      containerTranslateY.value = withSpring(0, {damping: 20, stiffness: 200, velocity: 100, overshootClamping: true})
       containerOpacity.value = withTiming(1, {duration: 200})
-      // Reset scroll position
-      translateX.value = 0
-      activeIndex.value = 0
+      // translateX.value = 0
+      // activeIndex.value = 0
+      // start at the end of the cards:
+      // translateX.value = -((apps.length - 1) * (CARD_WIDTH + CARD_SPACING))
+      translateX.value = -((apps.length - 1) * CARD_WIDTH)
+      activeIndex.value = apps.length - 1
     } else {
       backdropOpacity.value = withTiming(0, {duration: 200})
       containerTranslateY.value = withTiming(100, {duration: 200})
@@ -191,7 +240,6 @@ export default function AppSwitcher({visible, onClose, apps, onAppSelect, onAppD
     }
   }, [visible])
 
-  // Update active index based on scroll position
   useDerivedValue(() => {
     activeIndex.value = -translateX.value / (CARD_WIDTH + CARD_SPACING)
   })
@@ -212,34 +260,32 @@ export default function AppSwitcher({visible, onClose, apps, onAppSelect, onAppD
   const panGesture = Gesture.Pan()
     .activeOffsetX([-10, 10])
     .onStart(() => {
-      offsetX.value = translateX.value // Store current position
+      offsetX.value = translateX.value
     })
     .onUpdate((event) => {
-      const newTranslateX = offsetX.value + event.translationX // Add to offset
+      const newTranslateX = offsetX.value + event.translationX
       const maxTranslate = 0
       const minTranslate = -((apps.length - 1) * (CARD_WIDTH + CARD_SPACING))
 
-      // Add rubber band effect at edges
-      if (newTranslateX > maxTranslate) {
-        translateX.value = newTranslateX * 0.3
-      } else if (newTranslateX < minTranslate) {
-        translateX.value = minTranslate + (newTranslateX - minTranslate) * 0.9
-      } else {
-        translateX.value = newTranslateX
-      }
+      // if (newTranslateX > maxTranslate) {
+      //   translateX.value = newTranslateX * 0.3
+      // } else if (newTranslateX < minTranslate) {
+      //   translateX.value = minTranslate + (newTranslateX - minTranslate) * 0.9
+      // } else {
+      //   translateX.value = newTranslateX
+      // }
+      translateX.value = newTranslateX
     })
     .onEnd((event) => {
       const cardWidth = CARD_WIDTH + CARD_SPACING
       const velocity = event.velocityX
 
-      // Determine target index based on velocity and position
       let targetIndex = Math.round(-translateX.value / cardWidth)
 
       if (Math.abs(velocity) > 500) {
         targetIndex = velocity > 0 ? targetIndex - 1 : targetIndex + 1
       }
 
-      // Clamp to valid range
       targetIndex = Math.max(0, Math.min(targetIndex, apps.length - 1))
 
       translateX.value = withSpring(-targetIndex * cardWidth, {
@@ -269,37 +315,39 @@ export default function AppSwitcher({visible, onClose, apps, onAppSelect, onAppD
   }
 
   return (
-    <View style={styles.overlay} pointerEvents={visible ? "auto" : "none"}>
+    <View className="absolute -mx-6 inset-0 z-[1000]" pointerEvents={visible ? "auto" : "none"}>
       {/* Blurred Backdrop */}
-      <Animated.View style={[styles.backdrop, backdropStyle]}>
-        <Pressable style={styles.backdropPressable} onPress={onClose} />
+      <Animated.View className="absolute inset-0 bg-black/30" style={backdropStyle}>
+        <Pressable className="flex-1" onPress={onClose} />
       </Animated.View>
 
       {/* Main Container */}
-      <Animated.View style={[styles.container, containerStyle]}>
+      <Animated.View className="flex-1 justify-center" style={containerStyle}>
         {/* Header hint */}
-        <View style={styles.header}>
-          <Text style={styles.headerText}>Swipe up to close apps</Text>
+        <View className="absolute top-[60px] left-0 right-0 items-center">
+          <Text className="text-white/50 text-sm font-medium">Swipe up to close apps</Text>
         </View>
 
         {/* Cards Carousel */}
         {apps.length > 0 ? (
           <GestureDetector gesture={panGesture}>
-            <Animated.View style={styles.carouselContainer}>
+            <Animated.View className="flex-1 justify-center">
               <Animated.View
-                style={[
-                  styles.cardsRow,
-                  {
-                    paddingHorizontal: (SCREEN_WIDTH - CARD_WIDTH) / 2 - CARD_SPACING / 2,
-                  },
-                  cardsContainerStyle,
-                ]}>
+                className="flex-row items-center"
+                // style={[{paddingHorizontal: (SCREEN_WIDTH - CARD_WIDTH) / 2 - CARD_SPACING / 2}, cardsContainerStyle]}>
+                // style={cardsContainerStyle}>
+                // {/* // style={{transform: [{translateX: translateX.value}]}}> */}
+                // {/* // style={useAnimatedStyle(() => ({ */}
+                // {/* //   transform: [{translateX: translateX.value}], */}
+                // {/* // }))}> */}
+              >
                 {apps.map((app, index) => (
                   <AppCardItem
                     key={app.id}
                     app={app}
                     index={index}
                     activeIndex={activeIndex}
+                    translateX={translateX}
                     onDismiss={handleDismiss}
                     onSelect={handleSelect}
                   />
@@ -308,15 +356,15 @@ export default function AppSwitcher({visible, onClose, apps, onAppSelect, onAppD
             </Animated.View>
           </GestureDetector>
         ) : (
-          <View style={styles.emptyState}>
-            <Text style={styles.emptyTitle}>No Apps Open</Text>
-            <Text style={styles.emptySubtitle}>Your recently used apps will appear here</Text>
+          <View className="flex-1 items-center justify-center">
+            <Text className="text-white text-[22px] font-semibold mb-2">No Apps Open</Text>
+            <Text className="text-white/50 text-base">Your recently used apps will appear here</Text>
           </View>
         )}
 
         {/* Page Indicators */}
         {apps.length > 1 && (
-          <View style={styles.pageIndicators}>
+          <View className="flex-row justify-center items-center gap-1.5 mb-5">
             {apps.map((_, index) => (
               <PageDot key={index} index={index} activeIndex={activeIndex} />
             ))}
@@ -324,8 +372,8 @@ export default function AppSwitcher({visible, onClose, apps, onAppSelect, onAppD
         )}
 
         {/* Close Button */}
-        <Pressable style={styles.closeButton} onPress={onClose}>
-          <Text style={styles.closeButtonText}>Done</Text>
+        <Pressable className="absolute bottom-[50px] self-center bg-white/15 px-8 py-3.5 rounded-3xl" onPress={onClose}>
+          <Text className="text-white text-[17px] font-semibold">Done</Text>
         </Pressable>
       </Animated.View>
     </View>
@@ -341,177 +389,7 @@ function PageDot({index, activeIndex}: {index: number; activeIndex: Animated.Sha
     }
   })
 
-  return <Animated.View style={[styles.pageDot, dotStyle]} />
+  return <Animated.View className="h-2 rounded-full bg-white" style={dotStyle} />
 }
-
-const styles = StyleSheet.create({
-  overlay: {
-    ...StyleSheet.absoluteFillObject,
-    zIndex: 1000,
-  },
-  backdrop: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: "rgba(0, 0, 0, 0.85)",
-  },
-  backdropPressable: {
-    flex: 1,
-  },
-  container: {
-    flex: 1,
-    justifyContent: "center",
-  },
-  header: {
-    position: "absolute",
-    top: 60,
-    left: 0,
-    right: 0,
-    alignItems: "center",
-  },
-  headerText: {
-    color: "rgba(255, 255, 255, 0.5)",
-    fontSize: 14,
-    fontWeight: "500",
-  },
-  carouselContainer: {
-    flex: 1,
-    justifyContent: "center",
-  },
-  cardsRow: {
-    flexDirection: "row",
-    alignItems: "center",
-  },
-  card: {
-    alignItems: "center",
-  },
-  cardInner: {
-    flex: 1,
-    width: "100%",
-    borderRadius: 24,
-    overflow: "hidden",
-    backgroundColor: "#1f2937",
-    shadowColor: "#000",
-    shadowOffset: {width: 0, height: 10},
-    shadowOpacity: 0.5,
-    shadowRadius: 20,
-    elevation: 20,
-  },
-  screenshotArea: {
-    flex: 1,
-    borderRadius: 24,
-    overflow: "hidden",
-  },
-  screenshot: {
-    width: "100%",
-    height: "100%",
-  },
-  placeholderContent: {
-    flex: 1,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  placeholderLetter: {
-    color: "white",
-    fontSize: 72,
-    fontWeight: "300",
-    opacity: 0.8,
-  },
-  statusBar: {
-    position: "absolute",
-    top: 0,
-    left: 0,
-    right: 0,
-    height: 44,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  statusTime: {
-    color: "white",
-    fontSize: 15,
-    fontWeight: "600",
-  },
-  swipeIndicator: {
-    position: "absolute",
-    top: 8,
-    left: 0,
-    right: 0,
-    alignItems: "center",
-  },
-  swipeBar: {
-    width: 36,
-    height: 5,
-    borderRadius: 3,
-    backgroundColor: "rgba(255, 255, 255, 0.3)",
-  },
-  appLabelContainer: {
-    marginTop: 16,
-    alignItems: "center",
-    gap: 8,
-  },
-  appIcon: {
-    width: 48,
-    height: 48,
-    borderRadius: 12,
-  },
-  appIconPlaceholder: {
-    width: 48,
-    height: 48,
-    borderRadius: 12,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  appIconLetter: {
-    color: "white",
-    fontSize: 22,
-    fontWeight: "600",
-  },
-  appName: {
-    color: "white",
-    fontSize: 13,
-    fontWeight: "500",
-    maxWidth: CARD_WIDTH * 0.8,
-    textAlign: "center",
-  },
-  emptyState: {
-    flex: 1,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  emptyTitle: {
-    color: "white",
-    fontSize: 22,
-    fontWeight: "600",
-    marginBottom: 8,
-  },
-  emptySubtitle: {
-    color: "rgba(255, 255, 255, 0.5)",
-    fontSize: 16,
-  },
-  pageIndicators: {
-    flexDirection: "row",
-    justifyContent: "center",
-    alignItems: "center",
-    gap: 6,
-    marginBottom: 20,
-  },
-  pageDot: {
-    height: 8,
-    borderRadius: 4,
-    backgroundColor: "white",
-  },
-  closeButton: {
-    position: "absolute",
-    bottom: 50,
-    alignSelf: "center",
-    backgroundColor: "rgba(255, 255, 255, 0.15)",
-    paddingHorizontal: 32,
-    paddingVertical: 14,
-    borderRadius: 25,
-  },
-  closeButtonText: {
-    color: "white",
-    fontSize: 17,
-    fontWeight: "600",
-  },
-})
 
 export type {AppCard}
