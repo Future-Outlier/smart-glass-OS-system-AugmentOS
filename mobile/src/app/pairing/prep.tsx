@@ -257,7 +257,7 @@ export default function PairingPrepScreen() {
         showCloseButton={false}
         showSkipButton={false}
         showHeader={false}
-        exitFn={() => {
+        skipFn={() => {
           advanceToPairing()
         }}
         endButtonText={translate("pairing:poweredOn")}
