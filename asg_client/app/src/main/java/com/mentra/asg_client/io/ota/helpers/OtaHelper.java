@@ -734,7 +734,11 @@ public class OtaHelper {
                     currentUpdateStage = "install";
                     sendProgressToPhone("install", 0, 0, 0, "STARTED", null);
 
-                    // Install
+                    // Send FINISHED before install - app will be killed during installation
+                    // Phone will delay showing completion for 10 seconds
+                    sendProgressToPhone("install", 100, 0, 0, "FINISHED", null);
+
+                    // Install - this triggers system install and kills the app
                     installApk(context, apkFile.getAbsolutePath());
                     
                     // Clean up update file after 30 seconds
@@ -1030,15 +1034,8 @@ public class OtaHelper {
             Log.d(TAG, "Sending install broadcast to system UI...");
             context.sendBroadcast(intent);
             Log.i(TAG, "Install broadcast sent successfully. System will handle installation.");
-
-            // Set a timer to send the completion broadcast after a reasonable amount of time
-            // This is necessary because the system doesn't notify us when installation is complete
-            new Handler(Looper.getMainLooper()).postDelayed(() -> {
-                Log.i(TAG, "Installation timer elapsed - sending completion broadcast");
-                // Emit installation finished event
-                EventBus.getDefault().post(new InstallationProgressEvent(InstallationProgressEvent.InstallationStatus.FINISHED, apkPath));
-                sendUpdateCompletedBroadcast(context);
-            }, 10000); // Wait 60 seconds for installation to complete
+            // Note: FINISHED message is sent before installApk() is called in checkAndUpdateApp()
+            // The app will be killed during installation, so no timer is needed here
         } catch (SecurityException e) {
             Log.e(TAG, "Security exception while sending install broadcast", e);
             // Emit installation failed event

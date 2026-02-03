@@ -246,11 +246,11 @@ export default function OtaProgressScreen() {
           setProgressState("restarting")
         }
       } else {
-        // APK update - show completed after delay
-        console.log("OTA: APK install FINISHED - showing completed in 2 seconds")
+        // APK update - show completed after 10 seconds to allow installation
+        console.log("OTA: APK install FINISHED - showing completed in 10 seconds")
         completionTimeoutRef.current = setTimeout(() => {
           setProgressState("completed")
-        }, 2000)
+        }, 10000)
       }
     } else if (otaProgress.status === "FAILED") {
       setErrorMessage(otaProgress.errorMessage || null)

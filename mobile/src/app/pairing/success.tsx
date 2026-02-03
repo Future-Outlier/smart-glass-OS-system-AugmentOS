@@ -42,7 +42,7 @@ export default function PairingSuccessScreen() {
   const handleContinue = async () => {
     if (defaultWearable === DeviceTypes.LIVE) {
       const stack = []
-      const order = ["/pairing/btclassic", "/wifi/scan", "/onboarding/live", "/onboarding/os"]
+      const order = ["/pairing/btclassic", "/wifi/scan", "/ota/check-for-updates", "/onboarding/live", "/onboarding/os"]
 
       let btcConnected = await waitForGlassesState("btcConnected", (value) => value === true, 1000)
       console.log("PAIR_SUCCESS: btcConnected", btcConnected)
@@ -54,9 +54,12 @@ export default function PairingSuccessScreen() {
       // wait for the glasses to be connected to wifi for up to 1 second:
       let wifiConnected = await waitForGlassesState("wifiConnected", (value) => value === true, 1000)
       if (!wifiConnected) {
+        // WiFi not connected - go through wifi scan flow (which will push to OTA check after connecting)
         stack.push("/wifi/scan")
+      } else {
+        // WiFi already connected - directly add OTA check since we're skipping wifi flow
+        stack.push("/ota/check-for-updates")
       }
-      // OTA check is pushed by wifi/connecting after WiFi success - not pre-built in stack
       if (!onboardingOsCompleted) {
         stack.push("/onboarding/os")
       }
