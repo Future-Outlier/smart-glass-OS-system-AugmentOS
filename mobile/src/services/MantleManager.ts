@@ -91,6 +91,9 @@ class MantleManager {
       console.error("MANTLE: No settings received from server")
     }
 
+    // Send device timezone to cloud (used for calendar/time display)
+    this.syncTimezone()
+
     await CoreModule.updateCore(useSettingsStore.getState().getCoreSettings()) // send settings to core
     console.log("MANTLE: Settings sent to core")
 
@@ -100,6 +103,26 @@ class MantleManager {
     this.initServices()
     this.setupPeriodicTasks()
     this.setupSubscriptions()
+  }
+
+  /**
+   * Send device timezone to cloud for correct time display
+   * Uses Intl API to get IANA timezone name (e.g., "America/New_York")
+   */
+  private async syncTimezone() {
+    try {
+      const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone
+      if (timezone) {
+        const result = await restComms.writeUserSettings({timezone})
+        if (result.is_error()) {
+          console.error("MANTLE: Failed to sync timezone:", result.error)
+        } else {
+          console.log("MANTLE: Timezone synced:", timezone)
+        }
+      }
+    } catch (error) {
+      console.error("MANTLE: Error syncing timezone:", error)
+    }
   }
 
   public async cleanup() {
