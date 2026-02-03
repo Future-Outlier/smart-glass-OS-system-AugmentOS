@@ -7,6 +7,7 @@ import {Screen, Header, Button, Text, Icon} from "@/components/ignite"
 import {focusEffectPreventBack, useNavigationHistory} from "@/contexts/NavigationHistoryContext"
 import {useAppTheme} from "@/contexts/ThemeContext"
 import {useGlassesStore} from "@/stores/glasses"
+import GlobalEventEmitter from "@/utils/GlobalEventEmitter"
 
 type ProgressState = "starting" | "downloading" | "installing" | "completed" | "failed" | "disconnected" | "restarting"
 
@@ -153,6 +154,33 @@ export default function OtaProgressScreen() {
   // Track MTK-only timeout (if MTK finishes but no BES follows)
   const mtkOnlyTimeoutRef = useRef<NodeJS.Timeout | null>(null)
 
+  // Track if we're waiting for MTK system install to complete
+  const waitingForMtkComplete = useRef(false)
+
+  // Listen for mtk_update_complete event from glasses (sent after system install finishes)
+  useEffect(() => {
+    const handleMtkUpdateComplete = (data: {message: string; timestamp: number}) => {
+      console.log("OTA: Received mtk_update_complete event:", data.message)
+
+      if (waitingForMtkComplete.current) {
+        console.log("OTA: MTK system install complete - transitioning to completed state")
+        waitingForMtkComplete.current = false
+
+        // Mark MTK as updated this session
+        useGlassesStore.getState().setMtkUpdatedThisSession(true)
+
+        // Transition to completed state
+        setProgressState("completed")
+      }
+    }
+
+    GlobalEventEmitter.on("mtk_update_complete", handleMtkUpdateComplete)
+
+    return () => {
+      GlobalEventEmitter.off("mtk_update_complete", handleMtkUpdateComplete)
+    }
+  }, [])
+
   // Watch for OTA progress updates from glasses
   useEffect(() => {
     console.log("🔍 OTA EFFECT: otaProgress effect triggered, otaProgress =", otaProgress)
@@ -205,21 +233,21 @@ export default function OtaProgressScreen() {
       const stage = otaProgress.stage
 
       // MTK: Install FINISHED is sent after download completes (before system install starts)
-      // Show "Restart required" screen immediately
+      // Stay in "installing" state and wait for mtk_update_complete event
       if (updateType === "mtk") {
         if (stage === "install") {
-          console.log("OTA: MTK install FINISHED received - showing restart required")
+          console.log("OTA: MTK install FINISHED received - waiting for mtk_update_complete from system")
 
           // Clear any existing timeout
           if (mtkOnlyTimeoutRef.current) {
             clearTimeout(mtkOnlyTimeoutRef.current)
           }
 
-          // Mark MTK as updated this session
-          useGlassesStore.getState().setMtkUpdatedThisSession(true)
+          // Mark that we're waiting for the system install to complete
+          waitingForMtkComplete.current = true
 
-          // Show restart required screen immediately
-          setProgressState("restarting")
+          // Stay in installing state - will transition to completed when mtk_update_complete is received
+          setProgressState("installing")
         }
         // Ignore download FINISHED - only care about install FINISHED
         return
@@ -250,7 +278,7 @@ export default function OtaProgressScreen() {
         console.log("OTA: APK install FINISHED - showing completed in 10 seconds")
         completionTimeoutRef.current = setTimeout(() => {
           setProgressState("completed")
-        }, 10000)
+        }, 12000)
       }
     } else if (otaProgress.status === "FAILED") {
       setErrorMessage(otaProgress.errorMessage || null)
@@ -428,6 +456,13 @@ export default function OtaProgressScreen() {
     // Completed state
     if (progressState === "completed") {
       const componentName = getComponentName(currentUpdate)
+      const isMtk = currentUpdate === "mtk"
+
+      // MTK updates require restart to apply - show appropriate message
+      const completedMessage = isMtk
+        ? "Restart your glasses to apply the update, or continue to check for additional updates."
+        : "Press continue to check for additional updates."
+
       return (
         <>
           <View className="flex-1 items-center justify-center px-6">
@@ -435,11 +470,7 @@ export default function OtaProgressScreen() {
             <View className="h-6" />
             <Text text={`${componentName} Update Complete`} className="font-semibold text-xl text-center" />
             <View className="h-2" />
-            <Text
-              text="Press continue to check for additional updates."
-              className="text-sm text-center"
-              style={{color: theme.colors.textDim}}
-            />
+            <Text text={completedMessage} className="text-sm text-center" style={{color: theme.colors.textDim}} />
           </View>
 
           <View className="justify-center items-center">

@@ -361,6 +361,8 @@ export function OtaUpdateChecker() {
     if (!glassesConnected) return // Verify glasses still connected
     if (!glassesWifiConnected) return
     if (!pendingUpdate.current) return
+    // Last-moment check: never show Mentra Live update alert when disconnected
+    if (!useGlassesStore.getState().connected) return
 
     const {updates} = pendingUpdate.current
     const deviceName = defaultWearable || "Glasses"

@@ -636,11 +636,11 @@ public class OtaHelper {
                     if (isMtkOtaInProgress()) {
                         // MTK system is still processing - can't start BES yet
                         if (wasMtkUpdatedThisSession()) {
-                            // MTK was already "completed" from phone's perspective, but system still processing
-                            // Don't queue BES, just tell phone no updates right now
-                            Log.i(TAG, "BES update available but MTK system still processing - try again later");
+                            // MTK update was initiated but system is still processing
+                            // Tell phone MTK is still in progress (don't send FINISHED prematurely)
+                            Log.i(TAG, "BES update available but MTK system still processing - MTK in progress");
                             if (isPhoneInitiatedOta) {
-                                sendProgressToPhone("install", 100, 0, 0, "FINISHED", null);
+                                sendProgressToPhone("install", -1, 0, 0, "IN_PROGRESS", "mtk");
                             }
                         } else {
                             // MTK is actively being installed - queue BES for after
@@ -657,9 +657,10 @@ public class OtaHelper {
                         Log.i(TAG, "BES update available - applying");
                         checkAndUpdateBesFirmware(rootJson.getJSONObject("bes_firmware"), context);
                     }
-                } else if (isMtkOtaInProgress() && !wasMtkUpdatedThisSession()) {
-                    // MTK is actively in progress (not just system processing after completion)
-                    Log.i(TAG, "MTK update currently in progress");
+                } else if (isMtkOtaInProgress()) {
+                    // MTK is in progress (either actively installing or system processing after download)
+                    // Don't send FINISHED - tell phone update is still in progress
+                    Log.i(TAG, "MTK update currently in progress - system processing");
                     if (isPhoneInitiatedOta) {
                         sendProgressToPhone("install", -1, 0, 0, "IN_PROGRESS", "mtk");
                     }

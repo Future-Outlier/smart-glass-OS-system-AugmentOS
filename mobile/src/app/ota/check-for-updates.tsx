@@ -1,5 +1,5 @@
 import {useFocusEffect} from "expo-router"
-import {useEffect, useState, useCallback} from "react"
+import {useEffect, useState, useCallback, useRef} from "react"
 import {View, ActivityIndicator} from "react-native"
 
 import {MentraLogoStandalone} from "@/components/brands/MentraLogoStandalone"
@@ -30,6 +30,8 @@ export default function OtaCheckForUpdatesScreen() {
   const [checkState, setCheckState] = useState<CheckState>("checking")
   const [availableUpdates, setAvailableUpdates] = useState<string[]>([])
   const [checkKey, setCheckKey] = useState(0)
+  const versionInfoTimeoutRef = useRef<NodeJS.Timeout | null>(null)
+  const waitStartTimeRef = useRef<number | null>(null)
 
   focusEffectPreventBack()
 
@@ -39,20 +41,77 @@ export default function OtaCheckForUpdatesScreen() {
       console.log("OTA: Screen focused - triggering re-check")
       setCheckState("checking")
       setAvailableUpdates([])
+      // Reset timeout tracking for fresh check
+      if (versionInfoTimeoutRef.current) {
+        clearTimeout(versionInfoTimeoutRef.current)
+        versionInfoTimeoutRef.current = null
+      }
+      waitStartTimeRef.current = null
       setCheckKey((k) => k + 1)
     }, []),
   )
 
   // Perform OTA check when checkKey changes (on mount and on focus)
+  // Also re-run when version info arrives (otaVersionUrl, currentBuildNumber)
   useEffect(() => {
     const MIN_DISPLAY_TIME_MS = 1100
+    const MAX_WAIT_FOR_VERSION_INFO_MS = 10000 // Wait up to 10 seconds for version_info
 
     const performCheck = async () => {
-      if (!otaVersionUrl || !currentBuildNumber || !glassesConnected || !wifiConnected) {
-        console.log("OTA: Missing requirements for OTA check - proceeding to next step")
+      // If glasses disconnected or WiFi not connected, skip immediately
+      if (!glassesConnected) {
+        console.log("OTA: Glasses not connected - proceeding to next step")
+        if (versionInfoTimeoutRef.current) {
+          clearTimeout(versionInfoTimeoutRef.current)
+          versionInfoTimeoutRef.current = null
+        }
         handleContinue()
         return
       }
+      if (!wifiConnected) {
+        console.log("OTA: WiFi not connected - proceeding to next step")
+        if (versionInfoTimeoutRef.current) {
+          clearTimeout(versionInfoTimeoutRef.current)
+          versionInfoTimeoutRef.current = null
+        }
+        handleContinue()
+        return
+      }
+
+      // Wait for version_info to arrive (contains otaVersionUrl and buildNumber)
+      if (!otaVersionUrl || !currentBuildNumber) {
+        console.log(
+          "OTA: Waiting for version_info from glasses (url:",
+          !!otaVersionUrl,
+          ", build:",
+          currentBuildNumber,
+          ")",
+        )
+
+        // Start timeout if not already started
+        if (!waitStartTimeRef.current) {
+          waitStartTimeRef.current = Date.now()
+          console.log("OTA: Starting version_info wait timeout (" + MAX_WAIT_FOR_VERSION_INFO_MS + "ms)")
+
+          versionInfoTimeoutRef.current = setTimeout(() => {
+            console.log("OTA: Timeout waiting for version_info - proceeding to next step")
+            waitStartTimeRef.current = null
+            versionInfoTimeoutRef.current = null
+            handleContinue()
+          }, MAX_WAIT_FOR_VERSION_INFO_MS)
+        }
+
+        // Don't proceed yet - the effect will re-run when these values change
+        return
+      }
+
+      // Clear timeout since we got the data
+      if (versionInfoTimeoutRef.current) {
+        console.log("OTA: Got version_info - clearing wait timeout")
+        clearTimeout(versionInfoTimeoutRef.current)
+        versionInfoTimeoutRef.current = null
+      }
+      waitStartTimeRef.current = null
 
       const startTime = Date.now()
 
@@ -105,7 +164,15 @@ export default function OtaCheckForUpdatesScreen() {
     }
 
     performCheck()
-  }, [checkKey])
+
+    // Cleanup timeout on unmount or when dependencies change
+    return () => {
+      if (versionInfoTimeoutRef.current) {
+        clearTimeout(versionInfoTimeoutRef.current)
+        versionInfoTimeoutRef.current = null
+      }
+    }
+  }, [checkKey, otaVersionUrl, currentBuildNumber, glassesConnected, wifiConnected])
 
   // Navigate to next step based on onboarding status
   const handleContinue = () => {

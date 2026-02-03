@@ -322,6 +322,8 @@ export interface GlassesStatus {
   serialNumber: string
   style: string
   color: string
+  mtkFwVersion: string
+  besFwVersion: string
   // wifi info
   wifiConnected: boolean
   wifiSsid: string

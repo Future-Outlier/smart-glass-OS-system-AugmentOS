@@ -49,6 +49,8 @@ const initialState: GlassesStatus = {
   serialNumber: "",
   style: "",
   color: "",
+  mtkFwVersion: "",
+  besFwVersion: "",
   // wifi info
   wifiConnected: false,
   wifiSsid: "",
@@ -76,7 +78,17 @@ export const useGlassesStore = create<GlassesState>()(
   subscribeWithSelector((set) => ({
     ...initialState,
 
-    setGlassesInfo: (info) => set((state) => ({...state, ...info})),
+    setGlassesInfo: (info) =>
+      set((state) => {
+        const next = {...state, ...info}
+        // When glasses disconnect, clear OTA state so we never show "update available" when disconnected
+        if (next.connected === false) {
+          next.otaUpdateAvailable = null
+          next.otaProgress = null
+          next.otaInProgress = false
+        }
+        return next
+      }),
 
     setConnected: (connected) => set({connected}),
 
