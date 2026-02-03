@@ -127,7 +127,7 @@ export const CompactDeviceStatus = ({style}: {style?: ViewStyle}) => {
     ])
   }
 
-  if (!glassesConnected || !glassesReady || isSearching) {
+  if (!glassesConnected || !glassesFullyBooted || isSearching) {
     return (
       <View style={[themed($disconnectedContainer), style]}>
         <View style={themed($header)}>
