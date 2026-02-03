@@ -17,6 +17,11 @@ const logger = rootLogger.child({ service: "app-enrichment" });
  * @returns Promise with enriched app objects containing orgName, developerProfile, and developerName
  */
 export async function batchEnrichAppsWithProfiles(appsInput: Array<any>): Promise<Array<any>> {
+  // Guard against null/undefined input
+  if (!appsInput || !Array.isArray(appsInput)) {
+    return [];
+  }
+
   // Normalize to plain objects to avoid mutating Mongoose docs
   const apps = appsInput.map((a: any) => (a as any).toObject?.() || a);
 
@@ -65,7 +70,9 @@ export async function batchEnrichAppsWithProfiles(appsInput: Array<any>): Promis
   // Apply enrichment
   return apps.map((app: any) => {
     const enriched = { ...app } as any;
+    let enrichmentFound = false;
 
+    // Try organization first
     if (app.organizationId) {
       const key = String(app.organizationId);
       const org = orgMap.get(key);
@@ -73,14 +80,21 @@ export async function batchEnrichAppsWithProfiles(appsInput: Array<any>): Promis
         enriched.developerProfile = org.profile || {};
         enriched.orgName = org.name;
         enriched.developerName = org.name;
+        enrichmentFound = true;
       }
-    } else if (app.developerId) {
+    }
+
+    // Fallback to developer if organization not found
+    if (!enrichmentFound && app.developerId) {
       const user = userMap.get(String(app.developerId).toLowerCase());
       if (user && user.profile) {
-        const displayName = user.profile.company || String(user.email).split("@")[0];
+        const displayName =
+          user.profile.company ||
+          (String(user.email).includes("@") ? String(user.email).split("@")[0] : String(user.email));
         enriched.developerProfile = user.profile;
         enriched.orgName = displayName;
         enriched.developerName = displayName;
+        enrichmentFound = true;
       }
     }
 

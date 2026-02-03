@@ -153,7 +153,7 @@ async function getAppDetails(c: AppContext) {
 
     const enrichedApps = await batchEnrichAppsWithProfiles([app]);
 
-    return c.json({ success: true, data: enrichedApps[0] });
+    return c.json({ success: true, data: enrichedApps[0] || app });
   } catch (e: unknown) {
     const error = e as Error;
     logger.error(error, "Failed to get app details");
