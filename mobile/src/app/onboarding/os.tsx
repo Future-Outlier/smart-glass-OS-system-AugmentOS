@@ -4,13 +4,14 @@ import {useNavigationHistory} from "@/contexts/NavigationHistoryContext"
 import {translate} from "@/i18n"
 import {SETTINGS, useSetting} from "@/stores/settings"
 import showAlert from "@/utils/AlertUtils"
+import {getGlassesImage} from "@/utils/getGlassesImage"
 
 const CDN_BASE = "https://mentra-videos-cdn.mentraglass.com/onboarding/mentraos/light"
-
 
 export default function MentraOSOnboarding() {
   const {pushPrevious} = useNavigationHistory()
   const [_onboardingOsCompleted, setOnboardingOsCompleted] = useSetting(SETTINGS.onboarding_os_completed.key)
+  const [defaultWearable] = useSetting(SETTINGS.default_wearable.key)
   // focusEffectPreventBack()
 
   // NOTE: you can't have 2 transition videos in a row or things will break:
@@ -85,36 +86,17 @@ export default function MentraOSOnboarding() {
         translate("onboarding:osForegroundAndBackgroundAppsBullet2"),
       ],
     },
-    // {
-    //   type: "video",
-    //   name: "Mentra AI",
-    //   source: `${CDN_BASE}/mentra_ai.mov`,
-    //   transition: false,
-    //   playCount: 2,
-    //   bullets: [
-    //     translate("onboarding:osMentraAi"),
-    //     translate("onboarding:osMentraAiBullet1"),
-    //     translate("onboarding:osMentraAiBullet2"),
-    //   ],
-    // },
-    //     {
-    //   type: "video",
-    //   name: "end",
-    //   //source: `${CDN_BASE}/mentra_ai.mov`,
-    //   source: `${CDN_BASE}/mentraos_onboard_end.mp4`,
-    //   transition: false,
-    //   playCount: 99999,//2,
-    //   replayable: true,
-    //   title: translate("onboarding:osEndTitle"),
-    //   subtitle: translate("onboarding:osEndSubtitle"),
-    // },
-    // {
-    //   type: "image",
-    //   name: "end",
-    //   transition: false,
-    //   title: translate("onboarding:osEndTitle"),
-    //   subtitle: translate("onboarding:osEndSubtitle"),
-    // },
+    {
+      type: "image",
+      name: "end",
+      source: getGlassesImage(defaultWearable),
+      containerClassName: "items-center justify-center",
+      transition: false,
+      title: translate("onboarding:osEndTitle"),
+      subtitle: translate("onboarding:osEndSubtitle"),
+      titleCentered: true,
+      subtitleCentered: true,
+    },
   ]
 
   const handleCloseButton = () => {

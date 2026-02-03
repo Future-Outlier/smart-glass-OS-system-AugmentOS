@@ -6,7 +6,6 @@ import {useAppTheme} from "@/contexts/ThemeContext"
 import {getGlassesImage, getEvenRealitiesG1Image} from "@/utils/getGlassesImage"
 
 import {getModelSpecificTips} from "@/components/glasses/GlassesTroubleshootingModal"
-import {useGlassesStore} from "@/stores/glasses"
 
 interface GlassesPairingLoaderProps {
   deviceModel: string
@@ -94,7 +93,7 @@ const GlassesPairingLoader: React.FC<GlassesPairingLoaderProps> = ({deviceModel,
           />
         </View>
 
-        {glassesBooting && (
+        {isBooting && (
           <View className="bg-background rounded-lg py-2 px-4">
             <Text className="text-sm font-medium text-primary text-center" tx="pairing:glassesBooting" />
           </View>

@@ -10,7 +10,6 @@ import GlassesPairingLoader from "@/components/glasses/GlassesPairingLoader"
 import GlassesTroubleshootingModal from "@/components/glasses/GlassesTroubleshootingModal"
 import {focusEffectPreventBack, useNavigationHistory} from "@/contexts/NavigationHistoryContext"
 import {useGlassesStore} from "@/stores/glasses"
-import GlobalEventEmitter from "@/utils/GlobalEventEmitter"
 import {GlassesNotReadyEvent} from "core"
 
 export default function GlassesPairingLoadingScreen() {
@@ -21,11 +20,12 @@ export default function GlassesPairingLoadingScreen() {
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const failureErrorRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const hasAlertShownRef = useRef(false)
+  const hasNavigatedRef = useRef(false)
   const glassesFullyBooted = useGlassesStore((state) => state.fullyBooted)
   const [showGlassesBooting, setShowGlassesBooting] = useState(false)
 
   useEffect(() => {
-    let sub = CoreModule.addListener("glasses_not_ready", (event: GlassesNotReadyEvent) => {
+    let sub = CoreModule.addListener("glasses_not_ready", (_event: GlassesNotReadyEvent) => {
       setShowGlassesBooting(true)
     })
     return () => {
@@ -66,6 +66,8 @@ export default function GlassesPairingLoadingScreen() {
 
   useEffect(() => {
     if (!glassesFullyBooted) return
+    if (hasNavigatedRef.current) return
+    hasNavigatedRef.current = true
     if (timerRef.current) clearTimeout(timerRef.current)
     if (failureErrorRef.current) clearTimeout(failureErrorRef.current)
     setTimeout(() => {

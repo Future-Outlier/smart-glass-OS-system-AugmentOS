@@ -330,10 +330,12 @@ export function OnboardingGuide({
   )
 
   const handleEndButton = useCallback(() => {
-    setExitRequested(true)
     if (endButtonFn) {
+      // Don't set exitRequested when using custom endButtonFn - let the function handle navigation
+      // Setting exitRequested causes the component to render null immediately, causing a blank screen
       endButtonFn()
     } else {
+      setExitRequested(true)
       clearHistoryAndGoHome()
     }
   }, [endButtonFn, clearHistoryAndGoHome])
@@ -865,14 +867,14 @@ export function OnboardingGuide({
         {step.title && (
           <Text
             className={`${
-              step.titleCentered ?? false ? "text-center" : "text-start"
+              (step.titleCentered ?? false) ? "text-center" : "text-start"
             } text-2xl font-semibold text-foreground`}
             text={step.title}
           />
         )}
         {step.subtitle && (
           <Text
-            className={`${step.subtitleCentered ?? false ? "text-center" : "text-start"} text-[18px] text-foreground`}
+            className={`${(step.subtitleCentered ?? false) ? "text-center" : "text-start"} text-[18px] text-foreground`}
             text={step.subtitle}
           />
         )}
@@ -940,8 +942,7 @@ export function OnboardingGuide({
           <Header
             leftIcon={showCloseButton && hasStarted ? "x" : undefined}
             RightActionComponent={
-              <View
-                className={`flex flex-row gap-2 items-center justify-center ${!hasStarted ? "flex-1" : ""}`}>
+              <View className={`flex flex-row gap-2 items-center justify-center ${!hasStarted ? "flex-1" : ""}`}>
                 {/* <Text className="text-center text-sm font-medium" text={showCounter ? counter : ""} /> */}
                 {showCounter && <Text className="text-center text-sm font-medium" text={counter} />}
                 <MentraLogoStandalone />

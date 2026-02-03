@@ -1,6 +1,6 @@
 import {DeviceTypes, getModelCapabilities} from "@/../../cloud/packages/types/src"
-import CoreModule from "core"
-import {useState} from "react"
+import CoreModule, {GlassesNotReadyEvent} from "core"
+import {useState, useEffect} from "react"
 import {ActivityIndicator, Image, ImageStyle, Linking, TextStyle, TouchableOpacity, View, ViewStyle} from "react-native"
 
 import {BatteryStatus} from "@/components/glasses/info/BatteryStatus"
@@ -55,6 +55,24 @@ export const CompactDeviceStatus = ({style}: {style?: ViewStyle}) => {
   const wifiConnected = useGlassesStore((state) => state.wifiConnected)
   const wifiSsid = useGlassesStore((state) => state.wifiSsid)
   const searching = useCoreStore((state) => state.searching)
+  const [showGlassesBooting, setShowGlassesBooting] = useState(false)
+
+  // Listen for glasses_not_ready event to know when glasses are actually booting
+  useEffect(() => {
+    const sub = CoreModule.addListener("glasses_not_ready", (_event: GlassesNotReadyEvent) => {
+      setShowGlassesBooting(true)
+    })
+    return () => {
+      sub.remove()
+    }
+  }, [])
+
+  // Reset booting state when glasses become fully booted or disconnected
+  useEffect(() => {
+    if (glassesFullyBooted || !glassesConnected) {
+      setShowGlassesBooting(false)
+    }
+  }, [glassesFullyBooted, glassesConnected])
 
   if (defaultWearable.includes(DeviceTypes.SIMULATED)) {
     return <ConnectedSimulatedGlassesInfo style={style} mirrorStyle={{backgroundColor: theme.colors.background}} />
@@ -112,8 +130,8 @@ export const CompactDeviceStatus = ({style}: {style?: ViewStyle}) => {
 
   let isSearching = searching || isCheckingConnectivity
   let connectingText = translate("home:connectingGlasses")
-  let glassesBooting = glassesConnected && !glassesFullyBooted
-  if (glassesBooting) {
+  // Only show booting message when we've received a glasses_not_ready event
+  if (showGlassesBooting) {
     connectingText = "Glasses are booting..."
   }
 
