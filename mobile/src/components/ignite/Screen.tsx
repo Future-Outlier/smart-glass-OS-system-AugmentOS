@@ -257,17 +257,20 @@ export function Screen(props: ScreenProps) {
   const {theme} = useAppTheme()
   // const [debugCoreStatusBarEnabled] = useSetting(SETTINGS.debug_core_status_bar.key)
 
-  
   if (Platform.OS === "android") {
-    if ($containerInsets.paddingTop) {
-      $containerInsets.paddingTop += theme.spacing.s4
-    } else {
-      $containerInsets.paddingTop = theme.spacing.s4
+    if (safeAreaEdges?.includes("top")) {
+      if ($containerInsets.paddingTop) {
+        $containerInsets.paddingTop += theme.spacing.s4
+      } else {
+        $containerInsets.paddingTop = theme.spacing.s4
+      }
     }
-    if ($containerInsets.paddingBottom) {
-      $containerInsets.paddingBottom += theme.spacing.s6
-    } else {
-      $containerInsets.paddingBottom = theme.spacing.s6
+    if (safeAreaEdges?.includes("bottom")) {
+      if ($containerInsets.paddingBottom) {
+        $containerInsets.paddingBottom += theme.spacing.s6
+      } else {
+        $containerInsets.paddingBottom = theme.spacing.s6
+      }
     }
   }
 
