@@ -1,19 +1,19 @@
 ---
-title: Mira Tool Calls
-description: Let users control your app with natural language through Mira's tool calls.
+title: Mentra AI Tool Calls
+description: Let users control your app with natural language through Mentra AI's tool calls.
 icon: wrench
 ---
 
-## What is Mira?
+## What is Mentra AI?
 
-Mira is MentraOS's AI assistant that lets users control your app using natural language. Instead of building UI buttons and menus, you expose functions that Mira automatically calls when users ask for something.
+Mentra AI is MentraOS's AI assistant that lets users control your app using natural language. Instead of building UI buttons and menus, you expose functions that Mentra AI automatically calls when users ask for something.
 
 <Info>
-**The magic:** User says "remind me to buy milk" → Mira calls your `add_todo` function → Your app creates the todo → Mira confirms back to the user.
+**The magic:** User says "remind me to buy milk" → Mentra AI calls your `add_todo` function → Your app creates the todo → Mentra AI confirms back to the user.
 </Info>
 
 <Tip>
-Your app doesn't even need to be running! Mira can trigger your functions anytime and relay results back to users.
+Your app doesn't even need to be running! Mentra AI can trigger your functions anytime and relay results back to users.
 </Tip>
 
 ## Quick Start
@@ -27,18 +27,18 @@ Your app doesn't even need to be running! Mira can trigger your functions anytim
     Override `onToolCall` in your AppServer to handle the tool logic.
   </Step>
 
-  <Step title="Test with Mira">
-    Talk naturally to Mira and watch your tool get called automatically!
+  <Step title="Test with Mentra AI">
+    Talk naturally to Mentra AI and watch your tool get called automatically!
   </Step>
 </Steps>
 
 ## Example Code
 
 <Warning>
-**Important:** What you return from `onToolCall()` is **context for Mira's AI**, not what the user sees. Mira uses your response to formulate a natural language reply. If you want to control the display yourself, return `GIVE_APP_CONTROL_OF_TOOL_RESPONSE` instead. [See "Understanding Tool Responses" below](#understanding-tool-responses) for details.
+**Important:** What you return from `onToolCall()` is **context for Mentra AI**, not what the user sees. Mentra AI uses your response to formulate a natural language reply. If you want to control the display yourself, return `GIVE_APP_CONTROL_OF_TOOL_RESPONSE` instead. [See "Understanding Tool Responses" below](#understanding-tool-responses) for details.
 </Warning>
 
-Here's how to handle a Mira tool call in your app:
+Here's how to handle a Mentra AI tool call in your app:
 
 <CodeGroup>
 
@@ -47,16 +47,16 @@ import {AppServer, ToolCall} from "@mentra/sdk"
 
 export class TodoAppServer extends AppServer {
   protected async onToolCall(toolCall: ToolCall): Promise<string | undefined> {
-    // Check which tool Mira is calling
+    // Check which tool Mentra AI is calling
     if (toolCall.toolId === "add_todo") {
-      // Get parameters Mira extracted from the user's message
+      // Get parameters Mentra AI extracted from the user's message
       const todoItem = toolCall.toolParameters.todo_item as string;
       const dueDate = toolCall.toolParameters.due_date as string | undefined;
 
       // Do your app logic
       await this.todoService.addTodo(toolCall.userId, todoItem, dueDate);
 
-      // Return a message for Mira to tell the user
+      // Return a message for Mentra AI to tell the user
       return `Added: "${todoItem}"${dueDate ? ` due ${dueDate}` : ''}`;
     }
 
@@ -94,11 +94,11 @@ protected async onToolCall(toolCall: ToolCall): Promise<string | undefined> {
 
 ## Understanding Tool Responses
 
-**Important:** What you return from `onToolCall()` determines how Mira responds to the user.
+**Important:** What you return from `onToolCall()` determines how Mentra AI responds to the user.
 
-### Default: Return Context for Mira
+### Default: Return Context for Mentra AI
 
-By default, your return string is **context for Mira's AI**, not what the user sees directly:
+By default, your return string is **context for Mentra AI**, not what the user sees directly:
 
 ```typescript
 protected async onToolCall(toolCall: ToolCall): Promise<string | undefined> {
@@ -107,8 +107,8 @@ protected async onToolCall(toolCall: ToolCall): Promise<string | undefined> {
 
     // Save the todo
     await db.todos.create({ userId: toolCall.userId, item });
-    
-// Return context for Mira (not displayed verbatim)
+
+// Return context for Mentra AI (not displayed verbatim)
 return `Todo item "${item}" was successfully saved to database with ID 123`;
   }
 }
@@ -116,12 +116,12 @@ return `Todo item "${item}" was successfully saved to database with ID 123`;
 
 **What happens:**
 1. Your app returns context about what happened
-2. Mira's AI uses this to formulate a natural response
+2. Mentra AI uses this to formulate a natural response
 3. User hears something like: "Got it, I've added that to your list" or "Done, that's been saved"
 
 **Why this is good:**
 - ✅ Natural, conversational responses
-- ✅ Mira adapts the language to context
+- ✅ Mentra AI adapts the language to context
 - ✅ Feels like talking to an assistant
 
 ### Manual Control: Display Your Own UI
@@ -142,7 +142,7 @@ protected async onToolCall(toolCall: ToolCall): Promise<string | undefined> {
       items.map(item => `• ${item.name}`).join('\n')
     );
 
-    // Tell Mira: "I've handled the display, don't say anything"
+    // Tell Mentra AI: "I've handled the display, don't say anything"
     return GIVE_APP_CONTROL_OF_TOOL_RESPONSE;
   }
 }
@@ -150,7 +150,7 @@ protected async onToolCall(toolCall: ToolCall): Promise<string | undefined> {
 
 **What happens:**
 1. Your app displays custom UI (layouts, dashboard, etc.)
-2. Mira stays silent - doesn't add any response
+2. Mentra AI stays silent - doesn't add any response
 3. User sees exactly what you designed
 
 
@@ -162,7 +162,7 @@ If you don't handle a tool, return `undefined`:
 protected async onToolCall(toolCall: ToolCall): Promise<string | undefined> {
   if (toolCall.toolId === "my_tool") {
     // Handle it
-    return "Context for Mira";
+    return "Context for Mentra AI";
   }
 
   // Don't handle this tool
@@ -174,30 +174,30 @@ protected async onToolCall(toolCall: ToolCall): Promise<string | undefined> {
 
 | Return Value | Behavior | Use When |
 |--------------|----------|----------|
-| **String** (e.g., `"Task completed"`) | Mira uses as context to formulate natural response | Default - natural conversation |
-| **`GIVE_APP_CONTROL_OF_TOOL_RESPONSE`** | You display UI, Mira stays silent | Need custom formatting or precise control |
+| **String** (e.g., `"Task completed"`) | Mentra AI uses as context to formulate natural response | Default - natural conversation |
+| **`GIVE_APP_CONTROL_OF_TOOL_RESPONSE`** | You display UI, Mentra AI stays silent | Need custom formatting or precise control |
 | **`undefined`** | You don't handle this tool | Tool not recognized |
 
 <Tip>
-**Best practice:** Let Mira handle responses (return strings) unless you need specific formatting. Users expect conversational AI behavior from Mira.
+**Best practice:** Let Mentra AI handle responses (return strings) unless you need specific formatting. Users expect conversational AI behavior from Mentra AI.
 </Tip>
 
 ## Examples: Context vs Control
 
-### Let Mira Respond (Recommended)
+### Let Mentra AI Respond (Recommended)
 
 ```typescript
 // Simple confirmation
 return "Alarm set for 7:00 AM";
-// Mira: "Alright, I've set your alarm for 7 AM"
+// Mentra AI: "Alright, I've set your alarm for 7 AM"
 
 // Data retrieval
 return "User has 3 pending tasks: Buy milk, Call mom, Send email";
-// Mira: "You have 3 pending tasks: Buy milk, Call mom, and Send email"
+// Mentra AI: "You have 3 pending tasks: Buy milk, Call mom, and Send email"
 
 // Status update
 return "Weather is 72 degrees F and sunny in San Francisco";
-// Mira: "It's 72 degrees and sunny in San Francisco"
+// Mentra AI: "It's 72 degrees and sunny in San Francisco"
 ```
 
 ### Take Manual Control
@@ -238,35 +238,35 @@ return GIVE_APP_CONTROL_OF_TOOL_RESPONSE;
 ## Developer Console Setup
 
 <Card title="Define Your Tools" icon="tools" href="https://console.mentra.glass/apps">
-  Configure your Mira tools in the Developer Console:
+  Configure your Mentra AI tools in the Developer Console:
 
   1. Select your app
-  2. Navigate to "AI Tools" section
+  2. Navigate to "Mentra AI Tools" section
   3. Add tools with IDs, descriptions, and parameters
-  4. Mira will automatically start recognizing them
+  4. Mentra AI will automatically start recognizing them
 </Card>
 
 <Warning>
 The Developer Console UI is being updated. Screenshots may look different, but the core functionality remains the same.
 </Warning>
 
-## How Mira Works Behind the Scenes
+## How Mentra AI Works Behind the Scenes
 
 <Steps>
-  <Step title="User speaks to Mira">
-    **Example:** "Hey Mira, remind me to buy milk tomorrow"
+  <Step title="User speaks to Mentra AI">
+    **Example:** "Hey Mentra, remind me to buy milk tomorrow"
   </Step>
 
-  <Step title="Mira analyzes the request">
-    Mira's AI identifies your `add_todo` tool as the best match
+  <Step title="Mentra AI analyzes the request">
+    Mentra AI identifies your `add_todo` tool as the best match
   </Step>
 
-  <Step title="Mira extracts parameters">
+  <Step title="Mentra AI extracts parameters">
     - `todo_item: "buy milk"`
     - `due_date: "2025-11-04"`
   </Step>
 
-  <Step title="Mira calls your app">
+  <Step title="Mentra AI calls your app">
     Sends a POST request to your `/tool` endpoint (SDK handles this automatically)
   </Step>
 
@@ -278,20 +278,20 @@ The Developer Console UI is being updated. Screenshots may look different, but t
     Return a string like "Added: buy milk"
   </Step>
 
-  <Step title="Mira responds to user">
-    Mira formats your response into natural language and delivers it
+  <Step title="Mentra AI responds to user">
+    Mentra AI formats your response into natural language and delivers it
   </Step>
 </Steps>
 
 <Note>
-**Key insight:** Tool calls work even when your app isn't running. Mira can also chain multiple tools together to fulfill complex requests.
+**Key insight:** Tool calls work even when your app isn't running. Mentra AI can also chain multiple tools together to fulfill complex requests.
 </Note>
 
 ## Tool Configuration
 
 <Card title="Tool Properties" icon="wrench">
   - **`id`**: Unique identifier (e.g., `"add_todo"`)
-  - **`description`**: What it does (helps Mira know when to call it)
+  - **`description`**: What it does (helps Mentra AI know when to call it)
   - **`activationPhrases`**: Optional trigger phrases
   - **`parameters`**: What data you need
 </Card>
@@ -311,7 +311,7 @@ See [ToolSchema](/reference/interfaces/tool-types#toolschema) for the complete t
 
 <CardGroup cols={2}>
   <Card title="Dashboard Note Example" icon="note-sticky" href="/cookbook/dashboard-note-app">
-    Complete working example with Mira Tool Calls
+    Complete working example with Mentra AI Tool Calls
   </Card>
 
   <Card title="Tool Types Reference" icon="book" href="/app-devs/reference/interfaces/tool-types">
@@ -321,7 +321,7 @@ See [ToolSchema](/reference/interfaces/tool-types#toolschema) for the complete t
   <Card title="Simple Storage" icon="database" href="/app-devs/core-concepts/simple-storage">
     Persist data in your tools
   </Card>
-  
+
   <Card title="Display" icon="display" href="/app-devs/core-concepts/display/layouts">
     Learn about layouts and dashboard
   </Card>

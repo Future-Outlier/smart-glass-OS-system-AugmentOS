@@ -83,7 +83,7 @@ const SharingDialog: FC<SharingDialogProps> = ({app, open, onOpenChange, orgId})
         <div className="py-4 space-y-6">
           {/* Installation Link Section */}
           <div className="space-y-3">
-            <p className="text-sm text-gray-500">Share this link with anyone to let them install your app:</p>
+            <p className="text-sm text-gray-500">Share this link with anyone to let them install your MiniApp:</p>
             <div className="flex items-center gap-2">
               <div className="flex-1 relative">
                 <Input
@@ -103,11 +103,11 @@ const SharingDialog: FC<SharingDialogProps> = ({app, open, onOpenChange, orgId})
             </div>
           </div>
 
-          {/* App Store Information */}
+          {/* Mentra MiniApp Store Information */}
           <div className="bg-blue-50 border border-blue-200 p-3 rounded-md">
-            <p className="text-sm text-blue-900 font-medium mb-2">View in MentraOS App Store</p>
+            <p className="text-sm text-blue-900 font-medium mb-2">View in Mentra MiniApp Store</p>
             <p className="text-xs text-blue-700 mb-3">
-              You can also visit the app store and search for the exact package name to see how your app appears to
+              You can also visit the Mentra MiniApp Store and search for the exact package name to see how your MiniApp appears to
               others.
             </p>
             <a
@@ -116,7 +116,7 @@ const SharingDialog: FC<SharingDialogProps> = ({app, open, onOpenChange, orgId})
               rel="noopener noreferrer"
               className="inline-flex items-center gap-2 text-sm text-blue-600 hover:text-blue-800 hover:underline">
               <ExternalLink className="h-4 w-4" />
-              Open in App Store
+              Open in Mentra MiniApp Store
             </a>
             <div className="mt-2 pt-2 border-t border-blue-200">
               <div className="flex items-center justify-between gap-2">

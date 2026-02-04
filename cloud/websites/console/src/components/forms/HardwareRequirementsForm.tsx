@@ -101,7 +101,7 @@ const HardwareRequirementItem: React.FC<HardwareRequirementItemProps> = ({
               variant="ghost"
               size="sm"
               type="button"
-              className="h-8 w-8 p-0 text-red-600 hover:text-red-700">
+              className="h-8 w-8 p-0 text-muted-foreground hover:text-foreground">
               <Trash2 className="h-4 w-4" />
             </Button>
           </div>
@@ -129,7 +129,7 @@ const HardwareRequirementItem: React.FC<HardwareRequirementItemProps> = ({
                 variant="ghost"
                 size="sm"
                 type="button"
-                className="h-8 w-8 p-0 text-red-600 hover:text-red-700">
+                className="h-8 w-8 p-0 text-muted-foreground hover:text-foreground">
                 <Trash2 className="h-4 w-4" />
               </Button>
             </div>
@@ -274,14 +274,7 @@ const HardwareRequirementsForm: React.FC<HardwareRequirementsFormProps> = ({requ
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-3">
-        <div>
-          <h3 className="text-lg font-medium flex items-center gap-2">
-            <Cpu className="h-5 w-5" />
-            Hardware Requirements
-          </h3>
-          <p className="text-sm text-gray-600">Specify hardware components your app needs to function properly.</p>
-        </div>
+      <div className="flex items-center justify-end mb-3">
         <Button
           onClick={addRequirement}
           size="sm"
@@ -289,7 +282,7 @@ const HardwareRequirementsForm: React.FC<HardwareRequirementsFormProps> = ({requ
           className="h-8 px-3"
           disabled={getAvailableHardwareTypes().length === 0}>
           <Plus className="h-4 w-4 mr-1" />
-          {getAvailableHardwareTypes().length === 0 ? "All Added" : "Add Hardware"}
+          {getAvailableHardwareTypes().length === 0 ? "All Added" : "Add Requirement"}
         </Button>
       </div>
 

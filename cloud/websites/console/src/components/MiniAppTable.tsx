@@ -1,4 +1,4 @@
-// components/AppTable.tsx
+// components/MiniAppTable.tsx
 import {useEffect, useState, type FC} from "react"
 import {useNavigate} from "react-router-dom"
 import {Button} from "@/components/ui/button"
@@ -18,7 +18,7 @@ import DeleteDialog from "./dialogs/DeleteDialog"
 import PublishDialog from "./dialogs/PublishDialog"
 import InstallDialog from "./dialogs/InstallDialog"
 
-interface AppTableProps {
+interface MiniAppTableProps {
   apps: AppResponse[]
   isLoading: boolean
   error: string | null
@@ -29,7 +29,7 @@ interface AppTableProps {
   onAppUpdated?: (updatedApp: AppResponse) => void
 }
 
-const AppTable: FC<AppTableProps> = ({
+const MiniAppTable: FC<MiniAppTableProps> = ({
   apps,
   isLoading,
   error,
@@ -108,15 +108,15 @@ const AppTable: FC<AppTableProps> = ({
     <Card>
       <CardHeader className="pb-2 flex flex-row items-center justify-between">
         <div>
-          <CardTitle className="text-lg">Your Apps</CardTitle>
-          <CardDescription>Manage your apps</CardDescription>
+          <CardTitle className="text-lg">Your MiniApps</CardTitle>
+          <CardDescription>Manage your MiniApps</CardDescription>
         </div>
         {(showSearch || showViewAll) && (
           <div className="flex items-center gap-4">
             {showSearch && (
               <div className="w-64">
                 <Input
-                  placeholder="Search your apps..."
+                  placeholder="Search your MiniApps..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                 />
@@ -135,7 +135,7 @@ const AppTable: FC<AppTableProps> = ({
           {isLoading ? (
             <div className="p-8 text-center">
               <div className="animate-spin mx-auto h-8 w-8 border-t-2 border-b-2 border-blue-500 rounded-full"></div>
-              <p className="mt-2 text-gray-500">Loading Apps...</p>
+              <p className="mt-2 text-gray-500">Loading MiniApps...</p>
             </div>
           ) : error ? (
             <div className="p-8 text-center text-red-500">
@@ -238,12 +238,12 @@ const AppTable: FC<AppTableProps> = ({
                                 variant="outline"
                                 size="sm"
                                 onClick={() => navigate(`/apps/${app.packageName}/edit`)}
-                                title="Edit App">
+                                title="Edit MiniApp">
                                 <Edit className="h-4 w-4" />
                               </Button>
                             </TooltipTrigger>
                             <TooltipContent>
-                              <p>Edit App</p>
+                              <p>Edit MiniApp</p>
                             </TooltipContent>
                           </Tooltip>
 
@@ -325,12 +325,12 @@ const AppTable: FC<AppTableProps> = ({
                                   setSelectedApp(app)
                                   setIsDeleteDialogOpen(true)
                                 }}
-                                title="Delete App">
+                                title="Delete MiniApp">
                                 <Trash className="h-4 w-4" />
                               </Button>
                             </TooltipTrigger>
                             <TooltipContent>
-                              <p>Delete App</p>
+                              <p>Delete MiniApp</p>
                             </TooltipContent>
                           </Tooltip>
                         </div>
@@ -340,7 +340,7 @@ const AppTable: FC<AppTableProps> = ({
                 ) : (
                   <TableRow>
                     <TableCell colSpan={5} className="text-center py-6 text-gray-500">
-                      {searchQuery ? "No apps match your search criteria" : "No apps to display"}
+                      {searchQuery ? "No MiniApps match your search criteria" : "No MiniApps to display"}
                     </TableCell>
                   </TableRow>
                 )}
@@ -359,10 +359,10 @@ const AppTable: FC<AppTableProps> = ({
 
         {hasNoApps && !isLoading && !error && !searchQuery && (
           <div className="p-6 text-center">
-            <p className="text-gray-500 mb-4">Get started by creating your first app</p>
+            <p className="text-gray-500 mb-4">Get started by creating your first MiniApp</p>
             <Button onClick={() => navigate("/apps/create")} className="gap-2">
               <Plus className="h-4 w-4" />
-              Create App
+              Create MiniApp
             </Button>
           </div>
         )}
@@ -433,4 +433,4 @@ const AppTable: FC<AppTableProps> = ({
   )
 }
 
-export default AppTable
+export default MiniAppTable

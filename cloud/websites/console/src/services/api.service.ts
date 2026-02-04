@@ -701,6 +701,27 @@ const api = {
       const response = await axios.patch(`/api/dev/apps/${packageName}/share-emails`, { emails });
       return response.data;
     },
+
+    /**
+     * Verify that a server URL is reachable by checking its /health endpoint
+     * @param url - The server URL to verify
+     * @returns Object with reachable status and message
+     */
+    verifyServerUrl: async (url: string): Promise<{ reachable: boolean; message: string }> => {
+      try {
+        const response = await axios.post("/api/apps/verify-url", { url });
+        return response.data;
+      } catch (error: unknown) {
+        // If the endpoint doesn't exist yet, return a graceful error
+        if (axios.isAxiosError(error) && error.response?.status === 404) {
+          return {
+            reachable: false,
+            message: "URL verification not available",
+          };
+        }
+        throw error;
+      }
+    },
   },
 
   // Image upload endpoints for cloud storage

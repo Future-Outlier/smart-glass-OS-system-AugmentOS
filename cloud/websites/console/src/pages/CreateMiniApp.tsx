@@ -1,26 +1,11 @@
-// pages/CreateApp.tsx
+// pages/CreateMiniApp.tsx
 import { useState } from "react";
 import { AxiosError } from "axios";
 import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardFooter,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { Link, useNavigate } from "react-router-dom";
 import { ArrowLeftIcon, AlertCircle, CheckCircle } from "lucide-react";
 import DashboardLayout from "../components/DashboardLayout";
@@ -29,14 +14,17 @@ import AppSuccessDialog from "../components/dialogs/AppSuccessDialog";
 import api, { AppResponse } from "@/services/api.service";
 
 import { normalizeUrl } from "@/libs/utils";
-import PermissionsForm from "../components/forms/PermissionsForm";
-import HardwareRequirementsForm from "../components/forms/HardwareRequirementsForm";
+import { PermissionsSection } from "../components/forms/PermissionsSection";
+import { HardwareRequirementsSection } from "../components/forms/HardwareRequirementsSection";
+import { AppTypeSelect } from "../components/forms/AppTypeSelect";
+import { ServerUrlField } from "../components/forms/ServerUrlField";
 import { Permission, PermissionType } from "@/types/app";
 import { AppI, HardwareRequirement } from "@mentra/sdk";
 import { useOrgStore } from "@/stores/orgs.store";
 import { App } from "@/types/app";
 import ImageUpload from "../components/forms/ImageUpload";
-import AppTypeTooltip from "../components/forms/AppTypeTooltip";
+import { WebviewUrlToggle } from "../components/forms/WebviewUrlToggle";
+import { FormSection } from "../components/ui/FormSection";
 // import { useAppStore } from "@/stores/apps.store";
 
 enum AppType {
@@ -44,9 +32,9 @@ enum AppType {
   BACKGROUND = "background",
 }
 /**
- * Page for creating a new App (Third Party Application)
+ * Page for creating a new MiniApp
  */
-const CreateApp: React.FC = () => {
+const CreateMiniApp: React.FC = () => {
   const navigate = useNavigate();
   const selectedOrgId = useOrgStore((s) => s.selectedOrgId);
   const orgs = useOrgStore((s) => s.orgs);
@@ -58,7 +46,6 @@ const CreateApp: React.FC = () => {
     packageName: "",
     name: "",
     description: "",
-    onboardingInstructions: "",
     publicUrl: "",
     logoURL: "",
     webviewURL: "",
@@ -263,14 +250,26 @@ const CreateApp: React.FC = () => {
 
     try {
       // Prepare App data
+      // If webviewURL is empty, use the default based on publicUrl
+      let finalWebviewUrl = formData.webviewURL;
+      if (!finalWebviewUrl && formData.publicUrl) {
+        try {
+          const normalizedServerUrl = normalizeUrl(formData.publicUrl);
+          const base = normalizedServerUrl.replace(/\/$/, "");
+          finalWebviewUrl = `${base}/webview`;
+        } catch {
+          // If normalization fails, leave empty
+          finalWebviewUrl = "";
+        }
+      }
+
       const appData: Partial<App> = {
         packageName: formData.packageName,
         name: formData.name,
         description: formData.description,
-        onboardingInstructions: formData.onboardingInstructions,
         publicUrl: formData.publicUrl,
         logoURL: formData.logoURL,
-        webviewURL: formData.webviewURL,
+        webviewURL: finalWebviewUrl,
         appType: formData.appType,
         permissions: formData.permissions,
         hardwareRequirements: formData.hardwareRequirements,
@@ -357,27 +356,27 @@ const CreateApp: React.FC = () => {
             className="flex items-center text-sm text-gray-500 hover:text-gray-700"
           >
             <ArrowLeftIcon className="mr-1 h-4 w-4" />
-            Back to Apps
+            Back to MiniApps
           </Link>
         </div>
 
-        <Card className="shadow-sm card border-2 transition-colors duration-300">
+        <div>
           <form onSubmit={handleSubmit}>
-            <CardHeader>
-              <CardTitle className="text-2xl">Create New App</CardTitle>
-              <CardDescription>
-                Fill out the form below to register your app for MentraOS.
-              </CardDescription>
+            <div className="mb-8">
+              <h1 className="text-2xl font-semibold tracking-tight">Create New MiniApp</h1>
+              <p className="text-muted-foreground mt-1">
+                Fill out the form below to register your MiniApp for MentraOS.
+              </p>
               {currentOrg && (
-                <div className="mt-2 text-sm mb-3">
+                <div className="mt-3 text-sm">
                   <span className="text-gray-500">
                     Creating in organization:{" "}
                   </span>
                   <span className="font-medium">{currentOrg.name}</span>
                 </div>
               )}
-            </CardHeader>
-            <CardContent className="space-y-6 pb-5">
+            </div>
+            <div className="space-y-8">
               {formError && (
                 <Alert variant="destructive">
                   <AlertCircle className="h-4 w-4" />
@@ -385,233 +384,169 @@ const CreateApp: React.FC = () => {
                 </Alert>
               )}
 
-              <div className="space-y-2">
-                <Label htmlFor="packageName">
-                  Package Name <span className="text-red-500">*</span>
-                </Label>
-                <Input
-                  id="packageName"
-                  name="packageName"
-                  value={formData.packageName}
-                  onChange={handleChange}
-                  placeholder="e.g., org.example.myapp"
-                  className={errors.packageName ? "border-red-500" : ""}
-                />
-                {errors.packageName && (
-                  <p className="text-xs text-red-500 mt-1">
-                    {errors.packageName}
+              {/* MiniApp Distribution Section */}
+              <FormSection
+                title="MiniApp Distribution"
+                description="Core details for your MiniApp listing in the Mentra MiniApp Store"
+                helpLink={{ text: "Publishing Guide", href: "https://docs.mentraglass.com/app-devs/getting-started/overview" }}
+              >
+                <div className="space-y-2">
+                  <Label htmlFor="packageName">
+                    Package Name <span className="text-red-500">*</span>
+                  </Label>
+                  <Input
+                    id="packageName"
+                    name="packageName"
+                    value={formData.packageName}
+                    onChange={handleChange}
+                    placeholder="e.g., org.example.myapp"
+                    className={errors.packageName ? "border-red-500" : ""}
+                  />
+                  {errors.packageName && (
+                    <p className="text-xs text-red-500 mt-1">
+                      {errors.packageName}
+                    </p>
+                  )}
+                  <p className="text-xs text-gray-500">
+                    Must use lowercase letters, numbers, dots, and hyphens only.
+                    This is a unique identifier and cannot be changed later.
                   </p>
-                )}
-                <p className="text-xs text-gray-500">
-                  Must use lowercase letters, numbers, dots, and hyphens only.
-                  This is a unique identifier and cannot be changed later.
-                </p>
-              </div>
+                </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="name">
-                  Display Name <span className="text-red-500">*</span>
-                </Label>
-                <Input
-                  id="name"
-                  name="name"
-                  value={formData.name}
-                  onChange={handleChange}
-                  placeholder="e.g., My Awesome App"
-                  className={errors.name ? "border-red-500" : ""}
-                />
-                {errors.name && (
-                  <p className="text-xs text-red-500 mt-1">{errors.name}</p>
-                )}
-                <p className="text-xs text-gray-500">
-                  The name that will be displayed to users in the MentraOS app
-                  store.
-                </p>
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="description">
-                  Description <span className="text-red-500">*</span>
-                </Label>
-                <Textarea
-                  id="description"
-                  name="description"
-                  value={formData.description}
-                  onChange={handleChange}
-                  placeholder="Describe what your app does..."
-                  rows={3}
-                  className={errors.description ? "border-red-500" : ""}
-                />
-                {errors.description && (
-                  <p className="text-xs text-red-500 mt-1">
-                    {errors.description}
+                <div className="space-y-2">
+                  <Label htmlFor="name">
+                    Display Name <span className="text-red-500">*</span>
+                  </Label>
+                  <Input
+                    id="name"
+                    name="name"
+                    value={formData.name}
+                    onChange={handleChange}
+                    placeholder="e.g., My Awesome MiniApp"
+                    className={errors.name ? "border-red-500" : ""}
+                  />
+                  {errors.name && (
+                    <p className="text-xs text-red-500 mt-1">{errors.name}</p>
+                  )}
+                  <p className="text-xs text-gray-500">
+                    The name that will be displayed to users in the Mentra MiniApp
+                    Store.
                   </p>
-                )}
-                <p className="text-xs text-gray-500">
-                  Provide a clear, concise description of your
-                  application&apos;s functionality.
-                </p>
-              </div>
+                </div>
 
-              {/* Onboarding Instructions Section */}
-              <div className="space-y-2">
-                <Label htmlFor="onboardingInstructions">
-                  Onboarding Instructions (Optional)
-                </Label>
-                <Textarea
-                  id="onboardingInstructions"
-                  name="onboardingInstructions"
-                  value={formData.onboardingInstructions || ""}
-                  onChange={handleChange}
-                  placeholder="Describe the onboarding steps for your app"
-                  rows={3}
-                  maxLength={2000}
-                  style={{ maxHeight: "8em", overflowY: "auto" }}
-                />
-                <p className="text-xs text-gray-500">
-                  Provide onboarding instructions that will be shown to users
-                  the first time they launch your app. Maximum 5 lines.
-                </p>
-              </div>
+                <div className="space-y-2">
+                  <Label htmlFor="description">
+                    Description <span className="text-red-500">*</span>
+                  </Label>
+                  <Textarea
+                    id="description"
+                    name="description"
+                    value={formData.description}
+                    onChange={handleChange}
+                    placeholder="Describe what your app does..."
+                    rows={3}
+                    className={errors.description ? "border-red-500" : ""}
+                  />
+                  {errors.description && (
+                    <p className="text-xs text-red-500 mt-1">
+                      {errors.description}
+                    </p>
+                  )}
+                  <p className="text-xs text-gray-500">
+                    Provide a clear, concise description of your
+                    application&apos;s functionality.
+                  </p>
+                </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="publicUrl">
-                  Server URL <span className="text-red-500">*</span>
-                </Label>
-                <Input
-                  id="publicUrl"
-                  name="publicUrl"
-                  value={formData.publicUrl}
+                <div className="space-y-2">
+                  <Label htmlFor="logoURL">
+                    MiniApp Logo <span className="text-red-500">*</span>
+                  </Label>
+                  <ImageUpload
+                    currentImageUrl={formData.logoURL}
+                    onImageUploaded={(url) => {
+                      setFormData((prev) => ({
+                        ...prev,
+                        logoURL: url,
+                      }));
+                      // Clear error when image is uploaded
+                      if (errors.logoURL) {
+                        setErrors((prev) => {
+                          const newErrors = { ...prev };
+                          delete newErrors.logoURL;
+                          return newErrors;
+                        });
+                      }
+                    }}
+                    packageName={formData.packageName}
+                    disabled={isLoading}
+                    hasError={!!errors.logoURL}
+                    errorMessage={errors.logoURL}
+                  />
+                  <p className="text-xs text-gray-500">
+                    Upload an image that will be used as your MiniApp&apos;s icon
+                    (recommended: 512x512 PNG).
+                  </p>
+                </div>
+              </FormSection>
+
+              {/* MiniApp Configuration Section */}
+              <FormSection
+                title="MiniApp Configuration"
+                description="Configure how MentraOS connects to your MiniApp server"
+                helpLink={{ text: "Server Setup Guide", href: "https://docs.mentraglass.com/app-devs/getting-started/deployment/overview" }}
+              >
+                <ServerUrlField
+                  value={formData.publicUrl || ""}
                   onChange={handleChange}
                   onBlur={handleUrlBlur}
-                  placeholder="yourserver.com"
-                  className={errors.publicUrl ? "border-red-500" : ""}
+                  error={errors.publicUrl}
+                  required
                 />
-                {errors.publicUrl && (
-                  <p className="text-xs text-red-500 mt-1">
-                    {errors.publicUrl}
-                  </p>
-                )}
-                <p className="text-xs text-gray-500">
-                  The base URL of your server where MentraOS will communicate
-                  with your app. We&apos;ll automatically append
-                  &quot;/webhook&quot; to handle events when your app is
-                  activated. HTTPS is required and will be added automatically
-                  if not specified. Do not include a trailing slash - it will be
-                  automatically removed.
-                </p>
-              </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="logoURL">
-                  Logo URL <span className="text-red-500">*</span>
-                </Label>
-                <ImageUpload
-                  currentImageUrl={formData.logoURL}
-                  onImageUploaded={(url) => {
+                <WebviewUrlToggle
+                  value={formData.webviewURL || ""}
+                  serverUrl={formData.publicUrl || ""}
+                  onChange={(value) => {
                     setFormData((prev) => ({
                       ...prev,
-                      logoURL: url,
+                      webviewURL: value,
                     }));
-                    // Clear error when image is uploaded
-                    if (errors.logoURL) {
+                    // Clear error when changed
+                    if (errors.webviewURL) {
                       setErrors((prev) => {
                         const newErrors = { ...prev };
-                        delete newErrors.logoURL;
+                        delete newErrors.webviewURL;
                         return newErrors;
                       });
                     }
                   }}
-                  packageName={formData.packageName}
-                  disabled={isLoading}
-                  hasError={!!errors.logoURL}
-                  errorMessage={errors.logoURL}
-                />
-                {/* Note: The actual Cloudflare URL is stored in logoURL but not displayed to the user */}
-                <p className="text-xs text-gray-500">
-                  Upload an image that will be used as your app&apos;s icon
-                  (recommended: 512x512 PNG).
-                </p>
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="webviewURL">Webview URL (Optional)</Label>
-                <Input
-                  id="webviewURL"
-                  name="webviewURL"
-                  value={formData.webviewURL || ""}
-                  onChange={handleChange}
                   onBlur={handleUrlBlur}
-                  placeholder="yourserver.com/webview"
-                  className={errors.webviewURL ? "border-red-500" : ""}
+                  hasError={!!errors.webviewURL}
+                  errorMessage={errors.webviewURL}
+                  disabled={isLoading}
                 />
-                {errors.webviewURL && (
-                  <p className="text-xs text-red-500 mt-1">
-                    {errors.webviewURL}
-                  </p>
-                )}
-                <p className="text-xs text-gray-500">
-                  If your app has a companion mobile interface, provide the URL
-                  here. HTTPS is required and will be added automatically if not
-                  specified.
-                </p>
-              </div>
 
-              {/* App Type Selection */}
-              <div className="space-y-2 pb-5">
-                <div className="flex items-center gap-2">
-                  <Label htmlFor="appType">App Type</Label>
-                  <AppTypeTooltip />
-                </div>
-                <p className="text-xs text-gray-500">
-                  Background apps can run alongside other apps,
-                  <br />
-                  Only 1 foreground app can run at a time.
-                  <br />
-                  foreground apps yield the display to background apps when
-                  displaying content.
-                </p>
-                <Select
-                  value={formData.appType}
-                  onValueChange={handleAppTypeChange}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select app type" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value={AppType.BACKGROUND}>
-                      <div className="flex flex-col">
-                        <span className="font-medium">Background App</span>
-                        {/* <span className="text-xs text-gray-500">Multiple can run simultaneously</span> */}
-                      </div>
-                    </SelectItem>
-                    <SelectItem value={AppType.STANDARD}>
-                      <div className="flex flex-col">
-                        <span className="font-medium">Foreground App</span>
-                        {/* <span className="text-xs text-gray-500">Only one can run at a time</span> */}
-                      </div>
-                    </SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
+                <AppTypeSelect
+                  value={formData.appType || "background"}
+                  onChange={handleAppTypeChange}
+                />
 
-              {/* Permissions Section */}
-              <div className="mt-6">
-                <PermissionsForm
+                {/* Permissions */}
+                <PermissionsSection
                   permissions={formData.permissions || []}
                   onChange={handlePermissionsChange}
                 />
-              </div>
 
-              {/* Hardware Requirements Section */}
-              <div className="mt-6 border rounded-md p-4">
-                <HardwareRequirementsForm
+                {/* Minimum Hardware Requirements */}
+                <HardwareRequirementsSection
                   requirements={formData.hardwareRequirements || []}
                   onChange={handleHardwareRequirementsChange}
                 />
-              </div>
-            </CardContent>
-            <CardFooter className="flex justify-between border-t p-6">
+              </FormSection>
+
+            </div>
+            <div className="flex justify-between mt-8 pt-6 border-t">
               <Button
                 variant="outline"
                 type="button"
@@ -620,13 +555,13 @@ const CreateApp: React.FC = () => {
                 Back
               </Button>
               <Button type="submit" disabled={isLoading}>
-                {isLoading ? "Creating..." : "Create App"}
+                {isLoading ? "Creating..." : "Create MiniApp"}
               </Button>
-            </CardFooter>
+            </div>
           </form>
 
           {successMessage && (
-            <div className="m-4 mb-0">
+            <div className="mt-6">
               <Alert className="bg-green-100 border-1 border-green-500 text-green-800 shadow-md">
                 <CheckCircle className="h-5 w-5 text-green-800" />
                 <div>
@@ -648,14 +583,14 @@ const CreateApp: React.FC = () => {
                       onClick={() => navigate("/apps")}
                       className="border-green-500 text-green-700 hover:bg-green-50"
                     >
-                      Go to My Apps
+                      Go to My MiniApps
                     </Button>
                   </div>
                 </div>
               </Alert>
             </div>
           )}
-        </Card>
+        </div>
       </div>
 
       {/* API Key Dialog after successful creation */}
@@ -686,4 +621,4 @@ const CreateApp: React.FC = () => {
   );
 };
 
-export default CreateApp;
+export default CreateMiniApp;

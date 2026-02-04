@@ -203,7 +203,7 @@ const ToolItem: React.FC<ToolItemProps> = ({
               variant="ghost"
               size="sm"
               type="button"
-              className="h-8 w-8 p-0 text-red-600 hover:text-red-700"
+              className="h-8 w-8 p-0 text-muted-foreground hover:text-foreground"
             >
               <Trash2 className="h-4 w-4" />
             </Button>
@@ -233,7 +233,7 @@ const ToolItem: React.FC<ToolItemProps> = ({
                 variant="ghost"
                 size="sm"
                 type="button"
-                className="h-8 w-8 p-0 text-red-600 hover:text-red-700"
+                className="h-8 w-8 p-0 text-muted-foreground hover:text-foreground"
               >
                 <Trash2 className="h-4 w-4" />
               </Button>
@@ -331,7 +331,7 @@ const ToolItem: React.FC<ToolItemProps> = ({
                             variant="ghost"
                             size="sm"
                             type="button"
-                            className="text-red-600"
+                            className="text-muted-foreground hover:text-foreground"
                           >
                             <Trash2 className="h-4 w-4" />
                           </Button>
@@ -594,16 +594,7 @@ const ToolsEditor: React.FC<ToolsEditorProps> = ({
 
   return (
     <div className={className}>
-      <div className="flex items-center justify-between mb-3">
-        <div>
-          <h3 className="text-lg font-medium flex items-center gap-2">
-            <Brain className="h-5 w-5" />
-            AI Tools
-          </h3>
-          <p className="text-sm text-gray-600">
-            Define AI tools for voice interactions
-          </p>
-        </div>
+      <div className="flex items-center justify-end mb-3">
         <Button onClick={addTool} size="sm" type="button" className="h-8 px-3">
           <Plus className="h-4 w-4 mr-1" />
           Add Tool

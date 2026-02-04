@@ -1,17 +1,17 @@
-// pages/AppList.tsx
+// pages/MiniAppList.tsx
 import { useEffect, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
 import { Plus } from "lucide-react";
 import DashboardLayout from "../components/DashboardLayout";
-import AppTable from "../components/AppTable";
+import MiniAppTable from "../components/MiniAppTable";
 import { useOrgStore } from "@/stores/orgs.store";
 import { useAppStore } from "@/stores/apps.store";
 import type { AppResponse } from "@/services/api.service";
 
 const DEBUG = false;
 
-const AppList: React.FC = () => {
+const MiniAppList: React.FC = () => {
   const navigate = useNavigate();
   const selectedOrgId = useOrgStore((s) => s.selectedOrgId);
 
@@ -30,9 +30,9 @@ const AppList: React.FC = () => {
   // Fetch Apps when org selection changes
   useEffect(() => {
     // Debug logs to verify effect triggers on org change
-    console.log("[AppList] effect:orgChange", { selectedOrgId });
+    console.log("[MiniAppList] effect:orgChange", { selectedOrgId });
     if (selectedOrgId) {
-      console.log("[AppList] fetchApps call", { selectedOrgId });
+      console.log("[MiniAppList] fetchApps call", { selectedOrgId });
       fetchApps({ orgId: selectedOrgId });
     }
   }, [selectedOrgId, fetchApps]);
@@ -41,10 +41,10 @@ const AppList: React.FC = () => {
     <DashboardLayout>
       <div className="max-w-7xl mx-auto">
         <div className="flex items-center justify-between mb-6">
-          <h1 className="text-2xl font-semibold text-gray-900">My Apps</h1>
+          <h1 className="text-2xl font-semibold text-gray-900">My MiniApps</h1>
           <Button className="gap-2" onClick={() => navigate("/apps/create")}>
             <Plus className="h-4 w-4" />
-            Create App
+            Create MiniApp
           </Button>
         </div>
 
@@ -66,7 +66,7 @@ const AppList: React.FC = () => {
           </div>
         )}
 
-        <AppTable
+        <MiniAppTable
           apps={apps}
           isLoading={loading}
           error={error}
@@ -78,4 +78,4 @@ const AppList: React.FC = () => {
   );
 };
 
-export default AppList;
+export default MiniAppList;

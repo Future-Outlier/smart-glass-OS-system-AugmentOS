@@ -152,7 +152,7 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({children}) => {
                   d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"
                 />
               </svg>
-              My Apps
+              My MiniApps
             </Link>
             <Link
               to="/org-settings"
@@ -220,6 +220,29 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({children}) => {
                 />
               </svg>
               CLI Keys
+            </Link>
+
+            <Link
+              to="/store-guidelines"
+              className={`flex items-center px-3 py-2 text-sm font-medium rounded-md ${
+                isActivePath("/store-guidelines")
+                  ? "bg-gray-200 text-gray-900"
+                  : "text-gray-600 hover:bg-gray-200 hover:text-gray-900"
+              }`}>
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                className="mr-3 h-5 w-5"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor">
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"
+                />
+              </svg>
+              Store Guidelines
             </Link>
 
             <Link

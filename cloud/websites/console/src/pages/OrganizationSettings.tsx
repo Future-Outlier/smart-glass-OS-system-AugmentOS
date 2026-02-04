@@ -406,7 +406,7 @@ const OrganizationSettings: React.FC = () => {
                 <CardTitle className="text-2xl">Organization Settings</CardTitle>
                 <CardDescription>
                   {isAdmin
-                    ? "Update your organization information which will be displayed on your app's page in the App Store."
+                    ? "Update your organization information which will be displayed on your MiniApp's page in the Mentra MiniApp Store."
                     : "View organization information (read-only). Only administrators can update these settings."}
                 </CardDescription>
               </CardHeader>

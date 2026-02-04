@@ -11,14 +11,15 @@ import LandingPage from "./pages/LandingPage"
 import DashboardHome from "./pages/DashboardHome"
 
 import LoginOrSignup from "./pages/AuthPage"
-import AppList from "./pages/AppList"
-import CreateApp from "./pages/CreateApp"
-import EditApp from "./pages/EditApp"
+import MiniAppList from "./pages/MiniAppList"
+import CreateMiniApp from "./pages/CreateMiniApp"
+import EditMiniApp from "./pages/EditMiniApp"
 import OrganizationSettings from "./pages/OrganizationSettings"
 import Members from "./pages/Members"
 import AdminPanel from "./pages/AdminPanel"
 import NotFound from "./pages/NotFound"
 import CLIKeys from "./pages/CLIKeys"
+import StoreGuidelines from "./pages/StoreGuidelines"
 import {AuthProvider, useAuth, ForgotPasswordPage, ResetPasswordPage} from "@mentra/shared"
 import {OrganizationProvider} from "./context/OrganizationContext"
 import {useAccountStore} from "./stores/account.store"
@@ -164,7 +165,7 @@ const AppShell: React.FC = () => {
           path="/apps"
           element={
             <ProtectedRoute>
-              <AppList />
+              <MiniAppList />
             </ProtectedRoute>
           }
         />
@@ -172,7 +173,7 @@ const AppShell: React.FC = () => {
           path="/apps/create"
           element={
             <ProtectedRoute>
-              <CreateApp />
+              <CreateMiniApp />
             </ProtectedRoute>
           }
         />
@@ -180,7 +181,7 @@ const AppShell: React.FC = () => {
           path="/apps/:packageName/edit"
           element={
             <ProtectedRoute>
-              <EditApp />
+              <EditMiniApp />
             </ProtectedRoute>
           }
         />
@@ -208,6 +209,15 @@ const AppShell: React.FC = () => {
           element={
             <ProtectedRoute>
               <CLIKeys />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/store-guidelines"
+          element={
+            <ProtectedRoute>
+              <StoreGuidelines />
             </ProtectedRoute>
           }
         />

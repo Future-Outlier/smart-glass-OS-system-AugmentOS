@@ -30,10 +30,10 @@ const LandingPage: React.FC = () => {
             <img src="/g1.webp" alt="Hero" className="w-96" />
           </div>
           <h1 className="text-4xl md:text-6xl font-bold mb-6">
-            MentraOS is the best way to build apps for smart glasses.
+            MentraOS is the best way to build MiniApps for smart glasses.
           </h1>
           <p className="text-xl md:text-2xl text-gray-600 mb-10 max-w-3xl mx-auto">
-            Build and deploy your own apps for smart glasses in minutes, not months.
+            Build and deploy your own MiniApps for smart glasses in minutes, not months.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <a
@@ -83,7 +83,7 @@ const LandingPage: React.FC = () => {
                 <div className="border bg-white rounded-lg p-6 h-full">
                   <h3 className="text-xl font-medium mb-2">Create</h3>
                   <p className="text-gray-600">
-                    Define your app using our simple web interface.
+                    Define your MiniApp using our simple web interface.
                   </p>
                 </div>
               </div>

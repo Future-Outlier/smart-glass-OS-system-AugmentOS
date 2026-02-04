@@ -31,8 +31,8 @@ export function ContactEmailBanner() {
           </h3>
           <div className="mt-2 text-sm text-yellow-700">
             <p>
-              Your organization needs a contact email before you can publish apps.
-              This email will be used for app store communications and user support.
+              Your organization needs a contact email before you can publish MiniApps.
+              This email will be used for Mentra MiniApp Store communications and user support.
             </p>
           </div>
           <div className="mt-3">

@@ -205,7 +205,7 @@ const CreateOrgDialog: React.FC<CreateOrgDialogProps> = ({
                 disabled={isCreating}
               />
               <p className="text-xs text-muted-foreground">
-                This will be displayed as the developer name in the App Store.
+                This will be displayed as the developer name in the Mentra MiniApp Store.
               </p>
             </div>
 
