@@ -1210,29 +1210,9 @@ export class AppManager {
       const user = await User.findOrCreateUser(this.userSession.userId);
       const userSettings = user.getAppSettings(packageName) || app?.settings || [];
 
-      // Load MentraOS system settings from UserSettings model (the new source of truth)
-      // Map from REST keys (snake_case) to SDK keys (camelCase) for backward compatibility
-      // Keys must match exactly what mobile sends (see mobile/src/stores/settings.ts)
-      const settingsSnapshot = this.userSession.userSettingsManager.getSnapshot();
-      // preferred_mic is indexed by device (stored as preferred_mic:<deviceId>)
-      const preferredMic = this.userSession.userSettingsManager.getIndexedSetting("preferred_mic") ?? "auto";
-      const mentraosSettings = {
-        // Primary settings apps care about
-        metricSystemEnabled: settingsSnapshot.metric_system ?? false,
-        contextualDashboard: settingsSnapshot.contextual_dashboard ?? true,
-        headUpAngle: settingsSnapshot.head_up_angle ?? 45,
-        brightness: settingsSnapshot.brightness ?? 50,
-        autoBrightness: settingsSnapshot.auto_brightness ?? true,
-        sensingEnabled: settingsSnapshot.sensing_enabled ?? true,
-        alwaysOnStatusBar: settingsSnapshot.always_on_status_bar ?? false,
-        // Mobile uses "_for_debugging" suffix for these keys
-        bypassVad: settingsSnapshot.bypass_vad_for_debugging ?? false,
-        bypassAudioEncoding: settingsSnapshot.bypass_audio_encoding_for_debugging ?? false,
-        // Mobile uses preferred_mic indexed by device (e.g., preferred_mic:G1)
-        preferredMic: preferredMic,
-        // Legacy key for backward compat (derived from preferred_mic)
-        useOnboardMic: preferredMic === "glasses",
-      };
+      // Load MentraOS system settings from UserSettingsManager (single source of truth)
+      // Maps from REST keys (snake_case) to SDK keys (camelCase) for backward compatibility
+      const mentraosSettings = this.userSession.userSettingsManager.buildMentraosSettings();
 
       // Send connection acknowledgment with capabilities
       const ackMessage = {
