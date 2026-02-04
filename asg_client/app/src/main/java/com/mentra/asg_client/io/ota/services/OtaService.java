@@ -185,17 +185,27 @@ public class OtaService extends Service {
             // Message is not a number (e.g., "info" messages), ignore
         }
         
-        // MTK install progress is NOT sent to phone - phone already received FINISHED before install started
-        // We only update local notifications and handle SUCCESS/ERROR
+        // Send MTK install progress to phone so user sees real progress during the long install
         switch (event.getStatus()) {
             case STARTED:
                 updateNotification("MTK firmware update started");
+                if (otaHelper != null) {
+                    otaHelper.sendMtkInstallProgressToPhone("STARTED", 0, null);
+                }
                 break;
             case WRITE_PROGRESS:
                 updateNotification("Writing MTK firmware: " + progress + "%");
+                // Send progress to phone (write phase is typically 0-50%)
+                if (otaHelper != null && progress > 0) {
+                    otaHelper.sendMtkInstallProgressToPhone("PROGRESS", progress / 2, null);
+                }
                 break;
             case UPDATE_PROGRESS:
                 updateNotification("Installing MTK firmware: " + progress + "%");
+                // Send progress to phone (update phase is typically 50-100%)
+                if (otaHelper != null && progress > 0) {
+                    otaHelper.sendMtkInstallProgressToPhone("PROGRESS", 50 + (progress / 2), null);
+                }
                 break;
             case SUCCESS:
                 updateNotification("MTK firmware updated successfully");

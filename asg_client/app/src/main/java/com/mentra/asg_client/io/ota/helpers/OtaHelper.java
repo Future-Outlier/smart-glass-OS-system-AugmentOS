@@ -37,6 +37,7 @@ import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.util.stream.Collectors;
+import java.util.concurrent.locks.ReentrantLock;
 
 import com.mentra.asg_client.io.ota.utils.OtaConstants;
 import com.mentra.asg_client.settings.AsgSettings;
@@ -74,10 +75,9 @@ public class OtaHelper {
     private static final String TAG = OtaConstants.TAG;
     private static ConnectivityManager.NetworkCallback networkCallback;
     private static ConnectivityManager connectivityManager;
-    private static volatile boolean isCheckingVersion = false;
+    private static final ReentrantLock versionCheckLock = new ReentrantLock();
     private static volatile boolean isUpdating = false;  // Tracks download/install in progress
     private static volatile boolean isMtkOtaInProgress = false;  // Tracks MTK firmware update in progress
-    private static final Object versionCheckLock = new Object();
     private static volatile long lastVersionCheckTime = 0;  // Track last check time to prevent duplicate network callback triggers
     private static final long NETWORK_CALLBACK_IGNORE_WINDOW_MS = 2000;  // Ignore network callback if check happened within last 2 seconds
     private Handler handler;
@@ -248,6 +248,13 @@ public class OtaHelper {
      */
     public void startOtaFromPhone() {
         Log.i(TAG, "📱 Starting OTA from phone request");
+        
+        // If OTA already in progress, acknowledge but don't restart
+        if (versionCheckLock.isLocked()) {
+            Log.i(TAG, "📱 OTA check already in progress, ignoring duplicate ota_start");
+            return;
+        }
+        
         isPhoneInitiatedOta = true;
         hasNotifiedPhoneOfUpdate = false; // Reset for next check cycle
 
@@ -395,23 +402,22 @@ public class OtaHelper {
         //     return;
         // }
 
-        // Check if version check is already in progress
-        if (isCheckingVersion) {
-            Log.d(TAG, "Version check already in progress, skipping this request");
-            return;
-        }
-
         new Thread(() -> {
-            // Use synchronized block to ensure thread safety
-            synchronized (versionCheckLock) {
-                if (isCheckingVersion || isUpdating) {
-                    Log.d(TAG, "Version check or update already in progress, skipping");
-                    return;
-                }
-                isCheckingVersion = true;
-                // Record timestamp to prevent duplicate network callback triggers
-                lastVersionCheckTime = System.currentTimeMillis();
+            // Try to acquire lock - if already held, another check is in progress
+            if (!versionCheckLock.tryLock()) {
+                Log.d(TAG, "Version check already in progress, skipping this request");
+                return;
             }
+            
+            // Check if update is in progress (separate from version check)
+            if (isUpdating) {
+                Log.d(TAG, "Update already in progress, skipping version check");
+                versionCheckLock.unlock();
+                return;
+            }
+            
+            // Record timestamp to prevent duplicate network callback triggers
+            lastVersionCheckTime = System.currentTimeMillis();
 
             try {
                 // Fetch version info from URL
@@ -473,9 +479,9 @@ public class OtaHelper {
                     sendProgressToPhone(currentUpdateStage, 0, 0, 0, "FAILED", e.getMessage());
                 }
             } finally {
-                // Always reset the flags when done
-                isCheckingVersion = false;
+                // Always release lock and reset flags when done
                 isPhoneInitiatedOta = false;
+                versionCheckLock.unlock();
                 Log.d(TAG, "Version check completed, ready for next check");
             }
         }).start();
