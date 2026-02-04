@@ -920,14 +920,15 @@ public class OtaHelper {
 
         Log.d(TAG, "APK downloaded to: " + apkFile.getAbsolutePath());
 
-        // Emit download finished event
-        EventBus.getDefault().post(DownloadProgressEvent.createFinished(fileSize));
-        sendProgressToPhone("download", 100, fileSize, fileSize, "FINISHED", null);
-        
-        // Immediately check hash after download
+        // IMPORTANT: Verify hash BEFORE declaring download complete to phone
+        // This prevents the phone from thinking download succeeded when it actually failed
         boolean hashOk = verifyApkFile(apkFile.getAbsolutePath(), json);
         Log.d(TAG, "SHA256 verification result: " + hashOk);
+        
         if (hashOk) {
+            // Hash verified - NOW we can declare download finished
+            EventBus.getDefault().post(DownloadProgressEvent.createFinished(fileSize));
+            sendProgressToPhone("download", 100, fileSize, fileSize, "FINISHED", null);
             createMetaDataJson(json, context);
             return true;
         } else {
@@ -936,8 +937,10 @@ public class OtaHelper {
                 boolean deleted = apkFile.delete();
                 Log.d(TAG, "SHA256 mismatch – APK deleted: " + deleted);
             }
-            // Emit download failed event due to hash mismatch
+            // Emit local EventBus event for notification updates
             EventBus.getDefault().post(new DownloadProgressEvent(DownloadProgressEvent.DownloadStatus.FAILED, "SHA256 hash verification failed"));
+            // CRITICAL: Send FAILED status to phone so frontend knows to handle retry
+            sendProgressToPhone("download", 0, 0, 0, "FAILED", "SHA256 hash verification failed - please retry");
             return false;
         }
     }
