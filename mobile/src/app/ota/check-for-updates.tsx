@@ -148,7 +148,7 @@ export default function OtaCheckForUpdatesScreen() {
             <Text tx="ota:noUpdatesAvailable" className="text-sm text-center" style={{color: theme.colors.textDim}} />
           </View>
 
-          <View className="justify-center items-center mb-6">
+          <View className="justify-center items-center">
             <Button preset="primary" tx="common:continue" flexContainer onPress={handleSkip} />
           </View>
         </>
@@ -166,7 +166,7 @@ export default function OtaCheckForUpdatesScreen() {
           <Text tx="ota:checkFailedMessage" className="text-sm text-center" style={{color: theme.colors.textDim}} />
         </View>
 
-        <View className="justify-center items-center mb-6">
+        <View className="justify-center items-center">
           <Button preset="primary" tx="common:continue" flexContainer onPress={handleSkip} />
         </View>
       </>

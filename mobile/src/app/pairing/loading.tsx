@@ -1,30 +1,37 @@
 import {useRoute} from "@react-navigation/native"
-import CoreModule from "core"
+import CoreModule, {PairFailureEvent} from "core"
 import {useEffect, useRef, useState} from "react"
-import {ScrollView, TouchableOpacity, View} from "react-native"
+import {View} from "react-native"
 
-import {Button, Icon, Text} from "@/components/ignite"
+import {Button} from "@/components/ignite"
 import {Header} from "@/components/ignite/Header"
-import {PillButton} from "@/components/ignite/PillButton"
 import {Screen} from "@/components/ignite/Screen"
 import GlassesPairingLoader from "@/components/glasses/GlassesPairingLoader"
 import GlassesTroubleshootingModal from "@/components/glasses/GlassesTroubleshootingModal"
 import {focusEffectPreventBack, useNavigationHistory} from "@/contexts/NavigationHistoryContext"
-import {useCoreStore} from "@/stores/core"
 import {useGlassesStore} from "@/stores/glasses"
-import GlobalEventEmitter from "@/utils/GlobalEventEmitter"
+import {GlassesNotReadyEvent} from "core"
 
 export default function GlassesPairingLoadingScreen() {
   const {replace, goBack} = useNavigationHistory()
   const route = useRoute()
   const {deviceModel, deviceName} = route.params as {deviceModel: string; deviceName?: string}
   const [showTroubleshootingModal, setShowTroubleshootingModal] = useState(false)
-  const [pairingInProgress, setPairingInProgress] = useState(true)
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const failureErrorRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const hasAlertShownRef = useRef(false)
-  const isFullyBooted = useGlassesStore((state) => state.isFullyBooted)
-  const shouldShowBootingMessage = useCoreStore((state) => state.shouldShowBootingMessage)
+  const hasNavigatedRef = useRef(false)
+  const glassesFullyBooted = useGlassesStore((state) => state.fullyBooted)
+  const [showGlassesBooting, setShowGlassesBooting] = useState(false)
+
+  useEffect(() => {
+    let sub = CoreModule.addListener("glasses_not_ready", (_event: GlassesNotReadyEvent) => {
+      setShowGlassesBooting(true)
+    })
+    return () => {
+      sub.remove()
+    }
+  }, [])
 
   focusEffectPreventBack()
 
@@ -34,18 +41,19 @@ export default function GlassesPairingLoadingScreen() {
   }
 
   useEffect(() => {
-    GlobalEventEmitter.on("pair_failure", handlePairFailure)
+    let sub = CoreModule.addListener("pair_failure", (event: PairFailureEvent) => {
+      handlePairFailure(event.error)
+    })
     return () => {
-      GlobalEventEmitter.off("pair_failure", handlePairFailure)
+      sub.remove()
     }
   }, [])
 
   useEffect(() => {
     hasAlertShownRef.current = false
-    setPairingInProgress(true)
 
     timerRef.current = setTimeout(() => {
-      if (!isFullyBooted && !hasAlertShownRef.current) {
+      if (!glassesFullyBooted && !hasAlertShownRef.current) {
         hasAlertShownRef.current = true
       }
     }, 30000)
@@ -57,60 +65,35 @@ export default function GlassesPairingLoadingScreen() {
   }, [])
 
   useEffect(() => {
-    if (!isFullyBooted) return
+    if (!glassesFullyBooted) return
+    if (hasNavigatedRef.current) return
+    hasNavigatedRef.current = true
     if (timerRef.current) clearTimeout(timerRef.current)
     if (failureErrorRef.current) clearTimeout(failureErrorRef.current)
-    replace("/pairing/success", {deviceModel: deviceModel})
-  }, [isFullyBooted, replace, deviceModel])
-
-  if (pairingInProgress) {
-    return (
-      <Screen preset="fixed" safeAreaEdges={["bottom"]}>
-        <Header leftIcon="chevron-left" onLeftPress={goBack} />
-        <View className="flex-1 pb-6">
-          <View className="flex-1 justify-center">
-            <GlassesPairingLoader
-              deviceModel={deviceModel}
-              deviceName={deviceName}
-              onCancel={goBack}
-              isBooting={shouldShowBootingMessage}
-            />
-          </View>
-          <Button
-            preset="secondary"
-            tx="pairing:needMoreHelp"
-            onPress={() => setShowTroubleshootingModal(true)}
-            className="w-full"
-          />
-        </View>
-        <GlassesTroubleshootingModal
-          isVisible={showTroubleshootingModal}
-          onClose={() => setShowTroubleshootingModal(false)}
-          deviceModel={deviceModel}
-        />
-      </Screen>
-    )
-  }
+    setTimeout(() => {
+      replace("/pairing/success", {deviceModel: deviceModel})
+    }, 1000)
+  }, [glassesFullyBooted, replace, deviceModel])
 
   return (
     <Screen preset="fixed" safeAreaEdges={["bottom"]}>
-      <Header
-        leftIcon="chevron-left"
-        onLeftPress={goBack}
-        RightActionComponent={
-          <PillButton text="Help" variant="icon" onPress={() => setShowTroubleshootingModal(true)} className="mr-4" />
-        }
-      />
-      <ScrollView className="flex-1">
-        <View className="items-center justify-start">
-          <TouchableOpacity
-            className="mb-8 mt-5 flex-row items-center justify-center rounded-lg bg-blue-500 px-5 py-3 dark:bg-blue-500"
-            onPress={() => setShowTroubleshootingModal(true)}>
-            <Icon name="help-circle" size={16} color="#FFFFFF" style={{marginRight: 8}} />
-            <Text className="text-base font-bold text-white" tx="pairing:needHelpPairing" />
-          </TouchableOpacity>
+      <Header leftIcon="chevron-left" onLeftPress={goBack} />
+      <View className="flex-1 pb-6">
+        <View className="flex-1 justify-center">
+          <GlassesPairingLoader
+            deviceModel={deviceModel}
+            deviceName={deviceName}
+            isBooting={showGlassesBooting}
+            onCancel={goBack}
+          />
         </View>
-      </ScrollView>
+        <Button
+          preset="secondary"
+          tx="pairing:needMoreHelp"
+          onPress={() => setShowTroubleshootingModal(true)}
+          className="w-full"
+        />
+      </View>
       <GlassesTroubleshootingModal
         isVisible={showTroubleshootingModal}
         onClose={() => setShowTroubleshootingModal(false)}

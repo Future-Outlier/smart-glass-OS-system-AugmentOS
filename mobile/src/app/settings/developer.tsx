@@ -1,5 +1,5 @@
 import {DeviceTypes} from "@/../../cloud/packages/types/src"
-import {ScrollView, View, ViewStyle, TextStyle} from "react-native"
+import {ScrollView, View} from "react-native"
 
 import BackendUrl from "@/components/dev/BackendUrl"
 import StoreUrl from "@/components/dev/StoreUrl"
@@ -13,7 +13,6 @@ import {useNavigationHistory} from "@/contexts/NavigationHistoryContext"
 import {useAppTheme} from "@/contexts/ThemeContext"
 import {translate} from "@/i18n"
 import {SETTINGS, useSetting} from "@/stores/settings"
-import {ThemedStyle} from "@/theme"
 import ws from "@/services/WebSocketManager"
 import socketComms from "@/services/SocketComms"
 
@@ -129,6 +128,14 @@ export default function DeveloperSettingsScreen() {
                 push("/onboarding/os")
               }}
             />
+
+           <RouteButton
+              label="Test switcher"
+              onPress={() => {
+                clearHistoryAndGoHome()
+                push("/test/switcher")
+              }}
+            />
           </Group>
 
           <Group title="Misc">
@@ -216,31 +223,3 @@ export default function DeveloperSettingsScreen() {
     </Screen>
   )
 }
-
-const $warningContainer: ThemedStyle<ViewStyle> = ({colors, spacing, isDark}) => ({
-  borderRadius: spacing.s3,
-  paddingHorizontal: spacing.s4,
-  paddingVertical: spacing.s3,
-  borderWidth: spacing.s0_5,
-  borderColor: colors.destructive,
-  backgroundColor: isDark ? "#2B1E1A" : "#FEEBE7",
-})
-
-const $warningContent: ThemedStyle<ViewStyle> = () => ({
-  alignItems: "center",
-  flexDirection: "row",
-  marginBottom: 4,
-})
-
-const $warningTitle: ThemedStyle<TextStyle> = ({colors}) => ({
-  fontSize: 16,
-  fontWeight: "bold",
-  marginLeft: 6,
-  color: colors.text,
-})
-
-const $warningSubtitle: ThemedStyle<TextStyle> = ({colors}) => ({
-  fontSize: 14,
-  marginLeft: 22,
-  color: colors.text,
-})

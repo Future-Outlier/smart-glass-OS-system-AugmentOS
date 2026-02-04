@@ -570,11 +570,10 @@ public class MentraLive extends SGCManager {
         GlassesStore.INSTANCE.apply("glasses", "connectionState", state);
 
         if (state.equals(ConnTypes.CONNECTED)) {
-            GlassesStore.INSTANCE.apply("glasses", "isFullyBooted", true);
-            // CoreManager.getInstance().handleConnectionStateChanged();
+            GlassesStore.INSTANCE.apply("glasses", "connected", true);
         } else if (state.equals(ConnTypes.DISCONNECTED)) {
-            GlassesStore.INSTANCE.apply("glasses", "isFullyBooted", false);
-            // CoreManager.getInstance().handleConnectionStateChanged();
+            GlassesStore.INSTANCE.apply("glasses", "connected", false);
+            GlassesStore.INSTANCE.apply("glasses", "fullyBooted", false);
         }
     }
 
@@ -1053,6 +1052,8 @@ public class MentraLive extends SGCManager {
                         // BLE connection established, but we still need to wait for glasses SOC
                         Bridge.log("LIVE: ✅ Core TX/RX and LC3 TX/RX characteristics found - BLE connection ready");
                         Bridge.log("LIVE: 🔄 Waiting for glasses SOC to become ready...");
+
+                        GlassesStore.INSTANCE.apply("glasses", "connected", true);
 
                         // Keep the state as CONNECTING until the glasses SOC responds
                         // connectionEvent(SmartGlassesConnectionState.CONNECTING);
@@ -2212,18 +2213,38 @@ public class MentraLive extends SGCManager {
                 Bridge.sendGalleryStatus(photoCount, videoCount, totalCount, totalSize, hasContent);
                 break;
 
-            case "touch_event":
-                // Process touch event from glasses (swipes, taps, long press)
-                String gestureName = json.optString("gesture_name", "unknown");
-                long touchTimestamp = json.optLong("timestamp", System.currentTimeMillis());
-                String touchDeviceModel = json.optString("device_model", getDeviceModel());
+            // case "touch_event":
+            //     // Process touch event from glasses (swipes, taps, long press)
+            //     String gestureName = json.optString("gesture_name", "unknown");
+            //     long touchTimestamp = json.optLong("timestamp", System.currentTimeMillis());
+            //     String touchDeviceModel = json.optString("device_model", getDeviceModel());
 
-                Log.d(TAG, "👆 Received touch event - Gesture: " + gestureName);
+            //     Log.d(TAG, "👆 Received touch event - Gesture: " + gestureName);
 
-                // Send touch event to React Native
-                //Bridge.sendTouchEvent(touchDeviceModel, gestureName, touchTimestamp);
-                break;
-
+            //     // Send touch event to React Native
+            //     // Bridge.sendTouchEvent(touchDeviceModel, gestureName, touchTimestamp);
+            //     break;
+                
+                case "sr_tpevt":
+                    // K900 touchpad event - convert to touch_event for frontend
+                    try {
+                        JSONObject bodyObj = json.optJSONObject("B");
+                        if (bodyObj != null) {
+                            int gestureType = bodyObj.optInt("type", -1);
+                            String gestureName = mapK900GestureType(gestureType);
+    
+                            if (gestureName != null) {
+                                Bridge.log("LIVE: 👆 K900 touchpad event - Type: " + gestureType + " -> " + gestureName);
+                                Bridge.sendTouchEvent(getDeviceModel(), gestureName, System.currentTimeMillis());
+                            } else {
+                                Log.d(TAG, "Unknown K900 gesture type: " + gestureType);
+                            }
+                        }
+                    } catch (Exception e) {
+                        Log.e(TAG, "Error parsing sr_tpevt", e);
+                    }
+                    break;
+            
             case "swipe_volume_status":
                 // Process swipe volume control status from glasses
                 boolean swipeVolumeEnabled = json.optBoolean("enabled", false);
@@ -2260,6 +2281,7 @@ public class MentraLive extends SGCManager {
                 // Set the ready flag to stop any future readiness checks
                 glassesReady = true;
                 glassesReadyReceived = true;
+                GlassesStore.INSTANCE.apply("glasses", "fullyBooted", true);
 
                 // Stop the readiness check loop since we got confirmation
                 stopReadinessCheckLoop();
@@ -2726,15 +2748,15 @@ public class MentraLive extends SGCManager {
                         int batteryPercentage = bodyObj.optInt("pt", -1);
                         int ready = bodyObj.optInt("ready", 0);
                         if (ready == 0) {
-                            // SOC is still booting - notify UI to show "Glasses are booting up..." message
-                            Bridge.log("LIVE: K900 SOC not ready (ready=0), notifying UI");
-                            GlassesStore.INSTANCE.set("core", "shouldShowBootingMessage", true);
-
+                            Bridge.log("LIVE: K900 SOC not ready (ready=0)");
+                            GlassesStore.INSTANCE.apply("glasses", "fullyBooted", false);
+                            Bridge.sendTypedMessage("glasses_not_ready", new HashMap<String, Object>() {});
                             if (batteryPercentage > 0 && batteryPercentage <= 20) {
                                 Bridge.log("LIVE: K900 battery percentage: " + batteryPercentage);
                                 Bridge.sendPairFailureEvent("errors:pairingBatteryTooLow");
                                 return;
                             }
+                            return;
                         }
                         if (ready == 1) {
                             Bridge.log("LIVE: K900 SOC ready");
@@ -3988,7 +4010,7 @@ public class MentraLive extends SGCManager {
         reconnectAttempts = 0;
         isReconnecting = false;
         glassesReady = false;
-        GlassesStore.INSTANCE.apply("glasses", "isFullyBooted", false);
+        GlassesStore.INSTANCE.apply("glasses", "fullyBooted", false);
         updateConnectionState(ConnTypes.DISCONNECTED);
 
         // Note: We don't null context here to prevent race conditions with BLE callbacks
@@ -4033,24 +4055,16 @@ public class MentraLive extends SGCManager {
     @Override
     public void sendButtonVideoRecordingSettings() {
         try {
-            // Settings come from React Native as a Map, not JSONObject
             Object videoSettingsObj = GlassesStore.INSTANCE.get("core", "button_video_settings");
             int videoWidth = 1920;  // defaults
             int videoHeight = 1080;
             int videoFps = 30;
 
-            if (videoSettingsObj instanceof Map) {
-                Map<String, Object> videoSettings = (Map<String, Object>) videoSettingsObj;
-                videoWidth = ((Number) videoSettings.getOrDefault("width", 1920)).intValue();
-                videoHeight = ((Number) videoSettings.getOrDefault("height", 1080)).intValue();
-                videoFps = ((Number) videoSettings.getOrDefault("fps", 30)).intValue();
-            } else if (videoSettingsObj instanceof JSONObject) {
-                JSONObject videoSettings = (JSONObject) videoSettingsObj;
-                videoWidth = videoSettings.optInt("width", 1920);
-                videoHeight = videoSettings.optInt("height", 1080);
-                videoFps = videoSettings.optInt("fps", 30);
-            }
-
+            Map<String, Object> videoSettings = (Map<String, Object>) videoSettingsObj;
+            videoWidth = ((Number) videoSettings.getOrDefault("width", 1920)).intValue();
+            videoHeight = ((Number) videoSettings.getOrDefault("height", 1080)).intValue();
+            videoFps = ((Number) videoSettings.getOrDefault("fps", 30)).intValue();
+            
             Bridge.log("LIVE: 🎥 [SETTINGS_SYNC] Sending button video recording settings: " + videoWidth + "x" + videoHeight + "@" + videoFps + "fps");
 
             JSONObject json = new JSONObject();

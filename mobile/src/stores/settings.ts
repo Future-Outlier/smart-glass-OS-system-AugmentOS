@@ -96,7 +96,7 @@ export const SETTINGS: Record<string, Setting> = {
   },
   reconnect_on_app_foreground: {
     key: "reconnect_on_app_foreground",
-    defaultValue: () => false,
+    defaultValue: () => true,
     writable: true,
     saveOnServer: true,
     persist: true,

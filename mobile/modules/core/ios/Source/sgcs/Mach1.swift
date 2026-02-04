@@ -109,11 +109,11 @@ class Mach1: UltraliteBaseViewController, SGCManager {
     var onConnectionStateChanged: (() -> Void)?
     @Published var batteryLevel: Int = -1
     @Published var isConnected: Bool = false
-    var isFullyBooted: Bool {
-        get { GlassesStore.shared.get("glasses", "isFullyBooted") as? Bool ?? false }
+    var ready: Bool {
+        get { GlassesStore.shared.get("glasses", "fullyBooted") as? Bool ?? false }
         set {
-            let oldValue = GlassesStore.shared.get("glasses", "isFullyBooted") as? Bool ?? false
-            GlassesStore.shared.apply("glasses", "isFullyBooted", newValue)
+            let oldValue = GlassesStore.shared.get("glasses", "fullyBooted") as? Bool ?? false
+            GlassesStore.shared.apply("glasses", "fullyBooted", newValue)
         }
     }
     private var connected: Bool {
@@ -150,11 +150,11 @@ class Mach1: UltraliteBaseViewController, SGCManager {
 
                 Bridge.log("MACH1: gotControl: \(gotControl ?? false)")
                 if batteryLevel != -1 {
-                    isFullyBooted = true
+                    ready = true
                     connected = true
                 }
             } else {
-                isFullyBooted = false
+                ready = false
                 connected = false
             }
         })
@@ -163,7 +163,7 @@ class Mach1: UltraliteBaseViewController, SGCManager {
             guard let self else { return }
             Bridge.log("MACH1: batteryLevelListener: \(value)")
             batteryLevel = value
-            isFullyBooted = true
+            ready = true
             connected = true
         })
 
@@ -250,7 +250,7 @@ class Mach1: UltraliteBaseViewController, SGCManager {
                 hideStatusBar: true, showTapAnimation: true, maxNumTaps: 3
             )
             Bridge.log("MACH1: Already connected, gotControl: \(gotControl ?? false)")
-            isFullyBooted = true
+            ready = true
             connected = true
             return
         }
@@ -279,14 +279,14 @@ class Mach1: UltraliteBaseViewController, SGCManager {
     func clearDisplay() {
         guard let device = UltraliteManager.shared.currentDevice else {
             Bridge.log("Mach1Manager: No current device")
-            isFullyBooted = false
+            ready = false
             connected = false
             return
         }
 
         if !device.isConnected.value {
             Bridge.log("Mach1Manager: Device not connected")
-            isFullyBooted = false
+            ready = false
             connected = false
             return
         }
@@ -300,7 +300,7 @@ class Mach1: UltraliteBaseViewController, SGCManager {
 
     func disconnect() {
         UltraliteManager.shared.stopScan()
-        isFullyBooted = false
+        ready = false
         connected = false
     }
 
@@ -308,14 +308,14 @@ class Mach1: UltraliteBaseViewController, SGCManager {
         //    displayTextWall(text)
         guard let device = UltraliteManager.shared.currentDevice else {
             Bridge.log("Mach1Manager: No current device")
-            isFullyBooted = false
+            ready = false
             connected = false
             return
         }
 
         if !device.isConnected.value {
             Bridge.log("Mach1Manager: Device not connected")
-            isFullyBooted = false
+            ready = false
             connected = false
             return
         }
@@ -337,14 +337,14 @@ class Mach1: UltraliteBaseViewController, SGCManager {
     func sendDoubleTextWall(_ topText: String, _ bottomText: String) {
         guard let device = UltraliteManager.shared.currentDevice else {
             Bridge.log("Mach1Manager: No current device")
-            isFullyBooted = false
+            ready = false
             connected = false
             return
         }
 
         if !device.isConnected.value {
             Bridge.log("Mach1Manager: Device not connected")
-            isFullyBooted = false
+            ready = false
             connected = false
             return
         }
@@ -465,7 +465,7 @@ class Mach1: UltraliteBaseViewController, SGCManager {
     func setBrightness(_ brightness: Int) {
         guard let device = UltraliteManager.shared.currentDevice else {
             Bridge.log("Mach1Manager: No current device")
-            isFullyBooted = false
+            ready = false
             return
         }
 

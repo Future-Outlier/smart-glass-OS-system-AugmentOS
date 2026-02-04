@@ -677,9 +677,9 @@ class CoreManager {
             return
         }
 
-        var isFullyBooted = sgc?.isFullyBooted ?: false
-        if (!isFullyBooted) {
-            Bridge.log("MAN: CoreManager.sendCurrentState(): sgc not fully booted")
+        var fullyBooted = sgc?.fullyBooted ?: false
+        if (!fullyBooted) {
+            Bridge.log("MAN: CoreManager.sendCurrentState(): sgc not ready")
             return
         }
 
@@ -876,18 +876,6 @@ class CoreManager {
     }
 
     // MARK: - connection state management
-
-    fun handleConnectionStateChanged() {
-        Bridge.log("MAN: Glasses connection state changed!")
-
-        val currentSgc = sgc ?: return
-
-        if (currentSgc.isFullyBooted) {
-            handleDeviceReady()
-        } else {
-            handleDeviceDisconnected()
-        }
-    }
 
     fun handleDeviceReady() {
         if (sgc == null) {
@@ -1181,7 +1169,7 @@ class CoreManager {
         shouldSendTranscript = false
         setMicState(shouldSendPcmData, shouldSendTranscript, bypassVad)
         shouldSendBootingMessage = true // Reset for next first connect
-        GlassesStore.apply("glasses", "isFullyBooted", false)
+        GlassesStore.apply("glasses", "fullyBooted", false)
         GlassesStore.apply("glasses", "connected", false)
     }
 
