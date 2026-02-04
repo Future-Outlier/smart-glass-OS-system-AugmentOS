@@ -35,29 +35,22 @@ export function KonamiCodeProvider({children}: {children: React.ReactNode}) {
 
   useEffect(() => {
     if (!enabled) return
-
-    if (sequence.length === KONAMI_CODE.length) {
-      const matches = sequence.every((dir, i) => dir === KONAMI_CODE[i])
-      if (matches) {
-        console.log("KONAMI: Konami code activated!")
-        goHomeAndPush("/settings/developer")
-        setSequence([])
-      }
-    }
-    if (sequence.length === MINI_CODE.length) {
-      const matches = sequence.every((dir, i) => dir === MINI_CODE[i])
-      if (matches) {
-        console.log("KONAMI: Mini code activated!")
-        setSequence([])
-      }
-    }
-    if (sequence.length === SUPER_CODE.length) {
-      const matches = sequence.every((dir, i) => dir === SUPER_CODE[i])
-      if (matches) {
-        console.log("KONAMI: Super code activated!")
-        goHomeAndPush("/settings/super")
-        setSequence([])
-      }
+  
+    const matchesCode = (code: Direction[]) =>
+      sequence.length >= code.length &&
+      code.every((dir, i) => dir === sequence[sequence.length - code.length + i])
+  
+    if (matchesCode(KONAMI_CODE)) {
+      console.log("KONAMI: Konami code activated!")
+      goHomeAndPush("/settings/developer")
+      setSequence([])
+    } else if (matchesCode(MINI_CODE)) {
+      console.log("KONAMI: Mini code activated!")
+      setSequence([])
+    } else if (matchesCode(SUPER_CODE)) {
+      console.log("KONAMI: Super code activated!")
+      goHomeAndPush("/settings/super")
+      setSequence([])
     }
   }, [sequence, goHomeAndPush, enabled])
 
@@ -83,7 +76,7 @@ export function KonamiCodeProvider({children}: {children: React.ReactNode}) {
 
     resetTimeoutRef.current = BackgroundTimer.setTimeout(() => {
       setSequence([])
-    }, 10000)
+    }, 8000)
   }
 
   let flingUp, flingDown, flingLeft, flingRight
@@ -93,25 +86,25 @@ export function KonamiCodeProvider({children}: {children: React.ReactNode}) {
       .numberOfPointers(2)
       .direction(1)
       .onEnd(() => addDirection("right"))
-      .runOnJS(false)
+      .runOnJS(true)
 
     flingDown = Gesture.Fling()
       .numberOfPointers(2)
       .direction(2)
       .onEnd(() => addDirection("left"))
-      .runOnJS(false)
+      .runOnJS(true)
 
     flingLeft = Gesture.Fling()
       .numberOfPointers(2)
       .direction(4)
       .onEnd(() => addDirection("up"))
-      .runOnJS(false)
+      .runOnJS(true)
 
     flingRight = Gesture.Fling()
       .numberOfPointers(2)
       .direction(8)
       .onEnd(() => addDirection("down"))
-      .runOnJS(false)
+      .runOnJS(true)
   } else {
     flingUp = Gesture.Fling()
       .direction(1)
