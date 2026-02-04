@@ -9,7 +9,7 @@ type Direction = "up" | "down" | "left" | "right"
 
 const KONAMI_CODE: Direction[] = ["up", "up", "down", "down", "left", "right", "left", "right"]
 const MINI_CODE: Direction[] = ["up", "up", "down", "down", "left", "left", "right", "right", "up", "up"]
-const SUPER_CODE: Direction[] = ["up", "up", "down", "down", "up", "up", "down", "down", "left", "left", "left"]
+const SUPER_CODE: Direction[] = ["up", "down", "up", "down", "left", "left"]
 const MAX_CODE_LENGTH = Math.max(KONAMI_CODE.length, MINI_CODE.length, SUPER_CODE.length)
 
 type KonamiContextType = {
@@ -83,7 +83,7 @@ export function KonamiCodeProvider({children}: {children: React.ReactNode}) {
 
     resetTimeoutRef.current = BackgroundTimer.setTimeout(() => {
       setSequence([])
-    }, 3000)
+    }, 10000)
   }
 
   let flingUp, flingDown, flingLeft, flingRight
@@ -93,25 +93,25 @@ export function KonamiCodeProvider({children}: {children: React.ReactNode}) {
       .numberOfPointers(2)
       .direction(1)
       .onEnd(() => addDirection("right"))
-      .runOnJS(true)
+      .runOnJS(false)
 
     flingDown = Gesture.Fling()
       .numberOfPointers(2)
       .direction(2)
       .onEnd(() => addDirection("left"))
-      .runOnJS(true)
+      .runOnJS(false)
 
     flingLeft = Gesture.Fling()
       .numberOfPointers(2)
       .direction(4)
       .onEnd(() => addDirection("up"))
-      .runOnJS(true)
+      .runOnJS(false)
 
     flingRight = Gesture.Fling()
       .numberOfPointers(2)
       .direction(8)
       .onEnd(() => addDirection("down"))
-      .runOnJS(true)
+      .runOnJS(false)
   } else {
     flingUp = Gesture.Fling()
       .direction(1)

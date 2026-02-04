@@ -194,7 +194,7 @@ export default function DeveloperSettingsScreen() {
           <Group title="Audio Settings">
             <SelectSetting
               label="LC3 Bitrate"
-              value={String(lc3FrameSize || 20)}
+              value={String(lc3FrameSize)}
               options={LC3_FRAME_SIZE_OPTIONS}
               defaultValue="20"
               onValueChange={async (value) => {
