@@ -233,7 +233,7 @@ export default function AppWebView() {
 
   // Render WebView only when finalUrl is ready
   return (
-    <Screen preset="fixed">
+    <Screen preset="fixed" KeyboardAvoidingViewProps={{enabled: false}}>
       <Header
         title={appName}
         titleMode="center"
