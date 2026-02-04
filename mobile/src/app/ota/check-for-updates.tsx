@@ -112,6 +112,9 @@ export default function OtaCheckForUpdatesScreen() {
 
     // Update available state
     if (checkState === "update_available") {
+      // If isRequired is not specified in version.json, default to true (forced update)
+      const isUpdateRequired = versionInfo?.isRequired !== false
+
       return (
         <>
           <View className="flex-1 items-center justify-center px-6">
@@ -130,7 +133,7 @@ export default function OtaCheckForUpdatesScreen() {
 
           <View className="gap-3 mb-6">
             <Button preset="primary" tx="ota:updateNow" onPress={handleUpdateNow} />
-            <Button preset="secondary" tx="ota:updateLater" onPress={handleSkip} />
+            {!isUpdateRequired && <Button preset="secondary" tx="ota:updateLater" onPress={handleSkip} />}
           </View>
         </>
       )

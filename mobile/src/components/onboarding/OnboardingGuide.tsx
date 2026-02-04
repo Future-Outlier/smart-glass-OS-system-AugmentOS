@@ -797,7 +797,9 @@ export function OnboardingGuide({
       )
     }
 
-    if (step.waitFn && !superMode) {
+    // Only hide the button if waitFn exists AND we're still waiting (waitState is true)
+    // This allows the Continue button to appear once the wait condition is satisfied
+    if (step.waitFn && waitState && !superMode) {
       return null
     }
 
