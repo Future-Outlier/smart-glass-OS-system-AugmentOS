@@ -347,6 +347,7 @@ const en = {
     appletPlaceholder: "Tap an app below to activate it",
     simulatedGlasses: "Simulated glasses",
     glassesMirror: "Glasses Mirror",
+    stopTrying: "Stop trying",
   },
   permissions: {
     backgroundLocationPermissionRequiredMessage:
