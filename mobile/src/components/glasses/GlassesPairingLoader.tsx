@@ -9,12 +9,13 @@ import {getGlassesImage, getEvenRealitiesG1Image} from "@/utils/getGlassesImage"
 import {getModelSpecificTips} from "@/components/glasses/GlassesTroubleshootingModal"
 
 interface GlassesPairingLoaderProps {
-  modelName: string
+  deviceModel: string
   deviceName?: string
   onCancel?: () => void
+  isBooting?: boolean
 }
 
-const GlassesPairingLoader: React.FC<GlassesPairingLoaderProps> = ({modelName, deviceName, onCancel}) => {
+const GlassesPairingLoader: React.FC<GlassesPairingLoaderProps> = ({deviceModel, deviceName, onCancel, isBooting}) => {
   const {theme, themed} = useAppTheme()
 
   // Animation values
@@ -23,7 +24,7 @@ const GlassesPairingLoader: React.FC<GlassesPairingLoaderProps> = ({modelName, d
   const [currentTipIndex, setCurrentTipIndex] = useState(0)
   const tipTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
-  const tips = getModelSpecificTips(modelName)
+  const tips = getModelSpecificTips(deviceModel)
 
   // Set up animations
   useEffect(() => {
@@ -58,8 +59,11 @@ const GlassesPairingLoader: React.FC<GlassesPairingLoaderProps> = ({modelName, d
   })
 
   // Use dynamic image for Even Realities G1 based on style and color
-  let glassesImage = getGlassesImage(modelName)
-  if (modelName && (modelName === "Even Realities G1" || modelName === "evenrealities_g1" || modelName === "g1")) {
+  let glassesImage = getGlassesImage(deviceModel)
+  if (
+    deviceModel &&
+    (deviceModel === "Even Realities G1" || deviceModel === "evenrealities_g1" || deviceModel === "g1")
+  ) {
     // For pairing, we don't have style/color info yet, so use defaults
     // If battery level is available in props or context, pass it; otherwise, pass undefined
     glassesImage = getEvenRealitiesG1Image("Round", "Grey", "folded", "l", theme.isDark, undefined)
@@ -70,7 +74,7 @@ const GlassesPairingLoader: React.FC<GlassesPairingLoaderProps> = ({modelName, d
       <View style={themed($container)}>
         {/* Title */}
         <Text style={themed($title)}>
-          {modelName}
+          {deviceModel}
           {deviceName && deviceName !== "NOTREQUIREDSKIP" ? ` - ${deviceName}` : ""}
         </Text>
 
@@ -83,6 +87,13 @@ const GlassesPairingLoader: React.FC<GlassesPairingLoaderProps> = ({modelName, d
         <View style={themed($progressBarContainer)}>
           <Animated.View style={[themed($progressBar), {width: progressWidth}]} />
         </View>
+
+        {/* Booting message */}
+        {isBooting && (
+          <View style={themed($bootingContainer)}>
+            <Text style={themed($bootingText)} tx="pairing:glassesBooting" />
+          </View>
+        )}
 
         {/* Instruction text */}
         <Text style={themed($instructionText)}>{tips[currentTipIndex].body}</Text>
@@ -144,6 +155,20 @@ const $progressBar: ThemedStyle<ViewStyle> = () => ({
   height: "100%",
   borderRadius: 6,
   backgroundColor: "#10b981", // Green color for progress
+})
+
+const $bootingContainer: ThemedStyle<ViewStyle> = ({colors, spacing}) => ({
+  backgroundColor: colors.background,
+  borderRadius: spacing.s2,
+  paddingVertical: spacing.s2,
+  paddingHorizontal: spacing.s4,
+})
+
+const $bootingText: ThemedStyle<TextStyle> = ({colors}) => ({
+  fontSize: 14,
+  fontWeight: "500",
+  color: colors.primary,
+  textAlign: "center",
 })
 
 const $instructionText: ThemedStyle<TextStyle> = ({colors, spacing}) => ({

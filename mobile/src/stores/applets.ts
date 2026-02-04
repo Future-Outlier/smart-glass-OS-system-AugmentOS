@@ -306,9 +306,12 @@ export const useAppletStatusStore = create<AppStatusState>((set, get) => ({
       }
     }
 
+    // offline apps should not need to load:
+    let shouldLoad = !applet.offline && !applet.local
+
     // Start the new app
     set((state) => ({
-      apps: state.apps.map((a) => (a.packageName === packageName ? {...a, running: true, loading: true} : a)),
+      apps: state.apps.map((a) => (a.packageName === packageName ? {...a, running: true, loading: shouldLoad} : a)),
     }))
 
     const result = await startStopApplet(applet, true)
@@ -338,8 +341,9 @@ export const useAppletStatusStore = create<AppStatusState>((set, get) => ({
       }
     }
 
+    let shouldLoad = !applet.offline && !applet.local
     set((state) => ({
-      apps: state.apps.map((a) => (a.packageName === packageName ? {...a, running: false, loading: true} : a)),
+      apps: state.apps.map((a) => (a.packageName === packageName ? {...a, running: false, loading: shouldLoad} : a)),
     }))
 
     startStopApplet(applet, false)

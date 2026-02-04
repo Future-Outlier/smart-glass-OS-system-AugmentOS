@@ -13,6 +13,7 @@ import {Screen} from "@/components/ignite/Screen"
 import {Spacer} from "@/components/ui/Spacer"
 import {useNavigationHistory} from "@/contexts/NavigationHistoryContext"
 import {useAppTheme} from "@/contexts/ThemeContext"
+import {SETTINGS, useSetting} from "@/stores/settings"
 import {ThemedStyle} from "@/theme"
 import {getGlassesImage} from "@/utils/getGlassesImage"
 
@@ -21,6 +22,7 @@ import {getGlassesImage} from "@/utils/getGlassesImage"
 export default function SelectGlassesModelScreen() {
   const {theme, themed} = useAppTheme()
   const {push, goBack} = useNavigationHistory()
+  const [devMode] = useSetting(SETTINGS.dev_mode.key)
 
   // when this screen is focused, forget any glasses that may be paired:
   useFocusEffect(
@@ -31,8 +33,8 @@ export default function SelectGlassesModelScreen() {
   )
 
   // Get logo component for manufacturer
-  const getManufacturerLogo = (modelName: string) => {
-    switch (modelName) {
+  const getManufacturerLogo = (deviceModel: string) => {
+    switch (deviceModel) {
       case DeviceTypes.G1:
         return <EvenRealitiesLogo color={theme.colors.text} />
       case DeviceTypes.LIVE:
@@ -50,27 +52,27 @@ export default function SelectGlassesModelScreen() {
   const glassesOptions =
     Platform.OS === "ios"
       ? [
-          // {modelName: DeviceTypes.SIMULATED, key: DeviceTypes.SIMULATED},
-          {modelName: DeviceTypes.G1, key: "evenrealities_g1"},
-          {modelName: DeviceTypes.LIVE, key: "mentra_live"},
-          {modelName: DeviceTypes.MACH1, key: "mentra_mach1"},
-          {modelName: DeviceTypes.Z100, key: "vuzix-z100"},
-          {modelName: DeviceTypes.NEX, key: "mentra_nex"},
-          //{modelName: "Brilliant Labs Frame", key: "frame"},
+          // {deviceModel: DeviceTypes.SIMULATED, key: DeviceTypes.SIMULATED},
+          {deviceModel: DeviceTypes.G1, key: "evenrealities_g1"},
+          {deviceModel: DeviceTypes.LIVE, key: "mentra_live"},
+          {deviceModel: DeviceTypes.MACH1, key: "mentra_mach1"},
+          {deviceModel: DeviceTypes.Z100, key: "vuzix-z100"},
+          devMode && {deviceModel: DeviceTypes.NEX, key: "mentra_nex"},
+          //{deviceModel: "Brilliant Labs Frame", key: "frame"},
         ]
       : [
           // Android:
-          // {modelName: DeviceTypes.SIMULATED, key: DeviceTypes.SIMULATED},
-          {modelName: DeviceTypes.G1, key: "evenrealities_g1"},
-          {modelName: DeviceTypes.LIVE, key: "mentra_live"},
-          {modelName: DeviceTypes.MACH1, key: "mentra_mach1"},
-          {modelName: DeviceTypes.Z100, key: "vuzix-z100"},
-          {modelName: DeviceTypes.NEX, key: "mentra_nex"},
-          // {modelName: "Brilliant Labs Frame", key: "frame"},
+          // {deviceModel: DeviceTypes.SIMULATED, key: DeviceTypes.SIMULATED},
+          {deviceModel: DeviceTypes.G1, key: "evenrealities_g1"},
+          {deviceModel: DeviceTypes.LIVE, key: "mentra_live"},
+          {deviceModel: DeviceTypes.MACH1, key: "mentra_mach1"},
+          {deviceModel: DeviceTypes.Z100, key: "vuzix-z100"},
+          devMode && {deviceModel: DeviceTypes.NEX, key: "mentra_nex"},
+          // {deviceModel: "Brilliant Labs Frame", key: "frame"},
         ]
 
-  const triggerGlassesPairingGuide = async (modelName: string) => {
-    push("/pairing/prep", {modelName: modelName})
+  const triggerGlassesPairingGuide = async (deviceModel: string) => {
+    push("/pairing/prep", {deviceModel: deviceModel})
   }
 
   return (
@@ -86,15 +88,15 @@ export default function SelectGlassesModelScreen() {
       <Spacer className="h-4" />
       <ScrollView style={{marginRight: -theme.spacing.s4, paddingRight: theme.spacing.s4}}>
         <View style={{flexDirection: "column", gap: theme.spacing.s4}}>
-          {glassesOptions.map(glasses => (
+          {glassesOptions.map((glasses) => (
             <TouchableOpacity
               key={glasses.key}
               style={themed($settingItem)}
-              onPress={() => triggerGlassesPairingGuide(glasses.modelName)}>
+              onPress={() => triggerGlassesPairingGuide(glasses.deviceModel)}>
               <View style={themed($cardContent)}>
-                <View style={themed($manufacturerLogo)}>{getManufacturerLogo(glasses.modelName)}</View>
-                <Image source={getGlassesImage(glasses.modelName)} style={themed($glassesImage)} />
-                <Text style={[themed($label)]}>{glasses.modelName}</Text>
+                <View style={themed($manufacturerLogo)}>{getManufacturerLogo(glasses.deviceModel)}</View>
+                <Image source={getGlassesImage(glasses.deviceModel)} style={themed($glassesImage)} />
+                <Text style={[themed($label)]}>{glasses.deviceModel}</Text>
               </View>
             </TouchableOpacity>
           ))}

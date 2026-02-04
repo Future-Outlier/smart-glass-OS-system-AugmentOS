@@ -413,9 +413,8 @@ class UdpManager {
    * This prevents splitting LC3 frames across UDP packets which causes decoder corruption
    */
   private getMaxChunkSize(): number {
-    const frameSizeBytes = useSettingsStore.getState().getSetting(SETTINGS.lc3_frame_size.key) || 20
-    const bypassEncoding =
-      useSettingsStore.getState().getSetting(SETTINGS.bypass_audio_encoding_for_debugging.key) || false
+    const frameSizeBytes = useSettingsStore.getState().getSetting(SETTINGS.lc3_frame_size.key)
+    const bypassEncoding = useSettingsStore.getState().getSetting(SETTINGS.bypass_audio_encoding_for_debugging.key)
 
     if (bypassEncoding) {
       // For raw PCM, align to 2 bytes (sample boundary)

@@ -118,7 +118,6 @@ const $textContainer: ThemedStyle<ViewStyle> = () => ({
 
 const $label: ThemedStyle<TextStyle> = ({colors}) => ({
   fontSize: 14,
-  fontWeight: 600,
   color: colors.text,
 })
 

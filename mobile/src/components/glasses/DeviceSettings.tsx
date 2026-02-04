@@ -11,7 +11,6 @@ import BrightnessSetting from "@/components/settings/BrightnessSetting"
 import {Group} from "@/components/ui/Group"
 import {RouteButton} from "@/components/ui/RouteButton"
 import {Spacer} from "@/components/ui/Spacer"
-import {useCoreStatus} from "@/contexts/CoreStatusProvider"
 import {useNavigationHistory} from "@/contexts/NavigationHistoryContext"
 import {useAppTheme} from "@/contexts/ThemeContext"
 import {translate} from "@/i18n/translate"
@@ -22,7 +21,6 @@ import showAlert from "@/utils/AlertUtils"
 
 export default function DeviceSettings() {
   const {theme} = useAppTheme()
-  const {status} = useCoreStatus()
   const [defaultWearable] = useSetting(SETTINGS.default_wearable.key)
   const [autoBrightness, setAutoBrightness] = useSetting(SETTINGS.auto_brightness.key)
   const [brightness, setBrightness] = useSetting(SETTINGS.brightness.key)
@@ -42,6 +40,7 @@ export default function DeviceSettings() {
   const wifiLocalIp = useGlassesStore((state) => state.wifiSsid)
   const bluetoothName = useGlassesStore((state) => state.bluetoothName)
   const buildNumber = useGlassesStore((state) => state.buildNumber)
+  const otaProgress = useGlassesStore((state) => state.otaProgress)
 
   const hasDeviceInfo = Boolean(bluetoothName || buildNumber || wifiLocalIp)
 
@@ -170,7 +169,7 @@ export default function DeviceSettings() {
 
       {/* OTA Progress Section - Only show for Mentra Live glasses */}
       {glassesConnected && defaultWearable.includes(DeviceTypes.LIVE) && (
-        <OtaProgressSection otaProgress={status.ota_progress} />
+        <OtaProgressSection otaProgress={otaProgress} />
       )}
 
       <Group title={translate("deviceSettings:general")}>

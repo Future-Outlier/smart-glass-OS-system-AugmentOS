@@ -1,7 +1,7 @@
 import {DeviceTypes, getModelCapabilities} from "@/../../cloud/packages/types/src"
 import CoreModule from "core"
 import {useState} from "react"
-import {ActivityIndicator, Image, ImageStyle, TextStyle, TouchableOpacity, View, ViewStyle} from "react-native"
+import {ActivityIndicator, Image, ImageStyle, Linking, TextStyle, TouchableOpacity, View, ViewStyle} from "react-native"
 
 import {BatteryStatus} from "@/components/glasses/info/BatteryStatus"
 import {Button, Icon, Text} from "@/components/ignite"
@@ -10,7 +10,6 @@ import BrightnessSetting from "@/components/settings/BrightnessSetting"
 import {Divider} from "@/components/ui/Divider"
 import {StatusCard} from "@/components/ui/RouteButton"
 import {Spacer} from "@/components/ui/Spacer"
-import {useCoreStatus} from "@/contexts/CoreStatusProvider"
 import {useNavigationHistory} from "@/contexts/NavigationHistoryContext"
 import {useAppTheme} from "@/contexts/ThemeContext"
 import {translate} from "@/i18n"
@@ -27,6 +26,7 @@ import {
 } from "@/utils/getGlassesImage"
 
 import MicIcon from "assets/icons/component/MicIcon"
+import {useCoreStore} from "@/stores/core"
 
 const getBatteryIcon = (batteryLevel: number): string => {
   if (batteryLevel >= 75) return "battery-3"
@@ -36,7 +36,6 @@ const getBatteryIcon = (batteryLevel: number): string => {
 }
 
 export const CompactDeviceStatus = ({style}: {style?: ViewStyle}) => {
-  const {status} = useCoreStatus()
   const {themed, theme} = useAppTheme()
   const {push} = useNavigationHistory()
   const [defaultWearable] = useSetting(SETTINGS.default_wearable.key)
@@ -46,14 +45,17 @@ export const CompactDeviceStatus = ({style}: {style?: ViewStyle}) => {
   const [showSimulatedGlasses, setShowSimulatedGlasses] = useState(false)
   const [isExpanded, setIsExpanded] = useState(false)
   const glassesConnected = useGlassesStore((state) => state.connected)
+  const isFullyBooted = useGlassesStore((state) => state.isFullyBooted)
+  const shouldShowBootingMessage = useCoreStore((state) => state.shouldShowBootingMessage)
   const glassesStyle = useGlassesStore((state) => state.style)
-  const glassesColor = useGlassesStore((state) => state.color)
+  const color = useGlassesStore((state) => state.color)
   const caseRemoved = useGlassesStore((state) => state.caseRemoved)
   const caseBatteryLevel = useGlassesStore((state) => state.caseBatteryLevel)
   const caseOpen = useGlassesStore((state) => state.caseOpen)
   const batteryLevel = useGlassesStore((state) => state.batteryLevel)
   const wifiConnected = useGlassesStore((state) => state.wifiConnected)
   const wifiSsid = useGlassesStore((state) => state.wifiSsid)
+  const searching = useCoreStore((state) => state.searching)
 
   if (defaultWearable.includes(DeviceTypes.SIMULATED)) {
     return <ConnectedSimulatedGlassesInfo style={style} mirrorStyle={{backgroundColor: theme.colors.background}} />
@@ -83,7 +85,7 @@ export const CompactDeviceStatus = ({style}: {style?: ViewStyle}) => {
   }
 
   const handleConnectOrDisconnect = async () => {
-    if (status.core_info.is_searching) {
+    if (searching) {
       await CoreModule.disconnect()
       setIsCheckingConnectivity(false)
     } else {
@@ -99,7 +101,7 @@ export const CompactDeviceStatus = ({style}: {style?: ViewStyle}) => {
       if (!caseRemoved) {
         state = caseOpen ? "case_open" : "case_close"
       }
-      return getEvenRealitiesG1Image(glassesStyle, glassesColor, state, "l", theme.isDark, caseBatteryLevel)
+      return getEvenRealitiesG1Image(glassesStyle, color, state, "l", theme.isDark, caseBatteryLevel)
     }
 
     if (!caseRemoved) {
@@ -109,9 +111,14 @@ export const CompactDeviceStatus = ({style}: {style?: ViewStyle}) => {
     return image
   }
 
-  let isSearching = status.core_info.is_searching || isCheckingConnectivity
+  let isSearching = searching || isCheckingConnectivity
+  let connectingText = translate("home:connectingGlasses")
+  // Only show booting message if glasses explicitly reported ready=0
+  if (shouldShowBootingMessage) {
+    connectingText = "Glasses are booting..."
+  }
 
-  if (!glassesConnected || isSearching) {
+  if (!glassesConnected || !isFullyBooted || isSearching) {
     return (
       <View style={[themed($disconnectedContainer), style]}>
         <View style={themed($header)}>
@@ -136,7 +143,20 @@ export const CompactDeviceStatus = ({style}: {style?: ViewStyle}) => {
           }}>
           {!isSearching ? (
             <>
-              <Button compact tx="home:getSupport" preset="alternate" />
+              <Button
+                compact
+                tx="home:getSupport"
+                preset="alternate"
+                onPress={() => {
+                  showAlert(translate("home:getSupport"), translate("home:getSupportMessage"), [
+                    {text: translate("common:cancel"), style: "cancel"},
+                    {
+                      text: translate("common:continue"),
+                      onPress: () => Linking.openURL("https://mentraglass.com/contact"),
+                    },
+                  ])
+                }}
+              />
               <Button compact flex tx="home:connectGlasses" preset="primary" onPress={connectGlasses} />
             </>
           ) : (
@@ -148,9 +168,10 @@ export const CompactDeviceStatus = ({style}: {style?: ViewStyle}) => {
                 flex
                 compact
                 LeftAccessory={() => (
-                  <ActivityIndicator size="small" color={theme.colors.textAlt} style={{marginLeft: 5}} />
+                  <ActivityIndicator size="small" color={theme.colors.primary_foreground} style={{marginRight: 8}} />
                 )}
-                tx="home:connectingGlasses"
+                text={connectingText}
+                // tx="home:connectingGlasses"
               />
             </>
           )}
@@ -202,11 +223,16 @@ export const CompactDeviceStatus = ({style}: {style?: ViewStyle}) => {
           )}
           <MicIcon width={18} height={18} />
           <Icon name="bluetooth-connected" size={18} color={theme.colors.foreground} />
-          {features?.hasWifi && (
-            <TouchableOpacity onPress={() => push("/wifi/scan")}>
-              <Icon name={wifiConnected ? "wifi" : "wifi-off"} size={18} color={theme.colors.foreground} />
-            </TouchableOpacity>
-          )}
+          {features?.hasWifi &&
+            (wifiConnected ? (
+              <Button compactIcon className="bg-transparent -m-2" onPress={() => push("/wifi/scan")}>
+                <Icon name="wifi" size={18} color={theme.colors.foreground} />
+              </Button>
+            ) : (
+              <Button compactIcon className="bg-transparent -m-2" onPress={() => push("/wifi/scan")}>
+                <Icon name="wifi-off" size={18} color={theme.colors.foreground} />
+              </Button>
+            ))}
         </View>
       </View>
 
