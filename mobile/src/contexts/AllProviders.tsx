@@ -140,7 +140,7 @@ export const AllProviders = withWrappers(
   (props) => {
     const {preventBack, animation} = useNavigationHistory()
 
-    if (Platform.OS === "ios") {
+    // if (Platform.OS === "ios") {
       return (
         <>
           {props.children}
@@ -154,22 +154,22 @@ export const AllProviders = withWrappers(
           />
         </>
       )
-    }
+    // }
 
-    return (
-      <>
-        {props.children}
-        <JsStack
-          screenOptions={{
-            headerShown: false,
-            ...woltScreenOptions,
-            gestureEnabled: !preventBack,
-            gestureDirection: "horizontal",
-            cardStyleInterpolator: getAnimation(animation),
-          }}
-        />
-      </>
-    )
+    // return (
+    //   <>
+    //     {props.children}
+    //     <JsStack
+    //       screenOptions={{
+    //         headerShown: false,
+    //         ...woltScreenOptions,
+    //         gestureEnabled: !preventBack,
+    //         gestureDirection: "horizontal",
+    //         cardStyleInterpolator: getAnimation(animation),
+    //       }}
+    //     />
+    //   </>
+    // )
   },
 )
 

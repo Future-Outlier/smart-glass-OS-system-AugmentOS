@@ -146,14 +146,14 @@ export function OnboardingGuide({
       return () => clearTimeout(timer)
     }
 
-    // if (step.duration) {
-    //   const timer = BackgroundTimer.setTimeout(() => {
-    //     setShowNextButton(true)
-    //   }, step.duration)
-    //   return () => BackgroundTimer.clearTimeout(timer)
-    // } else {
-    //   setShowNextButton(true)
-    // }
+    if (step.duration) {
+      const timer = BackgroundTimer.setTimeout(() => {
+        setShowNextButton(true)
+      }, step.duration)
+      return () => BackgroundTimer.clearTimeout(timer)
+    } else {
+      setShowNextButton(true)
+    }
     return () => {}
   }, [currentIndex, hasStarted, isCurrentStepImage])
 
@@ -451,13 +451,17 @@ export function OnboardingGuide({
     if (isCurrentStepImage) return
 
     const subscription = currentPlayer.addListener("statusChange", (status: any) => {
-      console.log("ONBOARD: statusChange", status)
+      // console.log("ONBOARD: statusChange", status)
 
       if (currentIndex === 0 && !autoStart) {
         return
       }
+
       if (status.status === "readyToPlay") {
         currentPlayer.play()
+      }
+      if (status.error) {
+        setShowNextButton(true)
       }
     })
 
