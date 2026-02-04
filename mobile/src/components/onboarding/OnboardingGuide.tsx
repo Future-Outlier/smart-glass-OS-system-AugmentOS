@@ -151,7 +151,7 @@ export function OnboardingGuide({
       const timer = BackgroundTimer.setTimeout(() => {
         setShowNextButton(true)
       }, step.duration)
-      return () => clearTimeout(timer)
+      return () => BackgroundTimer.clearTimeout(timer)
     } else {
       setShowNextButton(true)
     }
@@ -304,6 +304,9 @@ export function OnboardingGuide({
         return
       }
       navigatingRef.current = true
+
+      // ensure play count is reset before each navigation
+      setPlayCount(0)
 
       // Check if current step should fade out
       if (step.fadeOut) {
@@ -487,15 +490,25 @@ export function OnboardingGuide({
           return
         }
         // -1 means play forever
-        if (step.type === "video" && (playCount < step.playCount - 1 || step.playCount === -1)) {
-          setShowNextButton(true)
+        if (step.playCount === -1) {
+          if (playCount > 0) {
+            setShowNextButton(true)
+          }
           setPlayCount((prev) => prev + 1)
           currentPlayer.currentTime = 0
           currentPlayer.play()
-        } else {
-          if (step.replayable) {
-            setShowReplayButton(true)
-          }
+          return
+        }
+        if (step.type === "video" && playCount < step.playCount - 1) {
+          setPlayCount((prev) => prev + 1)
+          currentPlayer.currentTime = 0
+          currentPlayer.play()
+          return
+        }
+        if (step.replayable) {
+          setShowReplayButton(true)
+        }
+        if (playCount > 0) {
           setShowNextButton(true)
         }
       }
@@ -774,7 +787,7 @@ export function OnboardingGuide({
   }, [step.waitFn])
 
   const renderContinueButton = () => {
-    let showLoader = (waitState && step.waitFn) || !showNextButton
+    // let showLoader = (waitState && step.waitFn) || !showNextButton
     // the wait state should take precedence over the show next flag:
     // if (showLoader && step.waitFn && !waitState) {
     //   showLoader = false
@@ -797,46 +810,14 @@ export function OnboardingGuide({
       )
     }
 
-    if (step.waitFn && !superMode) {
+    if (step.waitFn) {
       return null
     }
 
-    if (showLoader && !superMode) {
+    if (!showNextButton) {
       return null
     }
 
-    if (showLoader) {
-      return (
-        <Button
-          flex
-          tx="common:continue"
-          style={{backgroundColor: theme.colors.chart_4}}
-          textStyle={{fontWeight: "bold"}}
-          preset="primary"
-          onPress={() => {
-            if (superMode) {
-              handleNext(true)
-              return
-            }
-            if (waitState) {
-              Toast.show({
-                text1: translate("onboarding:pleaseFollowSteps"),
-                type: "info",
-              })
-              return
-            }
-            // if (!showNextButton) {
-            //   Toast.show({
-            //     text1: translate("onboarding:pleaseFollowSteps"),
-            //     type: "info",
-            //   })
-            //   return
-            // }
-          }}>
-          {/* <ActivityIndicator size="small" color={theme.colors.background} /> */}
-        </Button>
-      )
-    }
     return (
       <Button
         flex
@@ -870,14 +851,14 @@ export function OnboardingGuide({
         {step.title && (
           <Text
             className={`${
-              (step.titleCentered ?? false) ? "text-center" : "text-start"
+              step.titleCentered ?? false ? "text-center" : "text-start"
             } text-2xl font-semibold text-foreground`}
             text={step.title}
           />
         )}
         {step.subtitle && (
           <Text
-            className={`${(step.subtitleCentered ?? false) ? "text-center" : "text-start"} text-[18px] text-foreground`}
+            className={`${step.subtitleCentered ?? false ? "text-center" : "text-start"} text-[18px] text-foreground`}
             text={step.subtitle}
           />
         )}
@@ -992,7 +973,7 @@ export function OnboardingGuide({
 
           {hasStarted && (
             <View className="flex-row gap-4">
-              {superMode && !isFirstStep && <Button flex preset="secondary" tx="common:back" onPress={handleBack} />}
+              {!superMode && !isFirstStep && <Button flex preset="secondary" tx="common:back" onPress={handleBack} />}
               {!isLastStep ? renderContinueButton() : <Button flex text={endButtonText} onPress={handleEndButton} />}
             </View>
           )}

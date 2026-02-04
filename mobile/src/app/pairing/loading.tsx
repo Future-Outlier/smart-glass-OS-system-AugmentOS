@@ -78,7 +78,7 @@ export default function GlassesPairingLoadingScreen() {
   return (
     <Screen preset="fixed" safeAreaEdges={["bottom"]}>
       <Header leftIcon="chevron-left" onLeftPress={goBack} />
-      <View className="flex-1 pb-6">
+      <View className="flex-1">
         <View className="flex-1 justify-center">
           <GlassesPairingLoader
             deviceModel={deviceModel}
