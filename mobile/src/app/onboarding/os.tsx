@@ -1,6 +1,6 @@
 import {Screen} from "@/components/ignite"
 import {OnboardingGuide, OnboardingStep} from "@/components/onboarding/OnboardingGuide"
-import {focusEffectPreventBack, useNavigationHistory} from "@/contexts/NavigationHistoryContext"
+import {useNavigationHistory} from "@/contexts/NavigationHistoryContext"
 import {translate} from "@/i18n"
 import {SETTINGS, useSetting} from "@/stores/settings"
 
@@ -9,10 +9,21 @@ const CDN_BASE = "https://mentra-videos-cdn.mentraglass.com/onboarding/mentraos/
 export default function MentraOSOnboarding() {
   const {pushPrevious} = useNavigationHistory()
   const [_onboardingOsCompleted, setOnboardingOsCompleted] = useSetting(SETTINGS.onboarding_os_completed.key)
-  focusEffectPreventBack()
+  // focusEffectPreventBack()
 
   // NOTE: you can't have 2 transition videos in a row or things will break:
   const steps: OnboardingStep[] = [
+    {
+      type: "video",
+      name: "Welcome",
+      source: `${CDN_BASE}/start_stop_apps.mp4`,
+      poster: require("@assets/onboarding/os/thumbnails/start_stop_apps.jpg"),
+      containerClassName: "bg-background",
+      transition: true,
+      playCount: 1,
+      title: translate("onboarding:osWelcomeTitle"),
+      subtitle: translate("onboarding:osWelcomeSubtitle"),
+    },
     {
       type: "video",
       name: "Start and stop apps",
@@ -81,14 +92,35 @@ export default function MentraOSOnboarding() {
     //     translate("onboarding:osMentraAiBullet2"),
     //   ],
     // },
+    //     {
+    //   type: "video",
+    //   name: "end",
+    //   //source: `${CDN_BASE}/mentra_ai.mov`,
+    //   source: `${CDN_BASE}/mentraos_onboard_end.mp4`,
+    //   containerClassName: "bg-background",
+    //   transition: false,
+    //   playCount: 99999,//2,
+    //   replayable: true,
+    //   title: translate("onboarding:osEndTitle"),
+    //   subtitle: translate("onboarding:osEndSubtitle"),
+    // },
+    {
+      type: "glasses",
+      name: "end",
+      containerClassName: "bg-background",
+      transition: false,
+      title: translate("onboarding:osEndTitle"),
+      subtitle: translate("onboarding:osEndSubtitle"),
+    },
   ]
 
   return (
     <Screen preset="fixed" safeAreaEdges={["bottom"]}>
       <OnboardingGuide
         steps={steps}
-        autoStart={true}
-        showSkipButton={false}
+        autoStart={false}
+        showCloseButton={false}
+        preventBack={true}
         exitFn={() => {
           pushPrevious()
         }}
@@ -96,6 +128,8 @@ export default function MentraOSOnboarding() {
           setOnboardingOsCompleted(true)
           pushPrevious()
         }}
+        startButtonText={translate("onboarding:continueOnboarding")}
+        endButtonText={translate("common:continue")}
       />
     </Screen>
   )

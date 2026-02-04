@@ -2,7 +2,9 @@ import {Screen} from "@/components/ignite"
 import {OnboardingGuide, OnboardingStep} from "@/components/onboarding/OnboardingGuide"
 import {useNavigationHistory} from "@/contexts/NavigationHistoryContext"
 import {translate} from "@/i18n"
+import {useGlassesStore} from "@/stores/glasses"
 import {SETTINGS, useSetting} from "@/stores/settings"
+import CoreModule, {TouchEvent} from "core"
 import {Platform} from "react-native"
 
 const CDN_BASE = "https://mentra-videos-cdn.mentraglass.com/onboarding/mentra-live/light"
@@ -10,6 +12,7 @@ const CDN_BASE = "https://mentra-videos-cdn.mentraglass.com/onboarding/mentra-li
 export default function MentraLiveOnboarding() {
   const {pushPrevious} = useNavigationHistory()
   const [_onboardingLiveCompleted, setOnboardingLiveCompleted] = useSetting(SETTINGS.onboarding_live_completed.key)
+
   // NOTE: you can't have 2 transition videos in a row or things will break:
   let steps: OnboardingStep[] = [
     {
@@ -19,63 +22,79 @@ export default function MentraLiveOnboarding() {
       name: "Start Onboarding",
       playCount: 1,
       transition: true,
-      title: " ", // for spacing so it's consistent with the other steps
-      // title: "Welcome to Mentra Live",
-      // info: "Learn the basics",
+      title: translate("onboarding:liveWelcomeTitle"),
+      subtitle: translate("onboarding:liveWelcomeSubtitle"),
     },
-    // {
-    //   type: "video",
-    //   source: `${CDN_BASE}/ONB1_power_button.mp4`,
-    //   name: "Power Button",
-    //   loop: true,
-    //   transition: false,
-    // },
-    // {
-    //   type: "video",
-    //   source: `${CDN_BASE}/ONB2_pairing_successful.mp4`,
-    //   name: "Pairing Successful",
-    //   loop: false,
-    //   transition: false,
-    // },
     {
       type: "video",
       source: `${CDN_BASE}/ONB4_action_button_click.mp4`,
       poster: require("@assets/onboarding/live/thumbnails/ONB4_action_button_click.jpg"),
       name: "Action Button Click",
-      playCount: 2,
+      playCount: 99999, //2,
       transition: false,
       title: translate("onboarding:liveTakeAPhoto"),
       subtitle: translate("onboarding:livePressActionButton"),
       info: translate("onboarding:liveLedFlashWarning"),
+      // wait for the action button to be pressed:
+      waitFn: (): Promise<void> => {
+        return new Promise<void>((resolve) => {
+          const unsub = CoreModule.addListener("button_press", (data: any) => {
+            if (data?.type === "button_press" && data?.pressType === "short") {
+              unsub.remove()
+              resolve()
+            }
+          })
+        })
+      },
     },
     {
       type: "video",
       source: `${CDN_BASE}/ONB5_action_button_record.mp4`,
       poster: require("@assets/onboarding/live/thumbnails/ONB5_action_button_record.jpg"),
       name: "Action Button Record",
-      playCount: 2,
+      playCount: 99999, // 2,
       transition: false,
       title: translate("onboarding:liveStartRecording"),
       subtitle: translate("onboarding:livePressAndHold"),
       info: translate("onboarding:liveLedFlashWarning"),
+      waitFn: (): Promise<void> => {
+        return new Promise<void>((resolve) => {
+          const unsub = CoreModule.addListener("button_press", (data: any) => {
+            if (data?.type === "button_press" && data?.pressType === "long") {
+              unsub.remove()
+              resolve()
+            }
+          })
+        })
+      },
     },
     {
       type: "video",
       source: `${CDN_BASE}/ONB5_action_button_record.mp4`,
       poster: require("@assets/onboarding/live/thumbnails/ONB5_action_button_record.jpg"),
       name: "Action Button Stop Recording",
-      playCount: 2,
+      playCount: 99999, // 2,
       transition: false,
       title: translate("onboarding:liveStopRecording"),
       subtitle: translate("onboarding:livePressAndHoldAgain"),
       info: translate("onboarding:liveLedFlashWarning"),
+      waitFn: (): Promise<void> => {
+        return new Promise<void>((resolve) => {
+          const unsub = CoreModule.addListener("button_press", (data: any) => {
+            if (data?.type === "button_press" && (data?.pressType === "long" || data?.pressType === "short")) {
+              unsub.remove()
+              resolve()
+            }
+          })
+        })
+      },
     },
     {
       type: "video",
       source: `${CDN_BASE}/ONB6_transition_trackpad.mp4`,
       poster: require("@assets/onboarding/live/thumbnails/ONB6_transition_trackpad.jpg"),
       name: "Transition Trackpad",
-      playCount: 1,
+      playCount: 99999, // 1,
       transition: true,
       // show next slide's title and subtitle:
       title: translate("onboarding:livePlayMusic"),
@@ -86,48 +105,92 @@ export default function MentraLiveOnboarding() {
       source: `${CDN_BASE}/ONB7_trackpad_tap.mp4`,
       poster: require("@assets/onboarding/live/thumbnails/ONB7_trackpad_tap.jpg"),
       name: "Trackpad Tap",
-      playCount: 1,
+      playCount: 99999, // 1,
       transition: false,
       title: translate("onboarding:livePlayMusic"),
       subtitle: translate("onboarding:liveDoubleTapTouchpad"),
+      waitFn: (): Promise<void> => {
+        return new Promise<void>((resolve) => {
+          const unsub = CoreModule.addListener("touch_event", (data: TouchEvent) => {
+            if (data?.gesture_name === "double_tap") {
+              unsub.remove()
+              resolve()
+            }
+          })
+        })
+      },
     },
-    // {
-    //   source: `${CDN_BASE}/ONB8_transition_trackpad2.mp4`,
-    //   name: "Transition Trackpad 2",
-    //   loop: false,
-    //   transition: true,
-    // },
     {
       type: "video",
       source: `${CDN_BASE}/ONB8_trackpad_slide.mp4`,
       poster: require("@assets/onboarding/live/thumbnails/ONB8_trackpad_slide.jpg"),
       name: "Trackpad Volume Slide",
-      playCount: 1,
+      playCount: 99999, // 1,
       transition: false,
       title: translate("onboarding:liveAdjustVolume"),
       subtitle: translate("onboarding:liveSwipeTouchpadUp"),
       subtitle2: translate("onboarding:liveSwipeTouchpadDown"),
+      waitFn: (): Promise<void> => {
+        return new Promise<void>((resolve) => {
+          const unsub = CoreModule.addListener("touch_event", (data: TouchEvent) => {
+            if (data?.gesture_name === "forward_swipe" || data?.gesture_name === "backward_swipe") {
+              unsub.remove()
+              resolve()
+            }
+          })
+        })
+      },
     },
     {
       type: "video",
       source: `${CDN_BASE}/ONB9_trackpad_pause.mp4`,
       poster: require("@assets/onboarding/live/thumbnails/ONB9_trackpad_pause.jpg"),
       name: "Trackpad Pause",
-      playCount: 1,
+      playCount: 99999, // 1,
       transition: false,
       title: translate("onboarding:livePauseMusic"),
       subtitle: translate("onboarding:liveDoubleTapTouchpad"),
+      waitFn: (): Promise<void> => {
+        return new Promise<void>((resolve) => {
+          const unsub = CoreModule.addListener("touch_event", (data: TouchEvent) => {
+            if (data?.gesture_name === "double_tap") {
+              unsub.remove()
+              resolve()
+            }
+          })
+        })
+      },
     },
     {
       type: "video",
       source: `${CDN_BASE}/ONB10_cord.mp4`,
       poster: require("@assets/onboarding/live/thumbnails/ONB10_cord.jpg"),
       name: "Cord",
-      playCount: 1,
+      playCount: 1, //99999,
       transition: false,
       title: translate("onboarding:liveConnectCable"),
       subtitle: translate("onboarding:liveCableDescription"),
       info: translate("onboarding:liveCableInfo"),
+      replayable: false,
+      // waitFn: (): Promise<void> => {
+      //   return new Promise<void>((resolve) => {
+      //     // Check if already charging
+      //     if (useGlassesStore.getState().charging) {
+      //       resolve()
+      //       return
+      //     }
+      //     // Wait for charging state to become true
+      //     const unsub = useGlassesStore.subscribe(
+      //       (state) => state.charging,
+      //       (charging) => {
+      //         if (charging) {
+      //           unsub()
+      //           resolve()
+      //         }
+      //       },
+      //     )
+      //   })
+      // },
     },
     {
       type: "video",
@@ -136,9 +199,9 @@ export default function MentraLiveOnboarding() {
       name: "End",
       playCount: 1,
       transition: false,
-      subtitle: translate("onboarding:liveEndTitle"),
-      subtitle2: translate("onboarding:liveEndMessage"),
-      title: " ", // for spacing so it's consistent with the other steps
+      replayable: false,
+      title: translate("onboarding:liveEndTitle"),
+      subtitle: translate("onboarding:liveEndMessage"),
     },
   ]
 
@@ -158,8 +221,7 @@ export default function MentraLiveOnboarding() {
         steps={steps}
         autoStart={false}
         showCloseButton={false}
-        mainTitle={translate("onboarding:liveWelcomeTitle")}
-        mainSubtitle={translate("onboarding:liveWelcomeSubtitle")}
+        preventBack={true}
         exitFn={() => {
           pushPrevious()
         }}
