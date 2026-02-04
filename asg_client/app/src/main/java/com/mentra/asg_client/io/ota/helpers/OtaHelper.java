@@ -1706,10 +1706,9 @@ public class OtaHelper {
                 // Mark MTK as updated this session (install will happen in background)
                 setMtkUpdatedThisSession();
                 
-                // Send install FINISHED to phone BEFORE starting install
-                // MTK install happens in background with no progress tracking
-                sendMtkInstallProgressToPhone("FINISHED", 100, null);
-                Log.i(TAG, "📱 Sent MTK install FINISHED to phone - waiting 1s before starting install");
+                // Send install STARTED to phone - progress updates will follow during install
+                sendMtkInstallProgressToPhone("STARTED", 0, null);
+                Log.i(TAG, "📱 Sent MTK install STARTED to phone - waiting 1s before starting install");
                 
                 // Wait 1 second for phone to process FINISHED, then start install
                 final Context ctx = context;

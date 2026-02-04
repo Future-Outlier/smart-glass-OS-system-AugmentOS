@@ -211,8 +211,10 @@ public class OtaService extends Service {
                 updateNotification("MTK firmware updated successfully");
                 Log.i(TAG, "📱 MTK system SUCCESS received - reboot required to apply");
                 
-                // Note: FINISHED already sent to phone before install started (in OtaHelper)
-                // Note: mtkUpdatedThisSession already set in OtaHelper before install
+                // Send FINISHED to phone now that install is complete
+                if (otaHelper != null) {
+                    otaHelper.sendMtkInstallProgressToPhone("FINISHED", 100, null);
+                }
                 
                 // Send broadcast to notify app that MTK update is complete
                 sendMtkUpdateCompleteMessage();
