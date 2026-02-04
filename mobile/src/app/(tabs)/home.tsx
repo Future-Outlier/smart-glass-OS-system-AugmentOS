@@ -20,6 +20,8 @@ import {checkConnectivityRequirementsUI} from "@/utils/PermissionsUtils"
 import WebsocketStatus from "@/components/error/WebsocketStatus"
 import CoreStatusBar from "@/components/dev/CoreStatusBar"
 import CoreModule from "core"
+import {DeviceTypes} from "@/../../cloud/packages/types/src"
+import {attemptReconnect} from "@/effects/Reconnect"
 
 export default function Homepage() {
   const refreshApplets = useRefreshApplets()
@@ -44,35 +46,10 @@ export default function Homepage() {
       if (hasAttemptedInitialConnect.current) {
         return
       }
-
-      // Check if reconnect on foreground is enabled
-      const reconnectOnAppForeground = await useSettingsStore
-        .getState()
-        .getSetting(SETTINGS.reconnect_on_app_foreground.key)
-      if (!reconnectOnAppForeground) {
-        return
+      let attempted = await attemptReconnect()
+      if (attempted) {
+        hasAttemptedInitialConnect.current = true
       }
-
-      // Don't connect if already connected or searching
-      if (glassesConnected || isSearching) {
-        return
-      }
-
-      // Check if we have a default wearable configured (skip simulated glasses)
-      if (!defaultWearable || defaultWearable.toLowerCase().includes("simulated")) {
-        return
-      }
-
-      hasAttemptedInitialConnect.current = true
-      console.log("HOME: Attempting initial auto-connect on app startup")
-
-      // Check if we have bluetooth perms
-      const requirementsCheck = await checkConnectivityRequirementsUI()
-      if (!requirementsCheck) {
-        return
-      }
-
-      await CoreModule.connectDefault()
     }
 
     attemptInitialConnect()
