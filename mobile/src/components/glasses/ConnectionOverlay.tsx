@@ -5,26 +5,27 @@ import {useAppTheme} from "@/contexts/ThemeContext"
 import {useNavigationHistory} from "@/contexts/NavigationHistoryContext"
 import {useGlassesStore} from "@/stores/glasses"
 
-const CANCEL_BUTTON_DELAY_MS = 10000 // 10 seconds before showing cancel button
+const CANCEL_BUTTON_DELAY_MS = 10000 // 10 seconds before enabling cancel button
 
 export function ConnectionOverlay() {
   const {theme} = useAppTheme()
   const {clearHistoryAndGoHome} = useNavigationHistory()
   const glassesConnected = useGlassesStore((state) => state.connected)
   const [showOverlay, setShowOverlay] = useState(false)
-  const [showCancelButton, setShowCancelButton] = useState(false)
+  const [cancelButtonEnabled, setCancelButtonEnabled] = useState(false)
   const cancelButtonTimerRef = useRef<NodeJS.Timeout | null>(null)
 
   useEffect(() => {
     if (!glassesConnected) {
       setShowOverlay(true)
-      // Start timer to show cancel button after delay
+      setCancelButtonEnabled(false)
+      // Start timer to enable cancel button after delay
       cancelButtonTimerRef.current = setTimeout(() => {
-        setShowCancelButton(true)
+        setCancelButtonEnabled(true)
       }, CANCEL_BUTTON_DELAY_MS)
     } else {
       setShowOverlay(false)
-      setShowCancelButton(false)
+      setCancelButtonEnabled(false)
       // Clear timer if connection succeeds
       if (cancelButtonTimerRef.current) {
         clearTimeout(cancelButtonTimerRef.current)
@@ -41,8 +42,9 @@ export function ConnectionOverlay() {
   }, [glassesConnected])
 
   const handleStopTrying = () => {
+    if (!cancelButtonEnabled) return
     setShowOverlay(false)
-    setShowCancelButton(false)
+    setCancelButtonEnabled(false)
     clearHistoryAndGoHome()
   }
 
@@ -55,7 +57,13 @@ export function ConnectionOverlay() {
           <ActivityIndicator size="large" color={theme.colors.foreground} />
           <Text className="text-xl font-semibold text-text text-center mt-6 mb-2" tx="glasses:glassesAreReconnecting" />
           <Text className="text-base text-text-dim text-center mb-6" tx="glasses:glassesAreReconnectingMessage" />
-          {showCancelButton && <Button text="Stop Trying" preset="secondary" onPress={handleStopTrying} />}
+          <Button
+            text="Stop Trying"
+            preset="secondary"
+            onPress={handleStopTrying}
+            disabled={!cancelButtonEnabled}
+            style={{opacity: cancelButtonEnabled ? 1 : 0.4}}
+          />
         </View>
       </View>
     </Modal>
