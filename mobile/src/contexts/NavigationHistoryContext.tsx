@@ -1,4 +1,4 @@
-import {router, useFocusEffect, useNavigationContainerRef, usePathname, useSegments, useNavigation} from "expo-router"
+import {router, useFocusEffect, usePathname, useSegments, useNavigation} from "expo-router"
 import {createContext, useContext, useEffect, useRef, useCallback, useState} from "react"
 import {BackHandler} from "react-native"
 import {CommonActions} from "@react-navigation/native"
@@ -60,7 +60,6 @@ export function NavigationHistoryProvider({children}: {children: React.ReactNode
   const setAndroidBackFn = (fn: () => void) => {
     androidBackFnRef.current = fn
   }
-  const rootNavigation = useNavigationContainerRef()
 
   useEffect(() => {
     const newPath = pathname
@@ -347,12 +346,13 @@ export function NavigationHistoryProvider({children}: {children: React.ReactNode
     setDebugHistory([...historyRef.current])
   }
 
-  const pushList = (routes: string[], params: any[]) => {
+  // Used only by flows that are not on the tab navigator (e.g. pairing/success). pushPrevious
+  // uses router.replace() instead to avoid RESET not being handled on /home.
+  const _pushList = (routes: string[], params: any[]) => {
     console.info("NAV: pushList()", routes)
     const first = routes.shift()
     const firstParams = params.shift()
     push(first!, firstParams)
-    // go bottom to top and pushUnder the rest (in reverse order):
     for (let i = routes.length - 1; i >= 0; i--) {
       pushUnder(routes[i], params[i])
     }
@@ -388,16 +388,17 @@ export function NavigationHistoryProvider({children}: {children: React.ReactNode
       return // we are already on home, so we are done
     }
 
-    // if /home is at the start of the list remove it:
-    if (updatedRoutes[0] === "/home") {
-      updatedRoutes.shift()
-      updatedRoutesParams.shift()
+    // Navigate to the previous screen using router (expo-router). Do not use pushList/pushUnder
+    // here: pushUnder dispatches CommonActions.reset(), which the tab navigator does not handle
+    // when we're on /home, causing "The action 'RESET' was not handled by any navigator".
+    historyRef.current = updatedRoutes
+    historyParamsRef.current = updatedRoutesParams
+    setDebugHistory([...historyRef.current])
+    try {
+      router.replace({pathname: lastRoute as any, params: lastRouteParams})
+    } catch (error) {
+      console.warn("NAV: pushPrevious replace warning:", error)
     }
-    updatedRoutes.reverse() // reverse for the pushList function
-    updatedRoutesParams.reverse() // must also reverse params to keep them aligned!
-    console.log("NAV: updatedRoutes", updatedRoutes)
-    console.log("NAV: updatedRoutesParams", updatedRoutesParams)
-    pushList(updatedRoutes, updatedRoutesParams)
 
     // rootNavigation.dispatch(StackActions.popToTop())
     // rootNavigation.dispatch(
@@ -478,18 +479,22 @@ export function useNavigationHistory() {
 }
 
 // screens that call this function will prevent the back button from being pressed:
-export const focusEffectPreventBack = (androidBackFn?: () => void) => {
+export const useFocusEffectPreventBack = (androidBackFn?: () => void, preventBack: boolean = true) => {
   const {incPreventBack, decPreventBack, setAndroidBackFn} = useNavigationHistory()
 
   useFocusEffect(
     useCallback(() => {
-      incPreventBack()
-      if (androidBackFn) {
-        setAndroidBackFn(androidBackFn)
+      if (preventBack) {
+        incPreventBack()
+        if (androidBackFn) {
+          setAndroidBackFn(androidBackFn)
+        }
       }
       return () => {
-        decPreventBack()
+        if (preventBack) {
+          decPreventBack()
+        }
       }
-    }, [incPreventBack, decPreventBack]),
+    }, [incPreventBack, decPreventBack, androidBackFn, setAndroidBackFn, preventBack]),
   )
 }

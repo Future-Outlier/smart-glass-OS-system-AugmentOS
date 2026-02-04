@@ -1,22 +1,4 @@
-// OTA version URL constants
-const OTA_VERSION_URL_LEGACY = "https://ota.mentraglass.com/live_version.json"
-const OTA_VERSION_URL_PROD = "https://ota.mentraglass.com/prod_live_version.json"
-const PROD_VERSION_THRESHOLD = 29
-
-/**
- * Get the appropriate OTA version URL based on APK build number.
- * APK version >= 29 uses prod_live_version.json, otherwise uses legacy live_version.json.
- */
-function getOtaVersionUrl(buildNumber: string | undefined): string {
-  if (!buildNumber) {
-    return OTA_VERSION_URL_LEGACY
-  }
-  const versionCode = parseInt(buildNumber, 10)
-  if (isNaN(versionCode)) {
-    return OTA_VERSION_URL_LEGACY
-  }
-  return versionCode >= PROD_VERSION_THRESHOLD ? OTA_VERSION_URL_PROD : OTA_VERSION_URL_LEGACY
-}
+import {OTA_VERSION_URL_PROD} from "@/effects/OtaUpdateChecker"
 
 export interface OtaDownloadProgress {
   status: string
@@ -254,8 +236,8 @@ export class CoreStatusParser {
               glasses_build_number: glassesInfo.glasses_build_number,
               glasses_device_model: glassesInfo.glasses_device_model,
               glasses_android_version: glassesInfo.glasses_android_version,
-              glasses_ota_version_url:
-                glassesInfo.glasses_ota_version_url || getOtaVersionUrl(glassesInfo.glasses_build_number),
+              // glasses_ota_version_url: glassesInfo.glasses_ota_version_url || getOtaVersionUrl(),
+              glasses_ota_version_url: OTA_VERSION_URL_PROD,
               glasses_firmware_version: glassesInfo.glasses_firmware_version,
               glasses_serial_number: glassesInfo.glasses_serial_number,
               glasses_style: glassesInfo.glasses_style,

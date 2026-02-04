@@ -3,7 +3,7 @@ import {Platform} from "react-native"
 import {useRoute} from "@react-navigation/native"
 
 import {Screen} from "@/components/ignite"
-import {focusEffectPreventBack, useNavigationHistory} from "@/contexts/NavigationHistoryContext"
+import {useFocusEffectPreventBack, useNavigationHistory} from "@/contexts/NavigationHistoryContext"
 import {SETTINGS, useSetting} from "@/stores/settings"
 import {waitForGlassesState} from "@/stores/glasses"
 import {getGlassesImage} from "@/utils/getGlassesImage"
@@ -21,7 +21,7 @@ export default function PairingSuccessScreen() {
   const [buttonText, setButtonText] = useState<string>(translate("common:continue"))
   const [stack, setStack] = useState<string[]>([])
 
-  focusEffectPreventBack()
+  useFocusEffectPreventBack()
 
   // Use route params first (immediately available), fall back to settings store
   const deviceModel = routeDeviceModel || defaultWearable
@@ -30,8 +30,6 @@ export default function PairingSuccessScreen() {
   } else {
     console.log("PAIR_SUCCESS: Using deviceModel from route params:", routeDeviceModel)
   }
-
-  focusEffectPreventBack()
 
   const glassesImage = getGlassesImage(deviceModel)
 

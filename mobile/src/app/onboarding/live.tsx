@@ -2,7 +2,6 @@ import {Screen} from "@/components/ignite"
 import {OnboardingGuide, OnboardingStep} from "@/components/onboarding/OnboardingGuide"
 import {useNavigationHistory} from "@/contexts/NavigationHistoryContext"
 import {translate} from "@/i18n"
-import {useGlassesStore} from "@/stores/glasses"
 import {SETTINGS, useSetting} from "@/stores/settings"
 import CoreModule, {TouchEvent} from "core"
 import {Platform} from "react-native"
@@ -222,9 +221,6 @@ export default function MentraLiveOnboarding() {
         autoStart={false}
         showCloseButton={false}
         preventBack={true}
-        exitFn={() => {
-          pushPrevious()
-        }}
         endButtonFn={() => {
           setOnboardingLiveCompleted(true)
           pushPrevious()

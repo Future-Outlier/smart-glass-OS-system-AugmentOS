@@ -5,7 +5,7 @@ import {View, ViewStyle, ActivityIndicator, Platform, Animated} from "react-nati
 
 import {MentraLogoStandalone} from "@/components/brands/MentraLogoStandalone"
 import {Text, Button, Header, Icon} from "@/components/ignite"
-import {focusEffectPreventBack, useNavigationHistory} from "@/contexts/NavigationHistoryContext"
+import {useFocusEffectPreventBack, useNavigationHistory} from "@/contexts/NavigationHistoryContext"
 import {useAppTheme} from "@/contexts/ThemeContext"
 import {SETTINGS, useSetting} from "@/stores/settings"
 import Toast from "react-native-toast-message"
@@ -395,14 +395,12 @@ export function OnboardingGuide({
     }
   }, [currentIndex, uiIndex, activePlayer, steps])
 
-  if (preventBack) {
-    focusEffectPreventBack(() => {
-      // console.log("ONBOARD: preventBack back handler called")
-      if (hasStarted && !isFirstStep) {
-        handleBack()
-      }
-    })
-  }
+  useFocusEffectPreventBack(() => {
+    // console.log("ONBOARD: preventBack back handler called")
+    if (hasStarted && !isFirstStep) {
+      handleBack()
+    }
+  }, preventBack)
 
   // Video status change listener
   useEffect(() => {

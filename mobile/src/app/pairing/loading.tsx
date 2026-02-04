@@ -9,7 +9,7 @@ import {PillButton} from "@/components/ignite/PillButton"
 import {Screen} from "@/components/ignite/Screen"
 import GlassesPairingLoader from "@/components/glasses/GlassesPairingLoader"
 import GlassesTroubleshootingModal from "@/components/glasses/GlassesTroubleshootingModal"
-import {focusEffectPreventBack, useNavigationHistory} from "@/contexts/NavigationHistoryContext"
+import {useFocusEffectPreventBack, useNavigationHistory} from "@/contexts/NavigationHistoryContext"
 import {useCoreStore} from "@/stores/core"
 import {useGlassesStore} from "@/stores/glasses"
 import GlobalEventEmitter from "@/utils/GlobalEventEmitter"
@@ -26,7 +26,7 @@ export default function GlassesPairingLoadingScreen() {
   const isFullyBooted = useGlassesStore((state) => state.isFullyBooted)
   const shouldShowBootingMessage = useCoreStore((state) => state.shouldShowBootingMessage)
 
-  focusEffectPreventBack()
+  useFocusEffectPreventBack()
 
   const handlePairFailure = (error: string) => {
     CoreModule.forget()

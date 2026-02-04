@@ -5,9 +5,9 @@ import {View, ActivityIndicator} from "react-native"
 import {MentraLogoStandalone} from "@/components/brands/MentraLogoStandalone"
 import {ConnectionOverlay} from "@/components/glasses/ConnectionOverlay"
 import {Screen, Header, Button, Text, Icon} from "@/components/ignite"
-import {focusEffectPreventBack, useNavigationHistory} from "@/contexts/NavigationHistoryContext"
+import {useFocusEffectPreventBack, useNavigationHistory} from "@/contexts/NavigationHistoryContext"
 import {useAppTheme} from "@/contexts/ThemeContext"
-import {checkForOtaUpdate} from "@/effects/OtaUpdateChecker"
+import {checkForOtaUpdate, OTA_VERSION_URL_PROD} from "@/effects/OtaUpdateChecker"
 import {translate} from "@/i18n/translate"
 import {useGlassesStore} from "@/stores/glasses"
 import {SETTINGS, useSetting} from "@/stores/settings"
@@ -17,7 +17,6 @@ type CheckState = "checking" | "update_available" | "no_update" | "error"
 export default function OtaCheckForUpdatesScreen() {
   const {theme} = useAppTheme()
   const {push, replace, clearHistoryAndGoHome} = useNavigationHistory()
-  const otaVersionUrl = useGlassesStore((state) => state.otaVersionUrl)
   const currentBuildNumber = useGlassesStore((state) => state.buildNumber)
   const mtkFwVersion = useGlassesStore((state) => state.mtkFwVersion)
   const besFwVersion = useGlassesStore((state) => state.besFwVersion)
@@ -34,7 +33,7 @@ export default function OtaCheckForUpdatesScreen() {
   const waitStartTimeRef = useRef<number | null>(null)
   const hasInitiatedCheckRef = useRef(false) // Track if we've initiated check for this checkKey
 
-  focusEffectPreventBack()
+  useFocusEffectPreventBack()
 
   // Re-run OTA check when screen gains focus (for iterative updates: APK → MTK → BES)
   useFocusEffect(
@@ -54,7 +53,7 @@ export default function OtaCheckForUpdatesScreen() {
   )
 
   // Perform OTA check when checkKey changes (on mount and on focus)
-  // Also re-run when version info arrives (otaVersionUrl, currentBuildNumber)
+  // Also re-run when version info arrives (currentBuildNumber)
   useEffect(() => {
     const MIN_DISPLAY_TIME_MS = 1100
     const MAX_WAIT_FOR_VERSION_INFO_MS = 10000 // Wait up to 10 seconds for version_info
@@ -86,15 +85,9 @@ export default function OtaCheckForUpdatesScreen() {
         }
       }
 
-      // Wait for version_info to arrive (contains otaVersionUrl and buildNumber)
-      if (!otaVersionUrl || !currentBuildNumber) {
-        console.log(
-          "OTA: Waiting for version_info from glasses (url:",
-          !!otaVersionUrl,
-          ", build:",
-          currentBuildNumber,
-          ")",
-        )
+      // Wait for version_info to arrive (contains buildNumber needed to determine OTA URL)
+      if (!currentBuildNumber) {
+        console.log("OTA: Waiting for version_info from glasses (build:", currentBuildNumber, ")")
 
         // Start timeout if not already started
         if (!waitStartTimeRef.current) {
@@ -126,7 +119,7 @@ export default function OtaCheckForUpdatesScreen() {
       const startTime = Date.now()
 
       try {
-        const result = await checkForOtaUpdate(otaVersionUrl, currentBuildNumber, mtkFwVersion, besFwVersion)
+        const result = await checkForOtaUpdate(OTA_VERSION_URL_PROD, currentBuildNumber, mtkFwVersion, besFwVersion)
         console.log("📱 OTA check completed - result:", JSON.stringify(result))
 
         // Calculate remaining time to meet minimum display duration
@@ -182,7 +175,7 @@ export default function OtaCheckForUpdatesScreen() {
         versionInfoTimeoutRef.current = null
       }
     }
-  }, [checkKey, otaVersionUrl, currentBuildNumber, glassesConnected, wifiConnected])
+  }, [checkKey, currentBuildNumber, glassesConnected, wifiConnected])
 
   // Navigate to next step based on onboarding status
   const handleContinue = () => {
@@ -293,7 +286,7 @@ export default function OtaCheckForUpdatesScreen() {
         </View>
 
         <View className="gap-3 pb-2 mb-6">
-          <Button preset="primary" tx="common:retry" flexContainer onPress={handleRetry} />
+          <Button preset="primary" tx="Retry" flexContainer onPress={handleRetry} />
           {__DEV__ && <Button preset="secondary" text="Skip (dev only)" onPress={handleContinue} />}
         </View>
       </>

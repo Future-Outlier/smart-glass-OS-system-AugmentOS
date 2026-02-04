@@ -43,6 +43,9 @@ interface VersionJson {
   releaseNotes?: string
 }
 
+// OTA version URL constant
+export const OTA_VERSION_URL_PROD = "https://ota.mentraglass.com/prod_live_version.json"
+
 export async function fetchVersionInfo(url: string): Promise<VersionJson | null> {
   try {
     console.log("📱 Fetching version info from URL: " + url)
@@ -217,7 +220,18 @@ export async function checkForOtaUpdate(
 
     // Check firmware patches
     const mtkPatch = findMatchingMtkPatch(versionJson?.mtk_patches, currentMtkVersion)
-    console.log(`📱 MTK patch available: ${mtkPatch ? "yes" : "no"} (current MTK: ${currentMtkVersion || "unknown"})`)
+    // If MTK version is unknown but patches exist, suggest MTK update anyway
+    // The glasses have direct access to ro.custom.ota.version and will determine if a patch applies
+    const mtkPatchesExist = versionJson?.mtk_patches && versionJson.mtk_patches.length > 0
+    const mtkUpdateAvailable = mtkPatch !== null || (!currentMtkVersion && mtkPatchesExist)
+    if (!currentMtkVersion && mtkPatchesExist) {
+      console.log(
+        `📱 MTK current version unknown - will suggest update (${versionJson?.mtk_patches?.length} patches available)`,
+      )
+    }
+    console.log(
+      `📱 MTK patch available: ${mtkUpdateAvailable ? "yes" : "no"} (current MTK: ${currentMtkVersion || "unknown"})`,
+    )
 
     const besUpdateAvailable = checkBesUpdate(versionJson?.bes_firmware, currentBesVersion)
     console.log(`📱 BES update available: ${besUpdateAvailable} (current BES: ${currentBesVersion || "unknown"})`)
@@ -225,7 +239,7 @@ export async function checkForOtaUpdate(
     // Build updates array
     const updates: string[] = []
     if (apkUpdateAvailable) updates.push("apk")
-    if (mtkPatch) updates.push("mtk")
+    if (mtkUpdateAvailable) updates.push("mtk")
     if (besUpdateAvailable) updates.push("bes")
 
     console.log(`📱 OTA check result - updates available: ${updates.length > 0}, updates: [${updates.join(", ")}]`)
@@ -317,7 +331,6 @@ export function OtaUpdateChecker() {
   // OTA check state from glasses store
   const [defaultWearable] = useSetting(SETTINGS.default_wearable.key)
   const glassesConnected = useGlassesStore((state) => state.connected)
-  const otaVersionUrl = useGlassesStore((state) => state.otaVersionUrl)
   const buildNumber = useGlassesStore((state) => state.buildNumber)
   const glassesWifiConnected = useGlassesStore((state) => state.wifiConnected)
   const mtkFwVersion = useGlassesStore((state) => state.mtkFwVersion)
@@ -336,10 +349,14 @@ export function OtaUpdateChecker() {
   // Reset OTA check flag when glasses disconnect (allows fresh check on reconnect)
   useEffect(() => {
     if (!glassesConnected) {
+      // Always clear pendingUpdate on disconnect - it may be stale after OTA completes
+      if (pendingUpdate.current) {
+        console.log("📱 OTA: Glasses disconnected - clearing pendingUpdate")
+        pendingUpdate.current = null
+      }
       if (hasCheckedOta.current) {
         console.log("📱 OTA: Glasses disconnected - resetting check flag for next connection")
         hasCheckedOta.current = false
-        pendingUpdate.current = null
       }
       // Clear any pending OTA check timeout
       if (otaCheckTimeoutRef.current) {
@@ -355,6 +372,42 @@ export function OtaUpdateChecker() {
     }
   }, [glassesConnected])
 
+  // Track build/firmware versions to clear stale pendingUpdate when an update is applied
+  const lastKnownVersionsRef = useRef<{build: string | null; mtk: string | null; bes: string | null}>({
+    build: null,
+    mtk: null,
+    bes: null,
+  })
+  useEffect(() => {
+    const last = lastKnownVersionsRef.current
+    let versionChanged = false
+
+    // Check if any version changed from what we knew
+    if (buildNumber && last.build && last.build !== buildNumber) {
+      console.log(`📱 OTA: Build number changed from ${last.build} to ${buildNumber}`)
+      versionChanged = true
+    }
+    if (mtkFwVersion && last.mtk && last.mtk !== mtkFwVersion) {
+      console.log(`📱 OTA: MTK firmware changed from ${last.mtk} to ${mtkFwVersion}`)
+      versionChanged = true
+    }
+    if (besFwVersion && last.bes && last.bes !== besFwVersion) {
+      console.log(`📱 OTA: BES firmware changed from ${last.bes} to ${besFwVersion}`)
+      versionChanged = true
+    }
+
+    if (versionChanged) {
+      console.log("📱 OTA: Version changed - clearing stale pendingUpdate and resetting check flag")
+      pendingUpdate.current = null
+      hasCheckedOta.current = false
+    }
+
+    // Update tracked versions
+    if (buildNumber) last.build = buildNumber
+    if (mtkFwVersion) last.mtk = mtkFwVersion
+    if (besFwVersion) last.bes = besFwVersion
+  }, [buildNumber, mtkFwVersion, besFwVersion])
+
   // Effect to show install prompt when WiFi connects after pending update
   useEffect(() => {
     if (pathname !== "/home") return
@@ -364,7 +417,23 @@ export function OtaUpdateChecker() {
     // Last-moment check: never show Mentra Live update alert when disconnected
     if (!useGlassesStore.getState().connected) return
 
-    const {updates} = pendingUpdate.current
+    const {updates, latestVersionInfo} = pendingUpdate.current
+
+    // Validate that pending updates are still needed by checking if versions have changed
+    // If the user just completed OTA updates, pendingUpdate may be stale
+    const currentBuild = useGlassesStore.getState().buildNumber
+    const currentBuildNum = currentBuild ? parseInt(currentBuild, 10) : 0
+    const pendingBuildNum = latestVersionInfo?.versionCode || 0
+
+    // If current build >= pending version, APK update was applied - pendingUpdate is stale
+    if (currentBuildNum >= pendingBuildNum && pendingBuildNum > 0) {
+      console.log(
+        `📱 OTA: Current build (${currentBuildNum}) >= pending (${pendingBuildNum}) - clearing stale pendingUpdate`,
+      )
+      pendingUpdate.current = null
+      return
+    }
+
     const deviceName = defaultWearable || "Glasses"
     const updateList = updates.join(", ").toUpperCase()
     const updateMessage = `Updates available: ${updateList}`
@@ -387,7 +456,7 @@ export function OtaUpdateChecker() {
   useEffect(() => {
     // Log every effect run with full state for debugging
     console.log(
-      `📱 OTA effect triggered - pathname: ${pathname}, hasChecked: ${hasCheckedOta.current}, connected: ${glassesConnected}, url: ${!!otaVersionUrl}, build: ${buildNumber}`,
+      `📱 OTA effect triggered - pathname: ${pathname}, hasChecked: ${hasCheckedOta.current}, connected: ${glassesConnected}, build: ${buildNumber}`,
     )
 
     // only check if we're on the home screen:
@@ -400,10 +469,8 @@ export function OtaUpdateChecker() {
       console.log("📱 OTA check skipped - already checked this session")
       return
     }
-    if (!glassesConnected || !otaVersionUrl || !buildNumber) {
-      console.log(
-        `📱 OTA check skipped - missing data (connected: ${glassesConnected}, url: ${!!otaVersionUrl}, build: ${buildNumber})`,
-      )
+    if (!glassesConnected || !buildNumber) {
+      console.log(`📱 OTA check skipped - missing data (connected: ${glassesConnected}, build: ${buildNumber})`)
       return
     }
 
@@ -441,7 +508,7 @@ export function OtaUpdateChecker() {
       )
       hasCheckedOta.current = true // Mark as checked to prevent duplicate checks
 
-      checkForOtaUpdate(otaVersionUrl, buildNumber, latestMtkFwVersion, latestBesFwVersion)
+      checkForOtaUpdate(OTA_VERSION_URL_PROD, buildNumber, latestMtkFwVersion, latestBesFwVersion)
         .then(({updateAvailable, latestVersionInfo, updates}) => {
           console.log(
             `📱 OTA check completed - updateAvailable: ${updateAvailable}, updates: ${updates?.join(", ") || "none"}`,
@@ -512,17 +579,7 @@ export function OtaUpdateChecker() {
         otaCheckTimeoutRef.current = null
       }
     }
-  }, [
-    glassesConnected,
-    otaVersionUrl,
-    buildNumber,
-    mtkFwVersion,
-    besFwVersion,
-    glassesWifiConnected,
-    defaultWearable,
-    pathname,
-    push,
-  ])
+  }, [glassesConnected, buildNumber, mtkFwVersion, besFwVersion, glassesWifiConnected, defaultWearable, pathname, push])
 
   return null
 }
