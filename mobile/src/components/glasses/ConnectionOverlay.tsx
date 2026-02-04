@@ -4,6 +4,7 @@ import {Text, Button} from "@/components/ignite"
 import {useAppTheme} from "@/contexts/ThemeContext"
 import {useNavigationHistory} from "@/contexts/NavigationHistoryContext"
 import {useGlassesStore} from "@/stores/glasses"
+import {translate} from "@/i18n"
 
 const CANCEL_BUTTON_DELAY_MS = 10000 // 10 seconds before enabling cancel button
 
@@ -13,7 +14,7 @@ export function ConnectionOverlay() {
   const glassesConnected = useGlassesStore((state) => state.connected)
   const [showOverlay, setShowOverlay] = useState(false)
   const [cancelButtonEnabled, setCancelButtonEnabled] = useState(false)
-  const cancelButtonTimerRef = useRef<NodeJS.Timeout | null>(null)
+  const cancelButtonTimerRef = useRef<number | null>(null)
 
   useEffect(() => {
     if (!glassesConnected) {
@@ -58,7 +59,7 @@ export function ConnectionOverlay() {
           <Text className="text-xl font-semibold text-text text-center mt-6 mb-2" tx="glasses:glassesAreReconnecting" />
           <Text className="text-base text-text-dim text-center mb-6" tx="glasses:glassesAreReconnectingMessage" />
           <Button
-            text="Stop Trying"
+            text={translate("home:stopTrying")}
             preset="secondary"
             onPress={handleStopTrying}
             disabled={!cancelButtonEnabled}
