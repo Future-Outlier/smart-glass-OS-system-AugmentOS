@@ -198,6 +198,9 @@ public class MentraLive extends SGCManager {
     private boolean isBondingReceiverRegistered = false;
     private boolean isBtClassicConnected = false;
     private BroadcastReceiver bondingReceiver;
+    private int bondingRetryCount = 0;
+    private static final int MAX_BONDING_RETRIES = 3;
+    private static final long BONDING_RETRY_DELAY_MS = 1500; // Delay before retry to let user see dialog again
 
     // A2DP profile connection for already-bonded devices
     private BluetoothA2dp a2dpProfile = null;
@@ -926,6 +929,7 @@ public class MentraLive extends SGCManager {
 
                     // CTKD Implementation: Register bonding receiver and create bond for BT Classic
                     registerBondingReceiver();
+                    bondingRetryCount = 0; // Reset retry counter for new connection
                     Bridge.log("LIVE: CTKD: BLE connection established, initiating CTKD bonding for BT Classic");
 
                     // Check if device is already bonded before attempting to create bond
@@ -2281,7 +2285,9 @@ public class MentraLive extends SGCManager {
                 // Set the ready flag to stop any future readiness checks
                 glassesReady = true;
                 glassesReadyReceived = true;
-                GlassesStore.INSTANCE.apply("glasses", "fullyBooted", true);
+                // NOTE: Don't set fullyBooted here - it will be set when BOTH glasses_ready
+                // AND audioConnected are true (see below). This ensures BT Classic pairing
+                // is complete before the device is considered "paired" in MentraOS.
 
                 // Stop the readiness check loop since we got confirmation
                 stopReadinessCheckLoop();
@@ -2340,6 +2346,7 @@ public class MentraLive extends SGCManager {
                 // This check maintains platform parity with iOS
                 if (audioConnected) {
                     Bridge.log("LIVE: Audio: Both glasses_ready and audio connected - marking as fully connected");
+                    GlassesStore.INSTANCE.apply("glasses", "fullyBooted", true);
                     updateConnectionState(ConnTypes.CONNECTED);
                 } else {
                     Bridge.log("LIVE: Audio: Waiting for CTKD audio bonding before marking as fully connected");
@@ -3681,11 +3688,13 @@ public class MentraLive extends SGCManager {
                                 Bridge.log("LIVE: CTKD: ✅ Successfully bonded with device - BT Classic connection established");
                                 isBtClassicConnected = true;
                                 audioConnected = true;
+                                bondingRetryCount = 0; // Reset retry counter on success
                                 // Both BLE and BT Classic are now connected via CTKD
 
                                 // If glasses_ready was already received, now we're fully ready
                                 if (glassesReadyReceived) {
                                     Bridge.log("LIVE: Audio: Both audio and glasses_ready confirmed - marking as fully connected");
+                                    GlassesStore.INSTANCE.apply("glasses", "fullyBooted", true);
                                     updateConnectionState(ConnTypes.CONNECTED);
                                 }
 
@@ -3698,7 +3707,24 @@ public class MentraLive extends SGCManager {
                                 isBtClassicConnected = false;
                                 audioConnected = false;
                                 if (previousBondState == BluetoothDevice.BOND_BONDING) {
-                                    Bridge.log("LIVE: CTKD: Bonding process failed");
+                                    // User cancelled or bonding failed - retry up to MAX_BONDING_RETRIES times
+                                    bondingRetryCount++;
+                                    Bridge.log("LIVE: CTKD: Bonding process failed (attempt " + bondingRetryCount + "/" + MAX_BONDING_RETRIES + ")");
+
+                                    if (bondingRetryCount < MAX_BONDING_RETRIES && connectedDevice != null) {
+                                        Bridge.log("LIVE: CTKD: 🔄 Retrying bonding in " + BONDING_RETRY_DELAY_MS + "ms...");
+                                        handler.postDelayed(() -> {
+                                            if (connectedDevice != null && connectedDevice.getBondState() != BluetoothDevice.BOND_BONDED) {
+                                                Bridge.log("LIVE: CTKD: 🔄 Initiating bonding retry #" + bondingRetryCount);
+                                                createBond(connectedDevice);
+                                            }
+                                        }, BONDING_RETRY_DELAY_MS);
+                                    } else {
+                                        Bridge.log("LIVE: CTKD: ❌ Max bonding retries reached - disconnecting device");
+                                        //Bridge.sendError("bt_classic_pairing_required", "Bluetooth Classic pairing is required. Please accept the pairing dialog to use your glasses.");
+                                        // Disconnect since we can't proceed without BT Classic
+                                        //disconnect();
+                                    }
                                 } else if (previousBondState == BluetoothDevice.BOND_BONDED) {
                                     // Send audio disconnected event for platform parity with iOS
                                     Bridge.sendAudioDisconnected();
@@ -3880,6 +3906,7 @@ public class MentraLive extends SGCManager {
         Bridge.sendAudioConnected(deviceName);
         if (glassesReadyReceived) {
             Bridge.log("LIVE: A2DP: Both audio and glasses_ready confirmed - marking as fully connected");
+            GlassesStore.INSTANCE.apply("glasses", "fullyBooted", true);
             updateConnectionState(ConnTypes.CONNECTED);
         }
     }
