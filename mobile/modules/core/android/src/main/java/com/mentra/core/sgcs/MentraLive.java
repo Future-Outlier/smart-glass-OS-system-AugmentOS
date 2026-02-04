@@ -1300,7 +1300,7 @@ public class MentraLive extends SGCManager {
         // Enable notifications for each characteristic
         for (BluetoothGattCharacteristic characteristic : characteristics) {
             UUID uuid = characteristic.getUuid();
-            Bridge.log("LIVE: Thread-" + threadId + ": Examining characteristic: " + uuid);
+            // Bridge.log("LIVE: Thread-" + threadId + ": Examining characteristic: " + uuid);
 
             // Log if this is one of the file transfer characteristics
             if (uuid.equals(FILE_READ_UUID)) {
@@ -1439,7 +1439,7 @@ public class MentraLive extends SGCManager {
     private void queueData(byte[] data) {
         if (data != null) {
             sendQueue.add(data);
-            Bridge.log("LIVE: 📋 Added " + data.length + " to send queue - New queue size: " + sendQueue.size());
+            // Bridge.log("LIVE: 📋 Added " + data.length + " to send queue - New queue size: " + sendQueue.size());
 
             // Log all outgoing bytes for testing
             StringBuilder hexBytes = new StringBuilder();
@@ -1480,7 +1480,7 @@ public class MentraLive extends SGCManager {
             try {
                 if (buildNumberInt < 5) {
                     String jsonStr = json.toString();
-                    Bridge.log("LIVE: 📤 Sending JSON with esoteric message ID: " + jsonStr);
+                    // Bridge.log("LIVE: 📤 Sending JSON with esoteric message ID: " + jsonStr);
                     sendDataToGlasses(jsonStr, wakeup);
                 } else {
                     // Add esoteric message ID to the JSON
@@ -1488,7 +1488,7 @@ public class MentraLive extends SGCManager {
                     json.put("mId", messageId);
 
                     String jsonStr = json.toString();
-                    Bridge.log("LIVE: 📤 Sending JSON with esoteric message ID " + messageId + ": " + jsonStr);
+                    // Bridge.log("LIVE: 📤 Sending JSON with esoteric message ID " + messageId + ": " + jsonStr);
 
                     // Check if this message will be chunked to determine timeout
                     long ackTimeout = ACK_TIMEOUT_MS;
@@ -1943,7 +1943,7 @@ public class MentraLive extends SGCManager {
      * Process a JSON message
      */
     private void processJsonMessage(JSONObject json) {
-        Bridge.log("LIVE: Got some JSON from glasses: " + json.toString());
+        // Bridge.log("LIVE: Got some JSON from glasses: " + json.toString());
 
         // Check if this is an ACK response
         String type = json.optString("type", "");
@@ -2737,7 +2737,7 @@ public class MentraLive extends SGCManager {
 
     private void processK900JsonMessage(JSONObject json) {
         String command = json.optString("C", "");
-        Bridge.log("LIVE: Processing K900 command: " + command);
+        // Bridge.log("LIVE: Processing K900 command: " + command);
 
         switch (command) {
             case "sr_hrt":

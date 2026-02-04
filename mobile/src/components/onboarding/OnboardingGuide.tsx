@@ -9,7 +9,6 @@ import {Text, Button, Header, Icon} from "@/components/ignite"
 import {focusEffectPreventBack, useNavigationHistory} from "@/contexts/NavigationHistoryContext"
 import {useAppTheme} from "@/contexts/ThemeContext"
 import {SETTINGS, useSetting} from "@/stores/settings"
-import Toast from "react-native-toast-message"
 import {translate} from "@/i18n/translate"
 import {BackgroundTimer} from "@/utils/timers"
 
@@ -147,14 +146,14 @@ export function OnboardingGuide({
       return () => clearTimeout(timer)
     }
 
-    if (step.duration) {
-      const timer = BackgroundTimer.setTimeout(() => {
-        setShowNextButton(true)
-      }, step.duration)
-      return () => BackgroundTimer.clearTimeout(timer)
-    } else {
-      setShowNextButton(true)
-    }
+    // if (step.duration) {
+    //   const timer = BackgroundTimer.setTimeout(() => {
+    //     setShowNextButton(true)
+    //   }, step.duration)
+    //   return () => BackgroundTimer.clearTimeout(timer)
+    // } else {
+    //   setShowNextButton(true)
+    // }
     return () => {}
   }, [currentIndex, hasStarted, isCurrentStepImage])
 
@@ -204,6 +203,11 @@ export function OnboardingGuide({
       const nextStep = steps[nextIndex]
 
       console.log(`ONBOARD: current: ${currentIndex} next: ${nextIndex}`)
+
+      resettingRef.current = true
+      BackgroundTimer.setTimeout(() => {
+        resettingRef.current = false
+      }, 100)
 
       setShowNextButton(false)
       setShowReplayButton(false)
@@ -295,7 +299,7 @@ export function OnboardingGuide({
   )
 
   const handleNext = useCallback(
-    (manual: boolean = false) => {
+    async (manual: boolean = false) => {
       console.log(`ONBOARD: handleNext(${manual})`)
 
       // Prevent multiple rapid calls from corrupting player state
@@ -305,8 +309,7 @@ export function OnboardingGuide({
       }
       navigatingRef.current = true
 
-      // ensure play count is reset before each navigation
-      setPlayCount(0)
+      setShowNextButton(false)
 
       // Check if current step should fade out
       if (step.fadeOut) {
@@ -396,7 +399,7 @@ export function OnboardingGuide({
     const prevStep = steps[prevIndex]
     setCurrentIndex(prevIndex)
     setShowReplayButton(prevStep.type === "video" && (prevStep.replayable ?? true))
-    setShowNextButton(true)
+    setShowNextButton(false)
 
     // If going back to an image, just pause players
     if (prevStep.type === "image") {
@@ -483,17 +486,16 @@ export function OnboardingGuide({
     if (isCurrentStepImage) return
 
     const subscription = currentPlayer.addListener("playingChange", (status: any) => {
+      // console.log("ONBOARD: playingChange", status.isPlaying, resettingRef.current, playCount)
       if (resettingRef.current) return // ignore playingChange listener while resetting
       if (!status.isPlaying && currentPlayer.currentTime >= currentPlayer.duration - 0.1) {
         if (step.transition) {
           handleNext(false)
           return
         }
+        setShowNextButton(true)
         // -1 means play forever
         if (step.playCount === -1) {
-          if (playCount > 0) {
-            setShowNextButton(true)
-          }
           setPlayCount((prev) => prev + 1)
           currentPlayer.currentTime = 0
           currentPlayer.play()
@@ -507,9 +509,6 @@ export function OnboardingGuide({
         }
         if (step.replayable) {
           setShowReplayButton(true)
-        }
-        if (playCount > 0) {
-          setShowNextButton(true)
         }
       }
     })
@@ -818,6 +817,10 @@ export function OnboardingGuide({
       return null
     }
 
+    if (isLastStep) {
+      return <Button flex text={endButtonText} onPress={handleEndButton} />
+    }
+
     return (
       <Button
         flex
@@ -974,7 +977,7 @@ export function OnboardingGuide({
           {hasStarted && (
             <View className="flex-row gap-4">
               {superMode && !isFirstStep && <Button flex preset="secondary" tx="common:back" onPress={handleBack} />}
-              {!isLastStep ? renderContinueButton() : <Button flex text={endButtonText} onPress={handleEndButton} />}
+              {renderContinueButton()}
             </View>
           )}
         </View>
