@@ -105,23 +105,13 @@ class MantleManager {
     this.setupSubscriptions()
   }
 
-  /**
-   * Send device timezone to cloud for correct time display
-   * Uses Intl API to get IANA timezone name (e.g., "America/New_York")
-   */
   private async syncTimezone() {
-    try {
-      const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone
-      if (timezone) {
-        const result = await restComms.writeUserSettings({timezone})
-        if (result.is_error()) {
-          console.error("MANTLE: Failed to sync timezone:", result.error)
-        } else {
-          console.log("MANTLE: Timezone synced:", timezone)
-        }
-      }
-    } catch (error) {
-      console.error("MANTLE: Error syncing timezone:", error)
+    const timezone = useSettingsStore.getState().getSetting(SETTINGS.time_zone.key)
+    const result = await restComms.writeUserSettings({time_zone: timezone, timezone: timezone})
+    if (result.is_error()) {
+      console.error("MANTLE: Failed to sync timezone:", result.error)
+    } else {
+      console.log("MANTLE: Timezone synced:", timezone)
     }
   }
 
@@ -151,12 +141,9 @@ class MantleManager {
   private async setupPeriodicTasks() {
     this.sendCalendarEvents()
     // Calendar sync every hour
-    this.calendarSyncTimer = setInterval(
-      () => {
-        this.sendCalendarEvents()
-      },
-      60 * 60 * 1000,
-    ) // 1 hour
+    this.calendarSyncTimer = setInterval(() => {
+      this.sendCalendarEvents()
+    }, 60 * 60 * 1000) // 1 hour
     try {
       let locationAccuracy = await useSettingsStore.getState().getSetting(SETTINGS.location_tier.key)
       let properAccuracy = this.getLocationAccuracy(locationAccuracy)
@@ -338,8 +325,8 @@ class MantleManager {
 
     this.subs.push(
       CoreModule.addListener("switch_status", (event) => {
-        const switchType = typeof event.switch_type === "number" ? event.switch_type : (event.switchType ?? -1)
-        const switchValue = typeof event.switch_value === "number" ? event.switch_value : (event.switchValue ?? -1)
+        const switchType = typeof event.switch_type === "number" ? event.switch_type : event.switchType ?? -1
+        const switchValue = typeof event.switch_value === "number" ? event.switch_value : event.switchValue ?? -1
         const timestamp = typeof event.timestamp === "number" ? event.timestamp : Date.now()
         socketComms.sendSwitchStatus(switchType, switchValue, timestamp)
         // TODO: remove
