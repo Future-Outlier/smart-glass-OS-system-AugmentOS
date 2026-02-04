@@ -36,7 +36,8 @@ export async function batchEnrichAppsWithProfiles(appsInput: Array<any>): Promis
       } catch {
         // ignore malformed ids
       }
-    } else if (app.developerId) {
+    }
+    if (app.developerId) {
       developerEmailSet.add(String(app.developerId).toLowerCase());
     }
   }
