@@ -131,15 +131,15 @@ export const woltScreenOptions: StackNavigationOptions = {
     open: {
       animation: "timing",
       config: {
-        duration: 300,
-        easing: Easing.out(Easing.cubic),
+        duration: 200,
+        easing: Easing.out(Easing.bounce),
       },
     },
     close: {
       animation: "timing",
       config: {
-        duration: 300,
-        easing: Easing.in(Easing.linear),
+        duration: 200,
+        easing: Easing.in(Easing.cubic),
       },
     },
   },

@@ -1,7 +1,6 @@
 import {Screen} from "@/components/ignite"
 import {SplashVideo} from "@/components/splash/SplashVideo"
 import {SETTINGS, useSetting} from "@/stores/settings"
-import {Text} from "@/components/ignite"
 import {View} from "react-native"
 
 export default function AuthCallback() {
@@ -9,11 +8,8 @@ export default function AuthCallback() {
   if (superMode) {
     return (
       <Screen preset="fixed">
-        <View className="flex-1 justify-center items-center">
-          <View className="h-32 w-32 items-center">
-            <SplashVideo />
-            <Text className="text-chart-4">Auth Callback</Text>
-          </View>
+        <View className="flex-1 justify-center items-center bg-chart-4">
+          <SplashVideo />
         </View>
       </Screen>
     )

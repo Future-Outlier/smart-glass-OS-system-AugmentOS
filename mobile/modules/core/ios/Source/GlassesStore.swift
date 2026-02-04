@@ -82,7 +82,7 @@ class GlassesStore {
         store.set("core", "button_video_height", 720)
         store.set("core", "button_video_fps", 30)
         store.set("core", "preferred_mic", "auto")
-        store.set("core", "lc3_frame_size", 20)
+        store.set("core", "lc3_frame_size", 60)
         store.set("core", "auth_email", "")
         store.set("core", "auth_token", "")
     }
@@ -134,10 +134,10 @@ class GlassesStore {
             if let frameSize = value as? Int {
                 if frameSize != 20 && frameSize != 40 && frameSize != 60 {
                     Bridge.log(
-                        "MAN: Invalid LC3 frame size \(frameSize), must be 20, 40, or 60. Using default 20."
+                        "MAN: Invalid LC3 frame size \(frameSize), must be 20, 40, or 60. Using default 60."
                     )
-                    store.set("core", "lc3_frame_size", 20)
-                    CoreManager.shared.lc3Converter?.setOutputFrameSize(20)
+                    store.set("core", "lc3_frame_size", 60)
+                    CoreManager.shared.lc3Converter?.setOutputFrameSize(60)
                     return
                 }
                 CoreManager.shared.lc3Converter?.setOutputFrameSize(frameSize)

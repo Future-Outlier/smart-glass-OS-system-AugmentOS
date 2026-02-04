@@ -242,6 +242,7 @@ const en = {
     scanningForNetworks: "Scanning for networks...",
     noNetworksFound: "No networks found",
     enterNetworkManually: "Enter network manually",
+    enterNetworkDetails: "Enter network details",
     addNetwork: "Add your Wi-Fi network",
     addNetworkDescription:
       "Add a network to import media and install device updates automatically while your device is charging.",

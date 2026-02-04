@@ -1,27 +1,51 @@
-import {useEffect, useState} from "react"
+import {useEffect, useState, useRef} from "react"
 import {View, Modal, ActivityIndicator} from "react-native"
 import {Text, Button} from "@/components/ignite"
 import {useAppTheme} from "@/contexts/ThemeContext"
 import {useNavigationHistory} from "@/contexts/NavigationHistoryContext"
 import {useGlassesStore} from "@/stores/glasses"
 
+const CANCEL_BUTTON_DELAY_MS = 10000 // 10 seconds before enabling cancel button
+
 export function ConnectionOverlay() {
   const {theme} = useAppTheme()
-  const {replaceAll} = useNavigationHistory()
+  const {clearHistoryAndGoHome} = useNavigationHistory()
   const glassesConnected = useGlassesStore((state) => state.connected)
   const [showOverlay, setShowOverlay] = useState(false)
+  const [cancelButtonEnabled, setCancelButtonEnabled] = useState(false)
+  const cancelButtonTimerRef = useRef<NodeJS.Timeout | null>(null)
 
   useEffect(() => {
     if (!glassesConnected) {
       setShowOverlay(true)
+      setCancelButtonEnabled(false)
+      // Start timer to enable cancel button after delay
+      cancelButtonTimerRef.current = setTimeout(() => {
+        setCancelButtonEnabled(true)
+      }, CANCEL_BUTTON_DELAY_MS)
     } else {
       setShowOverlay(false)
+      setCancelButtonEnabled(false)
+      // Clear timer if connection succeeds
+      if (cancelButtonTimerRef.current) {
+        clearTimeout(cancelButtonTimerRef.current)
+        cancelButtonTimerRef.current = null
+      }
+    }
+
+    return () => {
+      if (cancelButtonTimerRef.current) {
+        clearTimeout(cancelButtonTimerRef.current)
+        cancelButtonTimerRef.current = null
+      }
     }
   }, [glassesConnected])
 
-  const handleCancel = () => {
+  const handleStopTrying = () => {
+    if (!cancelButtonEnabled) return
     setShowOverlay(false)
-    replaceAll("/pairing/select-glasses-model")
+    setCancelButtonEnabled(false)
+    clearHistoryAndGoHome()
   }
 
   if (!showOverlay) return null
@@ -33,7 +57,13 @@ export function ConnectionOverlay() {
           <ActivityIndicator size="large" color={theme.colors.foreground} />
           <Text className="text-xl font-semibold text-text text-center mt-6 mb-2" tx="glasses:glassesAreReconnecting" />
           <Text className="text-base text-text-dim text-center mb-6" tx="glasses:glassesAreReconnectingMessage" />
-          <Button tx="common:cancel" preset="secondary" onPress={handleCancel} />
+          <Button
+            text="Stop Trying"
+            preset="secondary"
+            onPress={handleStopTrying}
+            disabled={!cancelButtonEnabled}
+            style={{opacity: cancelButtonEnabled ? 1 : 0.4}}
+          />
         </View>
       </View>
     </Modal>
