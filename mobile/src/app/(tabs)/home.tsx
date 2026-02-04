@@ -58,8 +58,8 @@ export default function Homepage() {
         return
       }
 
-      // Check if we have a default wearable configured
-      if (!defaultWearable) {
+      // Check if we have a default wearable configured (skip simulated glasses)
+      if (!defaultWearable || defaultWearable.toLowerCase().includes("simulated")) {
         return
       }
 
