@@ -4,13 +4,13 @@ import {AppState} from "react-native"
 import {SETTINGS, useSettingsStore} from "@/stores/settings"
 import {checkConnectivityRequirementsUI} from "@/utils/PermissionsUtils"
 import CoreModule from "core"
-import { useGlassesStore } from "@/stores/glasses"
-import { useCoreStore } from "@/stores/core"
+import {useGlassesStore} from "@/stores/glasses"
+import {useCoreStore} from "@/stores/core"
 
 export function Reconnect() {
   const glassesConnected = useGlassesStore((state) => state.connected)
   const isSearching = useCoreStore((state) => state.searching)
-  
+
   // Add a listener for app state changes to detect when the app comes back from background
   useEffect(() => {
     const handleAppStateChange = async (nextAppState: any) => {
@@ -27,7 +27,7 @@ export function Reconnect() {
         if (glassesConnected || isSearching) {
           return
         }
-        
+
         // check if we have bluetooth perms in case they got removed:
         const requirementsCheck = await checkConnectivityRequirementsUI()
         if (!requirementsCheck) {
