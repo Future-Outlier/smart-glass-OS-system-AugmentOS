@@ -438,9 +438,9 @@ class MentraNex : SGCManager() {
 
     override fun clearDisplay() { 
         Bridge.log("Nex: clearDisplay() - sending clear display request command bytes");
-        // val clearDisplayPackets = NexProtobufUtils.generateClearDisplayRequestCommandBytes()
-        // sendDataSequentially(clearDisplayPackets, 10)
-        sendTextWall(" ")
+        val clearDisplayPackets = NexProtobufUtils.generateClearDisplayRequestCommandBytes()
+        sendDataSequentially(clearDisplayPackets, 10)
+        // sendTextWall(" ")
         Bridge.log("Nex: clearDisplay() - sent clear display request command bytes");
     }
 

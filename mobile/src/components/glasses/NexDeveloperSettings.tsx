@@ -260,6 +260,8 @@ export default function NexDeveloperSettings() {
   const deviceModel = useGlassesStore((state) => state.deviceModel)
   const features: Capabilities = getModelCapabilities(defaultWearable)
 
+  console.log("Yash is the best!!!!!", deviceModel, "hello", defaultWearable)
+
   // Mentra Display BLE test state variables
   const [text, setText] = useState("Hello World")
   const [positionX, setPositionX] = useState("0")
@@ -433,7 +435,7 @@ export default function NexDeveloperSettings() {
         )}
 
         {/* Mentra Nex BLE Test Section - Only show when connected to Mentra Nex */}
-        {deviceModel === "Mentra Display" ? (
+        {defaultWearable === "Mentra Display" ? (
           <>
             {/* Custom Display Text Settings */}
             <View style={themed($settingsGroup)}>
@@ -923,30 +925,30 @@ const $versionBadge: ThemedStyle<TextStyle> = ({colors, spacing}) => ({
   overflow: "hidden",
 })
 
-const $protobufVersionBadge: ThemedStyle<TextStyle> = ({colors, spacing}) => ({
-  backgroundColor: colors.palette.neutral100,
-  color: colors.palette.neutral600,
-  fontSize: 12,
-  fontWeight: "600",
-  paddingHorizontal: spacing.s3,
-  paddingVertical: spacing.s2,
-  borderRadius: spacing.s2,
-  borderWidth: 1,
-  borderColor: colors.palette.neutral300,
-  overflow: "hidden",
-  fontFamily: "monospace",
-})
+// const $protobufVersionBadge: ThemedStyle<TextStyle> = ({colors, spacing}) => ({
+//   backgroundColor: colors.palette.neutral100,
+//   color: colors.palette.neutral600,
+//   fontSize: 12,
+//   fontWeight: "600",
+//   paddingHorizontal: spacing.s3,
+//   paddingVertical: spacing.s2,
+//   borderRadius: spacing.s2,
+//   borderWidth: 1,
+//   borderColor: colors.palette.neutral300,
+//   overflow: "hidden",
+//   fontFamily: "monospace",
+// })
 
-const $glassesProtobufVersionBadge: ThemedStyle<TextStyle> = ({colors, spacing}) => ({
-  backgroundColor: colors.palette.accent100,
-  color: colors.palette.accent500,
-  fontSize: 12,
-  fontWeight: "600",
-  paddingHorizontal: spacing.s3,
-  paddingVertical: spacing.s2,
-  borderRadius: spacing.s2,
-  borderWidth: 1,
-  borderColor: colors.palette.accent300,
-  overflow: "hidden",
-  fontFamily: "monospace",
-})
+// const $glassesProtobufVersionBadge: ThemedStyle<TextStyle> = ({colors, spacing}) => ({
+//   backgroundColor: colors.palette.accent100,
+//   color: colors.palette.accent500,
+//   fontSize: 12,
+//   fontWeight: "600",
+//   paddingHorizontal: spacing.s3,
+//   paddingVertical: spacing.s2,
+//   borderRadius: spacing.s2,
+//   borderWidth: 1,
+//   borderColor: colors.palette.accent300,
+//   overflow: "hidden",
+//   fontFamily: "monospace",
+// })

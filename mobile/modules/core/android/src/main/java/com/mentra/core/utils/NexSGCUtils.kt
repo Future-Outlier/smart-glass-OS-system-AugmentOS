@@ -178,7 +178,7 @@ object NexProtobufUtils {
         val clearDisplay = ClearDisplay.newBuilder()
             .build()
         val phoneToGlasses = PhoneToGlasses.newBuilder()
-            .setMsgId("clear_disp_001")
+            // .setMsgId("clear_disp_001")
             .setClearDisplay(clearDisplay)
             .build();
         return generateProtobufCommandBytes(phoneToGlasses);
