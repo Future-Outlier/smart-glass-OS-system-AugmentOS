@@ -973,7 +973,7 @@ export function OnboardingGuide({
 
           {hasStarted && (
             <View className="flex-row gap-4">
-              {!superMode && !isFirstStep && <Button flex preset="secondary" tx="common:back" onPress={handleBack} />}
+              {superMode && !isFirstStep && <Button flex preset="secondary" tx="common:back" onPress={handleBack} />}
               {!isLastStep ? renderContinueButton() : <Button flex text={endButtonText} onPress={handleEndButton} />}
             </View>
           )}
