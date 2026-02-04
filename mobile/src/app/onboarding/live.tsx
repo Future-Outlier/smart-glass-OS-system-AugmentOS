@@ -2,7 +2,6 @@ import {Screen} from "@/components/ignite"
 import {OnboardingGuide, OnboardingStep} from "@/components/onboarding/OnboardingGuide"
 import {useNavigationHistory} from "@/contexts/NavigationHistoryContext"
 import {translate} from "@/i18n"
-import {useGlassesStore} from "@/stores/glasses"
 import {SETTINGS, useSetting} from "@/stores/settings"
 import showAlert from "@/utils/AlertUtils"
 import CoreModule, {TouchEvent} from "core"
@@ -257,6 +256,7 @@ export default function MentraLiveOnboarding() {
         autoStart={false}
         showCloseButton={true}
         preventBack={true}
+        requiresGlassesConnection={true}
         skipFn={handleCloseButton}
         endButtonFn={handleEndButton}
         startButtonText={translate("onboarding:continueOnboarding")}

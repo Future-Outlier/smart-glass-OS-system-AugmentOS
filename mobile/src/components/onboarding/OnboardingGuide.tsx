@@ -4,6 +4,7 @@ import {useState, useCallback, useEffect, useMemo, useRef} from "react"
 import {View, ViewStyle, ActivityIndicator, Platform, Animated} from "react-native"
 
 import {MentraLogoStandalone} from "@/components/brands/MentraLogoStandalone"
+import {ConnectionOverlay} from "@/components/glasses/ConnectionOverlay"
 import {Text, Button, Header, Icon} from "@/components/ignite"
 import {focusEffectPreventBack, useNavigationHistory} from "@/contexts/NavigationHistoryContext"
 import {useAppTheme} from "@/contexts/ThemeContext"
@@ -60,6 +61,7 @@ interface OnboardingGuideProps {
   showHeader?: boolean
   preventBack?: boolean
   androidBackFn?: () => void
+  requiresGlassesConnection?: boolean
 }
 
 // Find next video step's source for preloading
@@ -83,6 +85,7 @@ export function OnboardingGuide({
   endButtonFn,
   skipFn,
   preventBack = false,
+  requiresGlassesConnection = false,
 }: OnboardingGuideProps) {
   const {clearHistoryAndGoHome} = useNavigationHistory()
   const {theme} = useAppTheme()
@@ -867,14 +870,14 @@ export function OnboardingGuide({
         {step.title && (
           <Text
             className={`${
-              step.titleCentered ?? false ? "text-center" : "text-start"
+              (step.titleCentered ?? false) ? "text-center" : "text-start"
             } text-2xl font-semibold text-foreground`}
             text={step.title}
           />
         )}
         {step.subtitle && (
           <Text
-            className={`${step.subtitleCentered ?? false ? "text-center" : "text-start"} text-[18px] text-foreground`}
+            className={`${(step.subtitleCentered ?? false) ? "text-center" : "text-start"} text-[18px] text-foreground`}
             text={step.subtitle}
           />
         )}
@@ -937,6 +940,7 @@ export function OnboardingGuide({
 
   return (
     <>
+      {requiresGlassesConnection && <ConnectionOverlay />}
       <View id="main" className="flex-1 justify-between">
         {showHeader && (
           <Header
