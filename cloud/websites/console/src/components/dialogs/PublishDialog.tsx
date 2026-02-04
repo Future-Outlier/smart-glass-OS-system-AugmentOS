@@ -115,7 +115,7 @@ const PublishDialog: React.FC<PublishDialogProps> = ({
 
           {isProfileIncomplete ? (
             <div className="space-y-4">
-              <p className="text-sm text-gray-600">
+              <p className="text-sm text-muted-foreground">
                 Before you can publish your MiniApp, you need to complete your organization profile. This information will be visible to users who install your MiniApp.
               </p>
               <Button onClick={goToProfile} className="w-full">
@@ -124,10 +124,10 @@ const PublishDialog: React.FC<PublishDialogProps> = ({
             </div>
           ) : (
             <>
-              <p className="text-sm text-gray-600 mb-3">
+              <p className="text-sm text-muted-foreground mb-3">
                 Publishing your MiniApp will make it available for review. Once approved, it will be visible to all MentraOS users.
               </p>
-              <p className="text-sm text-gray-600">
+              <p className="text-sm text-muted-foreground">
                 Your MiniApp will initially be submitted in a <strong>SUBMITTED</strong> state and will need to undergo review before being published.
               </p>
             </>

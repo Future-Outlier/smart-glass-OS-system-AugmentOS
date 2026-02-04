@@ -723,7 +723,7 @@ const AdminPanel: React.FC = () => {
 
         {isLoading ? (
           <div className="flex justify-center items-center h-64">
-            <Loader2 className="h-10 w-10 animate-spin text-gray-500" />
+            <Loader2 className="h-10 w-10 animate-spin text-muted-foreground" />
           </div>
         ) : (
           <div>
@@ -772,7 +772,7 @@ const AdminPanel: React.FC = () => {
                 />
                 <span>{chosenAppStatus}</span>
                 <X
-                  className={`h-4 w-4 ml-2 cursor-pointer ${activeTab === "idle" ? "text-white hover:bg-gray-600" : "text-black hover:bg-gray-200"} rounded p-0.5`}
+                  className={`h-4 w-4 ml-2 cursor-pointer ${activeTab === "idle" ? "text-white hover:bg-secondary" : "text-black hover:bg-secondary"} rounded p-0.5`}
                   onClick={(e) => {
                     e.preventDefault();
                     e.stopPropagation();
@@ -789,7 +789,7 @@ const AdminPanel: React.FC = () => {
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5 mb-8">
                   <Card>
                     <CardHeader className="pb-2">
-                      <CardTitle className="text-sm font-medium text-gray-500">
+                      <CardTitle className="text-sm font-medium text-muted-foreground">
                         Pending Review
                       </CardTitle>
                     </CardHeader>
@@ -805,13 +805,13 @@ const AdminPanel: React.FC = () => {
 
                   <Card>
                     <CardHeader className="pb-2">
-                      <CardTitle className="text-sm font-medium text-gray-500">
+                      <CardTitle className="text-sm font-medium text-muted-foreground">
                         Published
                       </CardTitle>
                     </CardHeader>
                     <CardContent>
                       <div className="flex items-center">
-                        <CheckCircle className="h-5 w-5 text-green-500 mr-2" />
+                        <CheckCircle className="h-5 w-5 text-success mr-2" />
                         <span className="text-2xl font-bold">
                           {stats.counts.published}
                         </span>
@@ -821,13 +821,13 @@ const AdminPanel: React.FC = () => {
 
                   <Card>
                     <CardHeader className="pb-2">
-                      <CardTitle className="text-sm font-medium text-gray-500">
+                      <CardTitle className="text-sm font-medium text-muted-foreground">
                         Rejected
                       </CardTitle>
                     </CardHeader>
                     <CardContent>
                       <div className="flex items-center">
-                        <XCircle className="h-5 w-5 text-red-500 mr-2" />
+                        <XCircle className="h-5 w-5 text-destructive mr-2" />
                         <span className="text-2xl font-bold">
                           {stats.counts.rejected}
                         </span>
@@ -837,13 +837,13 @@ const AdminPanel: React.FC = () => {
 
                   <Card>
                     <CardHeader className="pb-2">
-                      <CardTitle className="text-sm font-medium text-gray-500">
+                      <CardTitle className="text-sm font-medium text-muted-foreground">
                         Total Apps
                       </CardTitle>
                     </CardHeader>
                     <CardContent>
                       <div className="flex items-center">
-                        <Package className="h-5 w-5 text-blue-500 mr-2" />
+                        <Package className="h-5 w-5 text-link mr-2" />
                         <span className="text-2xl font-bold">
                           {stats.counts.development +
                             stats.counts.submitted +
@@ -868,10 +868,10 @@ const AdminPanel: React.FC = () => {
                         >
                           <div>
                             <div className="font-medium">{app.name}</div>
-                            <div className="text-sm text-gray-500">
+                            <div className="text-sm text-muted-foreground">
                               {app.packageName}
                             </div>
-                            <div className="text-xs text-gray-400">
+                            <div className="text-xs text-muted-foreground">
                               Submitted: {formatDate(app.updatedAt)}
                             </div>
                           </div>
@@ -887,7 +887,7 @@ const AdminPanel: React.FC = () => {
                       ))}
 
                       {stats.recentSubmissions.length === 0 && (
-                        <div className="py-6 text-center text-gray-500">
+                        <div className="py-6 text-center text-muted-foreground">
                           No pending submissions
                         </div>
                       )}
@@ -904,7 +904,7 @@ const AdminPanel: React.FC = () => {
                 </CardHeader>
                 <CardContent>
                   {submittedApps.length === 0 ? (
-                    <div className="py-6 text-center text-gray-500">
+                    <div className="py-6 text-center text-muted-foreground">
                       No pending submissions
                     </div>
                   ) : (
@@ -929,10 +929,10 @@ const AdminPanel: React.FC = () => {
                             />
                             <div>
                               <div className="font-medium">{app.name}</div>
-                              <div className="text-sm text-gray-500">
+                              <div className="text-sm text-muted-foreground">
                                 {app.packageName}
                               </div>
-                              <div className="text-xs text-gray-400">
+                              <div className="text-xs text-muted-foreground">
                                 Submitted: {formatDate(app.updatedAt)}
                               </div>
                             </div>
@@ -985,9 +985,9 @@ const AdminPanel: React.FC = () => {
                     <CardTitle>
                       <div className="flex-1 flex items-center gap-2.5">
                         <div className="flex-1">App Status</div>
-                        <span className="text-sm font-medium text-gray-500"></span>
+                        <span className="text-sm font-medium text-muted-foreground"></span>
                         <div className="flex flex-col justify-center items-center">
-                          <div className="text-xs text-gray-600">
+                          <div className="text-xs text-muted-foreground">
                             {lastUpdateTime
                               ? lastUpdateTime.toLocaleTimeString()
                               : "Never"}
@@ -1018,7 +1018,7 @@ const AdminPanel: React.FC = () => {
                   </CardHeader>
                   <CardContent>
                     {filteredApps.length === 0 ? (
-                      <div className="py-6 text-center text-gray-500">
+                      <div className="py-6 text-center text-muted-foreground">
                         {searchQuery.trim()
                           ? "No apps match your search"
                           : "No pending submissions"}
@@ -1029,7 +1029,7 @@ const AdminPanel: React.FC = () => {
                           <div
                             key={app._id}
                             className="py-4 flex justify-between items-center
-                          hover:bg-gray-50 cursor-pointer transition-colors px-4"
+                          hover:bg-secondary cursor-pointer transition-colors px-4"
                             onClick={() => {
                               setChosenAppStatus(app.name);
                               setActiveTab("idle");
@@ -1050,10 +1050,10 @@ const AdminPanel: React.FC = () => {
                               />
                               <div>
                                 <div className="font-medium">{app.name}</div>
-                                <div className="text-sm text-gray-500">
+                                <div className="text-sm text-muted-foreground">
                                   {app.packageName}
                                 </div>
-                                <div className="text-xs text-gray-400">
+                                <div className="text-xs text-muted-foreground">
                                   Submitted: {formatDate(app.updatedAt)}
                                 </div>
                               </div>
@@ -1103,7 +1103,7 @@ const AdminPanel: React.FC = () => {
                 if (!selectedApp) {
                   return (
                     <Card>
-                      <CardContent className="p-6 text-center text-gray-500">
+                      <CardContent className="p-6 text-center text-muted-foreground">
                         App not found: {chosenAppStatus}
                       </CardContent>
                     </Card>
@@ -1269,13 +1269,13 @@ const AdminPanel: React.FC = () => {
                   />
                   <div>
                     <h3 className="font-medium text-lg">{selectedApp.name}</h3>
-                    <p className="text-sm text-gray-500">
+                    <p className="text-sm text-muted-foreground">
                       {selectedApp.packageName}
                     </p>
                   </div>
                 </div>
 
-                <hr className="border-t border-gray-200" />
+                <hr className="border-t border-border" />
 
                 <div>
                   <h4 className="font-medium mb-1">Description</h4>
@@ -1293,7 +1293,7 @@ const AdminPanel: React.FC = () => {
                         href={selectedApp.publicUrl}
                         target="_blank"
                         rel="noreferrer"
-                        className="text-blue-600 underline"
+                        className="text-link underline"
                       >
                         {selectedApp.publicUrl}
                       </a>
@@ -1306,7 +1306,7 @@ const AdminPanel: React.FC = () => {
                         href={selectedApp.webviewURL}
                         target="_blank"
                         rel="noreferrer"
-                        className="text-blue-600 underline"
+                        className="text-link underline"
                       >
                         {selectedApp.webviewURL}
                       </a>
@@ -1334,12 +1334,12 @@ const AdminPanel: React.FC = () => {
                         {selectedApp.tools.map((tool) => (
                           <div key={tool.id} className="text-sm">
                             <div className="font-medium">{tool.id}</div>
-                            <div className="text-gray-600">
+                            <div className="text-muted-foreground">
                               {tool.description}
                             </div>
                             {tool.activationPhrases &&
                               tool.activationPhrases.length > 0 && (
-                                <div className="text-xs text-gray-500">
+                                <div className="text-xs text-muted-foreground">
                                   Activation:{" "}
                                   {tool.activationPhrases.join(", ")}
                                 </div>
@@ -1376,7 +1376,7 @@ const AdminPanel: React.FC = () => {
                             <div className="font-medium">
                               {s.title || s.label || s.key || s.type}
                             </div>
-                            <div className="text-gray-600">{s.type}</div>
+                            <div className="text-muted-foreground">{s.type}</div>
                           </div>
                         ))}
                       </div>
@@ -1410,9 +1410,9 @@ const AdminPanel: React.FC = () => {
                         {selectedApp.hardwareRequirements.map((h, idx) => (
                           <div key={`${h.type}-${idx}`} className="flex gap-2">
                             <div className="font-medium">{h.type}</div>
-                            <div className="text-gray-600">{h.level}</div>
+                            <div className="text-muted-foreground">{h.level}</div>
                             {h.description && (
-                              <div className="text-gray-500">
+                              <div className="text-muted-foreground">
                                 {h.description}
                               </div>
                             )}
@@ -1471,7 +1471,7 @@ const AdminPanel: React.FC = () => {
               </div>
             )}
 
-            <hr className="border-t border-gray-200" />
+            <hr className="border-t border-border" />
 
             <div>
               <h4 className="font-medium mb-1">Review Notes</h4>

@@ -121,9 +121,9 @@ const ImportConfigDialog: React.FC<ImportConfigDialogProps> = ({
           {!error && configData && (
             <>
               {/* Configuration Summary */}
-              <div className="border rounded-lg p-4 bg-gray-50">
+              <div className="border rounded-lg p-4 bg-secondary">
                 <h4 className="font-medium mb-2">Configuration Summary</h4>
-                <div className="space-y-1 text-sm text-gray-600">
+                <div className="space-y-1 text-sm text-muted-foreground">
                   <div><strong>Name:</strong> {configData.name ? configData.name : 'Not provided (will keep current)'}</div>
                   <div><strong>Description:</strong> {configData.description ? configData.description : 'Not provided (will keep current)'}</div>
                 </div>
@@ -132,7 +132,7 @@ const ImportConfigDialog: React.FC<ImportConfigDialogProps> = ({
               {/* What will be imported */}
               <div className="space-y-2">
                 <h4 className="font-medium text-sm">What will be imported:</h4>
-                <ul className="list-disc list-inside text-sm text-gray-600 space-y-1">
+                <ul className="list-disc list-inside text-sm text-muted-foreground space-y-1">
                   {(configData.name || configData.description) && (
                     <li>
                       {configData.name && configData.description

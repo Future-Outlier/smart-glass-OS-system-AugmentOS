@@ -193,37 +193,37 @@ const SortableSettingItem: React.FC<SortableSettingItemProps> = ({
     <div
       ref={setNodeRef}
       style={style}
-      className="border rounded-lg bg-white shadow-sm"
+      className="border rounded-lg bg-card shadow-sm"
     >
       {!isEditing ? (
         // Collapsed view - just show the essential info
         <div
-          className="p-4 cursor-pointer hover:bg-gray-50 transition-colors"
+          className="p-4 cursor-pointer hover:bg-secondary transition-colors"
           onClick={() => onEditToggle(index)}
         >
           <div className="flex items-center gap-3">
             {/* Drag handle */}
             <button
-              className="cursor-grab hover:bg-gray-200 rounded p-1 -ml-1"
+              className="cursor-grab hover:bg-secondary rounded p-1 -ml-1"
               {...attributes}
               {...listeners}
               type="button"
               onClick={(e) => e.stopPropagation()}
             >
-              <GripVertical className="h-4 w-4 text-gray-400" />
+              <GripVertical className="h-4 w-4 text-muted-foreground" />
             </button>
 
             {/* Content preview */}
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-2 mb-1">
-                <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-accent/10 text-accent">
                   {setting.type}
                 </span>
-                <span className="font-medium text-sm text-gray-900 truncate">
+                <span className="font-medium text-sm text-foreground truncate">
                   {getDisplayText()}
                 </span>
               </div>
-              <div className="flex items-center gap-4 text-xs text-gray-500">
+              <div className="flex items-center gap-4 text-xs text-muted-foreground">
                 {!isGroup && (
                   <>
                     <span>Label: {getDisplayLabel()}</span>
@@ -242,7 +242,7 @@ const SortableSettingItem: React.FC<SortableSettingItemProps> = ({
               variant="ghost"
               size="sm"
               type="button"
-              className="h-8 w-8 p-0 text-red-600 hover:text-red-700"
+              className="h-8 w-8 p-0 text-muted-foreground hover:text-foreground"
             >
               <Trash2 className="h-4 w-4" />
             </Button>
@@ -271,7 +271,7 @@ const SortableSettingItem: React.FC<SortableSettingItemProps> = ({
                 variant="ghost"
                 size="sm"
                 type="button"
-                className="h-8 w-8 p-0 text-red-600 hover:text-red-700"
+                className="h-8 w-8 p-0 text-muted-foreground hover:text-foreground"
               >
                 <Trash2 className="h-4 w-4" />
               </Button>
@@ -346,7 +346,7 @@ const SortableSettingItem: React.FC<SortableSettingItemProps> = ({
                       placeholder="e.g., theme_color"
                       className="mt-1 font-mono"
                     />
-                    <p className="text-xs text-gray-500 mt-1">
+                    <p className="text-xs text-muted-foreground mt-1">
                       Unique identifier (alphanumeric, no spaces)
                     </p>
                   </div>
@@ -363,7 +363,7 @@ const SortableSettingItem: React.FC<SortableSettingItemProps> = ({
                     placeholder="e.g., Theme Color"
                     className="mt-1"
                   />
-                  <p className="text-xs text-gray-500 mt-1">
+                  <p className="text-xs text-muted-foreground mt-1">
                     This is the label for the setting that will be displayed to
                     the user
                   </p>
@@ -399,7 +399,7 @@ const SortableSettingItem: React.FC<SortableSettingItemProps> = ({
                       placeholder="Default text value"
                       className="mt-1"
                     />
-                    <p className="text-xs text-gray-500 mt-1">
+                    <p className="text-xs text-muted-foreground mt-1">
                       This is the default value for the setting if the user does
                       not provide a value
                     </p>
@@ -586,7 +586,7 @@ const SortableSettingItem: React.FC<SortableSettingItemProps> = ({
                           placeholder="0"
                           className="mt-1"
                         />
-                        <p className="text-xs text-gray-500 mt-1">
+                        <p className="text-xs text-muted-foreground mt-1">
                           Total seconds (e.g., 3661 = 1:01:01)
                         </p>
                       </div>
@@ -680,10 +680,10 @@ const SortableSettingItem: React.FC<SortableSettingItemProps> = ({
                               }}
                               className={`flex-1 font-mono ${
                                 specialSettings.includes(option.value) ||
-                                (setting.options && 
+                                (setting.options &&
                                  setting.options.filter((_: any, idx: number) => idx !== optionIndex)
                                    .some((otherOpt: any) => otherOpt.value === option.value))
-                                  ? "text-red-500"
+                                  ? "text-destructive"
                                   : ""
                               }`}
                             />
@@ -694,7 +694,7 @@ const SortableSettingItem: React.FC<SortableSettingItemProps> = ({
                               variant="ghost"
                               size="sm"
                               type="button"
-                              className="text-red-600"
+                              className="text-muted-foreground hover:text-foreground"
                             >
                               <Trash2 className="h-4 w-4" />
                             </Button>
@@ -806,7 +806,7 @@ const SortableSettingItem: React.FC<SortableSettingItemProps> = ({
                       placeholder="Value to display"
                       className="mt-1"
                     />
-                    <p className="text-xs text-gray-500 mt-1">
+                    <p className="text-xs text-muted-foreground mt-1">
                       This setting displays a read-only label and value to users
                     </p>
                   </div>
@@ -1190,7 +1190,7 @@ const SettingsEditor: React.FC<SettingsEditorProps> = ({
             <Settings className="h-5 w-5" />
             App Settings
           </h3>
-          <p className="text-sm text-gray-600">
+          <p className="text-sm text-muted-foreground">
             Configure user settings. Drag to reorder.
           </p>
         </div>
@@ -1218,7 +1218,7 @@ const SettingsEditor: React.FC<SettingsEditorProps> = ({
       </div>
 
       {settings.length === 0 ? (
-        <div className="text-center py-4 text-gray-500">
+        <div className="text-center py-4 text-muted-foreground">
           <p>No settings defined yet.</p>
         </div>
       ) : (
@@ -1255,9 +1255,9 @@ const SettingsEditor: React.FC<SettingsEditorProps> = ({
           </SortableContext>
           <DragOverlay>
             {activeId && activeSetting ? (
-              <div className="border rounded-lg bg-white shadow-xl p-3">
+              <div className="border rounded-lg bg-card shadow-xl p-3">
                 <div className="flex items-center gap-2">
-                  <GripVertical className="h-4 w-4 text-gray-400" />
+                  <GripVertical className="h-4 w-4 text-muted-foreground" />
                   <span className="text-sm font-medium">
                     {activeSetting.type === AppSettingType.GROUP
                       ? `Group: ${activeSetting.title || "Untitled"}`

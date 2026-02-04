@@ -89,7 +89,7 @@ export function WebviewUrlToggle({
         <div className="flex items-center gap-2">
           <Label
             htmlFor="webview-toggle"
-            className="text-sm text-gray-500 font-normal"
+            className="text-sm text-muted-foreground font-normal"
           >
             Use custom URL
           </Label>
@@ -111,25 +111,25 @@ export function WebviewUrlToggle({
             onChange={handleInputChange}
             onBlur={onBlur}
             placeholder="yourserver.com/custom-webview"
-            className={cn(hasError && "border-red-500")}
+            className={cn(hasError && "border-destructive")}
             disabled={disabled}
           />
           {hasError && errorMessage && (
-            <p className="text-xs text-red-500">{errorMessage}</p>
+            <p className="text-xs text-destructive">{errorMessage}</p>
           )}
-          <p className="text-xs text-gray-500">
+          <p className="text-xs text-muted-foreground">
             Enter a custom URL for your MiniApp&apos;s mobile companion interface.
             HTTPS is required and will be added automatically if not specified.
           </p>
         </div>
       ) : (
         <div className="space-y-2">
-          <div className="flex items-center gap-2 px-3 py-2 bg-gray-50 border rounded-md">
-            <span className="text-sm text-gray-600 font-mono">
+          <div className="flex items-center gap-2 px-3 py-2 bg-secondary border rounded-md">
+            <span className="text-sm text-muted-foreground font-mono">
               {defaultUrl || "(Enter Server URL first)"}
             </span>
           </div>
-          <p className="text-xs text-gray-500">
+          <p className="text-xs text-muted-foreground">
             Using default webview URL based on your Server URL. Toggle on to use
             a custom URL.
           </p>

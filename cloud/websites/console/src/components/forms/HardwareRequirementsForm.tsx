@@ -68,28 +68,23 @@ const HardwareRequirementItem: React.FC<HardwareRequirementItemProps> = ({
   }
 
   return (
-    <div className="border rounded-lg bg-white shadow-sm">
+    <div className="border rounded-lg bg-card shadow-sm">
       {!isEditing ? (
         // Collapsed view - just show the essential info
-        <div className="p-4 cursor-pointer hover:bg-gray-50 transition-colors" onClick={() => onEditToggle(index)}>
+        <div className="p-4 cursor-pointer hover:bg-secondary transition-colors" onClick={() => onEditToggle(index)}>
           <div className="flex items-center gap-3">
             {/* Content preview */}
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-2 mb-1">
                 {hardwareTypeIcons[requirement.type as HardwareType]}
-                <span className="font-medium text-sm text-gray-900">
+                <span className="font-medium text-sm text-foreground">
                   {hardwareTypeLabels[requirement.type as HardwareType]}
                 </span>
-                <span
-                  className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
-                    requirement.level === HardwareRequirementLevel.REQUIRED
-                      ? "bg-gray-100 text-gray-800"
-                      : "bg-gray-100 text-gray-800"
-                  }`}>
+                <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-secondary text-secondary-foreground">
                   {requirement.level === HardwareRequirementLevel.REQUIRED ? "Required" : "Optional"}
                 </span>
               </div>
-              <div className="text-xs text-gray-500 truncate">{getDescriptionPreview()}</div>
+              <div className="text-xs text-muted-foreground truncate">{getDescriptionPreview()}</div>
             </div>
 
             {/* Delete button */}
@@ -177,14 +172,14 @@ const HardwareRequirementItem: React.FC<HardwareRequirementItemProps> = ({
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value={HardwareRequirementLevel.REQUIRED}>
-                    <span className="text-gray-900">Required</span>
+                    <span className="text-foreground">Required</span>
                   </SelectItem>
                   <SelectItem value={HardwareRequirementLevel.OPTIONAL}>
-                    <span className="text-gray-900">Optional</span>
+                    <span className="text-foreground">Optional</span>
                   </SelectItem>
                 </SelectContent>
               </Select>
-              <p className="text-xs text-gray-500 mt-1">
+              <p className="text-xs text-muted-foreground mt-1">
                 Required hardware will prevent app installation if not available
               </p>
             </div>
@@ -201,7 +196,7 @@ const HardwareRequirementItem: React.FC<HardwareRequirementItemProps> = ({
                 rows={3}
                 className="mt-1"
               />
-              <p className="text-xs text-gray-500 mt-1">
+              <p className="text-xs text-muted-foreground mt-1">
                 A clear explanation helps users understand why this hardware is necessary.
               </p>
             </div>
@@ -287,7 +282,7 @@ const HardwareRequirementsForm: React.FC<HardwareRequirementsFormProps> = ({requ
       </div>
 
       {requirements.length === 0 ? (
-        <div className="text-center py-4 text-gray-500">
+        <div className="text-center py-4 text-muted-foreground">
           <p>No hardware requirements specified.</p>
           <p className="text-xs mt-1">The app will be assumed to work with any hardware.</p>
         </div>

@@ -165,26 +165,26 @@ const ToolItem: React.FC<ToolItemProps> = ({
   };
 
   return (
-    <div className="border rounded-lg bg-white shadow-sm">
+    <div className="border rounded-lg bg-card shadow-sm">
       {!isEditing ? (
         // Collapsed view - just show the essential info
         <div
-          className="p-4 cursor-pointer hover:bg-gray-50 transition-colors"
+          className="p-4 cursor-pointer hover:bg-secondary transition-colors"
           onClick={() => onEditToggle(index)}
         >
           <div className="flex items-center gap-3">
             {/* Content preview */}
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-2 mb-1">
-                <Brain className="h-4 w-4 text-blue-600 flex-shrink-0" />
-                <span className="font-medium text-sm text-gray-900 truncate">
+                <Brain className="h-4 w-4 text-link flex-shrink-0" />
+                <span className="font-medium text-sm text-foreground truncate">
                   {getDisplayText()}
                 </span>
-                <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
+                <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-secondary text-secondary-foreground">
                   {getParameterCount()} params
                 </span>
               </div>
-              <div className="flex flex-col gap-1 text-xs text-gray-500">
+              <div className="flex flex-col gap-1 text-xs text-muted-foreground">
                 <span className="truncate">
                   {tool.description || "No description"}
                 </span>
@@ -253,7 +253,7 @@ const ToolItem: React.FC<ToolItemProps> = ({
                 placeholder="e.g., search_notes"
                 className="mt-1 font-mono"
               />
-              <p className="text-xs text-gray-500 mt-1">
+              <p className="text-xs text-muted-foreground mt-1">
                 Unique identifier (alphanumeric, no spaces)
               </p>
             </div>
@@ -270,7 +270,7 @@ const ToolItem: React.FC<ToolItemProps> = ({
                 rows={3}
                 className="mt-1"
               />
-              <p className="text-xs text-gray-500 mt-1">
+              <p className="text-xs text-muted-foreground mt-1">
                 Clear description for the AI to understand
               </p>
             </div>
@@ -289,7 +289,7 @@ const ToolItem: React.FC<ToolItemProps> = ({
                 placeholder="search my notes, find information, look up"
                 className="mt-1"
               />
-              <p className="text-xs text-gray-500 mt-1">
+              <p className="text-xs text-muted-foreground mt-1">
                 Comma-separated phrases that trigger this tool
               </p>
             </div>
@@ -310,7 +310,7 @@ const ToolItem: React.FC<ToolItemProps> = ({
               </div>
 
               {tool.parameters.length === 0 ? (
-                <div className="text-center py-6 text-gray-500 text-sm border-2 border-dashed rounded">
+                <div className="text-center py-6 text-muted-foreground text-sm border-2 border-dashed rounded">
                   No parameters defined. Parameters allow the tool to receive
                   additional data.
                 </div>
@@ -319,7 +319,7 @@ const ToolItem: React.FC<ToolItemProps> = ({
                   {tool.parameters.map((param) => (
                     <div
                       key={param.id}
-                      className="bg-gray-50 rounded-lg p-4 border"
+                      className="bg-secondary rounded-lg p-4 border"
                     >
                       <div className="space-y-3">
                         <div className="flex items-center justify-between">
@@ -602,7 +602,7 @@ const ToolsEditor: React.FC<ToolsEditorProps> = ({
       </div>
 
       {internalTools.length === 0 ? (
-        <div className="text-center py-4 text-gray-500">
+        <div className="text-center py-4 text-muted-foreground">
           <p>No AI tools defined yet.</p>
         </div>
       ) : (

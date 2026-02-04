@@ -71,12 +71,12 @@ const InstallDialog: React.FC<InstallDialogProps> = ({app, open, onOpenChange, i
           <DialogTitle className="flex items-center gap-2">
             {isInstalled ? (
               <>
-                <PackageX className="h-5 w-5 text-orange-500" />
+                <PackageX className="h-5 w-5 text-warning" />
                 Uninstall App
               </>
             ) : (
               <>
-                <Download className="h-5 w-5 text-blue-500" />
+                <Download className="h-5 w-5 text-link" />
                 Install App
               </>
             )}
@@ -93,24 +93,24 @@ const InstallDialog: React.FC<InstallDialogProps> = ({app, open, onOpenChange, i
         <div className="py-4">
           <div className="space-y-4">
             <div>
-              <p className="text-sm text-gray-600">
+              <p className="text-sm text-muted-foreground">
                 {isInstalled ? "You're about to uninstall:" : "You're about to install:"}
               </p>
               <p className="mt-2 font-medium">
-                {app?.name} <span className="font-mono text-xs text-gray-500">({app?.packageName})</span>
+                {app?.name} <span className="font-mono text-xs text-muted-foreground">({app?.packageName})</span>
               </p>
             </div>
 
             {app?.description && (
-              <div className="bg-gray-50 p-3 rounded-md">
-                <p className="text-sm text-gray-700">{app.description}</p>
+              <div className="bg-secondary p-3 rounded-md">
+                <p className="text-sm text-foreground">{app.description}</p>
               </div>
             )}
 
             {user?.email && (
-              <Alert className="bg-blue-50 border-blue-200">
-                <Info className="h-4 w-4 text-blue-600" />
-                <AlertDescription className="text-blue-800 text-sm">
+              <Alert className="bg-accent/10 border-accent">
+                <Info className="h-4 w-4 text-link" />
+                <AlertDescription className="text-link text-sm">
                   This will {isInstalled ? "uninstall" : "install"} the app for your account only:{" "}
                   <span className="font-medium">{user.email}</span>
                 </AlertDescription>
@@ -125,9 +125,9 @@ const InstallDialog: React.FC<InstallDialogProps> = ({app, open, onOpenChange, i
           )}
 
           {success && (
-            <Alert className="mt-4 bg-green-50 border-green-200">
-              <CheckCircle className="h-4 w-4 text-green-600" />
-              <AlertDescription className="text-green-700">{success}</AlertDescription>
+            <Alert className="mt-4 bg-success-light border-success">
+              <CheckCircle className="h-4 w-4 text-success" />
+              <AlertDescription className="text-success">{success}</AlertDescription>
             </Alert>
           )}
         </div>

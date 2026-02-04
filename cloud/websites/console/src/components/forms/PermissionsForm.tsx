@@ -169,32 +169,32 @@ const PermissionItem: React.FC<PermissionItemProps> = ({
   };
 
   return (
-    <div className="border rounded-lg bg-white shadow-sm">
+    <div className="border rounded-lg bg-card shadow-sm">
       {!isEditing ? (
         // Collapsed view - just show the essential info
         <div
-          className="p-4 cursor-pointer hover:bg-gray-50 transition-colors"
+          className="p-4 cursor-pointer hover:bg-secondary transition-colors"
           onClick={() => onEditToggle(index)}
         >
           <div className="flex items-center gap-3">
             {/* Content preview */}
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-2 mb-1">
-                <Shield className="h-4 w-4 text-blue-600 flex-shrink-0" />
-                <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                <Shield className="h-4 w-4 text-link flex-shrink-0" />
+                <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-accent/10 text-accent">
                   {getPermissionLabel(permission.type)}
                 </span>
                 {PERMISSION_DISPLAY_INFO[permission.type]?.isLegacy && (
-                  <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-orange-100 text-orange-800">
+                  <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-warning-light text-warning">
                     Legacy
                   </span>
                 )}
               </div>
-              <div className="text-xs text-gray-500 truncate">
+              <div className="text-xs text-muted-foreground truncate">
                 {getDescriptionPreview()}
               </div>
               {PERMISSION_DISPLAY_INFO[permission.type]?.isLegacy && (
-                <div className="text-xs text-orange-600 mt-1">
+                <div className="text-xs text-warning mt-1">
                   💡 Consider migrating to:{" "}
                   {PERMISSION_DISPLAY_INFO[permission.type]?.replacedBy
                     ?.map((t) => getPermissionLabel(t))
@@ -274,7 +274,7 @@ const PermissionItem: React.FC<PermissionItemProps> = ({
                         disabled={!isSelectable}
                         className={
                           !isSelectable
-                            ? "text-gray-400 cursor-not-allowed"
+                            ? "text-muted-foreground cursor-not-allowed"
                             : ""
                         }
                       >
@@ -294,8 +294,8 @@ const PermissionItem: React.FC<PermissionItemProps> = ({
               </Select>
 
               {PERMISSION_DISPLAY_INFO[permission.type]?.isLegacy && (
-                <div className="mt-2 p-3 bg-orange-50 border border-orange-200 rounded-md">
-                  <div className="text-sm text-orange-800">
+                <div className="mt-2 p-3 bg-warning-light border border-warning-border rounded-md">
+                  <div className="text-sm text-warning">
                     ⚠️ This is a legacy permission. Consider migrating to{" "}
                     {PERMISSION_DISPLAY_INFO[permission.type]?.replacedBy
                       ?.map((t) => getPermissionLabel(t))
@@ -305,7 +305,7 @@ const PermissionItem: React.FC<PermissionItemProps> = ({
                 </div>
               )}
 
-              <p className="text-xs text-gray-500 mt-1">
+              <p className="text-xs text-muted-foreground mt-1">
                 {getPermissionDescription(permission.type as PermissionType)}
               </p>
             </div>
@@ -324,7 +324,7 @@ const PermissionItem: React.FC<PermissionItemProps> = ({
                 rows={3}
                 className="mt-1"
               />
-              <p className="text-xs text-gray-500 mt-1">
+              <p className="text-xs text-muted-foreground mt-1">
                 A clear explanation helps users understand why this permission
                 is necessary.
               </p>
@@ -425,7 +425,7 @@ export function PermissionsForm({
       </div>
 
       {permissions.length === 0 ? (
-        <div className="text-center py-4 text-gray-500">
+        <div className="text-center py-4 text-muted-foreground">
           <p>No permissions added yet.</p>
         </div>
       ) : (

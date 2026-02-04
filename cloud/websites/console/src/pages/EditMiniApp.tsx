@@ -1104,7 +1104,7 @@ export default function EditMiniApp() {
     <DashboardLayout>
       <div className="max-w-3xl mx-auto">
         <div className="flex items-center mb-6">
-          <Link to="/apps" className="flex items-center text-sm text-gray-500 hover:text-gray-700">
+          <Link to="/apps" className="flex items-center text-sm text-muted-foreground hover:text-foreground">
             <ArrowLeftIcon className="mr-1 h-4 w-4" />
             Back to apps
           </Link>
@@ -1114,7 +1114,7 @@ export default function EditMiniApp() {
           {isLoading ? (
             <div className="p-8 text-center">
               <div className="animate-spin mx-auto h-8 w-8 border-t-2 border-b-2 border-blue-500 rounded-full"></div>
-              <p className="mt-2 text-gray-500">Loading MiniApp data...</p>
+              <p className="mt-2 text-muted-foreground">Loading MiniApp data...</p>
             </div>
           ) : (
             <form onSubmit={handleSubmit}>
@@ -1124,7 +1124,7 @@ export default function EditMiniApp() {
                 {currentOrg && (
                   <div className="mt-3 text-sm flex items-center justify-between">
                     <div>
-                      <span className="text-gray-500">Organization: </span>
+                      <span className="text-muted-foreground">Organization: </span>
                       <span className="font-medium">{currentOrg.name}</span>
                     </div>
 
@@ -1152,9 +1152,9 @@ export default function EditMiniApp() {
                 )}
 
                 {isSaved && (
-                  <Alert className="bg-green-50 text-green-800 border-green-200">
-                    <CheckCircle2 className="h-4 w-4 text-green-600" />
-                    <AlertDescription className="text-green-700">MiniApp updated successfully!</AlertDescription>
+                  <Alert className="bg-success-light text-success border-success/30">
+                    <CheckCircle2 className="h-4 w-4 text-success" />
+                    <AlertDescription className="text-success">MiniApp updated successfully!</AlertDescription>
                   </Alert>
                 )}
 
@@ -1171,9 +1171,9 @@ export default function EditMiniApp() {
                       name="packageName"
                       value={formData.packageName}
                       disabled
-                      className="bg-gray-50"
+                      className="bg-secondary"
                     />
-                    <p className="text-xs text-gray-500">Package names cannot be changed after creation.</p>
+                    <p className="text-xs text-muted-foreground">Package names cannot be changed after creation.</p>
                   </div>
 
                   <div className="space-y-2">
@@ -1185,7 +1185,7 @@ export default function EditMiniApp() {
                       onChange={handleChange}
                       placeholder="e.g., My Awesome MiniApp"
                     />
-                    <p className="text-xs text-gray-500">
+                    <p className="text-xs text-muted-foreground">
                       The name that will be displayed to users in the Mentra MiniApp Store.
                     </p>
                   </div>
@@ -1200,7 +1200,7 @@ export default function EditMiniApp() {
                       placeholder="Describe what your app does..."
                       rows={3}
                     />
-                    <p className="text-xs text-gray-500">
+                    <p className="text-xs text-muted-foreground">
                       Provide a clear, concise description of your application&apos;s functionality.
                     </p>
                   </div>
@@ -1218,7 +1218,7 @@ export default function EditMiniApp() {
                       packageName={formData.packageName}
                       disabled={isSaving}
                     />
-                    <p className="text-xs text-gray-500">
+                    <p className="text-xs text-muted-foreground">
                       Upload an image that will be used as your MiniApp&apos;s icon (recommended: 512x512 PNG).
                     </p>
                   </div>
@@ -1311,7 +1311,7 @@ export default function EditMiniApp() {
                       <LinkIcon className="h-4 w-4 mr-2" />
                       Share with Testers
                     </h4>
-                    <p className="text-sm text-gray-600 mb-4">
+                    <p className="text-sm text-muted-foreground mb-4">
                       Anyone with this link can access and test the app (read-only access).
                     </p>
                     <div className="flex items-center justify-end">
@@ -1335,9 +1335,9 @@ export default function EditMiniApp() {
                       </Button>
                     </div>
                     {shareLink && (
-                      <div className="mt-3 p-2 bg-gray-50 rounded border">
-                        <p className="text-xs text-gray-500 mb-1">Share Link:</p>
-                        <span className="text-xs text-blue-600 break-all">{shareLink}</span>
+                      <div className="mt-3 p-2 bg-secondary rounded border">
+                        <p className="text-xs text-muted-foreground mb-1">Share Link:</p>
+                        <span className="text-xs text-link break-all">{shareLink}</span>
                       </div>
                     )}
                   </div>
@@ -1348,7 +1348,7 @@ export default function EditMiniApp() {
                       <KeyRound className="h-4 w-4 mr-2" />
                       API Key
                     </h4>
-                    <p className="text-sm text-gray-600 mb-4">
+                    <p className="text-sm text-muted-foreground mb-4">
                       Your API key is used to authenticate your app with MentraOS cloud services. Keep it secure and never
                       share it publicly.
                     </p>
@@ -1398,7 +1398,7 @@ export default function EditMiniApp() {
                               : "Development"}
                     </h4>
 
-                    <p className="text-sm text-gray-600 mb-4">
+                    <p className="text-sm text-muted-foreground mb-4">
                       {formData.appStoreStatus === "DEVELOPMENT"
                         ? "Your MiniApp is currently in development. Publish it when ready to submit for review."
                         : formData.appStoreStatus === "SUBMITTED"
@@ -1409,11 +1409,11 @@ export default function EditMiniApp() {
                     </p>
 
                     {formData.appStoreStatus === "REJECTED" && formData.reviewNotes && (
-                      <div className="bg-red-50 border border-red-200 rounded-md p-3 mt-2 mb-4">
-                        <h5 className="text-sm font-medium text-red-800 mb-1">Rejection Reason:</h5>
-                        <p className="text-sm text-red-700">{formData.reviewNotes}</p>
+                      <div className="bg-destructive/10 border border-destructive/20 rounded-md p-3 mt-2 mb-4">
+                        <h5 className="text-sm font-medium text-destructive mb-1">Rejection Reason:</h5>
+                        <p className="text-sm text-destructive">{formData.reviewNotes}</p>
                         {formData.reviewedAt && (
-                          <p className="text-xs text-red-500 mt-2">
+                          <p className="text-xs text-destructive/80 mt-2">
                             Reviewed on {new Date(formData.reviewedAt).toLocaleDateString()} by{" "}
                             {formData.reviewedBy?.split("@")[0] || "Admin"}
                           </p>
@@ -1437,7 +1437,7 @@ export default function EditMiniApp() {
                       <Files className="h-4 w-4 mr-2" />
                       Configuration Management
                     </h4>
-                    <p className="text-sm text-gray-600 mb-4">
+                    <p className="text-sm text-muted-foreground mb-4">
                       Import or export your MiniApp configuration (name, description, URLs, permissions, settings, and tools)
                       as a app_config.json file
                     </p>

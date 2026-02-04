@@ -353,7 +353,7 @@ const CreateMiniApp: React.FC = () => {
         <div className="flex items-center mb-6">
           <Link
             to="/apps"
-            className="flex items-center text-sm text-gray-500 hover:text-gray-700"
+            className="flex items-center text-sm text-muted-foreground hover:text-foreground"
           >
             <ArrowLeftIcon className="mr-1 h-4 w-4" />
             Back to MiniApps
@@ -369,7 +369,7 @@ const CreateMiniApp: React.FC = () => {
               </p>
               {currentOrg && (
                 <div className="mt-3 text-sm">
-                  <span className="text-gray-500">
+                  <span className="text-muted-foreground">
                     Creating in organization:{" "}
                   </span>
                   <span className="font-medium">{currentOrg.name}</span>
@@ -392,7 +392,7 @@ const CreateMiniApp: React.FC = () => {
               >
                 <div className="space-y-2">
                   <Label htmlFor="packageName">
-                    Package Name <span className="text-red-500">*</span>
+                    Package Name <span className="text-destructive">*</span>
                   </Label>
                   <Input
                     id="packageName"
@@ -400,14 +400,14 @@ const CreateMiniApp: React.FC = () => {
                     value={formData.packageName}
                     onChange={handleChange}
                     placeholder="e.g., org.example.myapp"
-                    className={errors.packageName ? "border-red-500" : ""}
+                    className={errors.packageName ? "border-destructive" : ""}
                   />
                   {errors.packageName && (
-                    <p className="text-xs text-red-500 mt-1">
+                    <p className="text-xs text-destructive mt-1">
                       {errors.packageName}
                     </p>
                   )}
-                  <p className="text-xs text-gray-500">
+                  <p className="text-xs text-muted-foreground">
                     Must use lowercase letters, numbers, dots, and hyphens only.
                     This is a unique identifier and cannot be changed later.
                   </p>
@@ -415,7 +415,7 @@ const CreateMiniApp: React.FC = () => {
 
                 <div className="space-y-2">
                   <Label htmlFor="name">
-                    Display Name <span className="text-red-500">*</span>
+                    Display Name <span className="text-destructive">*</span>
                   </Label>
                   <Input
                     id="name"
@@ -423,12 +423,12 @@ const CreateMiniApp: React.FC = () => {
                     value={formData.name}
                     onChange={handleChange}
                     placeholder="e.g., My Awesome MiniApp"
-                    className={errors.name ? "border-red-500" : ""}
+                    className={errors.name ? "border-destructive" : ""}
                   />
                   {errors.name && (
-                    <p className="text-xs text-red-500 mt-1">{errors.name}</p>
+                    <p className="text-xs text-destructive mt-1">{errors.name}</p>
                   )}
-                  <p className="text-xs text-gray-500">
+                  <p className="text-xs text-muted-foreground">
                     The name that will be displayed to users in the Mentra MiniApp
                     Store.
                   </p>
@@ -436,7 +436,7 @@ const CreateMiniApp: React.FC = () => {
 
                 <div className="space-y-2">
                   <Label htmlFor="description">
-                    Description <span className="text-red-500">*</span>
+                    Description <span className="text-destructive">*</span>
                   </Label>
                   <Textarea
                     id="description"
@@ -445,14 +445,14 @@ const CreateMiniApp: React.FC = () => {
                     onChange={handleChange}
                     placeholder="Describe what your app does..."
                     rows={3}
-                    className={errors.description ? "border-red-500" : ""}
+                    className={errors.description ? "border-destructive" : ""}
                   />
                   {errors.description && (
-                    <p className="text-xs text-red-500 mt-1">
+                    <p className="text-xs text-destructive mt-1">
                       {errors.description}
                     </p>
                   )}
-                  <p className="text-xs text-gray-500">
+                  <p className="text-xs text-muted-foreground">
                     Provide a clear, concise description of your
                     application&apos;s functionality.
                   </p>
@@ -460,7 +460,7 @@ const CreateMiniApp: React.FC = () => {
 
                 <div className="space-y-2">
                   <Label htmlFor="logoURL">
-                    MiniApp Logo <span className="text-red-500">*</span>
+                    MiniApp Logo <span className="text-destructive">*</span>
                   </Label>
                   <ImageUpload
                     currentImageUrl={formData.logoURL}
@@ -483,7 +483,7 @@ const CreateMiniApp: React.FC = () => {
                     hasError={!!errors.logoURL}
                     errorMessage={errors.logoURL}
                   />
-                  <p className="text-xs text-gray-500">
+                  <p className="text-xs text-muted-foreground">
                     Upload an image that will be used as your MiniApp&apos;s icon
                     (recommended: 512x512 PNG).
                   </p>
@@ -562,10 +562,10 @@ const CreateMiniApp: React.FC = () => {
 
           {successMessage && (
             <div className="mt-6">
-              <Alert className="bg-green-100 border-1 border-green-500 text-green-800 shadow-md">
-                <CheckCircle className="h-5 w-5 text-green-800" />
+              <Alert className="bg-success-light border-1 border-success text-success shadow-md">
+                <CheckCircle className="h-5 w-5 text-success" />
                 <div>
-                  <AlertDescription className="text-green-800 font-medium">
+                  <AlertDescription className="text-success font-medium">
                     {successMessage}
                   </AlertDescription>
                   <div className="mt-2 flex gap-2">
@@ -573,7 +573,7 @@ const CreateMiniApp: React.FC = () => {
                       size="sm"
                       variant="outline"
                       onClick={() => setIsApiKeyDialogOpen(true)}
-                      className="border-green-500 text-green-700 hover:bg-green-50"
+                      className="border-success text-success hover:bg-success-light"
                     >
                       View API Key
                     </Button>
@@ -581,7 +581,7 @@ const CreateMiniApp: React.FC = () => {
                       size="sm"
                       variant="outline"
                       onClick={() => navigate("/apps")}
-                      className="border-green-500 text-green-700 hover:bg-green-50"
+                      className="border-success text-success hover:bg-success-light"
                     >
                       Go to My MiniApps
                     </Button>

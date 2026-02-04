@@ -62,6 +62,27 @@
   /* Link color: Mentra Green (same as mobile) */
   --link: #00b869;
   --link-hover: #009258;
+
+  /* Status colors - matching mobile app */
+  --success: #22C55E;
+  --success-foreground: #ffffff;
+  --success-light: #dcfce7;
+  --warning: #f59e0b;
+  --warning-foreground: #ffffff;
+  --warning-light: #fef3c7;
+  --warning-border: #f59e0b;
+
+  /* Text hierarchy - semantic text colors */
+  --text-primary: oklch(0.145 0 0);
+  --text-secondary: oklch(0.40 0 0);
+  --text-muted: oklch(0.55 0 0);
+  --text-disabled: oklch(0.65 0 0);
+
+  /* Surface colors for cards, inputs, etc */
+  --surface: oklch(0.985 0 0);
+  --surface-hover: oklch(0.97 0 0);
+  --surface-disabled: oklch(0.96 0 0);
+
   --destructive: oklch(0.577 0.245 27.325);
   --destructive-foreground: oklch(0.577 0.245 27.325);
   --border: oklch(0.88 0.01 145);
@@ -196,6 +217,23 @@ button:focus-visible {
   --color-border: var(--border);
   --color-input: var(--input);
   --color-ring: var(--ring);
+  /* Status colors */
+  --color-success: var(--success);
+  --color-success-foreground: var(--success-foreground);
+  --color-success-light: var(--success-light);
+  --color-warning: var(--warning);
+  --color-warning-foreground: var(--warning-foreground);
+  --color-warning-light: var(--warning-light);
+  --color-warning-border: var(--warning-border);
+  /* Text hierarchy */
+  --color-text-primary: var(--text-primary);
+  --color-text-secondary: var(--text-secondary);
+  --color-text-muted: var(--text-muted);
+  --color-text-disabled: var(--text-disabled);
+  /* Surface colors */
+  --color-surface: var(--surface);
+  --color-surface-hover: var(--surface-hover);
+  --color-surface-disabled: var(--surface-disabled);
   --color-chart-1: var(--chart-1);
   --color-chart-2: var(--chart-2);
   --color-chart-3: var(--chart-3);

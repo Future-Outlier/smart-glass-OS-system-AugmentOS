@@ -41,7 +41,7 @@ const MiniAppList: React.FC = () => {
     <DashboardLayout>
       <div className="max-w-7xl mx-auto">
         <div className="flex items-center justify-between mb-6">
-          <h1 className="text-2xl font-semibold text-gray-900">My MiniApps</h1>
+          <h1 className="text-2xl font-semibold text-foreground">My MiniApps</h1>
           <Button className="gap-2" onClick={() => navigate("/apps/create")}>
             <Plus className="h-4 w-4" />
             Create MiniApp

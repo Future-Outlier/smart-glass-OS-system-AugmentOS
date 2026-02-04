@@ -204,9 +204,9 @@ const ApiKeyDialog: FC<ApiKeyDialogProps> = ({
 
           {/* Success Alert */}
           {success && (
-            <Alert className="mb-4 bg-green-50 text-green-800 border-green-200">
-              <CheckCircle className="h-4 w-4 text-green-600" />
-              <AlertDescription className="text-green-700">
+            <Alert className="mb-4 bg-success-light text-success border-success">
+              <CheckCircle className="h-4 w-4 text-success" />
+              <AlertDescription className="text-success">
                 {success}
               </AlertDescription>
             </Alert>
@@ -217,16 +217,16 @@ const ApiKeyDialog: FC<ApiKeyDialogProps> = ({
             <div className="space-y-4">
               <Alert
                 variant="destructive"
-                className="bg-amber-50 border-amber-200 text-amber-800"
+                className="bg-warning-light border-warning text-warning"
               >
-                <AlertCircle className="h-4 w-4 text-amber-600" />
-                <AlertDescription className="text-amber-700">
+                <AlertCircle className="h-4 w-4 text-warning" />
+                <AlertDescription className="text-warning">
                   Warning: Regenerating this API key will invalidate the
                   previous key. Any applications using the old key will stop
                   working.
                 </AlertDescription>
               </Alert>
-              <p className="text-sm text-gray-500">
+              <p className="text-sm text-muted-foreground">
                 Are you sure you want to continue?
               </p>
               <div className="flex gap-2 justify-end">
@@ -256,14 +256,14 @@ const ApiKeyDialog: FC<ApiKeyDialogProps> = ({
           ) : (
             <>
               <div className="space-y-2">
-                <p className="text-sm text-gray-500">
+                <p className="text-sm text-muted-foreground">
                   Your API key is used to authenticate your app with MentraOS
                   cloud services. Keep it secure and never share it publicly.
                 </p>
                 {_apiKey ? (
                   <>
                     <div className="flex items-center gap-2">
-                      <div className="flex-1 font-mono text-sm p-2 border rounded-md bg-gray-50 overflow-x-auto break-all">
+                      <div className="flex-1 font-mono text-sm p-2 border rounded-md bg-secondary overflow-x-auto break-all">
                         {formatApiKey(_apiKey)}
                       </div>
                       <Button
@@ -273,24 +273,24 @@ const ApiKeyDialog: FC<ApiKeyDialogProps> = ({
                         className="shrink-0"
                       >
                         {isCopied ? (
-                          <CheckCircle className="h-4 w-4 text-green-600" />
+                          <CheckCircle className="h-4 w-4 text-success" />
                         ) : (
                           <Copy className="h-4 w-4" />
                         )}
                       </Button>
                     </div>
-                    <p className="text-xs text-red-500 font-medium mt-1">
+                    <p className="text-xs text-destructive font-medium mt-1">
                       Important: This key is only shown once. Please copy it
                       now!
                     </p>
                   </>
                 ) : (
-                  <div className="p-4 bg-amber-50 border border-amber-200 rounded-md">
-                    <p className="text-sm text-amber-800">
+                  <div className="p-4 bg-warning-light border border-warning rounded-md">
+                    <p className="text-sm text-warning">
                       No API key is available to view. API keys are only shown
                       once when generated and are securely stored.
                     </p>
-                    <p className="text-sm text-amber-800 mt-1">
+                    <p className="text-sm text-warning mt-1">
                       Click &quot;Regenerate Key&quot; to create a new API key.
                       This will invalidate any previous keys.
                     </p>
@@ -300,12 +300,12 @@ const ApiKeyDialog: FC<ApiKeyDialogProps> = ({
 
               {/*<div className="space-y-2">
                 <h3 className="text-sm font-medium">Webhook URL</h3>
-                <div className="font-mono text-sm p-2 border rounded-md bg-gray-50 overflow-x-auto break-all">
+                <div className="font-mono text-sm p-2 border rounded-md bg-secondary overflow-x-auto break-all">
                   {app?.publicUrl
                     ? `${app.publicUrl}/webhook`
                     : "No server URL defined"}
                 </div>
-                <p className="text-xs text-gray-500">
+                <p className="text-xs text-muted-foreground">
                   This is the full webhook URL where MentraOS will send events
                   to your app.
                 </p>
@@ -316,7 +316,7 @@ const ApiKeyDialog: FC<ApiKeyDialogProps> = ({
 
         {!showConfirmation && (
           <DialogFooter className="flex flex-col sm:flex-row items-start sm:items-center sm:justify-between gap-4 sm:gap-2 ">
-            <p className="text-xs text-gray-500">
+            <p className="text-xs text-muted-foreground">
               Last regenerated: {lastRegenerated.toLocaleDateString()}
             </p>
             <div className="flex gap-2 w-full sm:w-auto justify-end">

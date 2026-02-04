@@ -19,7 +19,7 @@ export function ServerUrlField({
   return (
     <div className="space-y-2">
       <Label htmlFor="publicUrl">
-        Server URL {required && <span className="text-red-500">*</span>}
+        Server URL {required && <span className="text-destructive">*</span>}
       </Label>
       <Input
         id="publicUrl"
@@ -28,14 +28,14 @@ export function ServerUrlField({
         onChange={onChange}
         onBlur={onBlur}
         placeholder="yourserver.com"
-        className={error ? "border-red-500" : ""}
+        className={error ? "border-destructive" : ""}
       />
       {error && (
-        <p className="text-xs text-red-500 mt-1">
+        <p className="text-xs text-destructive mt-1">
           {error}
         </p>
       )}
-      <p className="text-xs text-gray-500">
+      <p className="text-xs text-muted-foreground">
         This is the public URL of your MiniApp server. MentraOS will automatically
         append &quot;/webhook&quot; to handle events when your app is activated.
         If your MiniApp is hosted locally, you can use a service like{" "}

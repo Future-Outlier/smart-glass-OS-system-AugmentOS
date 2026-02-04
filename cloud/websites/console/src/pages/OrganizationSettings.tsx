@@ -298,17 +298,17 @@ const OrganizationSettings: React.FC = () => {
       <div className="max-w-3xl mx-auto">
         {/* Welcome message for new members */}
         {(isNewMember || isExistingMember) && (
-          <Card className="shadow-sm mb-6 border-green-200 bg-green-50">
+          <Card className="shadow-sm mb-6 border-success bg-success-light">
             <CardHeader className="pb-4">
               <div className="flex items-start gap-3">
-                <CheckCircle2 className="h-8 w-8 text-green-600 mt-1" />
+                <CheckCircle2 className="h-8 w-8 text-success mt-1" />
                 <div className="flex-1">
-                  <CardTitle className="text-2xl text-green-900">
+                  <CardTitle className="text-2xl text-success">
                     {isNewMember
                       ? `Welcome to ${invitedOrgName || currentOrg?.name || 'the organization'}!`
                       : 'Welcome back!'}
                   </CardTitle>
-                  <CardDescription className="text-green-700 mt-2">
+                  <CardDescription className="text-success mt-2">
                     {isNewMember
                       ? `You have successfully joined ${invitedOrgName || currentOrg?.name || 'the organization'}. You can now collaborate with your team members and manage apps together.`
                       : `You're already a member of this organization. You can access all your organization's resources and collaborate with your team.`}
@@ -317,7 +317,7 @@ const OrganizationSettings: React.FC = () => {
               </div>
             </CardHeader>
             <CardContent className="pt-0">
-              <div className="flex flex-col gap-2 text-sm text-green-700">
+              <div className="flex flex-col gap-2 text-sm text-success">
                 <p className="font-medium">What you can do now:</p>
                 <ul className="list-disc list-inside space-y-1 ml-2">
                   {isAdmin && (
@@ -327,7 +327,7 @@ const OrganizationSettings: React.FC = () => {
                     Access the organization's{' '}
                     <a
                       href="/apps"
-                      className="font-medium underline hover:text-green-800"
+                      className="font-medium underline hover:text-success"
                     >
                       apps and resources
                     </a>
@@ -335,8 +335,8 @@ const OrganizationSettings: React.FC = () => {
                   <li>Collaborate with other team members</li>
                   <li>Create and publish apps under this organization</li>
                 </ul>
-                <div className="mt-3 p-3 bg-green-100 rounded-md">
-                  <p className="text-sm text-green-800">
+                <div className="mt-3 p-3 bg-success-light rounded-md">
+                  <p className="text-sm text-success">
                     💡 <strong>Tip:</strong> You can switch between different organizations you're a member of using the dropdown in the upper left corner of the dashboard.
                   </p>
                 </div>
@@ -397,8 +397,8 @@ const OrganizationSettings: React.FC = () => {
         <Card className="shadow-sm">
           {isLoading || permissionsLoading ? (
             <div className="p-8 text-center">
-              <div className="animate-spin mx-auto h-8 w-8 border-t-2 border-b-2 border-blue-500 rounded-full"></div>
-              <p className="mt-2 text-gray-500">Loading organization data...</p>
+              <div className="animate-spin mx-auto h-8 w-8 border-t-2 border-b-2 border-primary rounded-full"></div>
+              <p className="mt-2 text-muted-foreground">Loading organization data...</p>
             </div>
           ) : (
             <form onSubmit={handleSubmit}>
@@ -419,16 +419,16 @@ const OrganizationSettings: React.FC = () => {
                 )}
 
                 {isSaved && (
-                  <Alert className="bg-green-50 text-green-800 border-green-200">
-                    <CheckCircle2 className="h-4 w-4 text-green-600" />
-                    <AlertDescription className="text-green-700">Organization updated successfully!</AlertDescription>
+                  <Alert className="bg-success-light text-success border-success">
+                    <CheckCircle2 className="h-4 w-4 text-success" />
+                    <AlertDescription className="text-success">Organization updated successfully!</AlertDescription>
                   </Alert>
                 )}
 
                 <div className="space-y-2 mt-4">
                   <Label htmlFor="name" className="flex items-center gap-2">
                     <Building className="h-4 w-4" />
-                    Organization Name <span className="text-red-500 ml-1">*</span>
+                    Organization Name <span className="text-destructive ml-1">*</span>
                   </Label>
                   <Input
                     id="name"
@@ -438,9 +438,9 @@ const OrganizationSettings: React.FC = () => {
                     placeholder="Your organization name"
                     required
                     readOnly={!isAdmin}
-                    className={!isAdmin ? "bg-gray-50 text-gray-500" : ""}
+                    className={!isAdmin ? "bg-secondary text-muted-foreground" : ""}
                   />
-                  <p className="text-xs text-gray-500">
+                  <p className="text-xs text-muted-foreground">
                     The name of your organization that will be displayed to users. Required to publish apps.
                   </p>
                 </div>
@@ -457,9 +457,9 @@ const OrganizationSettings: React.FC = () => {
                     onChange={handleChange}
                     placeholder="https://example.com"
                     readOnly={!isAdmin}
-                    className={!isAdmin ? "bg-gray-50 text-gray-500" : ""}
+                    className={!isAdmin ? "bg-secondary text-muted-foreground" : ""}
                   />
-                  <p className="text-xs text-gray-500">
+                  <p className="text-xs text-muted-foreground">
                     Your organization's website URL.
                   </p>
                 </div>
@@ -467,7 +467,7 @@ const OrganizationSettings: React.FC = () => {
                 <div className="space-y-2">
                   <Label htmlFor="contactEmail" className="flex items-center gap-2">
                     <Mail className="h-4 w-4" />
-                    Contact Email <span className="text-red-500 ml-1">*</span>
+                    Contact Email <span className="text-destructive ml-1">*</span>
                   </Label>
                   <Input
                     id="contactEmail"
@@ -478,9 +478,9 @@ const OrganizationSettings: React.FC = () => {
                     required
                     type="email"
                     readOnly={!isAdmin}
-                    className={!isAdmin ? "bg-gray-50 text-gray-500" : ""}
+                    className={!isAdmin ? "bg-secondary text-muted-foreground" : ""}
                   />
-                  <p className="text-xs text-gray-500">
+                  <p className="text-xs text-muted-foreground">
                     An email address where users can contact you for support or inquiries. Required to publish apps.
                   </p>
                 </div>
@@ -498,9 +498,9 @@ const OrganizationSettings: React.FC = () => {
                     placeholder="Tell users about your organization"
                     rows={4}
                     readOnly={!isAdmin}
-                    className={!isAdmin ? "bg-gray-50 text-gray-500" : ""}
+                    className={!isAdmin ? "bg-secondary text-muted-foreground" : ""}
                   />
-                  <p className="text-xs text-gray-500">
+                  <p className="text-xs text-muted-foreground">
                     A short description of your organization.
                   </p>
                 </div>
@@ -525,7 +525,7 @@ const OrganizationSettings: React.FC = () => {
                     disabled={!isAdmin || isSaving}
                   />
                   {/* Note: The actual Cloudflare URL is stored in logo but not displayed to the user */}
-                  <p className="text-xs text-gray-500">
+                  <p className="text-xs text-muted-foreground">
                     {isAdmin
                       ? "Upload your organization logo (recommended: square format, 512x512 PNG)."
                       : "Organization logo"}

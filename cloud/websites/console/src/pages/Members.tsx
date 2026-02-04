@@ -240,9 +240,9 @@ const Members: React.FC = () => {
   const RoleIcon = ({ role }: { role: OrgRole }) => {
     switch (role) {
       case 'admin':
-        return <UserCog className="h-4 w-4 text-blue-600" />;
+        return <UserCog className="h-4 w-4 text-link" />;
       default:
-        return <User className="h-4 w-4 text-gray-600" />;
+        return <User className="h-4 w-4 text-muted-foreground" />;
     }
   };
 
@@ -287,7 +287,7 @@ const Members: React.FC = () => {
             {loadingMembers || permissionsLoading ? (
               <div className="p-8 text-center">
                 <div className="animate-spin mx-auto h-8 w-8 border-t-2 border-b-2 border-blue-500 rounded-full"></div>
-                <p className="mt-2 text-gray-500">Loading members...</p>
+                <p className="mt-2 text-muted-foreground">Loading members...</p>
               </div>
             ) : (
               <div className="border rounded-md">
@@ -303,7 +303,7 @@ const Members: React.FC = () => {
                   <TableBody>
                     {members.length === 0 && pendingInvites.length === 0 ? (
                       <TableRow>
-                        <TableCell colSpan={isAdmin ? 4 : 3} className="text-center py-4 text-gray-500">
+                        <TableCell colSpan={isAdmin ? 4 : 3} className="text-center py-4 text-muted-foreground">
                           No members found
                         </TableCell>
                       </TableRow>
@@ -371,11 +371,11 @@ const Members: React.FC = () => {
                         ))}
                         {/* Pending invitations */}
                         {pendingInvites.map((invite) => (
-                          <TableRow key={invite.email} className="bg-gray-50">
+                          <TableRow key={invite.email} className="bg-secondary">
                             <TableCell>
                               <div className="flex items-center gap-2">
                                 {invite.email}
-                                <span className="text-xs text-gray-500">(pending)</span>
+                                <span className="text-xs text-muted-foreground">(pending)</span>
                               </div>
                             </TableCell>
                             <TableCell className="flex items-center gap-1">
@@ -385,10 +385,10 @@ const Members: React.FC = () => {
                             <TableCell>
                               <div>
                                 <div className="text-sm">Invited {new Date(invite.invitedAt).toLocaleDateString()}</div>
-                                <div className="text-xs text-gray-500">
+                                <div className="text-xs text-muted-foreground">
                                   {invite.emailSentCount > 1 && `Resent ${invite.emailSentCount - 1} time${invite.emailSentCount > 2 ? 's' : ''}`}
                                   {new Date(invite.expiresAt) < new Date() && (
-                                    <span className="text-red-500 ml-2">Expired</span>
+                                    <span className="text-destructive ml-2">Expired</span>
                                   )}
                                 </div>
                               </div>
@@ -445,9 +445,9 @@ const Members: React.FC = () => {
                 )}
 
                 {inviteSuccess && (
-                  <Alert className="bg-green-50 text-green-800 border-green-200">
-                    <CheckCircle2 className="h-4 w-4 text-green-600" />
-                    <AlertDescription className="text-green-700">
+                  <Alert className="bg-success-light text-success border-success/30">
+                    <CheckCircle2 className="h-4 w-4 text-success" />
+                    <AlertDescription className="text-success">
                       Invitation sent successfully!
                     </AlertDescription>
                   </Alert>
@@ -482,7 +482,7 @@ const Members: React.FC = () => {
                       <SelectItem value="member">Member (manage apps)</SelectItem>
                     </SelectContent>
                   </Select>
-                  <p className="text-xs text-gray-500">
+                  <p className="text-xs text-muted-foreground">
                     {inviteRole === 'admin' && 'Admins have full control over the organization, including managing members and apps.'}
                     {inviteRole === 'member' && 'Members can manage apps, but cannot manage the organization or its members.'}
                   </p>

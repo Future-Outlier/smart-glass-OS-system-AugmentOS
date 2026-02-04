@@ -368,7 +368,7 @@ export function MultiPhotoUpload({
       )}
 
       {/* Info Text */}
-      <div className="flex items-center justify-between text-xs text-gray-500">
+      <div className="flex items-center justify-between text-xs text-muted-foreground">
         <p>
           {photos.length} / {maxPhotos} photos
         </p>

@@ -25,7 +25,7 @@ export function AppTypeSelect({ value, onChange }: AppTypeSelectProps) {
         <Label htmlFor="appType">MiniApp Type</Label>
         <AppTypeTooltip />
       </div>
-      <p className="text-xs text-gray-500">
+      <p className="text-xs text-muted-foreground">
         Background MiniApps can run alongside other MiniApps.
         Only 1 foreground MiniApp can run at a time.
         Foreground MiniApps yield the display to background MiniApps when

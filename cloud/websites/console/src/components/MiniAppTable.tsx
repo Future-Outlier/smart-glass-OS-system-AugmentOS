@@ -134,11 +134,11 @@ const MiniAppTable: FC<MiniAppTableProps> = ({
         <div className="overflow-x-auto">
           {isLoading ? (
             <div className="p-8 text-center">
-              <div className="animate-spin mx-auto h-8 w-8 border-t-2 border-b-2 border-blue-500 rounded-full"></div>
-              <p className="mt-2 text-gray-500">Loading MiniApps...</p>
+              <div className="animate-spin mx-auto h-8 w-8 border-t-2 border-b-2 border-primary rounded-full"></div>
+              <p className="mt-2 text-muted-foreground">Loading MiniApps...</p>
             </div>
           ) : error ? (
-            <div className="p-8 text-center text-red-500">
+            <div className="p-8 text-center text-destructive">
               <p>{error}</p>
               <Button variant="outline" size="sm" className="mt-2" onClick={() => window.location.reload()}>
                 Try Again
@@ -168,19 +168,19 @@ const MiniAppTable: FC<MiniAppTableProps> = ({
                           {app.name}
                         </a>
                       </TableCell>
-                      <TableCell className="font-mono text-xs text-gray-500">{app.packageName}</TableCell>
-                      <TableCell className="text-gray-500">{new Date(app.createdAt).toLocaleDateString()}</TableCell>
+                      <TableCell className="font-mono text-xs text-muted-foreground">{app.packageName}</TableCell>
+                      <TableCell className="text-muted-foreground">{new Date(app.createdAt).toLocaleDateString()}</TableCell>
                       <TableCell>
                         <div>
                           <span
                             className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
                               app.appStoreStatus === "PUBLISHED"
-                                ? "bg-green-100 text-green-800"
+                                ? "bg-success-light text-success"
                                 : app.appStoreStatus === "SUBMITTED"
-                                  ? "bg-yellow-100 text-yellow-800"
+                                  ? "bg-warning-light text-warning"
                                   : app.appStoreStatus === "REJECTED"
-                                    ? "bg-red-100 text-red-800"
-                                    : "bg-gray-100 text-gray-800"
+                                    ? "bg-destructive/10 text-destructive"
+                                    : "bg-secondary text-foreground"
                             }`}>
                             {app.appStoreStatus === "DEVELOPMENT"
                               ? "Development"
@@ -196,7 +196,7 @@ const MiniAppTable: FC<MiniAppTableProps> = ({
                             <div className="mt-1">
                               <button
                                 onClick={() => navigate(`/apps/${app.packageName}/edit`)}
-                                className="text-xs text-red-600 hover:underline focus:outline-none"
+                                className="text-xs text-destructive hover:underline focus:outline-none"
                                 title={app.reviewNotes}>
                                 View Rejection Reason
                               </button>
@@ -218,9 +218,9 @@ const MiniAppTable: FC<MiniAppTableProps> = ({
                                 title={isAppInstalled(app.packageName) ? "Click to uninstall" : "Click to install"}
                                 className="cursor-pointer">
                                 {isAppInstalled(app.packageName) ? (
-                                  <BadgeCheck className="h-4 w-4 text-green-600" />
+                                  <BadgeCheck className="h-4 w-4 text-success" />
                                 ) : (
-                                  <BadgeMinus className="h-4 w-4 text-gray-400" />
+                                  <BadgeMinus className="h-4 w-4 text-muted-foreground" />
                                 )}
                               </Button>
                             </TooltipTrigger>
@@ -320,7 +320,7 @@ const MiniAppTable: FC<MiniAppTableProps> = ({
                               <Button
                                 variant="outline"
                                 size="sm"
-                                className="text-red-600"
+                                className="text-destructive"
                                 onClick={() => {
                                   setSelectedApp(app)
                                   setIsDeleteDialogOpen(true)
@@ -339,7 +339,7 @@ const MiniAppTable: FC<MiniAppTableProps> = ({
                   ))
                 ) : (
                   <TableRow>
-                    <TableCell colSpan={5} className="text-center py-6 text-gray-500">
+                    <TableCell colSpan={5} className="text-center py-6 text-muted-foreground">
                       {searchQuery ? "No MiniApps match your search criteria" : "No MiniApps to display"}
                     </TableCell>
                   </TableRow>
@@ -359,7 +359,7 @@ const MiniAppTable: FC<MiniAppTableProps> = ({
 
         {hasNoApps && !isLoading && !error && !searchQuery && (
           <div className="p-6 text-center">
-            <p className="text-gray-500 mb-4">Get started by creating your first MiniApp</p>
+            <p className="text-muted-foreground mb-4">Get started by creating your first MiniApp</p>
             <Button onClick={() => navigate("/apps/create")} className="gap-2">
               <Plus className="h-4 w-4" />
               Create MiniApp

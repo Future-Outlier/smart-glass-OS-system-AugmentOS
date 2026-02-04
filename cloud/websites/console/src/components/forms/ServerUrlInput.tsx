@@ -86,11 +86,11 @@ export function ServerUrlInput({
   const getStatusIcon = () => {
     switch (verificationStatus) {
       case "verifying":
-        return <Loader2 className="h-4 w-4 animate-spin text-blue-500" />;
+        return <Loader2 className="h-4 w-4 animate-spin text-link" />;
       case "success":
-        return <CheckCircle2 className="h-4 w-4 text-green-500" />;
+        return <CheckCircle2 className="h-4 w-4 text-success" />;
       case "error":
-        return <XCircle className="h-4 w-4 text-red-500" />;
+        return <XCircle className="h-4 w-4 text-destructive" />;
       default:
         return null;
     }
@@ -99,18 +99,18 @@ export function ServerUrlInput({
   const getStatusColor = () => {
     switch (verificationStatus) {
       case "success":
-        return "text-green-600";
+        return "text-success";
       case "error":
-        return "text-red-600";
+        return "text-destructive";
       default:
-        return "text-gray-500";
+        return "text-muted-foreground";
     }
   };
 
   return (
     <div className="space-y-2">
       <Label htmlFor={id}>
-        Server URL <span className="text-red-500">*</span>
+        Server URL <span className="text-destructive">*</span>
       </Label>
       <div className="flex gap-2">
         <div className="flex-1 relative">
@@ -121,7 +121,7 @@ export function ServerUrlInput({
             onChange={onChange}
             onBlur={onBlur}
             placeholder="yourserver.com"
-            className={cn(hasError && "border-red-500")}
+            className={cn(hasError && "border-destructive")}
             disabled={disabled}
           />
         </div>
@@ -144,7 +144,7 @@ export function ServerUrlInput({
 
       {/* Error message from form validation */}
       {hasError && errorMessage && (
-        <p className="text-xs text-red-500">{errorMessage}</p>
+        <p className="text-xs text-destructive">{errorMessage}</p>
       )}
 
       {/* Verification status message */}
@@ -155,7 +155,7 @@ export function ServerUrlInput({
         </div>
       )}
 
-      <p className="text-xs text-gray-500">
+      <p className="text-xs text-muted-foreground">
         The base URL of your server where MentraOS will communicate with your
         MiniApp. We&apos;ll automatically append &quot;/webhook&quot; to handle
         events when your MiniApp is activated. HTTPS is required and will be

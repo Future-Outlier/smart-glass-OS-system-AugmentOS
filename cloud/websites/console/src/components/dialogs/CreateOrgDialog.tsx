@@ -193,7 +193,7 @@ const CreateOrgDialog: React.FC<CreateOrgDialogProps> = ({
 
             <div className="space-y-2">
               <Label htmlFor="name">
-                Organization Name <span className="text-red-500">*</span>
+                Organization Name <span className="text-destructive">*</span>
               </Label>
               <Input
                 id="name"
@@ -211,7 +211,7 @@ const CreateOrgDialog: React.FC<CreateOrgDialogProps> = ({
 
             <div className="space-y-2">
               <Label htmlFor="contactEmail">
-                Contact Email <span className="text-red-500">*</span>
+                Contact Email <span className="text-destructive">*</span>
               </Label>
               <Input
                 id="contactEmail"

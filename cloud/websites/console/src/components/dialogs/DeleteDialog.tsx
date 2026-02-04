@@ -57,7 +57,7 @@ const DeleteDialog: React.FC<DeleteDialogProps> = ({
       <DialogContent>
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <Trash2 className="h-5 w-5 text-red-500" />
+            <Trash2 className="h-5 w-5 text-destructive" />
             Delete App
           </DialogTitle>
           <DialogDescription>
@@ -66,20 +66,20 @@ const DeleteDialog: React.FC<DeleteDialogProps> = ({
         </DialogHeader>
 
         <div className="py-4">
-          <Alert variant="destructive" className="bg-red-50 border-red-200 text-red-800">
-            <AlertTriangle className="h-4 w-4 text-red-600" />
-            <AlertDescription className="text-red-700">
+          <Alert variant="destructive" className="bg-destructive/10 border-destructive text-destructive">
+            <AlertTriangle className="h-4 w-4 text-destructive" />
+            <AlertDescription className="text-destructive">
               This action cannot be undone. This will permanently delete the App
               and remove all associated data.
             </AlertDescription>
           </Alert>
 
           <div className="mt-4">
-            <p className="text-sm text-gray-600">
+            <p className="text-sm text-muted-foreground">
               To confirm, you&apos;re deleting:
             </p>
             <p className="mt-2 font-medium">
-              {app?.name} <span className="font-mono text-xs text-gray-500">({app?.packageName})</span>
+              {app?.name} <span className="font-mono text-xs text-muted-foreground">({app?.packageName})</span>
             </p>
           </div>
 
