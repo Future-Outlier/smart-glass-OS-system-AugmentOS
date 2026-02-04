@@ -1,6 +1,5 @@
 // eslint-disable-next-line import/no-unresolved
 import {useLocalSearchParams} from "expo-router"
-import * as WebBrowser from "expo-web-browser"
 import {useEffect} from "react"
 import {Platform, TouchableOpacity, View} from "react-native"
 import {focusEffectPreventBack} from "@/contexts/NavigationHistoryContext"
@@ -18,10 +17,11 @@ import GoogleIcon from "assets/icons/component/GoogleIcon"
 import {MentraLogoStandalone} from "@/components/brands/MentraLogoStandalone"
 
 export default function LoginScreen() {
-  const {push} = useNavigationHistory()
+  const {push, replace} = useNavigationHistory()
   const [isChina] = useSetting(SETTINGS.china_deployment.key)
   const {authError} = useLocalSearchParams<{authError?: string}>()
   const {theme} = useAppTheme()
+  const {setAnimation} = useNavigationHistory()
 
   focusEffectPreventBack()
 
@@ -33,29 +33,38 @@ export default function LoginScreen() {
     }
   }, [authError])
 
+  const handleWebLogin = async (url: string) => {
+    console.log("Opening browser with:", url)
+    setAnimation("fade")
+    await new Promise((resolve) => setTimeout(resolve, 1))
+    push("/auth/web-splash", {url})
+    // await new Promise((resolve) => setTimeout(resolve, 1000))
+    // await WebBrowser.openBrowserAsync(url)
+  }
+
   const handleGoogleSignIn = async () => {
     const res = await mentraAuth.googleSignIn()
-
     if (res.is_error()) {
       return
     }
-
     const url = res.value
-    console.log("Opening browser with:", url)
-    await WebBrowser.openBrowserAsync(url)
+    handleWebLogin(url)
   }
 
   const handleAppleSignIn = async () => {
     const res = await mentraAuth.appleSignIn()
-
     if (res.is_error()) {
       console.error("Apple sign in failed:", res.error)
       return
     }
-
     const url = res.value
-    console.log("Opening browser with:", url)
-    await WebBrowser.openBrowserAsync(url)
+    handleWebLogin(url)
+  }
+
+  const handleSignup = async () => {
+    setAnimation("simple_push")
+    await new Promise((resolve) => setTimeout(resolve, 1))
+    push("/auth/signup")
   }
 
   return (
@@ -80,7 +89,7 @@ export default function LoginScreen() {
               <Button
                 preset="primary"
                 text={translate("login:signUpWithEmail")}
-                onPress={() => push("/auth/signup")}
+                onPress={handleSignup}
                 LeftAccessory={() => <Icon name="mail" size={20} color={theme.colors.background} />}
               />
 

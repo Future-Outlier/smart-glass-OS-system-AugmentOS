@@ -36,7 +36,7 @@ export default function InitScreen() {
   // Hooks
   const {theme} = useAppTheme()
   const {user, session, loading: authLoading} = useAuth()
-  const {replaceAll, getPendingRoute, setPendingRoute, clearHistoryAndGoHome, setAnimation} = useNavigationHistory()
+  const {replace, replaceAll, getPendingRoute, setPendingRoute, clearHistoryAndGoHome, setAnimation} = useNavigationHistory()
   const {processUrl} = useDeeplink()
   const rootNavigationState = useRootNavigationState()
   const isNavigationReady = rootNavigationState?.key != null
@@ -71,21 +71,25 @@ export default function InitScreen() {
     return isCustom
   }
 
-  const _setAnimationDelayed = () => {
+  const setAnimationDelayed = () => {
     BackgroundTimer.setTimeout(() => {
-      setAnimation("fade")
-    }, 250)
+      setAnimation("simple_push")
+    }, 500)
   }
 
   const navigateToDestination = async () => {
     if (!user?.email) {
-      replaceAll("/auth/start")
+      await new Promise((resolve) => setTimeout(resolve, NAVIGATION_DELAY))
+      replace("/auth/start")
+      setAnimationDelayed()
       return
     }
 
     // Check onboarding status
     if (!onboardingCompleted && !defaultWearable) {
-      replaceAll("/onboarding/welcome")
+      await new Promise((resolve) => setTimeout(resolve, NAVIGATION_DELAY))
+      replace("/onboarding/welcome")
+      setAnimationDelayed()
       return
     }
 
@@ -96,9 +100,9 @@ export default function InitScreen() {
       return
     }
 
-    setTimeout(() => {
-      clearHistoryAndGoHome()
-    }, NAVIGATION_DELAY)
+    await new Promise((resolve) => setTimeout(resolve, NAVIGATION_DELAY))
+    setAnimationDelayed()
+    clearHistoryAndGoHome()
   }
 
   const checkLoggedIn = async (): Promise<void> => {
@@ -251,6 +255,10 @@ export default function InitScreen() {
       init()
     }
   }, [authLoading, isNavigationReady])
+
+  useEffect(() => {
+    setAnimation("fade")
+  }, [])
 
   // Render
   if (state === "loading") {

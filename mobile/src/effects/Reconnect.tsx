@@ -14,7 +14,7 @@ export function Reconnect() {
   // Add a listener for app state changes to detect when the app comes back from background
   useEffect(() => {
     const handleAppStateChange = async (nextAppState: any) => {
-      console.log("App state changed to:", nextAppState)
+      console.log("RECONNECT: App state changed to:", nextAppState)
       // If app comes back to foreground, hide the loading overlay
       if (nextAppState === "active") {
         const reconnectOnAppForeground = await useSettingsStore

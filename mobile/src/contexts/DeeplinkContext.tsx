@@ -153,8 +153,8 @@ const deepLinkRoutes: DeepLinkRoute[] = [
   {
     pattern: "/auth/callback",
     handler: async (url: string, params: Record<string, string>, navObject: NavObject) => {
-      console.log("[LOGIN DEBUG] params:", params)
-      console.log("[LOGIN DEBUG] url:", url)
+      // console.log("[LOGIN DEBUG] params:", params)
+      // console.log("[LOGIN DEBUG] url:", url)
 
       const parseAuthParams = (url: string) => {
         const parts = url.split("#")
@@ -219,7 +219,7 @@ const deepLinkRoutes: DeepLinkRoute[] = [
         BackgroundTimer.setTimeout(() => {
           console.log("[LOGIN DEBUG] Inside setTimeout, navigating to index")
           try {
-            // navObject.setAnimation("none")
+            navObject.setAnimation("none")
             navObject.replaceAll("/")
             console.log("[LOGIN DEBUG] router.replace called successfully")
           } catch (navError) {
