@@ -130,20 +130,6 @@ class GlassesStore {
                 // CoreManager.shared.sgc?.sendAuthToken(token)
             }
 
-        case ("core", "lc3_frame_size"):
-            if let frameSize = value as? Int {
-                if frameSize != 20 && frameSize != 40 && frameSize != 60 {
-                    Bridge.log(
-                        "MAN: Invalid LC3 frame size \(frameSize), must be 20, 40, or 60. Using default 60."
-                    )
-                    store.set("core", "lc3_frame_size", 60)
-                    CoreManager.shared.lc3Converter?.setOutputFrameSize(60)
-                    return
-                }
-                CoreManager.shared.lc3Converter?.setOutputFrameSize(frameSize)
-                Bridge.log("MAN: LC3 frame size set to \(frameSize) bytes (\(frameSize * 800 / 1000)kbps)")
-            }
-
         case ("core", "brightness"):
             let b = value as? Int ?? 50
             let auto = store.get("core", "auto_brightness") as? Bool ?? true

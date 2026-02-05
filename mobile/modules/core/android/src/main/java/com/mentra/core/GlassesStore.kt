@@ -1,11 +1,11 @@
 package com.mentra.core
 
+import com.mentra.core.utils.DeviceTypes
 import com.mentra.core.utils.MicMap
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
-import com.mentra.core.utils.DeviceTypes
 
 /** Centralized observable state store for glasses and core settings */
 object GlassesStore {
@@ -135,22 +135,6 @@ object GlassesStore {
             "core" to "auth_token" -> {
                 if (value is String) {
                     // CoreManager.getInstance().sgc?.sendAuthToken(value)
-                }
-            }
-            "core" to "lc3_frame_size" -> {
-                val frameSize = (value as? Number)?.toInt()
-                if (frameSize != null) {
-                    if (frameSize != 20 && frameSize != 40 && frameSize != 60) {
-                        Bridge.log(
-                                "MAN: Invalid LC3 frame size $frameSize, must be 20, 40, or 60. Using default 60."
-                        )
-                        store.set("core", "lc3_frame_size", 60)
-                        return
-                    }
-                    store.set("core", "lc3_frame_size", frameSize)
-                    Bridge.log(
-                            "MAN: LC3 frame size set to $frameSize bytes (${frameSize * 800 / 1000}kbps)"
-                    )
                 }
             }
             "core" to "isHeadUp" -> {
