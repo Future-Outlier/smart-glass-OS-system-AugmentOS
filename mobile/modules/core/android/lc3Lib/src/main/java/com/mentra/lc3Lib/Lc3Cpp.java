@@ -22,8 +22,7 @@ public class Lc3Cpp {
 
     // Convenience overload with default frame size (20 bytes for backward compatibility)
     public static byte[] encodeLC3(long encoderPtr, byte[] pcmData) {
-        int frameSize = GlassesStore.shared.get("core", "lc3_frame_size") as? Int ?? 20;
-        return encodeLC3(encoderPtr, pcmData, frameSize);
+        return encodeLC3(encoderPtr, pcmData, 20);
     }
 
     public static native long initDecoder();
