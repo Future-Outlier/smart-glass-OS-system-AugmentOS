@@ -489,7 +489,7 @@ class CoreManager {
                     Bridge.log("MAN: ERROR - LC3 encoder not initialized but format is LC3")
                     return
                 }
-                val lc3FrameSize = GlassesStore.store.get("core", "lc3_frame_size") as Int;
+                val lc3FrameSize = (GlassesStore.store.get("core", "lc3_frame_size") as? Number)?.toInt() ?: 60
                 val lc3Data = Lc3Cpp.encodeLC3(lc3EncoderPtr, pcmData, lc3FrameSize)
                 if (lc3Data == null || lc3Data.isEmpty()) {
                     Bridge.log("MAN: ERROR - LC3 encoding returned empty data")
