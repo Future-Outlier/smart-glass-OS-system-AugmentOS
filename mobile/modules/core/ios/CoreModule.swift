@@ -11,6 +11,7 @@ public class CoreModule: Module {
             "core_status",
             "log",
             // Individual event handlers
+            "glasses_not_ready",
             "button_press",
             "touch_event",
             "head_up",

@@ -10,7 +10,7 @@ class Simulated : SGCManager() {
 
     init {
         type = DeviceTypes.SIMULATED
-        GlassesStore.apply("glasses", "isFullyBooted", true)
+        GlassesStore.apply("glasses", "fullyBooted", true)
         GlassesStore.apply("glasses", "connected", true)
         GlassesStore.apply("glasses", "connectionState", ConnTypes.CONNECTED)
         GlassesStore.apply("glasses", "micEnabled", false)
@@ -165,7 +165,6 @@ class Simulated : SGCManager() {
     }
 
     override fun connectById(id: String) {
-        CoreManager.getInstance().handleConnectionStateChanged()
     }
 
     override fun getConnectedBluetoothName(): String {

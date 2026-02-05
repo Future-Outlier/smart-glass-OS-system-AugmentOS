@@ -197,6 +197,9 @@ public class MentraLive extends SGCManager {
     private boolean isBondingReceiverRegistered = false;
     private boolean isBtClassicConnected = false;
     private BroadcastReceiver bondingReceiver;
+    private int bondingRetryCount = 0;
+    private static final int MAX_BONDING_RETRIES = 3;
+    private static final long BONDING_RETRY_DELAY_MS = 1500; // Delay before retry to let user see dialog again
 
     // A2DP profile connection for already-bonded devices
     private BluetoothA2dp a2dpProfile = null;
@@ -572,11 +575,10 @@ public class MentraLive extends SGCManager {
         GlassesStore.INSTANCE.apply("glasses", "connectionState", state);
 
         if (state.equals(ConnTypes.CONNECTED)) {
-            GlassesStore.INSTANCE.apply("glasses", "isFullyBooted", true);
-            // CoreManager.getInstance().handleConnectionStateChanged();
+            GlassesStore.INSTANCE.apply("glasses", "connected", true);
         } else if (state.equals(ConnTypes.DISCONNECTED)) {
-            GlassesStore.INSTANCE.apply("glasses", "isFullyBooted", false);
-            // CoreManager.getInstance().handleConnectionStateChanged();
+            GlassesStore.INSTANCE.apply("glasses", "connected", false);
+            GlassesStore.INSTANCE.apply("glasses", "fullyBooted", false);
         }
     }
 
@@ -929,6 +931,7 @@ public class MentraLive extends SGCManager {
 
                     // CTKD Implementation: Register bonding receiver and create bond for BT Classic
                     registerBondingReceiver();
+                    bondingRetryCount = 0; // Reset retry counter for new connection
                     Bridge.log("LIVE: CTKD: BLE connection established, initiating CTKD bonding for BT Classic");
 
                     // Check if device is already bonded before attempting to create bond
@@ -1055,6 +1058,8 @@ public class MentraLive extends SGCManager {
                         // BLE connection established, but we still need to wait for glasses SOC
                         Bridge.log("LIVE: ✅ Core TX/RX and LC3 TX/RX characteristics found - BLE connection ready");
                         Bridge.log("LIVE: 🔄 Waiting for glasses SOC to become ready...");
+
+                        GlassesStore.INSTANCE.apply("glasses", "connected", true);
 
                         // Keep the state as CONNECTING until the glasses SOC responds
                         // connectionEvent(SmartGlassesConnectionState.CONNECTING);
@@ -1301,7 +1306,7 @@ public class MentraLive extends SGCManager {
         // Enable notifications for each characteristic
         for (BluetoothGattCharacteristic characteristic : characteristics) {
             UUID uuid = characteristic.getUuid();
-            Bridge.log("LIVE: Thread-" + threadId + ": Examining characteristic: " + uuid);
+            // Bridge.log("LIVE: Thread-" + threadId + ": Examining characteristic: " + uuid);
 
             // Log if this is one of the file transfer characteristics
             if (uuid.equals(FILE_READ_UUID)) {
@@ -1440,7 +1445,7 @@ public class MentraLive extends SGCManager {
     private void queueData(byte[] data) {
         if (data != null) {
             sendQueue.add(data);
-            Bridge.log("LIVE: 📋 Added " + data.length + " to send queue - New queue size: " + sendQueue.size());
+            // Bridge.log("LIVE: 📋 Added " + data.length + " to send queue - New queue size: " + sendQueue.size());
 
             // Log all outgoing bytes for testing
             StringBuilder hexBytes = new StringBuilder();
@@ -1481,7 +1486,7 @@ public class MentraLive extends SGCManager {
             try {
                 if (buildNumberInt < 5) {
                     String jsonStr = json.toString();
-                    Bridge.log("LIVE: 📤 Sending JSON with esoteric message ID: " + jsonStr);
+                    // Bridge.log("LIVE: 📤 Sending JSON with esoteric message ID: " + jsonStr);
                     sendDataToGlasses(jsonStr, wakeup);
                 } else {
                     // Add esoteric message ID to the JSON
@@ -1489,7 +1494,7 @@ public class MentraLive extends SGCManager {
                     json.put("mId", messageId);
 
                     String jsonStr = json.toString();
-                    Bridge.log("LIVE: 📤 Sending JSON with esoteric message ID " + messageId + ": " + jsonStr);
+                    // Bridge.log("LIVE: 📤 Sending JSON with esoteric message ID " + messageId + ": " + jsonStr);
 
                     // Check if this message will be chunked to determine timeout
                     long ackTimeout = ACK_TIMEOUT_MS;
@@ -1944,7 +1949,7 @@ public class MentraLive extends SGCManager {
      * Process a JSON message
      */
     private void processJsonMessage(JSONObject json) {
-        Bridge.log("LIVE: Got some JSON from glasses: " + json.toString());
+        // Bridge.log("LIVE: Got some JSON from glasses: " + json.toString());
 
         // Check if this is an ACK response
         String type = json.optString("type", "");
@@ -2214,18 +2219,38 @@ public class MentraLive extends SGCManager {
                 Bridge.sendGalleryStatus(photoCount, videoCount, totalCount, totalSize, hasContent);
                 break;
 
-            case "touch_event":
-                // Process touch event from glasses (swipes, taps, long press)
-                String gestureName = json.optString("gesture_name", "unknown");
-                long touchTimestamp = json.optLong("timestamp", System.currentTimeMillis());
-                String touchDeviceModel = json.optString("device_model", getDeviceModel());
+            // case "touch_event":
+            //     // Process touch event from glasses (swipes, taps, long press)
+            //     String gestureName = json.optString("gesture_name", "unknown");
+            //     long touchTimestamp = json.optLong("timestamp", System.currentTimeMillis());
+            //     String touchDeviceModel = json.optString("device_model", getDeviceModel());
 
-                Log.d(TAG, "👆 Received touch event - Gesture: " + gestureName);
+            //     Log.d(TAG, "👆 Received touch event - Gesture: " + gestureName);
 
-                // Send touch event to React Native
-                //Bridge.sendTouchEvent(touchDeviceModel, gestureName, touchTimestamp);
-                break;
-
+            //     // Send touch event to React Native
+            //     // Bridge.sendTouchEvent(touchDeviceModel, gestureName, touchTimestamp);
+            //     break;
+                
+                case "sr_tpevt":
+                    // K900 touchpad event - convert to touch_event for frontend
+                    try {
+                        JSONObject bodyObj = json.optJSONObject("B");
+                        if (bodyObj != null) {
+                            int gestureType = bodyObj.optInt("type", -1);
+                            String gestureName = mapK900GestureType(gestureType);
+    
+                            if (gestureName != null) {
+                                Bridge.log("LIVE: 👆 K900 touchpad event - Type: " + gestureType + " -> " + gestureName);
+                                Bridge.sendTouchEvent(getDeviceModel(), gestureName, System.currentTimeMillis());
+                            } else {
+                                Log.d(TAG, "Unknown K900 gesture type: " + gestureType);
+                            }
+                        }
+                    } catch (Exception e) {
+                        Log.e(TAG, "Error parsing sr_tpevt", e);
+                    }
+                    break;
+            
             case "swipe_volume_status":
                 // Process swipe volume control status from glasses
                 boolean swipeVolumeEnabled = json.optBoolean("enabled", false);
@@ -2262,6 +2287,9 @@ public class MentraLive extends SGCManager {
                 // Set the ready flag to stop any future readiness checks
                 glassesReady = true;
                 glassesReadyReceived = true;
+                // NOTE: Don't set fullyBooted here - it will be set when BOTH glasses_ready
+                // AND audioConnected are true (see below). This ensures BT Classic pairing
+                // is complete before the device is considered "paired" in MentraOS.
 
                 // Stop the readiness check loop since we got confirmation
                 stopReadinessCheckLoop();
@@ -2320,6 +2348,7 @@ public class MentraLive extends SGCManager {
                 // This check maintains platform parity with iOS
                 if (audioConnected) {
                     Bridge.log("LIVE: Audio: Both glasses_ready and audio connected - marking as fully connected");
+                    GlassesStore.INSTANCE.apply("glasses", "fullyBooted", true);
                     updateConnectionState(ConnTypes.CONNECTED);
                 } else {
                     Bridge.log("LIVE: Audio: Waiting for CTKD audio bonding before marking as fully connected");
@@ -2712,7 +2741,7 @@ public class MentraLive extends SGCManager {
 
     private void processK900JsonMessage(JSONObject json) {
         String command = json.optString("C", "");
-        Bridge.log("LIVE: Processing K900 command: " + command);
+        // Bridge.log("LIVE: Processing K900 command: " + command);
 
         switch (command) {
             case "sr_hrt":
@@ -2723,15 +2752,15 @@ public class MentraLive extends SGCManager {
                         int batteryPercentage = bodyObj.optInt("pt", -1);
                         int ready = bodyObj.optInt("ready", 0);
                         if (ready == 0) {
-                            // SOC is still booting - notify UI to show "Glasses are booting up..." message
-                            Bridge.log("LIVE: K900 SOC not ready (ready=0), notifying UI");
-                            GlassesStore.INSTANCE.set("core", "shouldShowBootingMessage", true);
-
+                            Bridge.log("LIVE: K900 SOC not ready (ready=0)");
+                            GlassesStore.INSTANCE.apply("glasses", "fullyBooted", false);
+                            Bridge.sendTypedMessage("glasses_not_ready", new HashMap<String, Object>() {});
                             if (batteryPercentage > 0 && batteryPercentage <= 20) {
                                 Bridge.log("LIVE: K900 battery percentage: " + batteryPercentage);
                                 Bridge.sendPairFailureEvent("errors:pairingBatteryTooLow");
                                 return;
                             }
+                            return;
                         }
                         if (ready == 1) {
                             Bridge.log("LIVE: K900 SOC ready");
@@ -3711,11 +3740,13 @@ public class MentraLive extends SGCManager {
                                 Bridge.log("LIVE: CTKD: ✅ Successfully bonded with device - BT Classic connection established");
                                 isBtClassicConnected = true;
                                 audioConnected = true;
+                                bondingRetryCount = 0; // Reset retry counter on success
                                 // Both BLE and BT Classic are now connected via CTKD
 
                                 // If glasses_ready was already received, now we're fully ready
                                 if (glassesReadyReceived) {
                                     Bridge.log("LIVE: Audio: Both audio and glasses_ready confirmed - marking as fully connected");
+                                    GlassesStore.INSTANCE.apply("glasses", "fullyBooted", true);
                                     updateConnectionState(ConnTypes.CONNECTED);
                                 }
 
@@ -3728,7 +3759,24 @@ public class MentraLive extends SGCManager {
                                 isBtClassicConnected = false;
                                 audioConnected = false;
                                 if (previousBondState == BluetoothDevice.BOND_BONDING) {
-                                    Bridge.log("LIVE: CTKD: Bonding process failed");
+                                    // User cancelled or bonding failed - retry up to MAX_BONDING_RETRIES times
+                                    bondingRetryCount++;
+                                    Bridge.log("LIVE: CTKD: Bonding process failed (attempt " + bondingRetryCount + "/" + MAX_BONDING_RETRIES + ")");
+
+                                    if (bondingRetryCount < MAX_BONDING_RETRIES && connectedDevice != null) {
+                                        Bridge.log("LIVE: CTKD: 🔄 Retrying bonding in " + BONDING_RETRY_DELAY_MS + "ms...");
+                                        handler.postDelayed(() -> {
+                                            if (connectedDevice != null && connectedDevice.getBondState() != BluetoothDevice.BOND_BONDED) {
+                                                Bridge.log("LIVE: CTKD: 🔄 Initiating bonding retry #" + bondingRetryCount);
+                                                createBond(connectedDevice);
+                                            }
+                                        }, BONDING_RETRY_DELAY_MS);
+                                    } else {
+                                        Bridge.log("LIVE: CTKD: ❌ Max bonding retries reached - disconnecting device");
+                                        //Bridge.sendError("bt_classic_pairing_required", "Bluetooth Classic pairing is required. Please accept the pairing dialog to use your glasses.");
+                                        // Disconnect since we can't proceed without BT Classic
+                                        //disconnect();
+                                    }
                                 } else if (previousBondState == BluetoothDevice.BOND_BONDED) {
                                     // Send audio disconnected event for platform parity with iOS
                                     Bridge.sendAudioDisconnected();
@@ -3910,6 +3958,7 @@ public class MentraLive extends SGCManager {
         Bridge.sendAudioConnected(deviceName);
         if (glassesReadyReceived) {
             Bridge.log("LIVE: A2DP: Both audio and glasses_ready confirmed - marking as fully connected");
+            GlassesStore.INSTANCE.apply("glasses", "fullyBooted", true);
             updateConnectionState(ConnTypes.CONNECTED);
         }
     }
@@ -4040,7 +4089,7 @@ public class MentraLive extends SGCManager {
         reconnectAttempts = 0;
         isReconnecting = false;
         glassesReady = false;
-        GlassesStore.INSTANCE.apply("glasses", "isFullyBooted", false);
+        GlassesStore.INSTANCE.apply("glasses", "fullyBooted", false);
         updateConnectionState(ConnTypes.DISCONNECTED);
 
         // Note: We don't null context here to prevent race conditions with BLE callbacks
@@ -4085,24 +4134,16 @@ public class MentraLive extends SGCManager {
     @Override
     public void sendButtonVideoRecordingSettings() {
         try {
-            // Settings come from React Native as a Map, not JSONObject
             Object videoSettingsObj = GlassesStore.INSTANCE.get("core", "button_video_settings");
             int videoWidth = 1920;  // defaults
             int videoHeight = 1080;
             int videoFps = 30;
 
-            if (videoSettingsObj instanceof Map) {
-                Map<String, Object> videoSettings = (Map<String, Object>) videoSettingsObj;
-                videoWidth = ((Number) videoSettings.getOrDefault("width", 1920)).intValue();
-                videoHeight = ((Number) videoSettings.getOrDefault("height", 1080)).intValue();
-                videoFps = ((Number) videoSettings.getOrDefault("fps", 30)).intValue();
-            } else if (videoSettingsObj instanceof JSONObject) {
-                JSONObject videoSettings = (JSONObject) videoSettingsObj;
-                videoWidth = videoSettings.optInt("width", 1920);
-                videoHeight = videoSettings.optInt("height", 1080);
-                videoFps = videoSettings.optInt("fps", 30);
-            }
-
+            Map<String, Object> videoSettings = (Map<String, Object>) videoSettingsObj;
+            videoWidth = ((Number) videoSettings.getOrDefault("width", 1920)).intValue();
+            videoHeight = ((Number) videoSettings.getOrDefault("height", 1080)).intValue();
+            videoFps = ((Number) videoSettings.getOrDefault("fps", 30)).intValue();
+            
             Bridge.log("LIVE: 🎥 [SETTINGS_SYNC] Sending button video recording settings: " + videoWidth + "x" + videoHeight + "@" + videoFps + "fps");
 
             JSONObject json = new JSONObject();

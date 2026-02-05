@@ -116,6 +116,7 @@ const en = {
       "Your glasses are connected to the app, but the bluetooth audio device is not connected.",
     powerOn: "Power on",
     poweredOn: "Powered on",
+    glassesBooting: "Glasses are booting...",
   },
   pairingGuide: {
     mentraLivePreorder: "Get Mentra Live and experience computer vision on your smart glasses.",
@@ -197,6 +198,8 @@ const en = {
     livePowerOnTutorial: "Press and hold the power button for 5 seconds",
     livePowerOnInfo: 'You will hear "Power on"',
     liveConnected: "Mentra Live connected",
+    liveEndOnboardingTitle: "Skip onboarding tutorials?",
+    liveEndOnboardingMessage: "Are you sure you want to skip the onboarding tutorials?",
     g1Connected: "Even Realities G1 connected",
     g2Connected: "Even Realities G2 connected",
     osWelcomeTitle: "Welcome to MentraOS",
@@ -221,6 +224,8 @@ const en = {
     osEnd: "End",
     osEndBullet1: "TODO1",
     osEndBullet2: "TODO2",
+    osEndOnboardingTitle: "Skip onboarding tutorials?",
+    osEndOnboardingMessage: "Are you sure you want to skip the onboarding tutorial?",
     learnAboutOs: "Learn about Mentra OS",
     btClassicStep1: "Tap open settings",
     btClassicStep2: "Tap Bluetooth",
@@ -229,12 +234,15 @@ const en = {
     btClassicTitle: "Pair Audio",
     btClassicSubtitle: "Connect {{name}} as a Bluetooth audio device",
     openSettings: "Open settings",
+    stepCounter: "Step {{index}} / {{total}}",
+    confirmSkip: "Yes, skip"
   },
   wifi: {
     networks: "Networks",
     scanningForNetworks: "Scanning for networks...",
     noNetworksFound: "No networks found",
     enterNetworkManually: "Enter network manually",
+    enterNetworkDetails: "Enter network details",
     addNetwork: "Add your Wi-Fi network",
     addNetworkDescription:
       "Add a network to import media and install device updates automatically while your device is charging.",
@@ -339,6 +347,7 @@ const en = {
     appletPlaceholder: "Tap an app below to activate it",
     simulatedGlasses: "Simulated glasses",
     glassesMirror: "Glasses Mirror",
+    stopTrying: "Stop trying",
   },
   permissions: {
     backgroundLocationPermissionRequiredMessage:
@@ -659,6 +668,7 @@ const en = {
   },
   common: {
     ok: "OK",
+    no: "No",
     cancel: "Cancel",
     back: "Back",
     or: "OR",
@@ -686,6 +696,7 @@ const en = {
     tryAgain: "Try again",
     connect: "Connect",
     ignore: "Ignore",
+    exit: "Exit",
   },
   developer: {
     dev: "Dev",

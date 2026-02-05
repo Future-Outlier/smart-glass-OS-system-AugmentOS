@@ -1,13 +1,10 @@
 // eslint-disable-next-line import/no-unresolved
-import LogoSvg from "@assets/logo/logo.svg"
 import {useLocalSearchParams} from "expo-router"
-import {StatusBar} from "expo-status-bar"
-import * as WebBrowser from "expo-web-browser"
-import {useEffect, useMemo, useState} from "react"
-import {BackHandler, Platform, TouchableOpacity, View} from "react-native"
-import {useSafeAreaInsets} from "react-native-safe-area-context"
+import {useEffect} from "react"
+import {Platform, TouchableOpacity, View} from "react-native"
+import {focusEffectPreventBack} from "@/contexts/NavigationHistoryContext"
 
-import {Button, Icon, Text} from "@/components/ignite"
+import {Button, Icon, Text, Screen} from "@/components/ignite"
 import {useNavigationHistory} from "@/contexts/NavigationHistoryContext"
 import {useAppTheme} from "@/contexts/ThemeContext"
 import {translate} from "@/i18n"
@@ -17,17 +14,16 @@ import mentraAuth from "@/utils/auth/authClient"
 import {mapAuthError} from "@/utils/auth/authErrors"
 import AppleIcon from "assets/icons/component/AppleIcon"
 import GoogleIcon from "assets/icons/component/GoogleIcon"
+import {MentraLogoStandalone} from "@/components/brands/MentraLogoStandalone"
 
 export default function LoginScreen() {
-  const [backPressCount, setBackPressCount] = useState(0)
-  const {push} = useNavigationHistory()
+  const {push, replace} = useNavigationHistory()
   const [isChina] = useSetting(SETTINGS.china_deployment.key)
   const {authError} = useLocalSearchParams<{authError?: string}>()
-  const {theme, themeContext} = useAppTheme()
+  const {theme} = useAppTheme()
+  const {setAnimation} = useNavigationHistory()
 
-  // Cache safe area insets on mount to prevent layout shifts when webview opens
-  const insets = useSafeAreaInsets()
-  const cachedInsets = useMemo(() => ({top: insets.top, bottom: insets.bottom}), [])
+  focusEffectPreventBack()
 
   // Handle auth errors passed via URL params (e.g., from expired reset links)
   useEffect(() => {
@@ -37,55 +33,46 @@ export default function LoginScreen() {
     }
   }, [authError])
 
+  const handleWebLogin = async (url: string) => {
+    console.log("Opening browser with:", url)
+    setAnimation("fade")
+    await new Promise((resolve) => setTimeout(resolve, 1))
+    push("/auth/web-splash", {url})
+    // await new Promise((resolve) => setTimeout(resolve, 1000))
+    // await WebBrowser.openBrowserAsync(url)
+  }
+
   const handleGoogleSignIn = async () => {
     const res = await mentraAuth.googleSignIn()
-
     if (res.is_error()) {
       return
     }
-
     const url = res.value
-    console.log("Opening browser with:", url)
-    await WebBrowser.openBrowserAsync(url)
+    handleWebLogin(url)
   }
 
   const handleAppleSignIn = async () => {
     const res = await mentraAuth.appleSignIn()
-
     if (res.is_error()) {
       console.error("Apple sign in failed:", res.error)
       return
     }
-
     const url = res.value
-    console.log("Opening browser with:", url)
-    await WebBrowser.openBrowserAsync(url)
+    handleWebLogin(url)
   }
 
-  useEffect(() => {
-    const backHandler = BackHandler.addEventListener("hardwareBackPress", () => {
-      if (backPressCount === 0) {
-        setBackPressCount(1)
-        setTimeout(() => setBackPressCount(0), 2000)
-        return true
-      } else {
-        BackHandler.exitApp()
-        return true
-      }
-    })
-
-    return () => backHandler.remove()
-  }, [backPressCount])
+  const handleSignup = async () => {
+    setAnimation("simple_push")
+    await new Promise((resolve) => setTimeout(resolve, 1))
+    push("/auth/signup")
+  }
 
   return (
-    <View
-      className="flex-1 bg-background"
-      style={{paddingTop: cachedInsets.top, paddingBottom: cachedInsets.bottom, paddingHorizontal: theme.spacing.s6}}>
-      <StatusBar style={themeContext === "dark" ? "light" : "dark"} />
+    <Screen preset="fixed">
       <View className="flex-1">
         <View className="flex-1 justify-center p-4">
           <View className="items-center justify-center mb-4">
-            <LogoSvg width={100} height={100} />
+            <MentraLogoStandalone width={100} height={48} />
           </View>
 
           <Text
@@ -102,7 +89,7 @@ export default function LoginScreen() {
               <Button
                 preset="primary"
                 text={translate("login:signUpWithEmail")}
-                onPress={() => push("/auth/signup")}
+                onPress={handleSignup}
                 LeftAccessory={() => <Icon name="mail" size={20} color={theme.colors.background} />}
               />
 
@@ -137,6 +124,6 @@ export default function LoginScreen() {
           <Text className="text-[11px] text-muted-foreground text-center mt-2">{translate("login:termsText")}</Text>
         </View>
       </View>
-    </View>
+    </Screen>
   )
 }

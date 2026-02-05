@@ -28,6 +28,7 @@ export default function OtaCheckForUpdatesScreen() {
 
   const [checkState, setCheckState] = useState<CheckState>("checking")
   const [availableUpdates, setAvailableUpdates] = useState<string[]>([])
+  const [isUpdateRequired, setIsUpdateRequired] = useState(true) // Default to required if not specified
   const [checkKey, setCheckKey] = useState(0)
   const versionInfoTimeoutRef = useRef<NodeJS.Timeout | null>(null)
   const waitStartTimeRef = useRef<number | null>(null)
@@ -147,6 +148,8 @@ export default function OtaCheckForUpdatesScreen() {
           if (filteredUpdates.length > 0) {
             console.log("📱 Updates available - setting update_available state")
             setAvailableUpdates(filteredUpdates)
+            // If isRequired is not specified in version.json, default to true (forced update)
+            setIsUpdateRequired(result.latestVersionInfo?.isRequired !== false)
             setCheckState("update_available")
           } else {
             console.log("📱 No updates available after filtering - setting no_update state")
@@ -222,7 +225,7 @@ export default function OtaCheckForUpdatesScreen() {
             <ActivityIndicator size="large" color={theme.colors.foreground} />
           </View>
 
-          {/* No skip button - OTA check is mandatory */}
+          {/* No skip button while checking - OTA check is mandatory */}
           <View className="h-12" />
         </>
       )
@@ -231,6 +234,7 @@ export default function OtaCheckForUpdatesScreen() {
     // Update available state
     if (checkState === "update_available") {
       const updateList = availableUpdates.map((u) => u.toUpperCase()).join(", ")
+
       return (
         <>
           <View className="flex-1 items-center justify-center px-6">
@@ -249,7 +253,8 @@ export default function OtaCheckForUpdatesScreen() {
 
           <View className="gap-3 mb-6">
             <Button preset="primary" tx="ota:updateNow" onPress={handleUpdateNow} />
-            {__DEV__ && <Button preset="secondary" text="Skip (dev only)" onPress={handleContinue} />}
+            {!isUpdateRequired && <Button preset="secondary" tx="ota:updateLater" onPress={handleContinue} />}
+            {__DEV__ && isUpdateRequired && <Button preset="secondary" text="Skip (dev only)" onPress={handleContinue} />}
           </View>
         </>
       )
@@ -286,7 +291,7 @@ export default function OtaCheckForUpdatesScreen() {
         </View>
 
         <View className="gap-3 pb-2 mb-6">
-          <Button preset="primary" tx="Retry" flexContainer onPress={handleRetry} />
+          <Button preset="primary" text="Retry" flexContainer onPress={handleRetry} />
           {__DEV__ && <Button preset="secondary" text="Skip (dev only)" onPress={handleContinue} />}
         </View>
       </>

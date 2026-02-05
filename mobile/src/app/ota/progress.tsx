@@ -513,10 +513,9 @@ export default function OtaProgressScreen() {
     // Installing state - show percentage for BES firmware updates, spinner-only for APK and MTK
     if (progressState === "installing") {
       const componentName = getComponentName(currentUpdate)
-      // BES firmware updates report install progress
+      // BES and MTK firmware updates report install progress
       // APK install is handled by Android system with no progress tracking
-      // MTK takes a long time (~5 min) so we just show spinner with time estimate
-      const showProgress = currentUpdate === "bes"
+      const showProgress = currentUpdate === "bes" || currentUpdate === "mtk"
       const isMtk = currentUpdate === "mtk"
       console.log(
         "🔍 OTA INSTALLING STATE: componentName =",

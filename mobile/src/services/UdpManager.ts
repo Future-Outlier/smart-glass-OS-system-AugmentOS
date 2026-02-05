@@ -440,7 +440,7 @@ class UdpManager {
       // If encryption enabled, we need to recalculate alignment after accounting for overhead
       let maxChunkSize: number
       if (this.encryptionConfig) {
-        const frameSizeBytes = useSettingsStore.getState().getSetting(SETTINGS.lc3_frame_size.key) || 60
+        const frameSizeBytes = useSettingsStore.getState().getSetting(SETTINGS.lc3_frame_size.key)
         const availableForAudio = MAX_AUDIO_CHUNK_SIZE_BASE - ENCRYPTION_OVERHEAD // 1018 - 40 = 978
         const maxFrames = Math.floor(availableForAudio / frameSizeBytes) // 978 / 60 = 16 frames
         maxChunkSize = maxFrames * frameSizeBytes // 16 * 60 = 960 bytes (properly aligned)
@@ -522,7 +522,7 @@ class UdpManager {
       // If encryption enabled, we need to recalculate alignment after accounting for overhead
       let maxChunkSize: number
       if (this.encryptionConfig) {
-        const frameSizeBytes = useSettingsStore.getState().getSetting(SETTINGS.lc3_frame_size.key) || 60
+        const frameSizeBytes = useSettingsStore.getState().getSetting(SETTINGS.lc3_frame_size.key)
         const availableForAudio = MAX_AUDIO_CHUNK_SIZE_BASE - ENCRYPTION_OVERHEAD // 1018 - 40 = 978
         const maxFrames = Math.floor(availableForAudio / frameSizeBytes)
         maxChunkSize = maxFrames * frameSizeBytes // Properly aligned to LC3 frames

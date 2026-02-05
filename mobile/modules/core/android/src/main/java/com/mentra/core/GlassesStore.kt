@@ -19,7 +19,7 @@ object GlassesStore {
         // GLASSES STATE:
         store.set("glasses", "batteryLevel", -1)
         store.set("glasses", "charging", false)
-        store.set("glasses", "isFullyBooted", false)
+        store.set("glasses", "fullyBooted", false)
         store.set("glasses", "connected", false)
         store.set("glasses", "connectionState", "disconnected")
         store.set("glasses", "deviceModel", "")
@@ -52,8 +52,6 @@ object GlassesStore {
         store.set("core", "wifiScanResults", emptyList<Any>())
         store.set("core", "micRanking", MicMap.map["auto"]!!)
         store.set("core", "lastLog", mutableListOf<String>())
-        // UI hints:
-        store.set("core", "shouldShowBootingMessage", false)
 
         // CORE SETTINGS:
         store.set("core", "default_wearable", "")
@@ -84,7 +82,7 @@ object GlassesStore {
         store.set("core", "button_video_height", 720)
         store.set("core", "button_video_fps", 30)
         store.set("core", "preferred_mic", "auto")
-        store.set("core", "lc3_frame_size", 20)
+        store.set("core", "lc3_frame_size", 60)
         store.set("core", "auth_email", "")
         store.set("core", "auth_token", "")
     }
@@ -104,17 +102,21 @@ object GlassesStore {
 
         // Trigger hardware updates based on setting changes
         when (category to key) {
-            "glasses" to "isFullyBooted" -> {
+            "glasses" to "fullyBooted" -> {
                 if (value is Boolean) {
                     if (value) {
                         CoreManager.getInstance().handleDeviceReady()
                     } else {
                         CoreManager.getInstance().handleDeviceDisconnected()
                     }
-                    // if ready is true, set connected to true
-                    if (value) {
-                        store.set("glasses", "connected", true)
-                    }
+                    // // if ready is true, set connected to true
+                    // if (value) {
+                    //     store.set("glasses", "connected", true)
+                    // }
+                    // // if ready is false, set connected to false
+                    // if (!value) {
+                    //     store.set("glasses", "connected", false)
+                    // }
                 }
             }
             "glasses" to "headUp" -> {
@@ -139,9 +141,9 @@ object GlassesStore {
                 if (value is Int) {
                     if (value != 20 && value != 40 && value != 60) {
                         Bridge.log(
-                                "MAN: Invalid LC3 frame size $value, must be 20, 40, or 60. Using default 20."
+                                "MAN: Invalid LC3 frame size $value, must be 20, 40, or 60. Using default 60."
                         )
-                        store.set("core", "lc3_frame_size", 20)
+                        store.set("core", "lc3_frame_size", 60)
                         return
                     }
                     Bridge.log(

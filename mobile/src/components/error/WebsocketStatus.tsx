@@ -38,7 +38,7 @@ export default function WebsocketStatus() {
   const connectionStatus = useConnectionStore((state) => state.status)
   const [displayStatus, setDisplayStatus] = useState<DisplayStatus>("connected")
   const [offlineMode] = useSetting(SETTINGS.offline_mode.key)
-  const [devMode] = useSetting(SETTINGS.dev_mode.key)
+  const [superMode] = useSetting(SETTINGS.super_mode.key)
   const refreshApplets = useRefreshApplets()
   const {theme} = useAppTheme()
   const disconnectionTimerRef = useRef<number | null>(null)
@@ -85,7 +85,7 @@ export default function WebsocketStatus() {
 
   const config = STATUS_CONFIG[displayStatus]
 
-  if (!devMode && displayStatus == "connected") {
+  if (!superMode && displayStatus == "connected") {
     return null
   }
 
