@@ -1,5 +1,5 @@
 import {useFocusEffect} from "@react-navigation/native"
-import {useCallback} from "react"
+import {useCallback, useEffect, useRef} from "react"
 import {ScrollView, View} from "react-native"
 
 import {MentraLogoStandalone} from "@/components/brands/MentraLogoStandalone"
@@ -14,20 +14,43 @@ import NonProdWarning from "@/components/home/NonProdWarning"
 import {Group} from "@/components/ui"
 import {useRefreshApplets} from "@/stores/applets"
 import {SETTINGS, useSetting} from "@/stores/settings"
+import {useGlassesStore} from "@/stores/glasses"
+import {useCoreStore} from "@/stores/core"
 import WebsocketStatus from "@/components/error/WebsocketStatus"
 import CoreStatusBar from "@/components/dev/CoreStatusBar"
+import {attemptReconnect} from "@/effects/Reconnect"
 
 export default function Homepage() {
   const refreshApplets = useRefreshApplets()
   const [defaultWearable] = useSetting(SETTINGS.default_wearable.key)
   const [offlineMode] = useSetting(SETTINGS.offline_mode.key)
   const [debugCoreStatusBarEnabled] = useSetting(SETTINGS.debug_core_status_bar.key)
+  const glassesConnected = useGlassesStore((state) => state.connected)
+  const isSearching = useCoreStore((state) => state.searching)
+  const hasAttemptedInitialConnect = useRef(false)
 
   useFocusEffect(
     useCallback(() => {
       refreshApplets()
     }, [refreshApplets]),
   )
+
+  // Auto-connect on initial app startup when home screen is reached
+  // This ensures all initialization is complete before attempting connection
+  useEffect(() => {
+    const attemptInitialConnect = async () => {
+      // Only attempt once per app session
+      if (hasAttemptedInitialConnect.current) {
+        return
+      }
+      let attempted = await attemptReconnect()
+      if (attempted) {
+        hasAttemptedInitialConnect.current = true
+      }
+    }
+
+    attemptInitialConnect()
+  }, [glassesConnected, isSearching, defaultWearable])
 
   const renderContent = () => {
     if (!defaultWearable) {

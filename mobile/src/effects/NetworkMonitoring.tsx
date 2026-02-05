@@ -61,17 +61,17 @@ export function NetworkMonitoring() {
 
   // Update glasses status when it changes
   useEffect(() => {
-    console.log("[NetworkConnectivityProvider] Glasses status changed:", {
-      wifiConnected,
-      wifiSsid,
-      wifiLocalIp,
-      hotspotEnabled,
-      hotspotGatewayIp,
-      hotspotSsid,
-      activeConnection,
-      activeGlassesIp,
-      activeSSID,
-    })
+    // console.log("[NetworkConnectivityProvider] Glasses status changed:", {
+    //   wifiConnected,
+    //   wifiSsid,
+    //   wifiLocalIp,
+    //   hotspotEnabled,
+    //   hotspotGatewayIp,
+    //   hotspotSsid,
+    //   activeConnection,
+    //   activeGlassesIp,
+    //   activeSSID,
+    // })
 
     if (activeConnection !== undefined) {
       networkConnectivityService.updateGlassesStatus(wifiConnected, activeSSID || null, activeGlassesIp || undefined)

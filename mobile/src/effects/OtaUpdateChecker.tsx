@@ -15,6 +15,7 @@ export interface VersionInfo {
   apkSize: number
   sha256: string
   releaseNotes: string
+  isRequired?: boolean // If not specified in version.json, defaults to true (forced update)
 }
 
 interface VersionJson {

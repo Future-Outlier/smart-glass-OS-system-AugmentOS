@@ -96,7 +96,7 @@ export const SETTINGS: Record<string, Setting> = {
   },
   reconnect_on_app_foreground: {
     key: "reconnect_on_app_foreground",
-    defaultValue: () => false,
+    defaultValue: () => true,
     writable: true,
     saveOnServer: true,
     persist: true,
@@ -453,6 +453,7 @@ const CORE_SETTINGS_KEYS: string[] = [
   SETTINGS.device_name.key,
   SETTINGS.device_address.key,
   // offline applets:
+  SETTINGS.offline_mode.key,
   SETTINGS.offline_captions_running.key,
   SETTINGS.gallery_mode.key,
   // notifications:
