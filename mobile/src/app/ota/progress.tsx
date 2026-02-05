@@ -3,6 +3,7 @@ import {useEffect, useState, useRef, useCallback} from "react"
 import {View, ActivityIndicator} from "react-native"
 
 import {MentraLogoStandalone} from "@/components/brands/MentraLogoStandalone"
+import {ConnectionOverlay} from "@/components/glasses/ConnectionOverlay"
 import {Screen, Header, Button, Text, Icon} from "@/components/ignite"
 import {useFocusEffectPreventBack, useNavigationHistory} from "@/contexts/NavigationHistoryContext"
 import {useAppTheme} from "@/contexts/ThemeContext"
@@ -697,9 +698,23 @@ export default function OtaProgressScreen() {
     )
   }
 
+  // Determine if we should show BES-specific reconnection message
+  const isBesUpdate = otaProgress?.currentUpdate === "bes"
+  const isBesCompleting =
+    isBesUpdate && (progressState === "completed" || progressState === "restarting" || otaProgress?.progress === 100)
+
   return (
     <Screen preset="fixed" safeAreaEdges={["bottom"]}>
       <Header RightActionComponent={<MentraLogoStandalone />} />
+      <ConnectionOverlay
+        customTitle={isBesCompleting ? "Glasses are restarting" : undefined}
+        customMessage={
+          isBesCompleting
+            ? "Your glasses are rebooting to apply the firmware update. This may take a moment..."
+            : undefined
+        }
+        hideStopButton={isBesCompleting}
+      />
 
       {renderContent()}
     </Screen>
