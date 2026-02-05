@@ -186,6 +186,15 @@ export default function PairingPrepScreen() {
           // We just need to stop the flow here
           return
         }
+
+        // Check connectivity for Android AFTER all permissions are granted
+        // This must be done after location permission is granted to avoid premature "Connection issue" popup
+        if (needsBluetoothPermissions) {
+          const requirementsCheck = await checkConnectivityRequirementsUI()
+          if (!requirementsCheck) {
+            return
+          }
+        }
       } else {
         console.log("Skipping location permission on iOS - not needed after BLE fix")
       }
@@ -195,14 +204,6 @@ export default function PairingPrepScreen() {
         {text: translate("common:ok")},
       ])
       return
-    }
-
-    // Check connectivity for Android after permissions are granted
-    if (needsBluetoothPermissions && Platform.OS === "android") {
-      const requirementsCheck = await checkConnectivityRequirementsUI()
-      if (!requirementsCheck) {
-        return
-      }
     }
 
     console.log("needsBluetoothPermissions", needsBluetoothPermissions)
@@ -257,7 +258,7 @@ export default function PairingPrepScreen() {
         showCloseButton={false}
         showSkipButton={false}
         showHeader={false}
-        exitFn={() => {
+        skipFn={() => {
           advanceToPairing()
         }}
         endButtonText={translate("pairing:poweredOn")}

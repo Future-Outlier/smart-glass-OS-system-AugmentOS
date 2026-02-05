@@ -31,7 +31,7 @@ export const getGlasesInfoPartial = (state: GlassesStatus) => {
 
 const initialState: GlassesStatus = {
   // state:
-  isFullyBooted: true,
+  fullyBooted: false,
   connected: false,
   micEnabled: false,
   connectionState: "disconnected",

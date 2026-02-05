@@ -699,8 +699,8 @@ struct ViewState {
                 return
             }
 
-            var isFullyBooted = sgc?.isFullyBooted ?? false
-            if !isFullyBooted {
+            var fullyBooted = sgc?.fullyBooted ?? false
+            if !fullyBooted {
                 return
             }
 
@@ -1206,7 +1206,7 @@ struct ViewState {
         shouldSendTranscript = false
         setMicState(shouldSendPcmData, shouldSendTranscript, bypassVad)
         shouldSendBootingMessage = true // Reset for next first connect
-        GlassesStore.shared.apply("glasses", "isFullyBooted", false)
+        GlassesStore.shared.apply("glasses", "fullyBooted", false)
         GlassesStore.shared.apply("glasses", "connected", false)
     }
 

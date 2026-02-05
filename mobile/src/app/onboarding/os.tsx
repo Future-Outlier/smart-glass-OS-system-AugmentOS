@@ -3,26 +3,31 @@ import {OnboardingGuide, OnboardingStep} from "@/components/onboarding/Onboardin
 import {useNavigationHistory} from "@/contexts/NavigationHistoryContext"
 import {translate} from "@/i18n"
 import {SETTINGS, useSetting} from "@/stores/settings"
+import showAlert from "@/utils/AlertUtils"
+import {getGlassesImage} from "@/utils/getGlassesImage"
 
 const CDN_BASE = "https://mentra-videos-cdn.mentraglass.com/onboarding/mentraos/light"
 
 export default function MentraOSOnboarding() {
   const {pushPrevious} = useNavigationHistory()
   const [_onboardingOsCompleted, setOnboardingOsCompleted] = useSetting(SETTINGS.onboarding_os_completed.key)
+  const [defaultWearable] = useSetting(SETTINGS.default_wearable.key)
   // focusEffectPreventBack()
 
   // NOTE: you can't have 2 transition videos in a row or things will break:
   const steps: OnboardingStep[] = [
     {
-      type: "video",
-      name: "Welcome",
-      source: `${CDN_BASE}/start_stop_apps.mp4`,
-      poster: require("@assets/onboarding/os/thumbnails/start_stop_apps.jpg"),
-      containerClassName: "bg-background",
+      type: "image",
+      // source: `${CDN_BASE}/start_stop_apps.mp4`,
+      source: require("@assets/onboarding/os/thumbnails/start_stop_apps.jpg"),
+      name: "Start Onboarding",
+      // playCount: 1,
       transition: true,
-      playCount: 1,
+      fadeOut: true,
       title: translate("onboarding:osWelcomeTitle"),
       subtitle: translate("onboarding:osWelcomeSubtitle"),
+      titleCentered: true,
+      subtitleCentered: true,
     },
     {
       type: "video",
@@ -31,6 +36,7 @@ export default function MentraOSOnboarding() {
       poster: require("@assets/onboarding/os/thumbnails/start_stop_apps.jpg"),
       containerClassName: "bg-background",
       transition: false,
+      fadeOut: true,
       playCount: 2,
       bullets: [
         translate("onboarding:osStartStopApps"),
@@ -43,8 +49,8 @@ export default function MentraOSOnboarding() {
       name: "Open an app",
       source: `${CDN_BASE}/open_an_app.mp4`,
       poster: require("@assets/onboarding/os/thumbnails/open_an_app.jpg"),
-      containerClassName: "bg-background",
       transition: false,
+      fadeOut: true,
       playCount: 2,
       bullets: [
         translate("onboarding:osOpenApp"),
@@ -57,8 +63,8 @@ export default function MentraOSOnboarding() {
       name: "Background apps",
       source: `${CDN_BASE}/background_apps.mp4`,
       poster: require("@assets/onboarding/os/thumbnails/background_apps.jpg"),
-      containerClassName: "bg-background",
       transition: false,
+      fadeOut: true,
       playCount: 2,
       bullets: [
         translate("onboarding:osBackgroundApps"),
@@ -66,68 +72,63 @@ export default function MentraOSOnboarding() {
         translate("onboarding:osBackgroundAppsBullet2"),
       ],
     },
-    // {
-    //   type: "video",
-    //   name: "Foreground and Background Apps",
-    //   source: `${CDN_BASE}/foreground_background_apps.mov`,
-    //   containerClassName: "bg-background",
-    //   transition: false,
-    //   playCount: 2,
-    //   bullets: [
-    //     translate("onboarding:osForegroundAndBackgroundApps"),
-    //     translate("onboarding:osForegroundAndBackgroundAppsBullet1"),
-    //     translate("onboarding:osForegroundAndBackgroundAppsBullet2"),
-    //   ],
-    // },
-    // {
-    //   type: "video",
-    //   name: "Mentra AI",
-    //   source: `${CDN_BASE}/mentra_ai.mov`,
-    //   containerClassName: "bg-background",
-    //   transition: false,
-    //   playCount: 2,
-    //   bullets: [
-    //     translate("onboarding:osMentraAi"),
-    //     translate("onboarding:osMentraAiBullet1"),
-    //     translate("onboarding:osMentraAiBullet2"),
-    //   ],
-    // },
-    //     {
-    //   type: "video",
-    //   name: "end",
-    //   //source: `${CDN_BASE}/mentra_ai.mov`,
-    //   source: `${CDN_BASE}/mentraos_onboard_end.mp4`,
-    //   containerClassName: "bg-background",
-    //   transition: false,
-    //   playCount: 99999,//2,
-    //   replayable: true,
-    //   title: translate("onboarding:osEndTitle"),
-    //   subtitle: translate("onboarding:osEndSubtitle"),
-    // },
     {
-      type: "glasses",
+      type: "video",
+      name: "Foreground and Background Apps",
+      source: `${CDN_BASE}/foreground_background_apps.mov`,
+      poster: require("@assets/onboarding/os/thumbnails/background_apps.jpg"),
+      transition: false,
+      fadeOut: true,
+      playCount: 2,
+      bullets: [
+        translate("onboarding:osForegroundAndBackgroundApps"),
+        translate("onboarding:osForegroundAndBackgroundAppsBullet1"),
+        translate("onboarding:osForegroundAndBackgroundAppsBullet2"),
+      ],
+    },
+    {
+      type: "image",
       name: "end",
-      containerClassName: "bg-background",
+      source: getGlassesImage(defaultWearable),
+      containerClassName: "items-center justify-center",
       transition: false,
       title: translate("onboarding:osEndTitle"),
       subtitle: translate("onboarding:osEndSubtitle"),
+      titleCentered: true,
+      subtitleCentered: true,
     },
   ]
+
+  const handleCloseButton = () => {
+    showAlert(translate("onboarding:osEndOnboardingTitle"), translate("onboarding:osEndOnboardingMessage"), [
+      {text: translate("common:no"), onPress: () => {}},
+      {
+        text: translate("onboarding:confirmSkip"),
+        onPress: () => {
+          handleExit()
+        },
+      },
+    ])
+  }
+
+  const handleExit = () => {
+    pushPrevious()
+  }
+
+  const handleEndButton = () => {
+    setOnboardingOsCompleted(true)
+    pushPrevious()
+  }
 
   return (
     <Screen preset="fixed" safeAreaEdges={["bottom"]}>
       <OnboardingGuide
         steps={steps}
         autoStart={false}
-        showCloseButton={false}
+        showCloseButton={true}
         preventBack={true}
-        exitFn={() => {
-          pushPrevious()
-        }}
-        endButtonFn={() => {
-          setOnboardingOsCompleted(true)
-          pushPrevious()
-        }}
+        skipFn={handleCloseButton}
+        endButtonFn={handleEndButton}
         startButtonText={translate("onboarding:continueOnboarding")}
         endButtonText={translate("common:continue")}
       />

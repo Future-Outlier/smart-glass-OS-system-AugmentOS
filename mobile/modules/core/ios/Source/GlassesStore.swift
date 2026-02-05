@@ -17,7 +17,7 @@ class GlassesStore {
         // CORE STATE is camelCase
 
         // GLASSES STATE:
-        store.set("glasses", "isFullyBooted", false)
+        store.set("glasses", "fullyBooted", false)
         store.set("glasses", "batteryLevel", -1)
         store.set("glasses", "charging", false)
         store.set("glasses", "connected", false)
@@ -52,8 +52,6 @@ class GlassesStore {
         store.set("core", "wifiScanResults", [])
         store.set("core", "micRanking", MicMap.map["auto"]!)
         store.set("core", "lastLog", [])
-        // UI hints:
-        store.set("core", "shouldShowBootingMessage", false)
 
         // CORE SETTINGS:
         store.set("core", "default_wearable", "")
@@ -84,7 +82,7 @@ class GlassesStore {
         store.set("core", "button_video_height", 720)
         store.set("core", "button_video_fps", 30)
         store.set("core", "preferred_mic", "auto")
-        store.set("core", "lc3_frame_size", 20)
+        store.set("core", "lc3_frame_size", 60)
         store.set("core", "auth_email", "")
         store.set("core", "auth_token", "")
     }
@@ -104,18 +102,13 @@ class GlassesStore {
 
         // Trigger hardware updates based on setting changes
         switch (category, key) {
-        case ("glasses", "isFullyBooted"):
-            Bridge.log("MAN: Glasses isFullyBooted changed to \(value)")
-            if let isFullyBooted = value as? Bool {
-                if isFullyBooted {
+        case ("glasses", "fullyBooted"):
+            Bridge.log("MAN: Glasses ready changed to \(value)")
+            if let ready = value as? Bool {
+                if ready {
                     CoreManager.shared.handleDeviceReady()
                 } else {
                     CoreManager.shared.handleDeviceDisconnected()
-                }
-                // also set the connected state to the same value
-                // if isFullyBooted is true, set connected to true
-                if isFullyBooted {
-                    GlassesStore.shared.set("glasses", "connected", value)
                 }
             }
 
@@ -141,10 +134,10 @@ class GlassesStore {
             if let frameSize = value as? Int {
                 if frameSize != 20 && frameSize != 40 && frameSize != 60 {
                     Bridge.log(
-                        "MAN: Invalid LC3 frame size \(frameSize), must be 20, 40, or 60. Using default 20."
+                        "MAN: Invalid LC3 frame size \(frameSize), must be 20, 40, or 60. Using default 60."
                     )
-                    store.set("core", "lc3_frame_size", 20)
-                    CoreManager.shared.lc3Converter?.setOutputFrameSize(20)
+                    store.set("core", "lc3_frame_size", 60)
+                    CoreManager.shared.lc3Converter?.setOutputFrameSize(60)
                     return
                 }
                 CoreManager.shared.lc3Converter?.setOutputFrameSize(frameSize)

@@ -194,7 +194,7 @@ class MentraNexSGC: NSObject, CBCentralManagerDelegate, CBPeripheralDelegate, SG
 
     // Protocol-required properties
     var type: String = DeviceTypes.NEX
-    var isFullyBooted: Bool {
+    var ready: Bool {
         get { nexReady }
         set { nexReady = newValue }
     }
@@ -2227,7 +2227,7 @@ class MentraNexSGC: NSObject, CBCentralManagerDelegate, CBPeripheralDelegate, SG
         setupCommandQueue()
 
         // Emit device ready event to React Native
-        emitDeviceReady()
+        // emitDeviceReady()
     }
 
     // MARK: - Device Initialization (ported from Java MentraNexSGC)
