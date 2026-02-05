@@ -238,6 +238,19 @@ object GlassesStore {
                             )
                 }
             }
+            "core" to "offline_captions_running" -> {
+                (value as? Boolean)?.let { running ->
+                    Bridge.log("GlassesStore: offline_captions_running changed to $running")
+                    // When offline captions are enabled, start the microphone for local transcription
+                    // When disabled, stop the microphone
+                    CoreManager.getInstance()
+                            .setMicState(
+                                    running, // send PCM data
+                                    running, // send transcript
+                                    (store.get("core", "bypass_vad") as? Boolean) ?: true
+                            )
+                }
+            }
             "core" to "enforce_local_transcription" -> {
                 (value as? Boolean)?.let { enabled ->
                     CoreManager.getInstance()
