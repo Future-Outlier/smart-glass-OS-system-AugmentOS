@@ -238,6 +238,9 @@ class GlassesStore {
         case ("core", "default_wearable"):
             if let wearable = value as? String {
                 Bridge.saveSetting("default_wearable", wearable)
+                if wearable == DeviceTypes.SIMULATED {
+                    CoreManager.shared.initSGC(wearable)
+                }
             }
 
         case ("core", "device_name"):
