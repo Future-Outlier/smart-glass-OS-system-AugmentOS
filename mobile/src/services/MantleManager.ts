@@ -18,6 +18,7 @@ import {useCoreStore} from "@/stores/core"
 import udp from "@/services/UdpManager"
 import {BackgroundTimer} from "@/utils/timers"
 import {useDebugStore} from "@/stores/debug"
+import {checkFeaturePermissions, PermissionFeatures} from "@/utils/PermissionsUtils"
 
 const LOCATION_TASK_NAME = "handleLocationUpdates"
 
@@ -141,12 +142,17 @@ class MantleManager {
     this.calendarSyncTimer = setInterval(() => {
       this.sendCalendarEvents()
     }, 60 * 60 * 1000) // 1 hour
+
     try {
-      let locationAccuracy = await useSettingsStore.getState().getSetting(SETTINGS.location_tier.key)
-      let properAccuracy = this.getLocationAccuracy(locationAccuracy)
-      Location.startLocationUpdatesAsync(LOCATION_TASK_NAME, {
-        accuracy: properAccuracy,
-      })
+      // only start location updates if we have the location permission:
+      const hasLocation = await checkFeaturePermissions(PermissionFeatures.LOCATION)
+      if (hasLocation) {
+        let locationAccuracy = await useSettingsStore.getState().getSetting(SETTINGS.location_tier.key)
+        let properAccuracy = this.getLocationAccuracy(locationAccuracy)
+        Location.startLocationUpdatesAsync(LOCATION_TASK_NAME, {
+          accuracy: properAccuracy,
+        })
+      }
     } catch (error) {
       console.error("MANTLE: Error starting location updates", error)
     }
@@ -550,9 +556,11 @@ class MantleManager {
 
     // one time get all:
     const coreStatus = await CoreModule.getCoreStatus()
+    console.log("MANTLE: core status:", coreStatus)
     useCoreStore.getState().setCoreInfo(coreStatus)
 
     const glassesStatus = await CoreModule.getGlassesStatus()
+    console.log("MANTLE: glasses status:", glassesStatus)
     useGlassesStore.getState().setGlassesInfo(glassesStatus)
   }
 
