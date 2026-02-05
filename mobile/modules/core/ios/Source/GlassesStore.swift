@@ -212,6 +212,18 @@ class GlassesStore {
                 )
             }
 
+        case ("core", "offline_captions_running"):
+            if let running = value as? Bool {
+                Bridge.log("GlassesStore: offline_captions_running changed to \(running)")
+                // When offline captions are enabled, start the microphone for local transcription
+                // When disabled, stop the microphone
+                CoreManager.shared.setMicState(
+                    running, // send PCM data
+                    running, // send transcript
+                    store.get("core", "bypass_vad") as? Bool ?? true
+                )
+            }
+
         case ("core", "enforce_local_transcription"):
             if let enabled = value as? Bool {
                 CoreManager.shared.setMicState(
