@@ -65,8 +65,9 @@ public class Bridge private constructor() {
         /** Log a message and send it to JavaScript */
         @JvmStatic
         fun log(message: String) {
-            val msg = "CORE:$message"
-            sendEvent("CoreMessageEvent", msg)
+            val data = HashMap<String, Any>()
+            data["message"] = message
+            sendTypedMessage("log", data as Map<String, Any>)
         }
 
         /** Send an event to JavaScript */
@@ -75,15 +76,6 @@ public class Bridge private constructor() {
             val data = HashMap<String, Any>()
             data["body"] = body
             eventCallback?.invoke(eventName, data as Map<String, Any>)
-        }
-
-        /** Show a banner message in the UI */
-        @JvmStatic
-        fun showBanner(type: String, message: String) {
-            val data = HashMap<String, Any>()
-            data["type"] = type
-            data["message"] = message
-            sendTypedMessage("show_banner", data as Map<String, Any>)
         }
 
         /** Send head position event */
@@ -118,9 +110,9 @@ public class Bridge private constructor() {
         }
 
         /**
-         * Send microphone data to React Native.
-         * React Native handles the decision of whether to send via UDP or WebSocket.
-         * This keeps the native layer simple and UDP logic centralized in React Native.
+         * Send microphone data to React Native. React Native handles the decision of whether to
+         * send via UDP or WebSocket. This keeps the native layer simple and UDP logic centralized
+         * in React Native.
          */
         @JvmStatic
         fun sendMicData(data: ByteArray) {
@@ -176,11 +168,15 @@ public class Bridge private constructor() {
 
         /** Send discovered device */
         @JvmStatic
-        fun sendDiscoveredDevice(modelName: String, deviceName: String) {
-            val eventBody = HashMap<String, Any>()
-            eventBody["model_name"] = modelName
-            eventBody["device_name"] = deviceName
-            sendTypedMessage("compatible_glasses_search_result", eventBody as Map<String, Any>)
+        fun sendDiscoveredDevice(deviceModel: String, deviceName: String) {
+            val searchResults =
+                    GlassesStore.store.getCategory("core")["searchResults"] as?
+                            List<Map<String, String>>
+                            ?: emptyList()
+            val newResult = mapOf("deviceModel" to deviceModel, "deviceName" to deviceName)
+            val allResults = searchResults + newResult
+            val uniqueResults = allResults.associateBy { it["deviceName"] }.values.toList()
+            GlassesStore.set("core", "searchResults", uniqueResults)
         }
 
         /** Update ASR config */
@@ -369,12 +365,13 @@ public class Bridge private constructor() {
                 return
             }
 
-            val transcription = mapOf(
-                "text" to text,
-                "isFinal" to isFinal,
-                "language" to language,
-                "type" to "local_transcription"
-            )
+            val transcription =
+                    mapOf(
+                            "text" to text,
+                            "isFinal" to isFinal,
+                            "language" to language,
+                            "type" to "local_transcription"
+                    )
 
             sendTypedMessage("local_transcription", transcription)
         }
@@ -391,7 +388,7 @@ public class Bridge private constructor() {
 
         /** Send glasses serial number */
         @JvmStatic
-        fun sendGlassesSerialNumber(serialNumber: String, style: String, color: String) {
+        fun sendserialNumber(serialNumber: String, style: String, color: String) {
             val serialData = HashMap<String, Any>()
             serialData["serial_number"] = serialNumber
             serialData["style"] = style
@@ -414,10 +411,16 @@ public class Bridge private constructor() {
 
         /** Send WiFi scan results */
         @JvmStatic
-        fun sendWifiScanResults(networks: List<Map<String, Any>>) {
-            val eventBody = HashMap<String, Any>()
-            eventBody["networks"] = networks
-            sendTypedMessage("wifi_scan_results", eventBody as Map<String, Any>)
+        fun updateWifiScanResults(networks: List<Map<String, Any>>) {
+            var storedNetworks: List<Map<String, Any>> = GlassesStore.get("core", "wifiScanResults") as? List<Map<String, Any>> ?: emptyList()
+            // add the networks to the storedNetworks array, removing duplicates by ssid
+            val updatedNetworks = storedNetworks.toMutableList()
+            for (network in networks) {
+                if (!updatedNetworks.any { it["ssid"] as? String == network["ssid"] as? String }) {
+                    updatedNetworks.add(network)
+                }
+            }
+            GlassesStore.apply("core", "wifiScanResults", updatedNetworks)
         }
 
         /** Send gallery status - matches iOS MentraLive.swift handleGalleryStatus pattern */
@@ -498,7 +501,10 @@ public class Bridge private constructor() {
             sendTypedMessage("mtk_update_complete", eventBody as Map<String, Any>)
         }
 
-        /** Send OTA update available notification - glasses have detected an available update (background mode) */
+        /**
+         * Send OTA update available notification - glasses have detected an available update
+         * (background mode)
+         */
         @JvmStatic
         fun sendOtaUpdateAvailable(
                 versionCode: Long,
@@ -584,17 +590,19 @@ public class Bridge private constructor() {
         /** Send phone notification to server (via REST through TypeScript) */
         @JvmStatic
         fun sendPhoneNotification(
-            notificationKey: String,
-            packageName: String,
-            appName: String,
-            title: String,
-            text: String,
-            timestamp: Long
+                notificationKey: String,
+                packageName: String,
+                appName: String,
+                title: String,
+                text: String,
+                timestamp: Long
         ) {
             try {
                 log("NOTIF: Attempting to send notification from $appName: $title")
                 val data = HashMap<String, Any>()
-                data["notificationId"] = "$packageName-$notificationKey" // Stable ID combining package and Android key
+                data["notificationId"] =
+                        "$packageName-$notificationKey" // Stable ID combining package and Android
+                // key
                 data["app"] = appName
                 data["title"] = title
                 data["content"] = text
@@ -611,14 +619,12 @@ public class Bridge private constructor() {
 
         /** Send phone notification dismissed to server (via REST through TypeScript) */
         @JvmStatic
-        fun sendPhoneNotificationDismissed(
-            notificationKey: String,
-            packageName: String
-        ) {
+        fun sendPhoneNotificationDismissed(notificationKey: String, packageName: String) {
             try {
                 log("NOTIF: Attempting to send dismissal for $packageName")
                 val data = HashMap<String, Any>()
-                data["notificationId"] = "$packageName-$notificationKey" // Same format as posting for correlation
+                data["notificationId"] =
+                        "$packageName-$notificationKey" // Same format as posting for correlation
                 data["notificationKey"] = notificationKey // Keep Android key for reference
                 data["packageName"] = packageName
 
@@ -627,12 +633,6 @@ public class Bridge private constructor() {
             } catch (e: Exception) {
                 Log.e(TAG, "NOTIF: Error sending notification dismissal for $packageName", e)
             }
-        }
-
-        /** Get supported events Don't add to this list, use a typed message instead */
-        @JvmStatic
-        fun getSupportedEvents(): Array<String> {
-            return arrayOf("CoreMessageEvent")
         }
 
         // Arbitrary WS Comms (don't use these, make a dedicated function for your use case):
@@ -669,21 +669,22 @@ public class Bridge private constructor() {
             try {
                 // Check if event callback is available before proceeding
                 if (eventCallback == null) {
-                    Log.w(TAG, "Cannot send typed message '$type': eventCallback is null (app may be killed/backgrounded)")
+                    Log.w(
+                            TAG,
+                            "Cannot send typed message '$type': eventCallback is null (app may be killed/backgrounded)"
+                    )
                     return
                 }
 
-                val jsonData = JSONObject(mutableBody as Map<*, *>)
-                val jsonString = jsonData.toString()
-
-                val eventData = HashMap<String, Any>()
-                eventData["body"] = jsonString
-
-                // Additional safety: wrap the actual callback invocation
+                // Send directly using type as event name - no JSON serialization
                 try {
-                    eventCallback?.invoke("CoreMessageEvent", eventData as Map<String, Any>)
+                    eventCallback?.invoke(type, mutableBody as Map<String, Any>)
                 } catch (e: Exception) {
-                    Log.e(TAG, "Error invoking eventCallback for type '$type' (React Native may be dead)", e)
+                    Log.e(
+                            TAG,
+                            "Error invoking eventCallback for type '$type' (React Native may be dead)",
+                            e
+                    )
                     // Don't rethrow - this prevents crashes when RN context is destroyed
                 }
             } catch (e: Exception) {

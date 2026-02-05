@@ -2,6 +2,7 @@ import CoreModule from "core"
 
 import {push} from "@/contexts/NavigationRef"
 import audioPlaybackService from "@/services/AudioPlaybackService"
+import displayProcessor from "@/services/DisplayProcessor"
 import mantle from "@/services/MantleManager"
 import udp from "@/services/UdpManager"
 import ws from "@/services/WebSocketManager"
@@ -10,7 +11,6 @@ import {useDisplayStore} from "@/stores/display"
 import {useGlassesStore} from "@/stores/glasses"
 import {useSettingsStore, SETTINGS} from "@/stores/settings"
 import {showAlert} from "@/utils/AlertUtils"
-import GlobalEventEmitter from "@/utils/GlobalEventEmitter"
 import restComms from "@/services/RestComms"
 import {checkFeaturePermissions, PermissionFeatures} from "@/utils/PermissionsUtils"
 
@@ -18,13 +18,12 @@ class SocketComms {
   private static instance: SocketComms | null = null
   private coreToken: string = ""
   public userid: string = ""
-  
-  private constructor() {
-  }
+
+  private constructor() {}
 
   private setupListeners() {
     ws.removeAllListeners("message")
-    ws.on("message", message => {
+    ws.on("message", (message) => {
       this.handle_message(message)
     })
   }
@@ -110,7 +109,7 @@ class SocketComms {
   }
 
   public sendGlassesConnectionState(): void {
-    let modelName = useSettingsStore.getState().getSetting(SETTINGS.default_wearable.key)
+    let deviceModel = useSettingsStore.getState().getSetting(SETTINGS.default_wearable.key)
     const glassesInfo = useGlassesStore.getState()
 
     // Always include WiFi info - null means "unknown", false means "explicitly disconnected"
@@ -124,7 +123,8 @@ class SocketComms {
     ws.sendText(
       JSON.stringify({
         type: "glasses_connection_state",
-        modelName: modelName,
+        modelName: deviceModel, // TODO: remove this
+        deviceModel: deviceModel,
         status: connected ? "CONNECTED" : "DISCONNECTED",
         timestamp: new Date(),
         wifi: wifiInfo,
@@ -348,7 +348,6 @@ class SocketComms {
 
   // MARK: - UDP Audio Methods
 
-
   /**
    * Check if UDP audio is currently enabled.
    */
@@ -369,7 +368,7 @@ class SocketComms {
 
     // Configure audio format (LC3) for bandwidth savings
     // This tells the cloud that we're sending LC3-encoded audio
-    this.configureAudioFormat().catch(err => {
+    this.configureAudioFormat().catch((err) => {
       console.log("SOCKET: Audio format configuration failed (cloud will expect PCM):", err)
     })
 
@@ -385,17 +384,34 @@ class SocketComms {
       udp_port: msg.udp_port,
       resolvedHost: udpHost,
       resolvedPort: udpPort,
+      hasEncryption: !!msg.udpEncryption,
       allKeys: Object.keys(msg),
     })
 
     if (udpHost) {
       console.log(`SOCKET: UDP endpoint found, configuring with ${udpHost}:${udpPort}`)
       udp.configure(udpHost, udpPort, this.userid)
+
+      // Configure encryption if server provided a key
+      if (msg.udpEncryption?.key) {
+        const encryptionConfigured = udp.setEncryption(msg.udpEncryption.key)
+        console.log(
+          `SOCKET: UDP encryption ${encryptionConfigured ? "enabled" : "failed"} (algorithm: ${
+            msg.udpEncryption.algorithm
+          })`,
+        )
+      } else {
+        udp.clearEncryption()
+        console.log("SOCKET: UDP encryption not enabled (no key in connection_ack)")
+      }
+
       udp.handleAck()
     } else {
-      console.log("SOCKET: No UDP endpoint in connection_ack, skipping UDP audio. Full message:", JSON.stringify(msg, null, 2))
+      console.log(
+        "SOCKET: No UDP endpoint in connection_ack, skipping UDP audio. Full message:",
+        JSON.stringify(msg, null, 2),
+      )
     }
-
   }
 
   /**
@@ -415,37 +431,39 @@ class SocketComms {
   private async configureAudioFormat(): Promise<void> {
     const backendUrl = useSettingsStore.getState().getSetting(SETTINGS.backend_url.key)
     const coreToken = useSettingsStore.getState().getSetting(SETTINGS.core_token.key)
-    const frameSizeBytes = useSettingsStore.getState().getSetting(SETTINGS.lc3_frame_size.key) || 20
+    const frameSizeBytes = useSettingsStore.getState().getSetting(SETTINGS.lc3_frame_size.key)
+    const bypassEncoding = useSettingsStore.getState().getSetting(SETTINGS.bypass_audio_encoding_for_debugging.key)
 
     if (!backendUrl || !coreToken) {
       console.log("SOCKET: Cannot configure audio format - missing backend URL or token")
       return
     }
 
-    // Configure the native encoder frame size first
-    try {
-      await CoreModule.setLC3FrameSize(frameSizeBytes)
-      console.log(`SOCKET: Native LC3 encoder configured to ${frameSizeBytes} bytes/frame`)
-    } catch (err) {
-      console.error("SOCKET: Failed to configure native LC3 encoder:", err)
-      // Continue anyway - cloud config is more important
-    }
+    // Determine format based on bypass setting
+    const audioFormat = bypassEncoding ? "pcm" : "lc3"
+    console.log(`SOCKET: Configuring audio format: ${audioFormat} (bypass=${bypassEncoding})`)
 
     try {
+      const body: any = {
+        format: audioFormat,
+      }
+
+      // Only include LC3 config if using LC3 format
+      if (!bypassEncoding) {
+        body.lc3Config = {
+          sampleRate: 16000,
+          frameDurationMs: 10,
+          frameSizeBytes: frameSizeBytes,
+        }
+      }
+
       const response = await fetch(`${backendUrl}/api/client/audio/configure`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
           "Authorization": `Bearer ${coreToken}`,
         },
-        body: JSON.stringify({
-          format: "lc3",
-          lc3Config: {
-            sampleRate: 16000,
-            frameDurationMs: 10,
-            frameSizeBytes: frameSizeBytes,
-          },
-        }),
+        body: JSON.stringify(body),
       })
 
       if (!response.ok) {
@@ -455,7 +473,11 @@ class SocketComms {
       }
 
       const result = await response.json()
-      console.log(`SOCKET: Audio format configured successfully: ${result.format}, ${frameSizeBytes} bytes/frame`)
+      console.log(
+        `SOCKET: Audio format configured successfully: ${result.format}${
+          bypassEncoding ? " (raw PCM)" : `, ${frameSizeBytes} bytes/frame`
+        }`,
+      )
     } catch (error) {
       console.error("SOCKET: Error configuring audio format:", error)
       throw error
@@ -513,10 +535,18 @@ class SocketComms {
       console.error("SOCKET: display_event missing view")
       return
     }
-    CoreModule.displayEvent(msg)
-    // Update the Zustand store with the display content
-    const displayEvent = JSON.stringify(msg)
-    useDisplayStore.getState().setDisplayEvent(displayEvent)
+
+    let processedEvent
+    try {
+      processedEvent = displayProcessor.processDisplayEvent(msg)
+    } catch (err) {
+      console.error("SOCKET: DisplayProcessor error, using raw event:", err)
+      processedEvent = msg
+    }
+
+    CoreModule.displayEvent(processedEvent)
+    const displayEventStr = JSON.stringify(processedEvent)
+    useDisplayStore.getState().setDisplayEvent(displayEventStr)
   }
 
   private handle_set_location_tier(msg: any) {

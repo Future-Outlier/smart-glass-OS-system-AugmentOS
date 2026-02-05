@@ -20,11 +20,11 @@ import {useAppletStatusStore} from "@/stores/applets"
 export default function PairingPrepScreen() {
   const route = useRoute()
   const {theme} = useAppTheme()
-  const {modelName} = route.params as {modelName: string}
+  const {deviceModel} = route.params as {deviceModel: string}
   const {goBack, push, clearHistoryAndGoHome} = useNavigationHistory()
 
   const advanceToPairing = async () => {
-    if (modelName == null || modelName == "") {
+    if (deviceModel == null || deviceModel == "") {
       console.log("SOME WEIRD ERROR HERE")
       return
     }
@@ -32,7 +32,7 @@ export default function PairingPrepScreen() {
     // Always request Bluetooth permissions - required for Android 14+ foreground service
     let needsBluetoothPermissions = true
     // we don't need bluetooth permissions for simulated glasses
-    if (modelName.startsWith(DeviceTypes.SIMULATED) && Platform.OS === "ios") {
+    if (deviceModel.startsWith(DeviceTypes.SIMULATED) && Platform.OS === "ios") {
       needsBluetoothPermissions = false
     }
 
@@ -186,6 +186,15 @@ export default function PairingPrepScreen() {
           // We just need to stop the flow here
           return
         }
+
+        // Check connectivity for Android AFTER all permissions are granted
+        // This must be done after location permission is granted to avoid premature "Connection issue" popup
+        if (needsBluetoothPermissions) {
+          const requirementsCheck = await checkConnectivityRequirementsUI()
+          if (!requirementsCheck) {
+            return
+          }
+        }
       } else {
         console.log("Skipping location permission on iOS - not needed after BLE fix")
       }
@@ -197,14 +206,6 @@ export default function PairingPrepScreen() {
       return
     }
 
-    // Check connectivity for Android after permissions are granted
-    if (needsBluetoothPermissions && Platform.OS === "android") {
-      const requirementsCheck = await checkConnectivityRequirementsUI()
-      if (!requirementsCheck) {
-        return
-      }
-    }
-
     console.log("needsBluetoothPermissions", needsBluetoothPermissions)
 
     // Stop any running apps from previous sessions to prevent mic race conditions
@@ -212,13 +213,13 @@ export default function PairingPrepScreen() {
     await useAppletStatusStore.getState().stopAllApplets()
 
     // skip pairing for simulated glasses:
-    if (modelName.startsWith(DeviceTypes.SIMULATED)) {
+    if (deviceModel.startsWith(DeviceTypes.SIMULATED)) {
       await CoreModule.connectSimulated()
       clearHistoryAndGoHome()
       return
     }
 
-    push("/pairing/scan", {modelName})
+    push("/pairing/scan", {deviceModel})
   }
 
   const SimulatedPairingGuide = () => {
@@ -240,13 +241,13 @@ export default function PairingPrepScreen() {
       {
         name: "power_on_tutorial",
         type: "video",
-        source: `https://mentra-videos-cdn.mentraglass.com/onboarding/mentra-live/light/ONB1_power_button.mp4`,
-        poster: require("@assets/onboarding/live/thumbnails/ONB0_power.png"),
+        source: `${CDN_BASE}/ONB1_power_button.mp4`,
+        // poster: require("@assets/onboarding/live/thumbnails/ONB0_power.png"),
         transition: false,
         title: translate("pairing:powerOn"), // for spacing so it's consistent with the other steps
         subtitle: translate("onboarding:livePowerOnTutorial"),
         info: translate("onboarding:livePowerOnInfo"),
-        playCount: 1,
+        playCount: 99999, //1,
       },
     ]
 
@@ -257,7 +258,7 @@ export default function PairingPrepScreen() {
         showCloseButton={false}
         showSkipButton={false}
         showHeader={false}
-        exitFn={() => {
+        skipFn={() => {
           advanceToPairing()
         }}
         endButtonText={translate("pairing:poweredOn")}
@@ -359,14 +360,14 @@ export default function PairingPrepScreen() {
         <GlassesTroubleshootingModal
           isVisible={showTroubleshootingModal}
           onClose={() => setShowTroubleshootingModal(false)}
-          modelName={modelName}
+          deviceModel={deviceModel}
         />
       </>
     )
   }
 
   const renderGuide = () => {
-    switch (modelName) {
+    switch (deviceModel) {
       case DeviceTypes.SIMULATED:
         return <SimulatedPairingGuide />
       case DeviceTypes.G1:
@@ -381,11 +382,11 @@ export default function PairingPrepScreen() {
         return <MentraNexGlassesPairingGuide />
     }
 
-    throw new Error(`Unknown model name: ${modelName}`)
+    throw new Error(`Unknown model name: ${deviceModel}`)
   }
 
   const renderButtons = () => {
-    switch (modelName) {
+    switch (deviceModel) {
       case DeviceTypes.G1:
         return <G1Buttons />
       case DeviceTypes.LIVE:
@@ -398,7 +399,7 @@ export default function PairingPrepScreen() {
   return (
     <Screen preset="fixed" safeAreaEdges={["bottom"]}>
       <Header
-        title={modelName}
+        title={deviceModel}
         leftIcon="chevron-left"
         onLeftPress={goBack}
         RightActionComponent={<MentraLogoStandalone />}
@@ -407,8 +408,8 @@ export default function PairingPrepScreen() {
       {/* <ScrollView style={{marginRight: -theme.spacing.s6, paddingRight: theme.spacing.s6}}> */}
       {/* </ScrollView> */}
 
-      {/* <PairingGuide model={modelName} /> */}
-      {/* <PairingOptions model={modelName} continueFn={advanceToPairing} /> */}
+      {/* <PairingGuide model={deviceModel} /> */}
+      {/* <PairingOptions model={deviceModel} continueFn={advanceToPairing} /> */}
       {renderGuide()}
       {renderButtons()}
     </Screen>

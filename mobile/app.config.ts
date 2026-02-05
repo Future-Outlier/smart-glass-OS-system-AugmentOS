@@ -26,7 +26,7 @@ module.exports = ({config}: ConfigContext): Partial<ExpoConfig> => {
     android: {
       icon: "./assets/app-icons/ic_launcher.png",
       package: "com.mentra.mentra",
-      versionCode: 77,
+      versionCode: 80,
       adaptiveIcon: {
         foregroundImage: "./assets/app-icons/ic_launcher_foreground.png",
         backgroundImage: "./assets/app-icons/ic_launcher.png",
@@ -136,11 +136,12 @@ module.exports = ({config}: ConfigContext): Partial<ExpoConfig> => {
       [
         "expo-splash-screen",
         {
-          image: "./assets/splash/splash.png",
+          image: "./assets/logo/logo.png",
           resizeMode: "contain",
-          backgroundColor: "#fffaf0",
+          imageWidth: 100,
+          backgroundColor: "#fff",
           dark: {
-            backgroundColor: "#2D2C2F",
+            backgroundColor: "#171717",
           },
         },
       ],
