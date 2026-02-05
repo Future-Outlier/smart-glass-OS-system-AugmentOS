@@ -212,7 +212,6 @@ class CoreManager {
     private var lc3DecoderPtr: Long = 0
     // Audio output format - defaults to LC3 for bandwidth savings
     private var audioOutputFormat: AudioOutputFormat = AudioOutputFormat.LC3
-    private var lc3FrameSize = 20 // bytes per LC3 frame (default: 20 = 16kbps)
 
     // VAD
     private val vadBuffer = mutableListOf<ByteArray>()
@@ -490,6 +489,7 @@ class CoreManager {
                     Bridge.log("MAN: ERROR - LC3 encoder not initialized but format is LC3")
                     return
                 }
+                val lc3FrameSize = GlassesStore.store.get("core", "lc3_frame_size") as! Int;
                 val lc3Data = Lc3Cpp.encodeLC3(lc3EncoderPtr, pcmData, lc3FrameSize)
                 if (lc3Data == null || lc3Data.isEmpty()) {
                     Bridge.log("MAN: ERROR - LC3 encoding returned empty data")

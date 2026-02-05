@@ -6,7 +6,6 @@ import {checkConnectivityRequirementsUI} from "@/utils/PermissionsUtils"
 import CoreModule from "core"
 import {useGlassesStore} from "@/stores/glasses"
 import {useCoreStore} from "@/stores/core"
-import {DeviceTypes} from "@/../../cloud/packages/types/src"
 
 export async function attemptReconnect(): Promise<boolean> {
   
@@ -21,8 +20,8 @@ export async function attemptReconnect(): Promise<boolean> {
   const glassesConnected = await useGlassesStore.getState().connected
   const isSearching = await useCoreStore.getState().searching
 
-  // Don't try to reconnect if no glasses have been paired yet (skip simulated glasses)
-  if (!defaultWearable || defaultWearable.includes(DeviceTypes.SIMULATED)) {
+  // Don't try to reconnect if no glasses have been paired yet
+  if (!defaultWearable) {
     return false
   }
 

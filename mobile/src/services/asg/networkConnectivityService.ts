@@ -162,7 +162,7 @@ class NetworkConnectivityService {
       prevStatus.glassesConnected !== this.currentStatus.glassesConnected ||
       prevStatus.glassesSSID !== this.currentStatus.glassesSSID
     ) {
-      console.log("NETWORK: Glasses status changed, checking gallery connectivity")
+      // console.log("NETWORK: Glasses status changed, checking gallery connectivity")
       this.checkGalleryConnectivity() // Disabled - only check when gallery is open
     }
   }
