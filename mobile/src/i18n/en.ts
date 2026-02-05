@@ -671,6 +671,7 @@ const en = {
     no: "No",
     cancel: "Cancel",
     back: "Back",
+    done: "Done",
     or: "OR",
     logOut: "Log Out",
     error: "Error",
@@ -736,6 +737,11 @@ const en = {
     mirror: "Mirror",
     store: "Store",
     account: "Account",
+  },
+  appSwitcher: {
+    swipeUpToClose: "Swipe up to close apps",
+    noAppsOpen: "No Apps Open",
+    yourRecentlyUsedAppsWillAppearHere: "Your recently used apps will appear here",
   },
   feedback: {
     thankYou: "Thank You!",

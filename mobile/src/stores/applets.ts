@@ -379,6 +379,12 @@ export const useInactiveForegroundApps = () => {
     return apps.filter((app) => (app.type === "standard" || app.type === "background" || !app.type) && !app.running)
   }, [apps, isOffline])
 }
+
+export const useActiveApps = () => {
+  const apps = useApplets()
+  return useMemo(() => apps.filter((app) => app.running), [apps])
+}
+
 export const useBackgroundApps = () => {
   const apps = useApplets()
   return useMemo(

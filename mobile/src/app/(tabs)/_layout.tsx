@@ -46,7 +46,7 @@ export default function Layout() {
   return (
     <Tabs>
       <TabSlot />
-      <TabList className="w-full py-2 px-3 bg-primary-foreground">
+      <TabList className="w-full pt-3 px-4 bg-primary-foreground">
         <TabTrigger name="home" href="/home" asChild>
           <TabButton iconName="house" iconNameFilled="house-filled" label={translate("navigation:home")} />
         </TabTrigger>

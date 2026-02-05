@@ -74,13 +74,11 @@ export default function MiniApp() {
       </View>
 
       {/* App Switcher Overlay */}
-        <AppSwitcher
-          visible={showSwitcher}
-          onClose={handleCloseSwitcher}
-          apps={apps}
-          onAppSelect={handleAppSelect}
-          onAppDismiss={handleAppDismiss}
-        />
+      <AppSwitcher
+        visible={showSwitcher}
+        onClose={handleCloseSwitcher}
+        apps={apps}
+      />
     </Screen>
   )
 }
