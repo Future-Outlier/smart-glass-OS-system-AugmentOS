@@ -202,7 +202,7 @@ export default function DeveloperSettingsScreen() {
                 setLc3FrameSize(frameSize)
                 // Apply immediately to native encoder and cloud
                 try {
-                  await socketComms.reconfigureAudioFormat()
+                  await socketComms.configureAudioFormat()
                 } catch (err) {
                   console.error("Failed to apply LC3 frame size:", err)
                 }

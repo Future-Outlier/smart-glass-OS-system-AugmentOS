@@ -453,6 +453,7 @@ const CORE_SETTINGS_KEYS: string[] = [
   SETTINGS.device_name.key,
   SETTINGS.device_address.key,
   // offline applets:
+  SETTINGS.offline_mode.key,
   SETTINGS.offline_captions_running.key,
   SETTINGS.gallery_mode.key,
   // notifications:

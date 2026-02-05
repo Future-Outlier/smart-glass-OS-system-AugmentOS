@@ -130,20 +130,6 @@ class GlassesStore {
                 // CoreManager.shared.sgc?.sendAuthToken(token)
             }
 
-        case ("core", "lc3_frame_size"):
-            if let frameSize = value as? Int {
-                if frameSize != 20 && frameSize != 40 && frameSize != 60 {
-                    Bridge.log(
-                        "MAN: Invalid LC3 frame size \(frameSize), must be 20, 40, or 60. Using default 60."
-                    )
-                    store.set("core", "lc3_frame_size", 60)
-                    CoreManager.shared.lc3Converter?.setOutputFrameSize(60)
-                    return
-                }
-                CoreManager.shared.lc3Converter?.setOutputFrameSize(frameSize)
-                Bridge.log("MAN: LC3 frame size set to \(frameSize) bytes (\(frameSize * 800 / 1000)kbps)")
-            }
-
         case ("core", "brightness"):
             let b = value as? Int ?? 50
             let auto = store.get("core", "auto_brightness") as? Bool ?? true
@@ -226,6 +212,18 @@ class GlassesStore {
                 )
             }
 
+        case ("core", "offline_captions_running"):
+            if let running = value as? Bool {
+                Bridge.log("GlassesStore: offline_captions_running changed to \(running)")
+                // When offline captions are enabled, start the microphone for local transcription
+                // When disabled, stop the microphone
+                CoreManager.shared.setMicState(
+                    running, // send PCM data
+                    running, // send transcript
+                    store.get("core", "bypass_vad") as? Bool ?? true
+                )
+            }
+
         case ("core", "enforce_local_transcription"):
             if let enabled = value as? Bool {
                 CoreManager.shared.setMicState(
@@ -238,6 +236,9 @@ class GlassesStore {
         case ("core", "default_wearable"):
             if let wearable = value as? String {
                 Bridge.saveSetting("default_wearable", wearable)
+                if wearable == DeviceTypes.SIMULATED {
+                    CoreManager.shared.initSGC(wearable)
+                }
             }
 
         case ("core", "device_name"):
