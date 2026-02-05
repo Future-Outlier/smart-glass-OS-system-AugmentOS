@@ -269,6 +269,9 @@ object GlassesStore {
             "core" to "default_wearable" -> {
                 (value as? String)?.let { wearable ->
                     Bridge.saveSetting("default_wearable", wearable)
+                    if (wearable.contains(DeviceTypes.SIMULATED)) {
+                        CoreManager.getInstance().initSGC(wearable)
+                    }
                 }
             }
             "core" to "device_name" -> {
