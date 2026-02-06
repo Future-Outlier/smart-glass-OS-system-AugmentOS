@@ -78,8 +78,8 @@ export const ActiveForegroundApp: React.FC = () => {
     // Show placeholder when no active app
     return (
       <View style={themed($container)}>
-        <View style={themed($placeholderContent)}>
-          <Text style={themed($placeholderText)} tx="home:appletPlaceholder" />
+        <View className="flex-row items-center justify-center flex-1">
+          <Text className="text-muted-foreground text-lg" tx="home:appletPlaceholder" />
         </View>
       </View>
     )
@@ -168,13 +168,6 @@ const $closeButton: ThemedStyle<ViewStyle> = ({spacing}) => ({
   padding: spacing.s2,
   justifyContent: "center",
   alignItems: "center",
-})
-
-const $placeholderContent: ThemedStyle<ViewStyle> = ({spacing}) => ({
-  padding: spacing.s6,
-  alignItems: "center",
-  justifyContent: "center",
-  paddingVertical: spacing.s8,
 })
 
 const $placeholderText: ThemedStyle<TextStyle> = ({colors}) => ({

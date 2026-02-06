@@ -673,6 +673,7 @@ const en = {
     cancel: "Cancel",
     back: "Back",
     done: "Done",
+    close: "Close",
     or: "OR",
     logOut: "Log Out",
     error: "Error",

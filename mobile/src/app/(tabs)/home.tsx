@@ -78,7 +78,6 @@ export default function Homepage() {
         <View className="h-2" />
         {!appSwitcherUi && <ActiveForegroundApp />}
         {appSwitcherUi && <AppSwitcherButton onPress={() => setShowSwitcher(true)} />}
-        {/* <ActiveForegroundApp /> */}
         <ForegroundAppsGrid />
       </>
     )

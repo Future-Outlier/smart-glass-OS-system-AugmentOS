@@ -1,6 +1,6 @@
 import React, {useCallback, useEffect} from "react"
 import {View, Dimensions, Pressable} from "react-native"
-import {Text} from "@/components/ignite/"
+import {Button, Text} from "@/components/ignite/"
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
@@ -35,8 +35,8 @@ interface AppCardItemProps {
   app: ClientAppletInterface
   index: number
   activeIndex: Animated.SharedValue<number>
-  onDismiss: (id: string) => void
-  onSelect: (id: string) => void
+  onDismiss: (packageName: string) => void
+  onSelect: (packageName: string) => void
   translateX: Animated.SharedValue<number>
   count: number
 }
@@ -46,14 +46,14 @@ const AnimatedPressable = Animated.createAnimatedComponent(Pressable)
 function AppCardItem({app, index, activeIndex, count, translateX, onDismiss, onSelect}: AppCardItemProps) {
   const translateY = useSharedValue(0)
   const cardOpacity = useSharedValue(1)
-  const cardScale = useSharedValue(1)
+  // const cardScale = useSharedValue(1)
 
   const dismissCard = useCallback(() => {
-    // onDismiss(app.id)
+    onDismiss(app.packageName)
   }, [app.packageName, onDismiss])
 
   const selectCard = useCallback(() => {
-    // onSelect(app.id)
+    onSelect(app.packageName)
   }, [app.packageName, onSelect])
 
   const panGesture = Gesture.Pan()
@@ -92,12 +92,8 @@ function AppCardItem({app, index, activeIndex, count, translateX, onDismiss, onS
     // const distance = translateY.value
     // const scale = interpolate(distance, [0, 1, 2], [1, 0.92, 0.85], Extrapolation.CLAMP)
     // const opacity = interpolate(distance, [0, 2, 3], [1, 0.7, 0.4], Extrapolation.CLAMP)
-    const opacity = 1
 
-    let oneIndex = index + 1
-    let oneActiveIndex = activeIndex.value + 1
     let negativeIndex = count - (index + 1)
-    // console.log("negativeIndex", negativeIndex)
 
     // card 6: start at -1600px
     // tX starts at -1600px
@@ -174,7 +170,7 @@ function AppCardItem({app, index, activeIndex, count, translateX, onDismiss, onS
 
     return {
       transform: [{translateY: translateY.value}, {scale: scale}, {translateX: res}],
-      opacity: cardOpacity.value * opacity,
+      opacity: cardOpacity.value,
     }
   })
 
@@ -232,10 +228,7 @@ export default function AppSwitcher({visible, onClose}: AppSwitcherProps) {
       backdropOpacity.value = withTiming(1, {duration: 250})
       containerTranslateY.value = withSpring(0, {damping: 20, stiffness: 2000, velocity: 100, overshootClamping: true})
       containerOpacity.value = withTiming(1, {duration: 200})
-      // translateX.value = 0
-      // activeIndex.value = 0
       // start at the end of the cards:
-      // translateX.value = -((apps.length - 1) * (CARD_WIDTH + CARD_SPACING))
       translateX.value = -((apps.length - 2) * CARD_WIDTH)
       activeIndex.value = apps.length
     } else {
@@ -256,10 +249,6 @@ export default function AppSwitcher({visible, onClose}: AppSwitcherProps) {
   const containerStyle = useAnimatedStyle(() => ({
     transform: [{translateY: containerTranslateY.value}],
     opacity: containerOpacity.value,
-  }))
-
-  const cardsContainerStyle = useAnimatedStyle(() => ({
-    transform: [{translateX: translateX.value}],
   }))
 
   const panGesture = Gesture.Pan()
@@ -358,22 +347,14 @@ export default function AppSwitcher({visible, onClose}: AppSwitcherProps) {
       <Animated.View className="flex-1 justify-center" style={containerStyle}>
         {/* Header hint */}
         <View className="absolute top-[60px] left-0 right-0 items-center">
-          <Text className="text-white/50 text-sm font-medium">Swipe up to close apps</Text>
+          <Text className="text-white/50 text-sm font-medium" tx="appSwitcher:swipeUpToClose" />
         </View>
 
         {/* Cards Carousel */}
         {apps.length > 0 ? (
           <GestureDetector gesture={panGesture}>
             <Animated.View className="flex-1 justify-center">
-              <Animated.View
-                className="flex-row items-center"
-                // style={[{paddingHorizontal: (SCREEN_WIDTH - CARD_WIDTH) / 2 - CARD_SPACING / 2}, cardsContainerStyle]}>
-                // style={cardsContainerStyle}>
-                // {/* // style={{transform: [{translateX: translateX.value}]}}> */}
-                // {/* // style={useAnimatedStyle(() => ({ */}
-                // {/* //   transform: [{translateX: translateX.value}], */}
-                // {/* // }))}> */}
-              >
+              <Animated.View className="flex-row items-center">
                 {apps.map((app, index) => (
                   <AppCardItem
                     key={app.packageName}
@@ -390,7 +371,7 @@ export default function AppSwitcher({visible, onClose}: AppSwitcherProps) {
             </Animated.View>
           </GestureDetector>
         ) : (
-          <View className="flex-1 items-center justify-center">
+          <View className="flex-1 items-center justify-center bg-black/70">
             <Text className="text-white text-[22px] font-semibold mb-2" tx="appSwitcher:noAppsOpen" />
             <Text className="text-white/50 text-base" tx="appSwitcher:yourRecentlyUsedAppsWillAppearHere" />
           </View>
@@ -406,9 +387,14 @@ export default function AppSwitcher({visible, onClose}: AppSwitcherProps) {
         )}
 
         {/* Close Button */}
-        <Pressable className="absolute bottom-[50px] self-center bg-white/15 px-8 py-3.5 rounded-3xl" onPress={onClose}>
-          <Text className="text-white text-[17px] font-semibold" tx="common:done" />
-        </Pressable>
+        {/* <TouchableOpacity
+          className="absolute bottom-12 self-center bg-primary-foreground/90 px-8 py-3.5 rounded-3xl"
+          onPress={onClose}>
+          <Text className="text-white text-lg font-semibold" tx="common:close" />
+        </TouchableOpacity> */}
+        <View className="absolute bottom-12 self-center">
+          <Button preset="secondary" tx="common:close" style={{minWidth: 200}} onPress={onClose} />
+        </View>
       </Animated.View>
     </View>
   )

@@ -31,13 +31,10 @@ const AppIcon = ({app, onClick, style}: AppIconProps) => {
   const WrapperComponent = onClick ? TouchableOpacity : View
   const flatStyle = extractStyleProps(style)
 
-  let iconSize = {
+  const iconSize = {
     width: flatStyle?.width ?? 64,
     height: flatStyle?.height ?? 64,
     borderRadius: flatStyle?.borderRadius ?? theme.spacing.s4,
-  }
-  if (enableSquircles) {
-    iconSize.borderRadius = 0
   }
 
   return (
