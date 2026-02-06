@@ -274,19 +274,16 @@ export default function AppSwitcher({visible, onClose}: AppSwitcherProps) {
 
   const handleDismiss = useCallback(
     (packageName: string) => {
-      console.log("targetIndex", targetIndex.value)
-      console.log("apps.length", apps.length)
 
+      let lastApp = apps[apps.length - 1]
       // Adjust if we were on the last card
-      // if (targetIndex.value == apps.length - 2) {
-      // console.log("going to index 0")
-      // goToIndex(apps.length - 2)
-      // }
-      // console.log("going to index", apps.length - 2)
-      // goToIndex(apps.length - 2)
-      // setTimeout(() => {
-      useAppletStatusStore.getState().stopApplet(packageName)
-      // }, 100)
+      if (lastApp.packageName === packageName) {
+        goToIndex(apps.length - 2)
+      }
+
+      setTimeout(() => {
+        useAppletStatusStore.getState().stopApplet(packageName)
+      }, 100)
     },
     [apps.length],
   )
