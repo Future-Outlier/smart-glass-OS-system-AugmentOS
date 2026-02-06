@@ -168,6 +168,18 @@ function withAndroidManifestModifications(config: any) {
   return withAndroidManifest(config, (config) => {
     const manifest: any = config.modResults.manifest
 
+    // Remove permissions that Google Play doesn't allow for our use case
+    // We only SAVE photos from glasses - we don't need to READ the user's photo library
+    // expo-media-library adds these automatically, but we must remove them for Play Store compliance
+    const permissionsToRemove = ["android.permission.READ_MEDIA_IMAGES", "android.permission.READ_MEDIA_VIDEO"]
+
+    // Filter out permissions we want to remove
+    if (manifest["uses-permission"]) {
+      manifest["uses-permission"] = manifest["uses-permission"].filter(
+        (p: any) => !permissionsToRemove.includes(p.$["android:name"]),
+      )
+    }
+
     // Add permissions that need to be added
     const permissionsToAdd = [
       {name: "android.permission.BIND_NOTIFICATION_LISTENER_SERVICE"},
