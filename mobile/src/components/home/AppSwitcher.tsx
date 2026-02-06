@@ -1,6 +1,6 @@
 import React, {useCallback, useEffect} from "react"
-import {View, Dimensions, Pressable, Image, TouchableOpacity} from "react-native"
-import {Button, Text} from "@/components/ignite/"
+import {View, Dimensions, Pressable, Image} from "react-native"
+import {Text} from "@/components/ignite/"
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
@@ -33,12 +33,11 @@ interface AppCard {
 interface AppCardItemProps {
   app: ClientAppletInterface
   index: number
-  activeIndex: Animated.SharedValue<number>
+  // activeIndex: Animated.SharedValue<number>
   onDismiss: (packageName: string) => void
   onSelect: (packageName: string) => void
   translateX: Animated.SharedValue<number>
-  animatedCount: Animated.SharedValue<number>
-  count: number
+  // count: number
 }
 
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable)
@@ -46,12 +45,11 @@ const AnimatedPressable = Animated.createAnimatedComponent(Pressable)
 function AppCardItem({
   app,
   index,
-  activeIndex,
-  count,
+  // activeIndex,
+  // count,
   translateX,
   onDismiss,
   onSelect,
-  animatedCount,
 }: AppCardItemProps) {
   const translateY = useSharedValue(0)
   const cardOpacity = useSharedValue(1)
@@ -59,10 +57,15 @@ function AppCardItem({
   // const cardScale = useSharedValue(1)
 
   useEffect(() => {
+    // Set immediately first, then animate future changes
+    animatedIndex.value = index
+  }, []) // sync on mount
+
+  useEffect(() => {
     if (animatedIndex.value !== index) {
-      animatedIndex.value = withSpring(index, {
-        damping: 20,
-        stiffness: 90,
+      // animatedIndex.value = index+2
+      animatedIndex.value = withTiming(index, {
+        duration: 2000,
       })
     }
   }, [index])
@@ -81,7 +84,7 @@ function AppCardItem({
       // translateY.value = Math.min(0, event.translationY)
       translateY.value = event.translationY
       const progress = translateY.value / DISMISS_THRESHOLD
-      console.log("progress", translateY.value, progress)
+      // console.log("progress", translateY.value, progress)
       // cardScale.value = interpolate(progress, [0, 1], [1, 0.95], Extrapolation.CLAMP)
       cardOpacity.value = interpolate(progress, [0, 0.7, 2], [1, 0.8, 0], Extrapolation.CLAMP)
     })
@@ -107,27 +110,43 @@ function AppCardItem({
   const composedGesture = Gesture.Exclusive(panGesture, tapGesture)
 
   const cardAnimatedStyle = useAnimatedStyle(() => {
-    let negativeIndex = animatedCount.value - (animatedIndex.value + 1)
+    // let negativeIndex = 100 - (animatedIndex.value + 1)
+    // let base = translateX.value
+    // let negativeWidth = (100 - 1) * cardWidth
+    // let negativeBase = base + negativeWidth
+    // let normalBase = negativeBase / cardWidth
 
-    let base = translateX.value
+    // if (index == 0) {
+    // console.log("animatedIndex", animatedIndex.value, animatedCount.value)
+    // }
+    // console.log("animatedCount", animatedCount.value)
+
+    // if (index == 0) {
+    //   console.log("animatedIndex", animatedIndex.value)
+    // }
+
+    // console.log("index, animatedIndex", index, animatedIndex.value)
+
+    // if (normalBase < 0) {
+    //   normalBase = 0
+    // }
+
+    // let leftBase = base + negativeIndex * cardWidth
+    // let stat = leftBase - translateX.value - negativeWidth
+
     let cardWidth = CARD_WIDTH + CARD_SPACING
-    let totalWidth = (animatedCount.value - 1) * cardWidth
-    let negativeBase = base + totalWidth
-    let normalBase = negativeBase / cardWidth
+    let stat = -animatedIndex.value * cardWidth
 
-    if (normalBase < 0) {
-      normalBase = 0
-    }
-
-    let leftBase = base + negativeIndex * cardWidth
-    let stat = leftBase - translateX.value - totalWidth
     let howFar = SCREEN_WIDTH / 4
-    let lin = normalBase - negativeIndex
+    // let lin = normalBase - negativeIndex
+    let lin = translateX.value / cardWidth + animatedIndex.value
     if (lin < 0) {
       lin = 0
     }
     let power = Math.pow(lin, 1.7) * howFar
+    // power = base + (negativeIndex * cardWidth)
     let res = stat + power
+
     let howFarPercent = (1 / (howFar / SCREEN_WIDTH)) * howFar
     let linearProgress = power / howFarPercent
 
@@ -197,7 +216,6 @@ export default function AppSwitcher({visible, onClose}: AppSwitcherProps) {
   const targetIndex = useSharedValue(0)
   const {push} = useNavigationHistory()
   const apps = useActiveApps()
-  const animatedCount = useSharedValue(apps.length)
 
   useEffect(() => {
     if (visible) {
@@ -214,12 +232,9 @@ export default function AppSwitcher({visible, onClose}: AppSwitcherProps) {
     }
   }, [visible])
 
-  useEffect(() => {
-    animatedCount.value = withSpring(apps.length, {
-      damping: 20,
-      stiffness: 9,
-    })
-  }, [apps.length])
+  useDerivedValue(() => {
+    activeIndex.value = -translateX.value / (CARD_WIDTH + CARD_SPACING) + 2
+  })
 
   const backdropStyle = useAnimatedStyle(() => ({
     opacity: backdropOpacity.value,
@@ -366,13 +381,11 @@ export default function AppSwitcher({visible, onClose}: AppSwitcherProps) {
                   <AppCardItem
                     key={app.packageName}
                     app={app}
-                    index={index}
-                    activeIndex={activeIndex}
-                    translateX={translateX}
                     onDismiss={handleDismiss}
                     onSelect={handleSelect}
-                    count={apps.length}
-                    animatedCount={animatedCount}
+                    // activeIndex={activeIndex}
+                    translateX={translateX}
+                    index={index}
                   />
                 ))}
               </Animated.View>
