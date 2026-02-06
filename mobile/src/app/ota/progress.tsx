@@ -442,6 +442,8 @@ export default function OtaProgressScreen() {
   }
 
   const progress = otaProgress?.progress ?? 0
+  // Round progress to nearest 5% for cleaner UI display
+  const displayProgress = Math.round(progress / 5) * 5
   const currentUpdate = otaProgress?.currentUpdate // "apk", "mtk", or "bes"
 
   // DEBUG: Log render values
@@ -502,7 +504,7 @@ export default function OtaProgressScreen() {
           <View className="h-6" />
           <Text text={`Downloading ${componentName}...`} className="font-semibold text-xl text-center" />
           <View className="h-4" />
-          <Text text={`${progress}%`} className="text-3xl font-bold" style={{color: theme.colors.primary}} />
+          <Text text={`${displayProgress}%`} className="text-3xl font-bold" style={{color: theme.colors.primary}} />
           <View className="h-4" />
           <ActivityIndicator size="large" color={theme.colors.foreground} />
           <View className="h-4" />
@@ -536,7 +538,7 @@ export default function OtaProgressScreen() {
           <View className="h-4" />
           {showProgress && (
             <>
-              <Text text={`${progress}%`} className="text-3xl font-bold" style={{color: theme.colors.primary}} />
+              <Text text={`${displayProgress}%`} className="text-3xl font-bold" style={{color: theme.colors.primary}} />
               <View className="h-4" />
             </>
           )}
