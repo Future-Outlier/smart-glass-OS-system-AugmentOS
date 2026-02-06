@@ -26,6 +26,7 @@ export default function OtaCheckForUpdatesScreen() {
   const wifiConnected = useGlassesStore((state) => state.wifiConnected)
   const [onboardingLiveCompleted] = useSetting(SETTINGS.onboarding_live_completed.key)
 
+  const [superMode] = useSetting(SETTINGS.super_mode.key)
   const [checkState, setCheckState] = useState<CheckState>("checking")
   const [availableUpdates, setAvailableUpdates] = useState<string[]>([])
   const [isUpdateRequired, setIsUpdateRequired] = useState(true) // Default to required if not specified
@@ -233,7 +234,13 @@ export default function OtaCheckForUpdatesScreen() {
 
     // Update available state
     if (checkState === "update_available") {
-      const updateList = availableUpdates.map((u) => u.toUpperCase()).join(", ")
+      const updateCount = availableUpdates.length
+      // Super mode shows technical details (APK, MTK, BES), normal mode shows simple count
+      const updateText = superMode
+        ? `Updates available: ${availableUpdates.map((u) => u.toUpperCase()).join(", ")}`
+        : updateCount === 1
+          ? "1 update available"
+          : `${updateCount} updates available`
 
       return (
         <>
@@ -243,7 +250,7 @@ export default function OtaCheckForUpdatesScreen() {
             <Text text={translate("ota:updateAvailable", {deviceName})} className="font-semibold text-xl text-center" />
             <View className="h-2" />
             <Text
-              text={`Updates available: ${updateList}`}
+              text={updateText}
               className="text-base text-center"
               style={{color: theme.colors.textDim}}
             />
