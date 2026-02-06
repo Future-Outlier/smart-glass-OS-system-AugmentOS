@@ -1,5 +1,5 @@
 import React, {useCallback, useEffect} from "react"
-import {View, Dimensions, Pressable, Image} from "react-native"
+import {View, Dimensions, Pressable, Image, TouchableOpacity} from "react-native"
 import {Text} from "@/components/ignite/"
 import Animated, {
   useSharedValue,
@@ -57,17 +57,29 @@ function AppCardItem({
   // const cardScale = useSharedValue(1)
 
   useEffect(() => {
-    // Set immediately first, then animate future changes
-    animatedIndex.value = index
-  }, []) // sync on mount
-
-  useEffect(() => {
     if (animatedIndex.value !== index) {
+      // console.log("animatedIndex", animatedIndex.value, index, animatedIndex.value > index)
       // animatedIndex.value = index+2
+      // animatedIndex.value = index-0.25
+      // animatedIndex.value = withSpring(index, { damping: 4, stiffness: 40 })
+      // translateX.value = translateX.value + (CARD_WIDTH + CARD_SPACING)
+      // animatedIndex.value = index-0.1
+      // if (animatedIndex.value >= index) {
+      //   animatedIndex.value = withTiming(index, {
+      //     duration: 30000,
+      //   })
+      // } else {
+      //   animatedIndex.value = index
+      // }
       animatedIndex.value = withTiming(index, {
         duration: 2000,
       })
     }
+
+    // console.log("animatedIndex", animatedIndex.value, index)
+    // animatedIndex.value = withTiming(index+1, {
+    //   duration: 2000,
+    // })
   }, [index])
 
   const dismissCard = useCallback(() => {
@@ -110,41 +122,17 @@ function AppCardItem({
   const composedGesture = Gesture.Exclusive(panGesture, tapGesture)
 
   const cardAnimatedStyle = useAnimatedStyle(() => {
-    // let negativeIndex = 100 - (animatedIndex.value + 1)
-    // let base = translateX.value
-    // let negativeWidth = (100 - 1) * cardWidth
-    // let negativeBase = base + negativeWidth
-    // let normalBase = negativeBase / cardWidth
-
-    // if (index == 0) {
-    // console.log("animatedIndex", animatedIndex.value, animatedCount.value)
-    // }
-    // console.log("animatedCount", animatedCount.value)
-
-    // if (index == 0) {
-    //   console.log("animatedIndex", animatedIndex.value)
-    // }
-
-    // console.log("index, animatedIndex", index, animatedIndex.value)
-
-    // if (normalBase < 0) {
-    //   normalBase = 0
-    // }
-
-    // let leftBase = base + negativeIndex * cardWidth
-    // let stat = leftBase - translateX.value - negativeWidth
+    let animIndex = animatedIndex.value
 
     let cardWidth = CARD_WIDTH + CARD_SPACING
-    let stat = -animatedIndex.value * cardWidth
+    let stat = -animIndex * cardWidth
 
     let howFar = SCREEN_WIDTH / 4
-    // let lin = normalBase - negativeIndex
-    let lin = translateX.value / cardWidth + animatedIndex.value
+    let lin = translateX.value / cardWidth + animIndex
     if (lin < 0) {
       lin = 0
     }
     let power = Math.pow(lin, 1.7) * howFar
-    // power = base + (negativeIndex * cardWidth)
     let res = stat + power
 
     let howFarPercent = (1 / (howFar / SCREEN_WIDTH)) * howFar
@@ -185,7 +173,6 @@ function AppCardItem({
 
           {app.screenshot && (
             <View className="flex-1 items-center justify-center">
-              {/* <Image source={{uri: app.screenshot}} style={{width: "100%", height: "100%", resizeMode: "contain"}} /> */}
               <Image source={{uri: app.screenshot}} className="w-full h-full" style={{resizeMode: "contain"}} />
             </View>
           )}
@@ -195,7 +182,6 @@ function AppCardItem({
         <View className="absolute bottom-2 left-0 right-0 items-center">
           <View className="w-24 h-[5px] rounded-full bg-white/30" />
         </View>
-        {/* </View> */}
       </AnimatedPressable>
     </GestureDetector>
   )
@@ -254,7 +240,6 @@ export default function AppSwitcher({visible, onClose}: AppSwitcherProps) {
       const newTranslateX = offsetX.value + event.translationX
       // const maxTranslate = 0
       // const minTranslate = -((apps.length - 1) * (CARD_WIDTH + CARD_SPACING))
-
       // if (newTranslateX > maxTranslate) {
       //   translateX.value = newTranslateX * 0.3
       // } else if (newTranslateX < minTranslate) {
@@ -284,6 +269,8 @@ export default function AppSwitcher({visible, onClose}: AppSwitcherProps) {
         velocity: velocity,
       })
     })
+
+  console.log("translateX", translateX.value)
 
   const handleDismiss = useCallback(
     (packageName: string) => {
@@ -413,6 +400,14 @@ export default function AppSwitcher({visible, onClose}: AppSwitcherProps) {
           className="absolute bottom-12 self-center bg-primary-foreground/90 px-8 py-3.5 rounded-3xl"
           onPress={() => {
             goToIndex(1)
+          }}>
+          <Text className="text-white text-sm">Switch Active Index</Text>
+        </TouchableOpacity> */}
+
+        {/* <TouchableOpacity
+          className="absolute bottom-12 self-center bg-primary-foreground/90 px-8 py-3.5 rounded-3xl"
+          onPress={() => {
+            translateX.value = translateX.value + (CARD_WIDTH + CARD_SPACING)
           }}>
           <Text className="text-white text-sm">Switch Active Index</Text>
         </TouchableOpacity> */}
