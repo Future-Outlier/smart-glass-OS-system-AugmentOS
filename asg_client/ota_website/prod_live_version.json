@@ -16,13 +16,13 @@
   "mtk_patches": [
     {
       "start_firmware": "MentraLive_20260113",
-      "end_firmware": "MentraLive_20260129",
-      "url": "https://github.com/Mentra-Community/MentraOS/releases/download/asg-client/mtk_firmware_20260113_20260129.zip"
+      "end_firmware": "MentraLive_20260204",
+      "url": "https://github.com/Mentra-Community/MentraOS/releases/download/asg-client/mtk_firmware_20260113_20260204.zip"
     }
   ],
   "bes_firmware": {
-    "version": "17.26.01.30",
-    "url": "https://github.com/Mentra-Community/MentraOS/releases/download/asg-client/bes_firmware_17.26.01.30.bin",
-    "sha256": "b6c4db26d12b364025f75e53c21acf7c1267b1df312c3af90187e4b78bc041ab"
+    "version": "17.26.02.05",
+    "url": "https://github.com/Mentra-Community/MentraOS/releases/download/asg-client/bes_firmware_17.26.02.05.bin",
+    "sha256": "7ed6adbc66bd64f793a5e662c8618069a2a328d4c21f98d619242d15d12559f0"
   }
 }
