@@ -15,6 +15,7 @@ import com.mentra.asg_client.camera.CameraNeo;
 import com.mentra.asg_client.settings.VideoSettings;
 import com.mentra.asg_client.io.hardware.interfaces.IHardwareManager;
 import com.mentra.asg_client.io.hardware.core.HardwareManagerFactory;
+import com.mentra.asg_client.hardware.K900RgbLedController;
 import com.mentra.asg_client.io.streaming.services.RtmpStreamingService;
 import com.mentra.asg_client.audio.AudioAssets;
 import com.mentra.asg_client.service.system.interfaces.IStateManager;
@@ -485,7 +486,7 @@ public class MediaCaptureService {
      * Trigger white LED flash for photo capture (synchronized with shutter sound, default brightness)
      */
     private void triggerPhotoFlashLed() {
-        triggerPhotoFlashLed(255); // Default to full brightness
+        triggerPhotoFlashLed(K900RgbLedController.DEFAULT_RGB_LED_BRIGHTNESS);
     }
 
     /**
@@ -507,7 +508,7 @@ public class MediaCaptureService {
      * Trigger solid white LED for video recording duration (default brightness)
      */
     private void triggerVideoRecordingLed() {
-        triggerVideoRecordingLed(255); // Default to full brightness
+        triggerVideoRecordingLed(K900RgbLedController.DEFAULT_RGB_LED_BRIGHTNESS);
     }
 
     /**

@@ -45,6 +45,9 @@ public class K900RgbLedController {
     public static final int RGB_LED_ORANGE = 3;
     public static final int RGB_LED_WHITE = 4;
 
+    // Default brightness level for RGB LEDs (0-255, where 255 is maximum brightness)
+    public static final int DEFAULT_RGB_LED_BRIGHTNESS = 100;
+
     private final K900BluetoothManager bluetoothManager;
 
     /**
@@ -107,7 +110,7 @@ public class K900RgbLedController {
      * @return true if command was sent successfully, false otherwise
      */
     public boolean setLedOn(int ledIndex, int ontime, int offtime, int count) {
-        return setLedOn(ledIndex, ontime, offtime, count, 255); // Default to full brightness
+        return setLedOn(ledIndex, ontime, offtime, count, DEFAULT_RGB_LED_BRIGHTNESS);
     }
 
     /**
@@ -214,12 +217,12 @@ public class K900RgbLedController {
     }
 
     /**
-     * Flash the white RGB LED for photo capture (default full brightness)
+     * Flash the white RGB LED for photo capture (default DEFAULT_RGB_LED_BRIGHTNESS)
      * @param durationMs Duration in milliseconds for the flash
      * @return true if command was sent successfully, false otherwise
      */
     public boolean flashWhite(int durationMs) {
-        return flashWhite(durationMs, 255); // Default to full brightness
+        return flashWhite(durationMs, DEFAULT_RGB_LED_BRIGHTNESS);
     }
 
     /**
@@ -272,12 +275,12 @@ public class K900RgbLedController {
     }
 
     /**
-     * Set the white RGB LED to solid on for video recording (default full brightness)
+     * Set the white RGB LED to solid on for video recording (default DEFAULT_RGB_LED_BRIGHTNESS)
      * @param durationMs Duration in milliseconds to keep LED on
      * @return true if command was sent successfully, false otherwise
      */
     public boolean setSolidWhite(int durationMs) {
-        return setSolidWhite(durationMs, 255); // Default to full brightness
+        return setSolidWhite(durationMs, DEFAULT_RGB_LED_BRIGHTNESS);
     }
 
     /**

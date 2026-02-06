@@ -126,7 +126,7 @@ public class RgbLedCommandHandler implements ICommandHandler {
      *   "ontime": 1000,       // RGB LED on duration in milliseconds
      *   "offtime": 1000,      // RGB LED off duration in milliseconds
      *   "count": 5,           // Number of on/off cycles
-     *   "brightness": 255     // Brightness level (0-255, optional, default 255)
+     *   "brightness": 100     // Brightness level (0-255, optional, default DEFAULT_RGB_LED_BRIGHTNESS)
      * }
      */
     private boolean handleRgbLedOn(JSONObject data) {
@@ -138,7 +138,7 @@ public class RgbLedCommandHandler implements ICommandHandler {
             int ontime = data.optInt("ontime", 1000);
             int offtime = data.optInt("offtime", 1000);
             int count = data.optInt("count", 1);
-            int brightness = data.optInt("brightness", 255); // Default to full brightness
+            int brightness = data.optInt("brightness", K900RgbLedController.DEFAULT_RGB_LED_BRIGHTNESS);
 
             // Validate parameters
             if (led < K900RgbLedController.RGB_LED_RED || led > K900RgbLedController.RGB_LED_WHITE) {
@@ -207,7 +207,7 @@ public class RgbLedCommandHandler implements ICommandHandler {
      * Expected data format:
      * {
      *   "duration": 5000,     // Flash duration in milliseconds (optional, default 5000ms)
-     *   "brightness": 255     // Brightness level (0-255, optional, default 255)
+     *   "brightness": 100     // Brightness level (0-255, optional, default DEFAULT_RGB_LED_BRIGHTNESS)
      * }
      */
     private boolean handlePhotoFlash(JSONObject data) {
@@ -216,7 +216,7 @@ public class RgbLedCommandHandler implements ICommandHandler {
         try {
             // Extract flash duration and brightness with defaults
             int duration = data.optInt("duration", 5000); // Default 5 sec flash
-            int brightness = data.optInt("brightness", 255); // Default to full brightness
+            int brightness = data.optInt("brightness", K900RgbLedController.DEFAULT_RGB_LED_BRIGHTNESS);
 
             // Validate brightness
             if (brightness < 0 || brightness > 255) {
@@ -246,7 +246,7 @@ public class RgbLedCommandHandler implements ICommandHandler {
      *
      * Expected data format:
      * {
-     *   "brightness": 255     // Brightness level (0-255, optional, default 255)
+     *   "brightness": 100     // Brightness level (0-255, optional, default DEFAULT_RGB_LED_BRIGHTNESS)
      * }
      */
     private boolean handleVideoSolid(JSONObject data) {
@@ -254,7 +254,7 @@ public class RgbLedCommandHandler implements ICommandHandler {
 
         try {
             // Extract brightness with default
-            int brightness = data.optInt("brightness", 255); // Default to full brightness
+            int brightness = data.optInt("brightness", K900RgbLedController.DEFAULT_RGB_LED_BRIGHTNESS);
 
             // Validate brightness
             if (brightness < 0 || brightness > 255) {
