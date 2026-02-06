@@ -338,6 +338,12 @@ export function OtaUpdateChecker() {
   const mtkFwVersion = useGlassesStore((state) => state.mtkFwVersion)
   const besFwVersion = useGlassesStore((state) => state.besFwVersion)
 
+  // Keep a ref of the current pathname so async callbacks can check it
+  const pathnameRef = useRef(pathname)
+  useEffect(() => {
+    pathnameRef.current = pathname
+  }, [pathname])
+
   // Track OTA check state:
   // - hasCheckedOta: whether we've done the initial check
   // - pendingUpdate: cached update info when WiFi wasn't connected
@@ -557,6 +563,13 @@ export function OtaUpdateChecker() {
           const currentlyConnected = useGlassesStore.getState().connected
           if (!currentlyConnected) {
             console.log("📱 OTA update found but glasses disconnected - skipping alert")
+            return
+          }
+
+          // Only show update alert on the homepage - user may have navigated away during async check
+          if (pathnameRef.current !== "/home") {
+            console.log(`📱 OTA update found but not on homepage (${pathnameRef.current}) - caching for later`)
+            pendingUpdate.current = {latestVersionInfo, updates: filteredUpdates}
             return
           }
 
