@@ -1,5 +1,5 @@
 import React, {useCallback, useEffect} from "react"
-import {View, Dimensions, Pressable, Image} from "react-native"
+import {View, Dimensions, Pressable, Image, TouchableOpacity} from "react-native"
 import {Button, Text} from "@/components/ignite/"
 import Animated, {
   useSharedValue,
@@ -37,15 +37,35 @@ interface AppCardItemProps {
   onDismiss: (packageName: string) => void
   onSelect: (packageName: string) => void
   translateX: Animated.SharedValue<number>
+  animatedCount: Animated.SharedValue<number>
   count: number
 }
 
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable)
 
-function AppCardItem({app, index, activeIndex, count, translateX, onDismiss, onSelect}: AppCardItemProps) {
+function AppCardItem({
+  app,
+  index,
+  activeIndex,
+  count,
+  translateX,
+  onDismiss,
+  onSelect,
+  animatedCount,
+}: AppCardItemProps) {
   const translateY = useSharedValue(0)
   const cardOpacity = useSharedValue(1)
+  const animatedIndex = useSharedValue(index)
   // const cardScale = useSharedValue(1)
+
+  useEffect(() => {
+    if (animatedIndex.value !== index) {
+      animatedIndex.value = withSpring(index, {
+        damping: 20,
+        stiffness: 90,
+      })
+    }
+  }, [index])
 
   const dismissCard = useCallback(() => {
     onDismiss(app.packageName)
@@ -60,7 +80,7 @@ function AppCardItem({app, index, activeIndex, count, translateX, onDismiss, onS
     .onUpdate((event) => {
       // translateY.value = Math.min(0, event.translationY)
       translateY.value = event.translationY
-      const progress = Math.abs(translateY.value / DISMISS_THRESHOLD)
+      const progress = translateY.value / DISMISS_THRESHOLD
       console.log("progress", translateY.value, progress)
       // cardScale.value = interpolate(progress, [0, 1], [1, 0.95], Extrapolation.CLAMP)
       cardOpacity.value = interpolate(progress, [0, 0.7, 2], [1, 0.8, 0], Extrapolation.CLAMP)
@@ -87,81 +107,27 @@ function AppCardItem({app, index, activeIndex, count, translateX, onDismiss, onS
   const composedGesture = Gesture.Exclusive(panGesture, tapGesture)
 
   const cardAnimatedStyle = useAnimatedStyle(() => {
-    // const distance = Math.abs(index - activeIndex.value)
-    // const distance = translateY.value
-    // const scale = interpolate(distance, [0, 1, 2], [1, 0.92, 0.85], Extrapolation.CLAMP)
-    // const opacity = interpolate(distance, [0, 2, 3], [1, 0.7, 0.4], Extrapolation.CLAMP)
+    let negativeIndex = animatedCount.value - (animatedIndex.value + 1)
 
-    let negativeIndex = count - (index + 1)
-
-    // card 6: start at -1600px
-    // tX starts at -1600px
     let base = translateX.value
     let cardWidth = CARD_WIDTH + CARD_SPACING
-    let totalWidth = (count - 1) * cardWidth
+    let totalWidth = (animatedCount.value - 1) * cardWidth
     let negativeBase = base + totalWidth
-    let normalBase = negativeBase / cardWidth //
+    let normalBase = negativeBase / cardWidth
 
     if (normalBase < 0) {
       normalBase = 0
     }
 
-    // console.log("totalWidth", totalWidth)
-
-    // console.log("base", base)
-
     let leftBase = base + negativeIndex * cardWidth
-
-    // let res = leftBase - (negativeIndex * -base/10)
     let stat = leftBase - translateX.value - totalWidth
-
-    // let res = stat + (negativeBase/(count-1) * index)
-
-    // let res = stat + (negativeBase * index)
-
-    // Non-linear version - use a power curve
-    // let progress = index / (count - 1) // 0 to 1
-
-    // let nonLinearProgress = Math.pow(progress, 2) // < 1 = spread out more at the front
-    // let res = stat + (Math.pow(normalBase, 2) * nonLinearProgress) * cardWidth
-
     let howFar = SCREEN_WIDTH / 4
-    // let howFar = CARD_WIDTH / 2
-
-    // let power = (Math.pow(normalBase, 1.25) * (index+1) * howFar) / count
-    // let power = Math.pow(normalBase, 1.5) * howFar
     let lin = normalBase - negativeIndex
-    // let lin = normalBase
     if (lin < 0) {
       lin = 0
-      // lin *= -1
     }
-    // let power = Math.pow(lin, 1.5) * howFar * (index+1)/count
     let power = Math.pow(lin, 1.7) * howFar
-    // let stepBehindPower = Math.pow(normalBase + negativeIndex, 1.5) * howFar
-    // if (index == count - 1) {
-    //   // stepBehindPower = 0
-    // }
-    // if (index == count - 2) {
-    //   power = Math.pow(normalBase - 1, 1.5) * howFar
-    // }
-    // subtract the negative index so that start cards ar bunched up at the start:
-    // let res = stat + (power - (Math.pow(negativeIndex, 1) * howFar))
-    // console.log("power", power)
-    // let diff = negativeIndex
-    // let res = stat + (power / (Math.pow(diff, 4) + 1))
     let res = stat + power
-
-    // console.log("res", res)
-    // let res = stat + power
-
-    // console.log("normalBase", normalBase)
-
-    // let add = 0
-    // if ()
-
-    // let linearProgress = Math.pow(Math.max(translateX.value / (CARD_WIDTH + CARD_SPACING) + index, 0), 1.7) / 4
-
     let howFarPercent = (1 / (howFar / SCREEN_WIDTH)) * howFar
     let linearProgress = power / howFarPercent
 
@@ -231,6 +197,7 @@ export default function AppSwitcher({visible, onClose}: AppSwitcherProps) {
   const targetIndex = useSharedValue(0)
   const {push} = useNavigationHistory()
   const apps = useActiveApps()
+  const animatedCount = useSharedValue(apps.length)
 
   useEffect(() => {
     if (visible) {
@@ -247,9 +214,12 @@ export default function AppSwitcher({visible, onClose}: AppSwitcherProps) {
     }
   }, [visible])
 
-  useDerivedValue(() => {
-    activeIndex.value = -translateX.value / (CARD_WIDTH + CARD_SPACING) + 2
-  })
+  useEffect(() => {
+    animatedCount.value = withSpring(apps.length, {
+      damping: 20,
+      stiffness: 9,
+    })
+  }, [apps.length])
 
   const backdropStyle = useAnimatedStyle(() => ({
     opacity: backdropOpacity.value,
@@ -267,8 +237,8 @@ export default function AppSwitcher({visible, onClose}: AppSwitcherProps) {
     })
     .onUpdate((event) => {
       const newTranslateX = offsetX.value + event.translationX
-      const maxTranslate = 0
-      const minTranslate = -((apps.length - 1) * (CARD_WIDTH + CARD_SPACING))
+      // const maxTranslate = 0
+      // const minTranslate = -((apps.length - 1) * (CARD_WIDTH + CARD_SPACING))
 
       // if (newTranslateX > maxTranslate) {
       //   translateX.value = newTranslateX * 0.3
@@ -292,7 +262,6 @@ export default function AppSwitcher({visible, onClose}: AppSwitcherProps) {
       newTarget = Math.max(-1, Math.min(newTarget, apps.length - 2))
 
       targetIndex.value = newTarget
-      console.log("newTarget", newTarget)
 
       translateX.value = withSpring(-newTarget * cardWidth, {
         damping: 20,
@@ -301,25 +270,41 @@ export default function AppSwitcher({visible, onClose}: AppSwitcherProps) {
       })
     })
 
-  const handleDismiss = (packageName: string) => {
-    useAppletStatusStore.getState().stopApplet(packageName)
+  const handleDismiss = useCallback(
+    (packageName: string) => {
+      console.log("targetIndex", targetIndex.value)
+      console.log("apps.length", apps.length)
 
-    console.log("targetIndex", targetIndex.value)
-    console.log("apps.length", apps.length)
+      // Adjust if we were on the last card
+      // if (targetIndex.value == apps.length - 2) {
+      // console.log("going to index 0")
+      // goToIndex(apps.length - 2)
+      // }
+      // console.log("going to index", apps.length - 2)
+      // goToIndex(apps.length - 2)
+      // setTimeout(() => {
+      useAppletStatusStore.getState().stopApplet(packageName)
+      // }, 100)
+    },
+    [apps.length],
+  )
 
-    // Adjust if we were on the last card
-    if (targetIndex.value == apps.length - 2) {
-      setTimeout(() => {
-        console.log("adjusting targetIndex to", apps.length - 3)
-        targetIndex.value = Math.max(0, apps.length - 3)
-        translateX.value = withSpring(-targetIndex.value * (CARD_WIDTH + CARD_SPACING))
-      }, 100)
-    }
-  }
+  const goToIndex = useCallback(
+    (index: number) => {
+      index = index - 1
+      const cardWidth = CARD_WIDTH + CARD_SPACING
+      const clamped = Math.max(-1, Math.min(index, apps.length - 2))
+      targetIndex.value = clamped
+      translateX.value = withSpring(-clamped * cardWidth, {
+        damping: 20,
+        stiffness: 90,
+      })
+    },
+    [apps.length],
+  )
 
   const handleSelect = (packageName: string) => {
     console.log("selecting", packageName)
-    // push(`/applet/${packageName}`)
 
     const applet = apps.find((app) => app.packageName === packageName)
     if (!applet) {
@@ -387,6 +372,7 @@ export default function AppSwitcher({visible, onClose}: AppSwitcherProps) {
                     onDismiss={handleDismiss}
                     onSelect={handleSelect}
                     count={apps.length}
+                    animatedCount={animatedCount}
                   />
                 ))}
               </Animated.View>
@@ -401,13 +387,22 @@ export default function AppSwitcher({visible, onClose}: AppSwitcherProps) {
         )}
 
         {/* Page Indicators */}
-        {apps.length > 1 && (
+        {apps.length > 0 && (
           <View className="flex-row justify-center items-center gap-1.5 mb-5">
             {apps.map((_, index) => (
               <PageDot key={index} index={index} activeIndex={activeIndex} />
             ))}
           </View>
         )}
+
+        {/* test button to switch active index */}
+        {/* <TouchableOpacity
+          className="absolute bottom-12 self-center bg-primary-foreground/90 px-8 py-3.5 rounded-3xl"
+          onPress={() => {
+            goToIndex(1)
+          }}>
+          <Text className="text-white text-sm">Switch Active Index</Text>
+        </TouchableOpacity> */}
 
         {/* Close Button */}
         {/* <TouchableOpacity
