@@ -4,7 +4,10 @@ import android.app.Notification;
 import android.app.NotificationChannel;
 import android.app.NotificationManager;
 import android.app.Service;
+import android.content.Context;
 import android.content.Intent;
+import android.content.SharedPreferences;
+import android.content.pm.PackageInfo;
 import android.os.Build;
 import android.os.IBinder;
 import android.util.Log;
@@ -54,12 +57,18 @@ public class OtaService extends Service {
         
         // Initialize OTA helper singleton
         otaHelper = OtaHelper.initialize(this);
-        
+
+        // Clean up old firmware files from previous updates
+        cleanupOldFirmwareFiles();
+
+        // Check if ASG client was just updated - if so, auto-resume OTA for MTK/BES
+        checkAndResumeAfterApkUpdate();
+
         // Register EventBus
         if (!EventBus.getDefault().isRegistered(this)) {
             EventBus.getDefault().register(this);
         }
-        
+
         // OtaHelper will automatically start checking:
         // - After 15 seconds (initial check)
         // - Every 30 minutes (periodic checks)
@@ -209,19 +218,24 @@ public class OtaService extends Service {
                 break;
             case SUCCESS:
                 updateNotification("MTK firmware updated successfully");
-                Log.i(TAG, "📱 MTK system SUCCESS received - reboot required to apply");
-                
-                // Send FINISHED to phone now that install is complete
+                Log.i(TAG, "📱 MTK system SUCCESS received - staged for next reboot");
+
+                // Send FINISHED to phone now that MTK install is complete
                 if (otaHelper != null) {
                     otaHelper.sendMtkInstallProgressToPhone("FINISHED", 100, null);
+
+                    // Auto-trigger pending BES update if queued
+                    // BES power-cycle will also apply the staged MTK A/B slot switch
+                    if (otaHelper.hasPendingBesUpdate()) {
+                        Log.i(TAG, "📱 Starting pending BES update after MTK complete");
+                        otaHelper.startPendingBesUpdate();
+                    } else {
+                        Log.i(TAG, "📱 No pending BES update - user must reboot to apply MTK");
+                    }
                 }
-                
+
                 // Send broadcast to notify app that MTK update is complete
                 sendMtkUpdateCompleteMessage();
-                
-                // MTK A/B updates are staged - reboot required to apply
-                // BES update (if needed) will be initiated by phone separately
-                Log.i(TAG, "📱 MTK complete - user must reboot to apply, BES initiated by phone if needed");
                 break;
             case ERROR:
                 updateNotification("MTK firmware update failed: " + event.getMessage());
@@ -269,6 +283,74 @@ public class OtaService extends Service {
                     otaHelper.sendBesInstallProgressToPhone("FAILED", 0, event.getErrorMessage());
                 }
                 break;
+        }
+    }
+
+    /**
+     * Clean up old firmware files from previous OTA updates.
+     * Called on service startup to remove any leftover files.
+     */
+    private void cleanupOldFirmwareFiles() {
+        try {
+            java.io.File mtkFile = new java.io.File(OtaConstants.MTK_FIRMWARE_PATH);
+            if (mtkFile.exists()) {
+                boolean deleted = mtkFile.delete();
+                Log.i(TAG, "Cleaned up old MTK firmware file: " + (deleted ? "success" : "failed"));
+            }
+
+            java.io.File mtkBackup = new java.io.File(OtaConstants.MTK_BACKUP_PATH);
+            if (mtkBackup.exists()) {
+                boolean deleted = mtkBackup.delete();
+                Log.i(TAG, "Cleaned up old MTK backup file: " + (deleted ? "success" : "failed"));
+            }
+
+            java.io.File besFile = new java.io.File(OtaConstants.BES_FIRMWARE_PATH);
+            if (besFile.exists()) {
+                boolean deleted = besFile.delete();
+                Log.i(TAG, "Cleaned up old BES firmware file: " + (deleted ? "success" : "failed"));
+            }
+
+            java.io.File besBackup = new java.io.File(OtaConstants.BES_BACKUP_PATH);
+            if (besBackup.exists()) {
+                boolean deleted = besBackup.delete();
+                Log.i(TAG, "Cleaned up old BES backup file: " + (deleted ? "success" : "failed"));
+            }
+        } catch (Exception e) {
+            Log.e(TAG, "Error cleaning up old firmware files", e);
+        }
+    }
+
+    /**
+     * Check if ASG client was just updated and auto-resume OTA for MTK/BES.
+     * This enables single-prompt OTA: user taps install once, APK updates,
+     * then MTK/BES updates happen automatically without another prompt.
+     */
+    private void checkAndResumeAfterApkUpdate() {
+        try {
+            SharedPreferences prefs = getSharedPreferences("ota_state", Context.MODE_PRIVATE);
+            long previousVersion = prefs.getLong("last_seen_asg_version", -1);
+
+            PackageInfo packageInfo = getPackageManager().getPackageInfo(getPackageName(), 0);
+            long currentVersion = packageInfo.getLongVersionCode();
+
+            if (previousVersion == -1) {
+                // First boot ever - just record current version, don't trigger update
+                Log.i(TAG, "First boot - recording initial ASG version: " + currentVersion);
+                prefs.edit().putLong("last_seen_asg_version", currentVersion).apply();
+            } else if (currentVersion > previousVersion) {
+                // ASG client was updated - auto-trigger OTA check for MTK/BES
+                Log.i(TAG, "📱 ASG client was updated from " + previousVersion + " to " + currentVersion);
+                prefs.edit().putLong("last_seen_asg_version", currentVersion).apply();
+
+                if (otaHelper != null) {
+                    Log.i(TAG, "📱 Auto-resuming OTA check for MTK/BES updates");
+                    otaHelper.startVersionCheck(this);
+                }
+            } else {
+                Log.d(TAG, "ASG version unchanged (" + currentVersion + ") - no auto-resume needed");
+            }
+        } catch (Exception e) {
+            Log.e(TAG, "Error checking for APK update auto-resume", e);
         }
     }
 }

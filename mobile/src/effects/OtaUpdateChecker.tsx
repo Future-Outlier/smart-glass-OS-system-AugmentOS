@@ -331,6 +331,7 @@ export function OtaUpdateChecker() {
 
   // OTA check state from glasses store
   const [defaultWearable] = useSetting(SETTINGS.default_wearable.key)
+  const [superMode] = useSetting(SETTINGS.super_mode.key)
   const glassesConnected = useGlassesStore((state) => state.connected)
   const buildNumber = useGlassesStore((state) => state.buildNumber)
   const glassesWifiConnected = useGlassesStore((state) => state.wifiConnected)
@@ -436,8 +437,13 @@ export function OtaUpdateChecker() {
     }
 
     const deviceName = defaultWearable || "Glasses"
-    const updateList = updates.join(", ").toUpperCase()
-    const updateMessage = `Updates available: ${updateList}`
+    // Super mode shows technical details (APK, MTK, BES), normal mode shows simple count
+    const updateCount = updates.length
+    const updateMessage = superMode
+      ? `Updates available: ${updates.join(", ").toUpperCase()}`
+      : updateCount === 1
+        ? "1 update available"
+        : `${updateCount} updates available`
 
     console.log("📱 WiFi connected - showing pending OTA update prompt")
 
@@ -555,8 +561,14 @@ export function OtaUpdateChecker() {
           }
 
           const deviceName = defaultWearable || "Glasses"
+          // Super mode shows technical details (APK, MTK, BES), normal mode shows simple count
+          const updateCount = filteredUpdates.length
           const updateList = filteredUpdates.join(", ").toUpperCase() // "APK, MTK, BES"
-          const updateMessage = `Updates available: ${updateList}`
+          const updateMessage = superMode
+            ? `Updates available: ${updateList}`
+            : updateCount === 1
+              ? "1 update available"
+              : `${updateCount} updates available`
 
           console.log(`📱 OTA showing alert - WiFi connected: ${glassesWifiConnected}, updates: ${updateList}`)
 
@@ -574,7 +586,9 @@ export function OtaUpdateChecker() {
             console.log("📱 Update available but WiFi not connected - caching for later")
             pendingUpdate.current = {latestVersionInfo, updates: filteredUpdates}
 
-            const wifiMessage = `Updates available: ${updateList}\n\nConnect your ${deviceName} to WiFi to install.`
+            const wifiMessage = superMode
+              ? `Updates available: ${updateList}\n\nConnect your ${deviceName} to WiFi to install.`
+              : `${updateMessage}\n\nConnect your ${deviceName} to WiFi to install.`
             showAlert(translate("ota:updateAvailable", {deviceName}), wifiMessage, [
               {
                 text: translate("ota:updateLater"),
