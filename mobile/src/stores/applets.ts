@@ -27,6 +27,7 @@ export interface ClientAppletInterface extends AppletInterface {
   local: boolean
   onStart?: () => AsyncResult<void, Error>
   onStop?: () => AsyncResult<void, Error>
+  screenshot?: string
 }
 
 interface AppStatusState {
@@ -35,6 +36,7 @@ interface AppStatusState {
   startApplet: (packageName: string, appType?: string) => Promise<void>
   stopApplet: (packageName: string) => Promise<void>
   stopAllApplets: () => AsyncResult<void, Error>
+  saveScreenshot: (packageName: string, screenshot: string) => Promise<void>
 }
 
 export const DUMMY_APPLET: ClientAppletInterface = {
@@ -87,13 +89,13 @@ const getOfflineApplets = async (): Promise<ClientAppletInterface[]> => {
       hardwareRequirements: [{type: HardwareType.CAMERA, level: HardwareRequirementLevel.REQUIRED}],
       onStart: (): AsyncResult<void, Error> => {
         return Res.try_async(async () => {
-          await storage.save(cameraPackageName, true)
+          await storage.save(`${cameraPackageName}_running`, true)
           return undefined
         })
       },
       onStop: (): AsyncResult<void, Error> => {
         return Res.try_async(async () => {
-          await storage.save(cameraPackageName, false)
+          await storage.save(`${cameraPackageName}_running`, false)
           return undefined
         })
       },
@@ -118,7 +120,7 @@ const getOfflineApplets = async (): Promise<ClientAppletInterface[]> => {
         return Res.try_async(async () => {
           const modelAvailable = await STTModelManager.isModelAvailable()
           if (modelAvailable) {
-            await storage.save(captionsPackageName, true)
+            await storage.save(`${captionsPackageName}_running`, true)
             return undefined
           }
 
@@ -137,7 +139,7 @@ const getOfflineApplets = async (): Promise<ClientAppletInterface[]> => {
       },
       onStop: (): AsyncResult<void, Error> => {
         return Res.try_async(async () => {
-          await storage.save(captionsPackageName, false)
+          await storage.save(`${captionsPackageName}_running`, false)
           return undefined
         })
       },
@@ -146,10 +148,14 @@ const getOfflineApplets = async (): Promise<ClientAppletInterface[]> => {
 
   // check the storage for the running state of the applets and update them:
   for (const mapp of miniApps) {
-    let res = await storage.load(mapp.packageName)
-    if (res.is_ok() && res.value) {
+    let runningRes = await storage.load(`${mapp.packageName}_running`)
+    if (runningRes.is_ok() && runningRes.value) {
       mapp.running = true
     }
+    // let screenshotRes = await storage.load<string>(`${mapp.packageName}_screenshot`)
+    // if (screenshotRes.is_ok() && screenshotRes.value) {
+    //   mapp.screenshot = screenshotRes.value
+    // }
   }
   return miniApps as ClientAppletInterface[]
 }
@@ -276,6 +282,18 @@ export const useAppletStatusStore = create<AppStatusState>((set, get) => ({
     })
     applets = Array.from(packageNameMap.values())
 
+    // add in any existing screenshots:
+    let oldApplets = useAppletStatusStore.getState().apps
+    oldApplets.forEach((app) => {
+      if (app.screenshot) {
+        for (const applet of applets) {
+          if (applet.packageName === app.packageName) {
+            applet.screenshot = app.screenshot
+          }
+        }
+      }
+    })
+
     // add in the compatibility info:
     let defaultWearable = useSettingsStore.getState().getSetting(SETTINGS.default_wearable.key)
     let capabilities = getModelCapabilities(defaultWearable)
@@ -347,7 +365,7 @@ export const useAppletStatusStore = create<AppStatusState>((set, get) => ({
 
     let shouldLoad = !applet.offline && !applet.local
     set((state) => ({
-      apps: state.apps.map((a) => (a.packageName === packageName ? {...a, running: false, loading: shouldLoad} : a)),
+      apps: state.apps.map((a) => (a.packageName === packageName ? {...a, running: false, screenshot: undefined, loading: shouldLoad} : a)),
     }))
 
     startStopApplet(applet, false)
@@ -361,6 +379,13 @@ export const useAppletStatusStore = create<AppStatusState>((set, get) => ({
         await get().stopApplet(app.packageName)
       }
     })
+  },
+
+  saveScreenshot: async (packageName: string, screenshot: string) => {
+    // await storage.save(`${packageName}_screenshot`, screenshot)
+    set((state) => ({
+      apps: state.apps.map((a) => (a.packageName === packageName ? {...a, screenshot} : a)),
+    }))
   },
 }))
 

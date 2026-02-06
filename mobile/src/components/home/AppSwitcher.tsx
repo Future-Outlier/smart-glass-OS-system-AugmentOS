@@ -1,5 +1,5 @@
 import React, {useCallback, useEffect} from "react"
-import {View, Dimensions, Pressable} from "react-native"
+import {View, Dimensions, Pressable, Image} from "react-native"
 import {Button, Text} from "@/components/ignite/"
 import Animated, {
   useSharedValue,
@@ -17,8 +17,8 @@ import AppIcon from "@/components/home/AppIcon"
 import {useNavigationHistory} from "@/contexts/NavigationHistoryContext"
 
 const {width: SCREEN_WIDTH, height: SCREEN_HEIGHT} = Dimensions.get("window")
-const CARD_WIDTH = SCREEN_WIDTH * 0.65
-const CARD_HEIGHT = SCREEN_HEIGHT * 0.5
+const CARD_WIDTH = SCREEN_WIDTH * 0.6
+const CARD_HEIGHT = SCREEN_HEIGHT * 0.6
 const CARD_SPACING = 0
 const DISMISS_THRESHOLD = -180
 const VELOCITY_THRESHOLD = -800
@@ -26,7 +26,6 @@ const VELOCITY_THRESHOLD = -800
 interface AppCard {
   id: string
   name: string
-  screenshot?: string
   icon?: string
   color?: string
 }
@@ -181,21 +180,30 @@ function AppCardItem({app, index, activeIndex, count, translateX, onDismiss, onS
         style={[
           {
             width: CARD_WIDTH,
-            height: CARD_HEIGHT,
+            height: CARD_HEIGHT - 16,
           },
           cardAnimatedStyle,
         ]}>
         <View className="flex-1 rounded-3xl overflow-hidden w-full shadow-2xl bg-gray-600">
-          <View className="pl-6 py-3 gap-2 justify-start w-full flex-row items-center bg-gray-700">
-            <AppIcon app={app} style={{width: 32, height: 32}} />
+          <View className="pl-6 h-12 gap-2 justify-start w-full flex-row items-center bg-gray-700">
+            <AppIcon app={app} style={{width: 32, height: 32, borderRadius: 8}} />
             <Text className="text-white text-md font-medium text-center" numberOfLines={1}>
               {app.name}
             </Text>
           </View>
 
-          <View className="flex-1 items-center justify-center">
-            <AppIcon app={app} style={{width: 48, height: 48}} />
-          </View>
+          {!app.screenshot && (
+            <View className="flex-1 items-center justify-center">
+              <AppIcon app={app} style={{width: 48, height: 48}} />
+            </View>
+          )}
+
+          {app.screenshot && (
+            <View className="flex-1 items-center justify-center">
+              {/* <Image source={{uri: app.screenshot}} style={{width: "100%", height: "100%", resizeMode: "contain"}} /> */}
+              <Image source={{uri: app.screenshot}} className="w-full h-full" style={{resizeMode: "contain"}} />
+            </View>
+          )}
         </View>
 
         {/* Swipe indicator */}
@@ -220,6 +228,7 @@ export default function AppSwitcher({visible, onClose}: AppSwitcherProps) {
   const backdropOpacity = useSharedValue(0)
   const containerTranslateY = useSharedValue(100)
   const containerOpacity = useSharedValue(0)
+  const targetIndex = useSharedValue(0)
   const {push} = useNavigationHistory()
   const apps = useActiveApps()
 
@@ -274,17 +283,18 @@ export default function AppSwitcher({visible, onClose}: AppSwitcherProps) {
       const cardWidth = CARD_WIDTH + CARD_SPACING
       const velocity = event.velocityX
 
-      let targetIndex = Math.round(-translateX.value / cardWidth)
+      let newTarget = Math.round(-translateX.value / cardWidth)
 
       if (Math.abs(velocity) > 500) {
-        targetIndex = velocity > 0 ? targetIndex - 1 : targetIndex + 1
+        newTarget = velocity > 0 ? newTarget - 1 : newTarget + 1
       }
 
-      targetIndex = Math.max(-1, Math.min(targetIndex, apps.length - 2))
+      newTarget = Math.max(-1, Math.min(newTarget, apps.length - 2))
 
-      console.log("targetIndex", targetIndex)
+      targetIndex.value = newTarget
+      console.log("newTarget", newTarget)
 
-      translateX.value = withSpring(-targetIndex * cardWidth, {
+      translateX.value = withSpring(-newTarget * cardWidth, {
         damping: 20,
         stiffness: 90,
         velocity: velocity,
@@ -292,8 +302,19 @@ export default function AppSwitcher({visible, onClose}: AppSwitcherProps) {
     })
 
   const handleDismiss = (packageName: string) => {
-    console.log("dismissing", packageName)
     useAppletStatusStore.getState().stopApplet(packageName)
+
+    console.log("targetIndex", targetIndex.value)
+    console.log("apps.length", apps.length)
+
+    // Adjust if we were on the last card
+    if (targetIndex.value == apps.length - 2) {
+      setTimeout(() => {
+        console.log("adjusting targetIndex to", apps.length - 3)
+        targetIndex.value = Math.max(0, apps.length - 3)
+        translateX.value = withSpring(-targetIndex.value * (CARD_WIDTH + CARD_SPACING))
+      }, 100)
+    }
   }
 
   const handleSelect = (packageName: string) => {
@@ -353,8 +374,9 @@ export default function AppSwitcher({visible, onClose}: AppSwitcherProps) {
         {/* Cards Carousel */}
         {apps.length > 0 ? (
           <GestureDetector gesture={panGesture}>
-            <Animated.View className="flex-1 justify-center">
-              <Animated.View className="flex-row items-center">
+            <Animated.View className="flex-1 justify-center" pointerEvents="box-none">
+              <Pressable className="absolute inset-0" onPress={onClose} />
+              <Animated.View className="flex-row items-center" pointerEvents="box-none">
                 {apps.map((app, index) => (
                   <AppCardItem
                     key={app.packageName}
@@ -372,6 +394,7 @@ export default function AppSwitcher({visible, onClose}: AppSwitcherProps) {
           </GestureDetector>
         ) : (
           <View className="flex-1 items-center justify-center bg-black/70">
+            <Pressable className="absolute inset-0" onPress={onClose} />
             <Text className="text-white text-[22px] font-semibold mb-2" tx="appSwitcher:noAppsOpen" />
             <Text className="text-white/50 text-base" tx="appSwitcher:yourRecentlyUsedAppsWillAppearHere" />
           </View>
@@ -392,9 +415,9 @@ export default function AppSwitcher({visible, onClose}: AppSwitcherProps) {
           onPress={onClose}>
           <Text className="text-white text-lg font-semibold" tx="common:close" />
         </TouchableOpacity> */}
-        <View className="absolute bottom-12 self-center">
+        {/* <View className="absolute bottom-12 self-center">
           <Button preset="secondary" tx="common:close" style={{minWidth: 200}} onPress={onClose} />
-        </View>
+        </View> */}
       </Animated.View>
     </View>
   )

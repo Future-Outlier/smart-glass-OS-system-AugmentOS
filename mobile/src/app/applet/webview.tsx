@@ -1,19 +1,21 @@
-import {useLocalSearchParams, useFocusEffect} from "expo-router"
-import {useRef, useState, useEffect, useCallback} from "react"
-import {View, BackHandler} from "react-native"
+import {useLocalSearchParams} from "expo-router"
+import {useRef, useState, useEffect} from "react"
+import {View} from "react-native"
 import {WebView} from "react-native-webview"
 
 import {Header, Screen, Text} from "@/components/ignite"
 import InternetConnectionFallbackComponent from "@/components/ui/InternetConnectionFallbackComponent"
 import LoadingOverlay from "@/components/ui/LoadingOverlay"
-import {useNavigationHistory} from "@/contexts/NavigationHistoryContext"
+import {focusEffectPreventBack, useNavigationHistory} from "@/contexts/NavigationHistoryContext"
 import {useAppTheme} from "@/contexts/ThemeContext"
 import restComms from "@/services/RestComms"
 import {useSettingsStore} from "@/stores/settings"
 import showAlert from "@/utils/AlertUtils"
+import {captureRef} from "react-native-view-shot"
+import {useAppletStatusStore} from "@/stores/applets"
 
 export default function AppWebView() {
-  const {theme, themed} = useAppTheme()
+  const {theme} = useAppTheme()
   const {webviewURL, appName, packageName} = useLocalSearchParams()
   const [hasError, setHasError] = useState(false)
   const webViewRef = useRef<WebView>(null)
@@ -23,25 +25,52 @@ export default function AppWebView() {
   const [tokenError, setTokenError] = useState<string | null>(null)
   const [retryTrigger, setRetryTrigger] = useState(0) // Trigger for retrying token generation
   const {goBack, push} = useNavigationHistory()
+  const viewShotRef = useRef(null)
 
   if (typeof webviewURL !== "string" || typeof appName !== "string" || typeof packageName !== "string") {
     return <Text>Missing required parameters</Text>
   }
 
-  // Handle Android back button
-  useFocusEffect(
-    useCallback(() => {
-      const onBackPress = () => {
-        // Go back to previous screen
-        goBack()
-        return true
-      }
+  const handleExit = async () => {
+    // take a screenshot of the webview and save it to the applet zustand store:
+    try {
+      const uri = await captureRef(viewShotRef, {
+        format: "jpg",
+        quality: 0.5,
+      })
+      // save uri to zustand stoare
+      await useAppletStatusStore.getState().saveScreenshot(packageName, uri)
+      // console.log("Screenshot saved:", uri)
+      // let screen = await useAppletStatusStore.getState().apps.find((a) => a.packageName === packageName)?.screenshot
+      // console.log("screenshot", screen)
+    } catch (e) {
+      console.warn("screenshot failed:", e)
+    }
+    goBack()
+  }
 
-      const subscription = BackHandler.addEventListener("hardwareBackPress", onBackPress)
+  focusEffectPreventBack(() => {
+    handleExit()
+  })
 
-      return () => subscription.remove()
-    }, [goBack]),
-  )
+  // // Handle Android back button
+  // useFocusEffect(
+  //   useCallback(() => {
+  //     const onBackPress = () => {
+  //       // Go back to previous screen
+  //       handleExit().then(() => {
+  //         goBack()
+  //       })
+  //       return true
+  //     }
+
+  //     const subscription = BackHandler.addEventListener("hardwareBackPress", onBackPress)
+
+  //     return () => {
+  //       handleExit().then(() => subscription.remove())
+  //     }
+  //   }, [goBack]),
+  // )
 
   // Set up the header with settings button if we came from app settings
   //   useEffect(() => {
@@ -238,7 +267,7 @@ export default function AppWebView() {
         title={appName}
         titleMode="center"
         leftIcon="chevron-left"
-        onLeftPress={() => goBack()}
+        onLeftPress={handleExit}
         rightIcon="settings"
         rightIconColor={theme.colors.icon}
         onRightPress={() => {
@@ -251,7 +280,7 @@ export default function AppWebView() {
         // style={{height: 44}}
         // containerStyle={{paddingTop: 0}}
       />
-      <View style={{flex: 1, marginHorizontal: -theme.spacing.s6}}>
+      <View ref={viewShotRef} collapsable={false} collapsableChildren={false} style={{flex: 1, marginHorizontal: -theme.spacing.s6}}>
         {finalUrl ? (
           <WebView
             ref={webViewRef}
