@@ -15,6 +15,7 @@ import com.mentra.asg_client.camera.CameraNeo;
 import com.mentra.asg_client.settings.VideoSettings;
 import com.mentra.asg_client.io.hardware.interfaces.IHardwareManager;
 import com.mentra.asg_client.io.hardware.core.HardwareManagerFactory;
+import com.mentra.asg_client.hardware.K900RgbLedController;
 import com.mentra.asg_client.io.streaming.services.RtmpStreamingService;
 import com.mentra.asg_client.audio.AudioAssets;
 import com.mentra.asg_client.service.system.interfaces.IStateManager;
@@ -482,28 +483,44 @@ public class MediaCaptureService {
     }
     
     /**
-     * Trigger white LED flash for photo capture (synchronized with shutter sound)
+     * Trigger white LED flash for photo capture (synchronized with shutter sound, default brightness)
      */
     private void triggerPhotoFlashLed() {
-        Log.i(TAG, "📸 triggerPhotoFlashLed() called");
+        triggerPhotoFlashLed(K900RgbLedController.DEFAULT_RGB_LED_BRIGHTNESS);
+    }
+
+    /**
+     * Trigger white LED flash for photo capture with specified brightness
+     * @param brightness Brightness level (0-255, where 255 is maximum brightness)
+     */
+    private void triggerPhotoFlashLed(int brightness) {
+        Log.i(TAG, "📸 triggerPhotoFlashLed() called with brightness: " + brightness);
 
         if (hardwareManager != null && hardwareManager.supportsRgbLed()) {
-            hardwareManager.flashRgbLedWhite(1000); // 5 second flash
-            Log.i(TAG, "📸 Photo flash LED (white) triggered via hardware manager");
+            hardwareManager.flashRgbLedWhite(2200, brightness); // 2.2 second flash
+            Log.i(TAG, "📸 Photo flash LED (white) triggered via hardware manager at brightness " + brightness);
         } else {
             Log.w(TAG, "⚠️ RGB LED not supported on this device");
         }
     }
     
     /**
-     * Trigger solid white LED for video recording duration
+     * Trigger solid white LED for video recording duration (default brightness)
      */
     private void triggerVideoRecordingLed() {
-        Log.i(TAG, "🎥 triggerVideoRecordingLed() called");
+        triggerVideoRecordingLed(K900RgbLedController.DEFAULT_RGB_LED_BRIGHTNESS);
+    }
+
+    /**
+     * Trigger solid white LED for video recording duration with specified brightness
+     * @param brightness Brightness level (0-255, where 255 is maximum brightness)
+     */
+    private void triggerVideoRecordingLed(int brightness) {
+        Log.i(TAG, "🎥 triggerVideoRecordingLed() called with brightness: " + brightness);
 
         if (hardwareManager != null && hardwareManager.supportsRgbLed()) {
-            hardwareManager.setRgbLedSolidWhite(1800000); // 30 minute solid white LED
-            Log.i(TAG, "🎥 Video recording LED (solid white) triggered via hardware manager");
+            hardwareManager.setRgbLedSolidWhite(1800000, brightness); // 30 minute solid white LED
+            Log.i(TAG, "🎥 Video recording LED (solid white) triggered via hardware manager at brightness " + brightness);
         } else {
             Log.w(TAG, "⚠️ RGB LED not supported on this device");
         }
