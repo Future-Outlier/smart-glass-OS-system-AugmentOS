@@ -1,5 +1,5 @@
 import {useFocusEffect} from "@react-navigation/native"
-import {useCallback, useEffect, useRef} from "react"
+import {useCallback, useEffect, useRef, useState} from "react"
 import {ScrollView, View} from "react-native"
 
 import {MentraLogoStandalone} from "@/components/brands/MentraLogoStandalone"
@@ -19,6 +19,8 @@ import {useCoreStore} from "@/stores/core"
 import WebsocketStatus from "@/components/error/WebsocketStatus"
 import CoreStatusBar from "@/components/dev/CoreStatusBar"
 import {attemptReconnect} from "@/effects/Reconnect"
+import AppSwitcherButton from "@/components/home/AppSwitcherButtton"
+import AppSwitcher from "@/components/home/AppSwitcher"
 
 export default function Homepage() {
   const refreshApplets = useRefreshApplets()
@@ -28,6 +30,8 @@ export default function Homepage() {
   const glassesConnected = useGlassesStore((state) => state.connected)
   const isSearching = useCoreStore((state) => state.searching)
   const hasAttemptedInitialConnect = useRef(false)
+  const [appSwitcherUi] = useSetting(SETTINGS.app_switcher_ui.key)
+  const [showSwitcher, setShowSwitcher] = useState(false)
 
   useFocusEffect(
     useCallback(() => {
@@ -69,10 +73,12 @@ export default function Homepage() {
         {debugCoreStatusBarEnabled && <CoreStatusBar />}
         <Group>
           <CompactDeviceStatus />
-          {!offlineMode && <BackgroundAppsLink />}
+          {!offlineMode && !appSwitcherUi && <BackgroundAppsLink />}
         </Group>
         <View className="h-2" />
-        <ActiveForegroundApp />
+        {!appSwitcherUi && <ActiveForegroundApp />}
+        {appSwitcherUi && <AppSwitcherButton onPress={() => setShowSwitcher(true)} />}
+        {/* <ActiveForegroundApp /> */}
         <ForegroundAppsGrid />
       </>
     )
@@ -98,6 +104,7 @@ export default function Homepage() {
         <View className="h-4" />
         <IncompatibleApps />
       </ScrollView>
+      {appSwitcherUi && <AppSwitcher visible={showSwitcher} onClose={() => setShowSwitcher(false)} />}
     </Screen>
   )
 }

@@ -148,8 +148,8 @@ export const CompactDeviceStatus = ({style}: {style?: ViewStyle}) => {
   if (!glassesConnected || !glassesFullyBooted || isSearching) {
     return (
       <View style={[themed($disconnectedContainer), style]}>
-        <View style={themed($header)}>
-          <Text style={themed($headerText)} text={defaultWearable} />
+        <View className="just">
+          <Text className="font-semibold text-secondary-foreground text-lg" text={defaultWearable} />
           <Icon name="bluetooth-off" size={18} color={theme.colors.foreground} />
         </View>
 
@@ -198,11 +198,11 @@ export const CompactDeviceStatus = ({style}: {style?: ViewStyle}) => {
 
   if (showSimulatedGlasses) {
     return (
-      <View style={[themed($container), style]}>
-        <View style={themed($header)}>
+      <View className="bg-primary-foreground p-6" style={style}>
+        <View className="just">
           <View style={{flexDirection: "row", alignItems: "center", gap: theme.spacing.s2}}>
             <Image source={getCurrentGlassesImage()} style={[themed($glassesImage), {width: 54, maxHeight: 24}]} />
-            <Text style={themed($headerText)}>{defaultWearable}</Text>
+            <Text className="font-semibold text-secondary-foreground text-lg">{defaultWearable}</Text>
           </View>
         </View>
         <View style={{marginHorizontal: -theme.spacing.s6}}>
@@ -224,10 +224,10 @@ export const CompactDeviceStatus = ({style}: {style?: ViewStyle}) => {
   }
 
   return (
-    <View style={[themed($container), style]}>
+    <View className="bg-primary-foreground p-6" style={style}>
       {/* Header with device name and icons */}
-      <View style={themed($header)}>
-        <Text style={themed($headerText)}>{defaultWearable}</Text>
+      <View className="justify-between items-center flex-row">
+        <Text className="font-semibold text-secondary-foreground text-lg">{defaultWearable}</Text>
         <View style={themed($iconRow)}>
           {!isExpanded && batteryLevel !== -1 && (
             <View style={{flexDirection: "row", alignItems: "center", gap: theme.spacing.s1}}>
@@ -272,7 +272,7 @@ export const CompactDeviceStatus = ({style}: {style?: ViewStyle}) => {
 
       {/* Expanded Content */}
       {isExpanded && (
-        <View style={themed($statusContainer)}>
+        <View className="flex-1 gap-3">
           {/* Brightness Settings */}
           {features?.display?.adjustBrightness && glassesConnected && (
             <BrightnessSetting
@@ -361,12 +361,6 @@ const $glassesImageExpanded: ThemedStyle<ImageStyle> = () => ({
   resizeMode: "contain",
 })
 
-const $header: ThemedStyle<ViewStyle> = () => ({
-  flexDirection: "row",
-  justifyContent: "space-between",
-  alignItems: "center",
-})
-
 const $headerText: ThemedStyle<TextStyle> = ({colors}) => ({
   color: colors.secondary_foreground,
   fontSize: 20,
@@ -390,11 +384,6 @@ const $sideBySideContainer: ThemedStyle<ViewStyle> = ({spacing}) => ({
   justifyContent: "space-between",
   paddingVertical: spacing.s6,
   alignItems: "center",
-})
-
-const $statusContainer: ThemedStyle<ViewStyle> = ({spacing}) => ({
-  flex: 1,
-  gap: spacing.s3,
 })
 
 const $expandButton: ThemedStyle<ViewStyle> = ({spacing}) => ({

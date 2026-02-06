@@ -235,7 +235,7 @@ const en = {
     btClassicSubtitle: "Connect {{name}} as a Bluetooth audio device",
     openSettings: "Open settings",
     stepCounter: "Step {{index}} / {{total}}",
-    confirmSkip: "Yes, skip"
+    confirmSkip: "Yes, skip",
   },
   wifi: {
     networks: "Networks",
@@ -332,6 +332,7 @@ const en = {
       "{{app}} requires hardware that is not available on your connected glasses: {{missing}}",
     incompatibleApps: "Incompatible Apps",
     incompatibleAppsCount: "{{count}} Incompatible Apps",
+    activeAppsCount: "{{count}} Apps active",
     incompatibleAppsDescription:
       "The following apps require specific hardware that is currently not available on your connected glasses.",
     incompatible: "Incompatible",
@@ -355,7 +356,7 @@ const en = {
     openSettings: "Open Settings",
     permissionRequired: "Permission Required",
     permissionRequiredMessage:
-      "{{name}} permission is required but has been denied previously. Please enable it in your device settings.",
+      "{{name}} permission is required but has been denied. Please enable it in your device settings.",
   },
   glasses: {
     title: "Glasses",

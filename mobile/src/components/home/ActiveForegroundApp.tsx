@@ -16,29 +16,32 @@ export const ActiveForegroundApp: React.FC = () => {
   const stopApplet = useStopApplet()
 
   const handlePress = () => {
-    if (applet) {
-      // Handle offline apps - navigate directly to React Native route
-      if (applet.offline) {
-        const offlineRoute = applet.offlineRoute
-        if (offlineRoute) {
-          push(offlineRoute)
-          return
-        }
-      }
+    if (!applet) {
+      console.log("no active foreground app")
+      return
+    }
 
-      // Check if app has webviewURL and navigate directly to it
-      if (applet.webviewUrl && applet.healthy) {
-        push("/applet/webview", {
-          webviewURL: applet.webviewUrl,
-          appName: applet.name,
-          packageName: applet.packageName,
-        })
-      } else {
-        push("/applet/settings", {
-          packageName: applet.packageName,
-          appName: applet.name,
-        })
+    // Handle offline apps - navigate directly to React Native route
+    if (applet.offline) {
+      const offlineRoute = applet.offlineRoute
+      if (offlineRoute) {
+        push(offlineRoute)
+        return
       }
+    }
+
+    // Check if app has webviewURL and navigate directly to it
+    if (applet.webviewUrl && applet.healthy) {
+      push("/applet/webview", {
+        webviewURL: applet.webviewUrl,
+        appName: applet.name,
+        packageName: applet.packageName,
+      })
+    } else {
+      push("/applet/settings", {
+        packageName: applet.packageName,
+        appName: applet.name,
+      })
     }
   }
 

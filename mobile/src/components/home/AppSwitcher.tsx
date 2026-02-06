@@ -12,8 +12,9 @@ import Animated, {
   useDerivedValue,
 } from "react-native-reanimated"
 import {Gesture, GestureDetector} from "react-native-gesture-handler"
-import {ClientAppletInterface, useActiveApps} from "@/stores/applets"
+import {ClientAppletInterface, useActiveApps, useAppletStatusStore} from "@/stores/applets"
 import AppIcon from "@/components/home/AppIcon"
+import {useNavigationHistory} from "@/contexts/NavigationHistoryContext"
 
 const {width: SCREEN_WIDTH, height: SCREEN_HEIGHT} = Dimensions.get("window")
 const CARD_WIDTH = SCREEN_WIDTH * 0.65
@@ -191,9 +192,7 @@ function AppCardItem({app, index, activeIndex, count, translateX, onDismiss, onS
         <View className="flex-1 rounded-3xl overflow-hidden w-full shadow-2xl bg-gray-600">
           <View className="pl-6 py-3 gap-2 justify-start w-full flex-row items-center bg-gray-700">
             <AppIcon app={app} style={{width: 32, height: 32}} />
-            <Text
-              className="text-white text-md font-medium text-center"
-              numberOfLines={1}>
+            <Text className="text-white text-md font-medium text-center" numberOfLines={1}>
               {app.name}
             </Text>
           </View>
@@ -216,7 +215,6 @@ function AppCardItem({app, index, activeIndex, count, translateX, onDismiss, onS
 interface AppSwitcherProps {
   visible: boolean
   onClose: () => void
-  apps: AppCard[]
 }
 
 export default function AppSwitcher({visible, onClose}: AppSwitcherProps) {
@@ -226,7 +224,7 @@ export default function AppSwitcher({visible, onClose}: AppSwitcherProps) {
   const backdropOpacity = useSharedValue(0)
   const containerTranslateY = useSharedValue(100)
   const containerOpacity = useSharedValue(0)
-
+  const {push} = useNavigationHistory()
   const apps = useActiveApps()
 
   useEffect(() => {
@@ -306,10 +304,42 @@ export default function AppSwitcher({visible, onClose}: AppSwitcherProps) {
 
   const handleDismiss = (packageName: string) => {
     console.log("dismissing", packageName)
+    useAppletStatusStore.getState().stopApplet(packageName)
   }
 
   const handleSelect = (packageName: string) => {
     console.log("selecting", packageName)
+    // push(`/applet/${packageName}`)
+
+    const applet = apps.find((app) => app.packageName === packageName)
+    if (!applet) {
+      console.error("SWITCH: no applet found!")
+      return
+    }
+
+    // Handle offline apps - navigate directly to React Native route
+    if (applet.offline) {
+      const offlineRoute = applet.offlineRoute
+      if (offlineRoute) {
+        push(offlineRoute)
+        return
+      }
+    }
+
+    // Check if app has webviewURL and navigate directly to it
+    if (applet.webviewUrl && applet.healthy) {
+      push("/applet/webview", {
+        webviewURL: applet.webviewUrl,
+        appName: applet.name,
+        packageName: applet.packageName,
+      })
+    } else {
+      push("/applet/settings", {
+        packageName: applet.packageName,
+        appName: applet.name,
+      })
+    }
+
     onClose()
   }
 
