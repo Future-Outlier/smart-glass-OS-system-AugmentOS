@@ -919,7 +919,8 @@ export function OnboardingGuide({
     )
   }
 
-  const showCounter = hasStarted && steps.length > 1
+  // don't show the counter on the last step:
+  const showCounter = hasStarted && steps.length > 1 && uiIndex != nonTransitionVideoFiles.length
   const showContent = step.title || step.subtitle || step.info
 
   if (exitRequested) {
