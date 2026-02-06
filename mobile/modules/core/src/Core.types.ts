@@ -210,6 +210,8 @@ export type VersionInfoEvent = {
   ota_version_url: string
   firmware_version: string
   bt_mac_address: string
+  mtk_fw_version?: string
+  bes_fw_version?: string
 }
 
 // Union type of all core events

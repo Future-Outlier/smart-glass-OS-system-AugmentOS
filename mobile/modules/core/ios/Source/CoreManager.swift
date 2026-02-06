@@ -362,7 +362,8 @@ struct ViewState {
                 Bridge.log("MAN: ERROR - LC3 converter not initialized but format is LC3")
                 return
             }
-            let lc3Data = lc3Converter.encode(pcmData) as Data
+            let frameSize = GlassesStore.shared.get("core", "lc3_frame_size") as! Int
+            let lc3Data = lc3Converter.encode(pcmData, frameSize: frameSize) as Data
             guard lc3Data.count > 0 else {
                 Bridge.log("MAN: ERROR - LC3 encoding returned empty data")
                 return

@@ -16,7 +16,7 @@ type CheckState = "checking" | "update_available" | "no_update" | "error"
 
 export default function OtaCheckForUpdatesScreen() {
   const {theme} = useAppTheme()
-  const {push, replace, clearHistoryAndGoHome} = useNavigationHistory()
+  const {replace, clearHistoryAndGoHome} = useNavigationHistory()
   const currentBuildNumber = useGlassesStore((state) => state.buildNumber)
   const mtkFwVersion = useGlassesStore((state) => state.mtkFwVersion)
   const besFwVersion = useGlassesStore((state) => state.besFwVersion)
@@ -185,9 +185,9 @@ export default function OtaCheckForUpdatesScreen() {
   const handleContinue = () => {
     console.log("OTA: handleContinue() - onboardingLiveCompleted:", onboardingLiveCompleted)
     if (!onboardingLiveCompleted) {
-      // Fresh pairing - go to onboarding
+      // Fresh pairing - go to onboarding (replace so back from onboarding goes home, not back to OTA)
       console.log("OTA: Fresh pairing - navigating to onboarding")
-      push("/onboarding/live")
+      replace("/onboarding/live")
     } else {
       // Not fresh pairing - go home
       console.log("OTA: Onboarding already done - navigating home")
@@ -261,7 +261,9 @@ export default function OtaCheckForUpdatesScreen() {
           <View className="gap-3 mb-6">
             <Button preset="primary" tx="ota:updateNow" onPress={handleUpdateNow} />
             {!isUpdateRequired && <Button preset="secondary" tx="ota:updateLater" onPress={handleContinue} />}
-            {__DEV__ && isUpdateRequired && <Button preset="secondary" text="Skip (dev only)" onPress={handleContinue} />}
+            {__DEV__ && isUpdateRequired && (
+              <Button preset="secondary" text="Skip (dev only)" onPress={handleContinue} />
+            )}
           </View>
         </>
       )

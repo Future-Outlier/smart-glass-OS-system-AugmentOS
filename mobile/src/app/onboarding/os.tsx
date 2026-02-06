@@ -90,7 +90,7 @@ export default function MentraOSOnboarding() {
       type: "image",
       name: "end",
       source: getGlassesImage(defaultWearable),
-      containerClassName: "items-center justify-center",
+      containerClassName: "items-center justify-center px-16",
       transition: false,
       title: translate("onboarding:osEndTitle"),
       subtitle: translate("onboarding:osEndSubtitle"),

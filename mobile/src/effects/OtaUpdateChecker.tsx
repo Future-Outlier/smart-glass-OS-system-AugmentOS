@@ -2,7 +2,7 @@ import {Capabilities, getModelCapabilities} from "@/../../cloud/packages/types/s
 import {useEffect, useRef} from "react"
 
 import {useNavigationHistory} from "@/contexts/NavigationHistoryContext"
-import {useGlassesStore} from "@/stores/glasses"
+import {useGlassesStore, waitForGlassesState} from "@/stores/glasses"
 import {SETTINGS, useSetting} from "@/stores/settings"
 import showAlert from "@/utils/AlertUtils"
 import {translate} from "@/i18n/translate"
@@ -495,7 +495,7 @@ export function OtaUpdateChecker() {
     // Delay OTA check by 500ms to allow all version_info chunks to arrive
     // (version_info_1, version_info_2, version_info_3 arrive sequentially with ~100ms gaps)
     console.log("📱 OTA check scheduled - waiting 500ms for firmware version info...")
-    otaCheckTimeoutRef.current = setTimeout(() => {
+    otaCheckTimeoutRef.current = setTimeout(async () => {
       // Re-check conditions after delay (glasses might have disconnected)
       if (!useGlassesStore.getState().connected) {
         console.log("📱 OTA check cancelled - glasses disconnected during delay")
@@ -507,8 +507,27 @@ export function OtaUpdateChecker() {
       }
 
       // Get latest firmware versions from store (they may have arrived during delay)
-      const latestMtkFwVersion = useGlassesStore.getState().mtkFwVersion
-      const latestBesFwVersion = useGlassesStore.getState().besFwVersion
+      let latestMtkFwVersion = useGlassesStore.getState().mtkFwVersion
+      let latestBesFwVersion = useGlassesStore.getState().besFwVersion
+
+      // If BES version is still unknown after initial delay, wait up to 5s more.
+      // After BES reflash, the chip takes longer to report its version - the first
+      // version_info_3 often has empty bes_fw_version while the chip initializes.
+      if (!latestBesFwVersion) {
+        console.log("📱 OTA: BES version still unknown - waiting up to 5s for it to arrive...")
+        const besArrived = await waitForGlassesState("besFwVersion", (v) => !!v, 5000)
+        if (besArrived) {
+          latestBesFwVersion = useGlassesStore.getState().besFwVersion
+          console.log(`📱 OTA: BES version arrived: ${latestBesFwVersion}`)
+        } else {
+          console.log("📱 OTA: BES version still unknown after extended wait - proceeding without it")
+        }
+        // Re-check connection after waiting
+        if (!useGlassesStore.getState().connected) {
+          console.log("📱 OTA check cancelled - glasses disconnected while waiting for BES version")
+          return
+        }
+      }
 
       console.log(
         `📱 OTA check starting (MTK: ${latestMtkFwVersion || "unknown"}, BES: ${latestBesFwVersion || "unknown"})`,

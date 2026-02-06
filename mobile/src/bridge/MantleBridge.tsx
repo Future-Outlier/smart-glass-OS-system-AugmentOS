@@ -4,7 +4,7 @@ import Toast from "react-native-toast-message"
 import {translate} from "@/i18n"
 // NOTE: LiveKit audio path disabled - using UDP or WebSocket instead
 // import livekit from "@/services/Livekit"
-import {displayProcessor} from "@/services/display"
+import {displayProcessor} from "@/services/DisplayProcessor"
 import mantle from "@/services/MantleManager"
 import restComms from "@/services/RestComms"
 import socketComms from "@/services/SocketComms"
@@ -392,18 +392,26 @@ export class MantleBridge {
           break
         case "version_info":
           console.log("MantleBridge: Received version_info:", data)
-          useGlassesStore.getState().setGlassesInfo({
-            appVersion: data.app_version,
-            buildNumber: data.build_number,
-            modelName: data.device_model,
-            androidVersion: data.android_version,
-            otaVersionUrl: data.ota_version_url,
-            fwVersion: data.firmware_version || data.bes_fw_version, // Legacy or new field
-            btMacAddress: data.bt_mac_address,
-            // New firmware version fields for OTA patch matching
-            besFwVersion: data.bes_fw_version,
-            mtkFwVersion: data.mtk_fw_version,
-          })
+          // Build version info - only include fields with actual values to avoid
+          // overwriting existing data with undefined/empty from partial updates.
+          // version_info arrives in 3 chunks (version_info_1, _2, _3) and
+          // BES reports empty string right after reflash while chip initializes.
+          {
+            const info: Record<string, any> = {}
+            if (data.app_version) info.appVersion = data.app_version
+            if (data.build_number) info.buildNumber = data.build_number
+            if (data.device_model) info.deviceModel = data.device_model
+            if (data.android_version) info.androidVersion = data.android_version
+            if (data.ota_version_url) info.otaVersionUrl = data.ota_version_url
+            if (data.firmware_version || data.bes_fw_version)
+              info.fwVersion = data.firmware_version || data.bes_fw_version
+            if (data.bt_mac_address) info.btMacAddress = data.bt_mac_address
+            // Only update firmware versions when non-empty to prevent overwriting
+            // with empty strings (e.g., BES reports "" right after reflash)
+            if (data.bes_fw_version) info.besFwVersion = data.bes_fw_version
+            if (data.mtk_fw_version) info.mtkFwVersion = data.mtk_fw_version
+            useGlassesStore.getState().setGlassesInfo(info)
+          }
           // Update DisplayProcessor with the connected glasses model
           // This ensures text wrapping uses the correct device profile
           try {

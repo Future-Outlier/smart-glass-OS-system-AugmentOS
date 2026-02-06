@@ -10,7 +10,7 @@ import {Platform} from "react-native"
 const CDN_BASE = "https://mentra-videos-cdn.mentraglass.com/onboarding/mentra-live/light"
 
 export default function MentraLiveOnboarding() {
-  const {pushPrevious} = useNavigationHistory()
+  const {clearHistoryAndGoHome} = useNavigationHistory()
   const [_onboardingLiveCompleted, setOnboardingLiveCompleted] = useSetting(SETTINGS.onboarding_live_completed.key)
 
   // NOTE: you can't have 2 transition videos in a row or things will break:
@@ -241,12 +241,12 @@ export default function MentraLiveOnboarding() {
   }
 
   const handleExit = () => {
-    pushPrevious()
+    clearHistoryAndGoHome()
   }
 
   const handleEndButton = () => {
     setOnboardingLiveCompleted(true)
-    pushPrevious()
+    clearHistoryAndGoHome()
   }
 
   return (

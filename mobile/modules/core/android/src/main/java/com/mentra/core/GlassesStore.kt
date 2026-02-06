@@ -1,11 +1,11 @@
 package com.mentra.core
 
+import com.mentra.core.utils.DeviceTypes
 import com.mentra.core.utils.MicMap
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
-import com.mentra.core.utils.DeviceTypes
 
 /** Centralized observable state store for glasses and core settings */
 object GlassesStore {
@@ -137,20 +137,6 @@ object GlassesStore {
                     // CoreManager.getInstance().sgc?.sendAuthToken(value)
                 }
             }
-            "core" to "lc3_frame_size" -> {
-                if (value is Int) {
-                    if (value != 20 && value != 40 && value != 60) {
-                        Bridge.log(
-                                "MAN: Invalid LC3 frame size $value, must be 20, 40, or 60. Using default 60."
-                        )
-                        store.set("core", "lc3_frame_size", 60)
-                        return
-                    }
-                    Bridge.log(
-                            "MAN: LC3 frame size set to $value bytes (${value * 800 / 1000}kbps)"
-                    )
-                }
-            }
             "core" to "isHeadUp" -> {
                 (value as? Boolean)?.let { isHeadUp ->
                     // sendCurrentState()
@@ -252,6 +238,19 @@ object GlassesStore {
                             )
                 }
             }
+            "core" to "offline_captions_running" -> {
+                (value as? Boolean)?.let { running ->
+                    Bridge.log("GlassesStore: offline_captions_running changed to $running")
+                    // When offline captions are enabled, start the microphone for local transcription
+                    // When disabled, stop the microphone
+                    CoreManager.getInstance()
+                            .setMicState(
+                                    running, // send PCM data
+                                    running, // send transcript
+                                    (store.get("core", "bypass_vad") as? Boolean) ?: true
+                            )
+                }
+            }
             "core" to "enforce_local_transcription" -> {
                 (value as? Boolean)?.let { enabled ->
                     CoreManager.getInstance()
@@ -267,6 +266,9 @@ object GlassesStore {
             "core" to "default_wearable" -> {
                 (value as? String)?.let { wearable ->
                     Bridge.saveSetting("default_wearable", wearable)
+                    if (wearable.contains(DeviceTypes.SIMULATED)) {
+                        CoreManager.getInstance().initSGC(wearable)
+                    }
                 }
             }
             "core" to "device_name" -> {

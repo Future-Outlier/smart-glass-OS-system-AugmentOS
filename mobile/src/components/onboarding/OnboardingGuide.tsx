@@ -856,14 +856,14 @@ export function OnboardingGuide({
         {step.title && (
           <Text
             className={`${
-              step.titleCentered ?? false ? "text-center" : "text-start"
+              (step.titleCentered ?? false) ? "text-center" : "text-start"
             } text-2xl font-semibold text-foreground`}
             text={step.title}
           />
         )}
         {step.subtitle && (
           <Text
-            className={`${step.subtitleCentered ?? false ? "text-center" : "text-start"} text-[18px] text-foreground`}
+            className={`${(step.subtitleCentered ?? false) ? "text-center" : "text-start"} text-[18px] text-foreground`}
             text={step.subtitle}
           />
         )}
@@ -917,7 +917,8 @@ export function OnboardingGuide({
     )
   }
 
-  const showCounter = hasStarted && steps.length > 1
+  // don't show the counter on the last step:
+  const showCounter = hasStarted && steps.length > 1 && uiIndex != nonTransitionVideoFiles.length
   const showContent = step.title || step.subtitle || step.info
 
   if (exitRequested) {

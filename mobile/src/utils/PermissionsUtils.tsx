@@ -10,6 +10,20 @@ import showAlert, {showBluetoothAlert, showLocationAlert, showLocationServicesAl
 import {checkAndRequestNotificationAccessSpecialPermission} from "@/utils/NotificationServiceUtils"
 import {storage} from "@/utils/storage/storage"
 
+type _UI_PERMISSION =
+  | "LOCATION"
+  | "MICROPHONE"
+  | "CALENDAR"
+  | "POST_NOTIFICATIONS"
+  | "READ_NOTIFICATIONS"
+  | "BACKGROUND_LOCATION"
+  | "CAMERA"
+  | "GLASSES_CAMERA"
+  | "BLUETOOTH"
+  | "PHONE_STATE"
+  | "BATTERY_OPTIMIZATION"
+  | "BASIC"
+
 // Define permission features with their required permissions
 export const PermissionFeatures: Record<string, string> = {
   BASIC: "basic", // Basic permissions needed for the app to function
