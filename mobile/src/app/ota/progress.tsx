@@ -5,8 +5,10 @@ import {View, ActivityIndicator} from "react-native"
 import {MentraLogoStandalone} from "@/components/brands/MentraLogoStandalone"
 import {useConnectionOverlayConfig} from "@/components/glasses/GlobalConnectionOverlay"
 import {Screen, Header, Button, Text, Icon} from "@/components/ignite"
+import {LoadingCoverVideo} from "@/components/ota/LoadingCoverVideo"
 import {focusEffectPreventBack, useNavigationHistory} from "@/contexts/NavigationHistoryContext"
 import {useAppTheme} from "@/contexts/ThemeContext"
+import {checkBesUpdate, findMatchingMtkPatch, fetchVersionInfo, OTA_VERSION_URL_PROD} from "@/effects/OtaUpdateChecker"
 import {useGlassesStore} from "@/stores/glasses"
 import GlobalEventEmitter from "@/utils/GlobalEventEmitter"
 
@@ -35,6 +37,8 @@ export default function OtaProgressScreen() {
   const glassesConnected = useGlassesStore((state) => state.connected)
   const wifiConnected = useGlassesStore((state) => state.wifiConnected)
   const buildNumber = useGlassesStore((state) => state.buildNumber)
+  const besFwVersion = useGlassesStore((state) => state.besFwVersion)
+  const mtkFwVersion = useGlassesStore((state) => state.mtkFwVersion)
 
   const [progressState, setProgressState] = useState<ProgressState>("starting")
   const [retryCount, setRetryCount] = useState(0)
@@ -68,7 +72,29 @@ export default function OtaProgressScreen() {
   // Track if we're doing a firmware update (persists across reconnection for ConnectionOverlay)
   const wasFirmwareUpdateRef = useRef(false)
 
+  // Cover video state - only show once per OTA session
+  const [showCoverVideo, setShowCoverVideo] = useState(false)
+  const hasShownVideoRef = useRef(false)
+
+  // Dummy URL for testing - replace with real CDN URL later
+  const COVER_VIDEO_URL = "https://example.com/ota-video.mp4"
+
   focusEffectPreventBack()
+
+  // Show cover video when update begins (only once per session)
+  useEffect(() => {
+    if ((progressState === "downloading" || progressState === "installing") && !hasShownVideoRef.current) {
+      console.log("OTA: Starting cover video")
+      hasShownVideoRef.current = true
+      setShowCoverVideo(true)
+    }
+  }, [progressState])
+
+  // Handle cover video close (either finished or user dismissed)
+  const handleCoverVideoClosed = useCallback(() => {
+    console.log("OTA: Cover video closed")
+    setShowCoverVideo(false)
+  }, [])
 
   // Capture the update sequence on mount from otaUpdateAvailable
   useEffect(() => {
@@ -101,6 +127,81 @@ export default function OtaProgressScreen() {
       console.log("OTA: Initial build number:", buildNumber)
     }
   }, [buildNumber])
+
+  // Re-validate update sequence when firmware versions change mid-flow
+  // This handles the case where glasses report their actual firmware version after ASG client update,
+  // and we discover that some updates in the queue are no longer needed
+  useEffect(() => {
+    const revalidateUpdateSequence = async () => {
+      // Only revalidate if we have pending updates
+      if (updateSequenceRef.current.length === 0) return
+
+      // Fetch the latest version.json to check against
+      const versionJson = await fetchVersionInfo(OTA_VERSION_URL_PROD)
+      if (!versionJson) {
+        console.log("OTA REVALIDATE: Could not fetch version.json")
+        return
+      }
+
+      let sequenceChanged = false
+      const originalSequence = [...updateSequenceRef.current]
+
+      // Check if BES update is still needed
+      if (updateSequenceRef.current.includes("bes") && besFwVersion) {
+        const besStillNeeded = checkBesUpdate(versionJson.bes_firmware, besFwVersion)
+        if (!besStillNeeded) {
+          console.log(
+            `OTA REVALIDATE: BES no longer needs update (current: ${besFwVersion}, server: ${versionJson.bes_firmware?.version})`,
+          )
+          updateSequenceRef.current = updateSequenceRef.current.filter((u) => u !== "bes")
+          sequenceChanged = true
+        }
+      }
+
+      // Check if MTK update is still needed
+      if (updateSequenceRef.current.includes("mtk") && mtkFwVersion) {
+        const mtkPatch = findMatchingMtkPatch(versionJson.mtk_patches, mtkFwVersion)
+        if (!mtkPatch) {
+          console.log(`OTA REVALIDATE: MTK no longer needs update (current: ${mtkFwVersion}, no matching patch)`)
+          updateSequenceRef.current = updateSequenceRef.current.filter((u) => u !== "mtk")
+          sequenceChanged = true
+        }
+      }
+
+      if (sequenceChanged) {
+        console.log(
+          `OTA REVALIDATE: Update sequence changed from [${originalSequence}] to [${updateSequenceRef.current}]`,
+        )
+
+        // Update the store as well
+        if (otaUpdateAvailable) {
+          useGlassesStore.getState().setOtaUpdateAvailable({
+            ...otaUpdateAvailable,
+            updates: updateSequenceRef.current,
+          })
+        }
+
+        // If no updates left, mark as completed
+        if (updateSequenceRef.current.length === 0) {
+          console.log("OTA REVALIDATE: No more updates needed - marking as completed")
+          setProgressState("completed")
+        }
+        // If we're in transitioning or starting state waiting for next update, but that update was removed,
+        // check if we should complete or move to the next one
+        else if (progressState === "transitioning" || progressState === "starting") {
+          // For starting state, check if current index is still valid
+          // For transitioning, check if next index is still valid
+          const checkIndex = progressState === "starting" ? currentUpdateIndex : currentUpdateIndex + 1
+          if (checkIndex >= updateSequenceRef.current.length) {
+            console.log(`OTA REVALIDATE: Was ${progressState} but no more updates - marking as completed`)
+            setProgressState("completed")
+          }
+        }
+      }
+    }
+
+    revalidateUpdateSequence()
+  }, [besFwVersion, mtkFwVersion])
 
   // Detect successful APK install by watching for build number increase
   // NOTE: This ONLY applies to APK updates which bump the build number on reboot.
@@ -827,6 +928,9 @@ completed: [${completedUpdates.join(", ")}]`
       )}
 
       {renderContent()}
+
+      {/* Cover video overlay - plays during OTA to reduce perceived wait time */}
+      {showCoverVideo && <LoadingCoverVideo videoUrl={COVER_VIDEO_URL} onClose={handleCoverVideoClosed} />}
     </Screen>
   )
 }
