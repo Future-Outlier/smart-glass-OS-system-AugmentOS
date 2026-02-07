@@ -583,9 +583,11 @@ export function OtaUpdateChecker() {
               ? "1 update available"
               : `${updateCount} updates available`
 
-          console.log(`📱 OTA showing alert - WiFi connected: ${glassesWifiConnected}, updates: ${updateList}`)
+          // Get current WiFi status from store (not stale closure from effect start)
+          const currentWifiConnected = useGlassesStore.getState().wifiConnected
+          console.log(`📱 OTA showing alert - WiFi connected: ${currentWifiConnected}, updates: ${updateList}`)
 
-          if (glassesWifiConnected) {
+          if (currentWifiConnected) {
             // WiFi connected - go to OTA check screen to confirm and start update
             showAlert(translate("ota:updateAvailable", {deviceName}), updateMessage, [
               {
