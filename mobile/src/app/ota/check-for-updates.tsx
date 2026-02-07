@@ -31,7 +31,7 @@ export default function OtaCheckForUpdatesScreen() {
   const [availableUpdates, setAvailableUpdates] = useState<string[]>([])
   const [isUpdateRequired, setIsUpdateRequired] = useState(true) // Default to required if not specified
   const [checkKey, setCheckKey] = useState(0)
-  const versionInfoTimeoutRef = useRef<NodeJS.Timeout | null>(null)
+  const versionInfoTimeoutRef = useRef<number | null>(null)
   const waitStartTimeRef = useRef<number | null>(null)
   const hasInitiatedCheckRef = useRef(false) // Track if we've initiated check for this checkKey
 
