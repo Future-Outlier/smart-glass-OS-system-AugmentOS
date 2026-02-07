@@ -5,7 +5,7 @@ import {View, ActivityIndicator} from "react-native"
 import {MentraLogoStandalone} from "@/components/brands/MentraLogoStandalone"
 import {ConnectionOverlay} from "@/components/glasses/ConnectionOverlay"
 import {Screen, Header, Button, Text, Icon} from "@/components/ignite"
-import {useFocusEffectPreventBack, useNavigationHistory} from "@/contexts/NavigationHistoryContext"
+import {focusEffectPreventBack, useNavigationHistory} from "@/contexts/NavigationHistoryContext"
 import {useAppTheme} from "@/contexts/ThemeContext"
 import {useGlassesStore} from "@/stores/glasses"
 import GlobalEventEmitter from "@/utils/GlobalEventEmitter"
@@ -52,7 +52,7 @@ export default function OtaProgressScreen() {
   // Track initial build number to detect successful install
   const initialBuildNumber = useRef<string | null>(null)
 
-  useFocusEffectPreventBack()
+  focusEffectPreventBack()
 
   // DEBUG: Log component mount and clear stale OTA state
   useEffect(() => {

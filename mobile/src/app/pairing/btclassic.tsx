@@ -2,7 +2,7 @@ import {useEffect} from "react"
 import {Screen} from "@/components/ignite"
 import {OnboardingGuide, OnboardingStep} from "@/components/onboarding/OnboardingGuide"
 import {translate} from "@/i18n"
-import {useFocusEffectPreventBack, useNavigationHistory} from "@/contexts/NavigationHistoryContext"
+import {focusEffectPreventBack, useNavigationHistory} from "@/contexts/NavigationHistoryContext"
 import {useGlassesStore} from "@/stores/glasses"
 import CoreModule from "core"
 import {SETTINGS, useSetting} from "@/stores/settings"
@@ -13,7 +13,7 @@ export default function BtClassicPairingScreen() {
   const btcConnected = useGlassesStore((state) => state.btcConnected)
   const [deviceName] = useSetting(SETTINGS.device_name.key)
 
-  useFocusEffectPreventBack()
+  focusEffectPreventBack()
 
   const handleSuccess = () => {
     // we should have a device name saved in the core:

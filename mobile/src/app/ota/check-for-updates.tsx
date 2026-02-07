@@ -5,7 +5,7 @@ import {View, ActivityIndicator} from "react-native"
 import {MentraLogoStandalone} from "@/components/brands/MentraLogoStandalone"
 import {ConnectionOverlay} from "@/components/glasses/ConnectionOverlay"
 import {Screen, Header, Button, Text, Icon} from "@/components/ignite"
-import {useFocusEffectPreventBack, useNavigationHistory} from "@/contexts/NavigationHistoryContext"
+import {focusEffectPreventBack, useNavigationHistory} from "@/contexts/NavigationHistoryContext"
 import {useAppTheme} from "@/contexts/ThemeContext"
 import {checkForOtaUpdate, OTA_VERSION_URL_PROD} from "@/effects/OtaUpdateChecker"
 import {translate} from "@/i18n/translate"
@@ -35,7 +35,7 @@ export default function OtaCheckForUpdatesScreen() {
   const waitStartTimeRef = useRef<number | null>(null)
   const hasInitiatedCheckRef = useRef(false) // Track if we've initiated check for this checkKey
 
-  useFocusEffectPreventBack()
+  focusEffectPreventBack()
 
   // Re-run OTA check when screen gains focus (for iterative updates: APK → MTK → BES)
   useFocusEffect(

@@ -8,7 +8,7 @@ import {Header} from "@/components/ignite/Header"
 import {Screen} from "@/components/ignite/Screen"
 import GlassesPairingLoader from "@/components/glasses/GlassesPairingLoader"
 import GlassesTroubleshootingModal from "@/components/glasses/GlassesTroubleshootingModal"
-import {useFocusEffectPreventBack, useNavigationHistory} from "@/contexts/NavigationHistoryContext"
+import {focusEffectPreventBack, useNavigationHistory} from "@/contexts/NavigationHistoryContext"
 import {useGlassesStore} from "@/stores/glasses"
 import {GlassesNotReadyEvent} from "core"
 
@@ -33,7 +33,7 @@ export default function GlassesPairingLoadingScreen() {
     }
   }, [])
 
-  useFocusEffectPreventBack()
+  focusEffectPreventBack()
 
   const handlePairFailure = (error: string) => {
     CoreModule.forget()
