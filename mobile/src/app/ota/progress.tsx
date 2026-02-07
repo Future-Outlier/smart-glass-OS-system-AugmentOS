@@ -85,9 +85,14 @@ export default function OtaProgressScreen() {
   }, [buildNumber])
 
   // Detect successful install by watching for build number increase after installing
+  // NOTE: This only applies to APK updates which bump the build number on reboot.
+  // MTK and BES firmware updates do NOT change the build number - they use FINISHED status instead.
   useEffect(() => {
     if (progressState !== "installing") return
     if (!buildNumber || !initialBuildNumber.current) return
+    // Only use build number detection for APK updates
+    // MTK and BES firmware updates don't change the build number
+    if (otaProgress?.currentUpdate !== "apk") return
 
     const currentVersion = parseInt(buildNumber, 10)
     const initialVersion = parseInt(initialBuildNumber.current, 10)
@@ -112,7 +117,7 @@ export default function OtaProgressScreen() {
       }
       setProgressState("completed")
     }
-  }, [buildNumber, progressState])
+  }, [buildNumber, progressState, otaProgress?.currentUpdate])
 
   // Send OTA start command with retry logic
   const sendOtaStartCommand = useCallback(async () => {
@@ -758,6 +763,16 @@ export default function OtaProgressScreen() {
     wasFirmwareUpdateRef.current &&
     (progressState === "completed" || progressState === "restarting" || otaProgress?.progress === 100)
 
+  // DEBUG: Track lastCompletedUpdate in state for display
+  const [debugLastCompleted, setDebugLastCompleted] = useState<string | null>(null)
+  useEffect(() => {
+    // Update debug state whenever ref changes (check periodically)
+    const interval = setInterval(() => {
+      setDebugLastCompleted(lastCompletedUpdateRef.current)
+    }, 100)
+    return () => clearInterval(interval)
+  }, [])
+
   return (
     <Screen preset="fixed" safeAreaEdges={["bottom"]}>
       <Header RightActionComponent={<MentraLogoStandalone />} />
@@ -770,6 +785,31 @@ export default function OtaProgressScreen() {
         }
         hideStopButton={isFirmwareCompleting}
       />
+
+      {/* DEBUG OVERLAY - Remove after debugging */}
+      {__DEV__ && (
+        <View
+          style={{
+            position: "absolute",
+            top: 100,
+            left: 10,
+            right: 10,
+            backgroundColor: "rgba(0,0,0,0.8)",
+            padding: 8,
+            borderRadius: 8,
+            zIndex: 9999,
+          }}>
+          <Text style={{color: "#0f0", fontSize: 12, fontFamily: "monospace"}}>
+            {`progressState: ${progressState}\n`}
+            {`currentUpdate: ${currentUpdate || "null"}\n`}
+            {`stage: ${otaProgress?.stage || "null"}\n`}
+            {`status: ${otaProgress?.status || "null"}\n`}
+            {`progress: ${progress}%\n`}
+            {`lastCompleted: ${debugLastCompleted || "null"}\n`}
+            {`wasFirmware: ${wasFirmwareUpdateRef.current}`}
+          </Text>
+        </View>
+      )}
 
       {renderContent()}
     </Screen>
