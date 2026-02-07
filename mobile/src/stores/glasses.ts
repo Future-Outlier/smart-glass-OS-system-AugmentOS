@@ -81,11 +81,10 @@ export const useGlassesStore = create<GlassesState>()(
     setGlassesInfo: (info) =>
       set((state) => {
         const next = {...state, ...info}
-        // When glasses disconnect, clear OTA state so we never show "update available" when disconnected
+        // When glasses disconnect, reset all glasses state to initial values
+        // This prevents stale device info, firmware versions, battery, wifi, etc. from persisting
         if (next.connected === false) {
-          next.otaUpdateAvailable = null
-          next.otaProgress = null
-          next.otaInProgress = false
+          return {...initialState, ...info}
         }
         return next
       }),
