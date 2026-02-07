@@ -6,7 +6,7 @@ import {View, ViewStyle, ActivityIndicator, Platform, Animated} from "react-nati
 import {MentraLogoStandalone} from "@/components/brands/MentraLogoStandalone"
 import {ConnectionOverlay} from "@/components/glasses/ConnectionOverlay"
 import {Text, Button, Header, Icon} from "@/components/ignite"
-import {useFocusEffectPreventBack, useNavigationHistory} from "@/contexts/NavigationHistoryContext"
+import {focusEffectPreventBack, useNavigationHistory} from "@/contexts/NavigationHistoryContext"
 import {useAppTheme} from "@/contexts/ThemeContext"
 import {SETTINGS, useSetting} from "@/stores/settings"
 import {translate} from "@/i18n/translate"
@@ -437,12 +437,14 @@ export function OnboardingGuide({
     }
   }, [currentIndex, uiIndex, activePlayer, steps, autoStart, fadeOpacity, player1, player2])
 
-  useFocusEffectPreventBack(() => {
-    // console.log("ONBOARD: preventBack back handler called")
-    if (hasStarted && !isFirstStep) {
-      handleBack()
-    }
-  }, preventBack)
+  if (preventBack) {
+    focusEffectPreventBack(() => {
+      console.log("ONBOARD: preventBack back handler called")
+      if (hasStarted && !isFirstStep) {
+        handleBack()
+      }
+    })
+  }
 
   // Video status change listener
   useEffect(() => {
@@ -856,14 +858,14 @@ export function OnboardingGuide({
         {step.title && (
           <Text
             className={`${
-              (step.titleCentered ?? false) ? "text-center" : "text-start"
+              step.titleCentered ?? false ? "text-center" : "text-start"
             } text-2xl font-semibold text-foreground`}
             text={step.title}
           />
         )}
         {step.subtitle && (
           <Text
-            className={`${(step.subtitleCentered ?? false) ? "text-center" : "text-start"} text-[18px] text-foreground`}
+            className={`${step.subtitleCentered ?? false ? "text-center" : "text-start"} text-[18px] text-foreground`}
             text={step.subtitle}
           />
         )}
