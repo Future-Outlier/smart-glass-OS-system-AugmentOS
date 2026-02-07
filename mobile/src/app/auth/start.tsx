@@ -2,8 +2,10 @@
 import {useLocalSearchParams} from "expo-router"
 import {useEffect} from "react"
 import {Platform, TouchableOpacity, View} from "react-native"
+import {focusEffectPreventBack} from "@/contexts/NavigationHistoryContext"
+
 import {Button, Icon, Text, Screen} from "@/components/ignite"
-import {useNavigationHistory, useFocusEffectPreventBack} from "@/contexts/NavigationHistoryContext"
+import {useNavigationHistory} from "@/contexts/NavigationHistoryContext"
 import {useAppTheme} from "@/contexts/ThemeContext"
 import {translate} from "@/i18n"
 import {SETTINGS, useSetting} from "@/stores/settings"
@@ -15,13 +17,13 @@ import GoogleIcon from "assets/icons/component/GoogleIcon"
 import {MentraLogoStandalone} from "@/components/brands/MentraLogoStandalone"
 
 export default function LoginScreen() {
-  const {push} = useNavigationHistory()
+  const {push, replace} = useNavigationHistory()
   const [isChina] = useSetting(SETTINGS.china_deployment.key)
   const {authError} = useLocalSearchParams<{authError?: string}>()
   const {theme} = useAppTheme()
   const {setAnimation} = useNavigationHistory()
 
-  useFocusEffectPreventBack()
+  focusEffectPreventBack()
 
   // Handle auth errors passed via URL params (e.g., from expired reset links)
   useEffect(() => {
