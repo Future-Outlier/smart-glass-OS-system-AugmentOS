@@ -151,19 +151,18 @@ public class OtaUtils {
     }
     
     /**
-     * Calculate download progress percentage, rounded to the nearest 5%.
+     * Calculate download progress percentage.
      * @param bytesDownloaded Bytes downloaded so far
      * @param totalBytes Total bytes to download
-     * @return Progress percentage (0-100), rounded to nearest 5
+     * @return Progress percentage (0-100)
      */
     public static int calculateProgress(long bytesDownloaded, long totalBytes) {
         if (totalBytes <= 0) {
             return 0;
         }
-        
+
         int progress = (int) ((bytesDownloaded * 100) / totalBytes);
-        progress = Math.min(progress, 100); // Ensure progress doesn't exceed 100%
-        return (progress / 5) * 5; // Round down to nearest 5%
+        return Math.min(progress, 100); // Ensure progress doesn't exceed 100%
     }
     
     /**

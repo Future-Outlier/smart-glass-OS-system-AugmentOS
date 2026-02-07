@@ -2051,14 +2051,11 @@ public class OtaHelper {
         }
 
         try {
-            // Round progress to nearest 5% for cleaner UI display
-            int roundedProgress = (progress / 5) * 5;
-
             JSONObject progressInfo = new JSONObject();
             progressInfo.put("type", "ota_progress");
             progressInfo.put("stage", stage);
             progressInfo.put("status", status);
-            progressInfo.put("progress", roundedProgress);
+            progressInfo.put("progress", progress);
             progressInfo.put("bytes_downloaded", bytesDownloaded);
             progressInfo.put("total_bytes", totalBytes);
             progressInfo.put("current_update", currentUpdateType);
@@ -2071,7 +2068,7 @@ public class OtaHelper {
             lastProgressSentTime = now;
             lastProgressSentPercent = progress;
 
-            Log.d(TAG, "📱 Sent OTA progress: " + stage + " " + status + " " + roundedProgress + "%");
+            Log.d(TAG, "📱 Sent OTA progress: " + stage + " " + status + " " + progress + "%");
         } catch (JSONException e) {
             Log.e(TAG, "Failed to send OTA progress", e);
         }
@@ -2124,21 +2121,18 @@ public class OtaHelper {
         }
         
         try {
-            // Round progress to nearest 5% for cleaner UI display
-            int roundedProgress = (progress / 5) * 5;
-
             JSONObject progressInfo = new JSONObject();
             progressInfo.put("type", "ota_progress");
             progressInfo.put("stage", "install");
             progressInfo.put("status", status);
-            progressInfo.put("progress", roundedProgress);
+            progressInfo.put("progress", progress);
             progressInfo.put("current_update", "mtk");
             if (message != null && "FAILED".equals(status)) {
                 progressInfo.put("error_message", message);
             }
-            
+
             provider.sendOtaProgress(progressInfo);
-            Log.d(TAG, "📱 Sent MTK install progress: " + status + " " + roundedProgress + "%");
+            Log.d(TAG, "📱 Sent MTK install progress: " + status + " " + progress + "%");
         } catch (JSONException e) {
             Log.e(TAG, "Failed to send MTK install progress", e);
         }
