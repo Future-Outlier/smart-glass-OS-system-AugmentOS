@@ -151,6 +151,14 @@ export default function OtaCheckForUpdatesScreen() {
             setAvailableUpdates(filteredUpdates)
             // If isRequired is not specified in version.json, default to true (forced update)
             setIsUpdateRequired(result.latestVersionInfo?.isRequired !== false)
+            // Store the update info in global state so progress screen can access the sequence
+            useGlassesStore.getState().setOtaUpdateAvailable({
+              available: true,
+              versionCode: result.latestVersionInfo?.versionCode || 0,
+              versionName: result.latestVersionInfo?.versionName || "",
+              updates: filteredUpdates,
+              totalSize: 0,
+            })
             setCheckState("update_available")
           } else {
             console.log("📱 No updates available after filtering - setting no_update state")
@@ -249,11 +257,7 @@ export default function OtaCheckForUpdatesScreen() {
             <View className="h-6" />
             <Text text={translate("ota:updateAvailable", {deviceName})} className="font-semibold text-xl text-center" />
             <View className="h-2" />
-            <Text
-              text={updateText}
-              className="text-base text-center"
-              style={{color: theme.colors.textDim}}
-            />
+            <Text text={updateText} className="text-base text-center" style={{color: theme.colors.textDim}} />
             <View className="h-4" />
             <Text tx="ota:updateDescription" className="text-sm text-center" style={{color: theme.colors.textDim}} />
           </View>
