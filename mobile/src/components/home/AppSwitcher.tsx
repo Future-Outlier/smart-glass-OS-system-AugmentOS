@@ -239,84 +239,84 @@ export default function AppSwitcher({visible, onClose}: AppSwitcherProps) {
       prevTranslationX.value = 0
     })
     .onUpdate((event) => {
-      const getScreenPositionByIndex = (tx: number, index: number) => {
-        const cardWidth = CARD_WIDTH + CARD_SPACING
-        let howFar = SCREEN_WIDTH / 4
-        let lin = tx / cardWidth + index
-        if (lin < 0) {
-          lin = 0
-        }
-        const power = Math.pow(lin, 1.7) * howFar
-        // const res = stat + power
-        const howFarPercent = (1 / (howFar / SCREEN_WIDTH)) * howFar
-        const screenPosition = power / howFarPercent
-        return screenPosition
-      }
-      const delta = event.translationX - prevTranslationX.value
-      prevTranslationX.value = event.translationX
-      // console.log("delta, velocityX", delta, event.velocityX)
-
-      const newTranslateX = offsetX.value + prevTranslationX.value + delta
-      let mult = 1
-      // console.log("newTranslateX", newTranslateX)
-      // find the closest card edge relative to the current position:
-      const cardWidth = CARD_WIDTH + CARD_SPACING
-      let howFar = SCREEN_WIDTH / 4
-      let lin = newTranslateX / cardWidth + 1
-      if (lin < 0) {
-        lin = 0
-      }
-      const power = Math.pow(lin, 1.7) * howFar
-      // const res = stat + power
-      const howFarPercent = (1 / (howFar / SCREEN_WIDTH)) * howFar
-      const screenPosition = power / howFarPercent
-
-      // get the touch position relative to the screen
-      // 0 is the left edge of the screen, 1 is the right edge of the screen
-      const touchPosition = event.absoluteX / SCREEN_WIDTH
-      // console.log("touchPosition", touchPosition)
-
-      // console.log("linearProgress", getScreenPositionByIndex(newTranslateX, 0))
-      
-
-      
-      let index1Pos = getScreenPositionByIndex(newTranslateX, 1)
-      if (touchPosition < index1Pos) {
-        mult = 3
-      }
-      let diff = Math.abs(index1Pos - touchPosition)
-      mult = (diff + 1) * 2
-      // console.log("mult", mult)
-      // if (event.velocityX < 0) {
-      // mult = 5
+      // const getScreenPositionByIndex = (tx: number, index: number) => {
+      //   const cardWidth = CARD_WIDTH + CARD_SPACING
+      //   let howFar = SCREEN_WIDTH / 4
+      //   let lin = tx / cardWidth + index
+      //   if (lin < 0) {
+      //     lin = 0
+      //   }
+      //   const power = Math.pow(lin, 1.7) * howFar
+      //   // const res = stat + power
+      //   const howFarPercent = (1 / (howFar / SCREEN_WIDTH)) * howFar
+      //   const screenPosition = power / howFarPercent
+      //   return screenPosition
       // }
 
-      // console.log(event.velocityX)
-      // mult = 0.1
+      // const getMult = (newX: number) => {
+      //   let mult = 1
 
-      // console.log("offsetX.value", offsetX.value)
-      // console.log("event.translationX", event.translationX)
-      // console.log("newTranslateX", newTranslateX)
-      // console.log("mult", mult)
+      //   // if (event.velocityX > 0) {
+      //   //   return mult
+      //   // }
 
-      // const maxTranslate = 0
-      // const minTranslate = -((apps.length - 1) * (CARD_WIDTH + CARD_SPACING))
-      // if (newTranslateX > maxTranslate) {
-      //   translateX.value = newTranslateX * 0.3
-      // } else if (newTranslateX < minTranslate) {
-      //   translateX.value = minTranslate + (newTranslateX - minTranslate) * 0.9
-      // } else {
-      //   translateX.value = newTranslateX
+      //   // get a list of the screen positions of the cards:
+      //   const screenPositions = []
+      //   for (let i = 0; i < apps.length; i++) {
+      //     screenPositions.push(getScreenPositionByIndex(newX, i))
+      //   }
+      //   const touchPosition = event.absoluteX / SCREEN_WIDTH
+      //   // find the index of the card that is > touchPosition or touchPosition is within 10% of the card:
+      //   let magnetPos = -1
+      //   let diff = -1
+      //   // console.log("touchPosition", touchPosition)
+      //   for (let i = 0; i < screenPositions.length; i++) {
+      //     diff = screenPositions[i] - touchPosition
+      //     // console.log("screenPositions[i]", screenPositions[i])
+      //     // console.log("diff", diff)
+      //     if (screenPositions[i] > touchPosition || (diff < 0.15 && diff > -0.15)) {
+      //       magnetPos = screenPositions[i]
+      //       break
+      //     }
+      //   }
+      //   if (magnetPos == -1) {
+      //     return mult
+      //   }
+      //   // if (diff < 0 && event.velocityX > 0) {
+      //   //   return 0.5
+      //   // }
+      //   if (event.velocityX < 0) {
+      //     // the more negative, the closer to 0 the multiplier should be
+      //     // the more positive, it should be log
+      //     // console.log("diff", diff)
+      //     if (diff < 0) {
+      //       // return 1/(Math.abs(diff))
+      //       return 0.8
+      //     }
+      //     // return Math.pow(Math.abs(diff), 3)
+      //     return 3
+      //     // return 3
+      //   }
+      //   // const direction = Math.sign(event.velocityX)
+      //   // const alignment = diff * direction
+      //   // return interpolate(alignment, [-1, 0, 1], [0.5, 1, 3], Extrapolation.CLAMP)
+
+      //   // mult = (diff + 1) * 3
+      //   return mult
       // }
+      // const delta = event.translationX - prevTranslationX.value
+      // prevTranslationX.value = event.translationX
+      // // console.log("delta, velocityX", delta, event.velocityX)
 
       // const newTranslateX = offsetX.value + prevTranslationX.value + delta
-      // let final = offsetX.value + prevTranslationX.value
-      let final = offsetX.value + delta * mult
 
-      // translateX.value += delta * mult
-      // let final = offsetX.value + event.translationX * mult
-      translateX.value = final
-      offsetX.value = final
+      // let mult = getMult(newTranslateX)
+      // let final = offsetX.value + delta * mult
+      // translateX.value = final
+      // offsetX.value = final
+
+      // old way:
+      translateX.value = offsetX.value + event.translationX
     })
     .onEnd((event) => {
       const cardWidth = CARD_WIDTH + CARD_SPACING
@@ -338,8 +338,6 @@ export default function AppSwitcher({visible, onClose}: AppSwitcherProps) {
         velocity: velocity,
       })
     })
-
-  console.log("translateX", translateX.value)
 
   const handleDismiss = useCallback(
     (packageName: string) => {
