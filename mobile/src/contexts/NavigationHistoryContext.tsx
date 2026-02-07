@@ -65,6 +65,7 @@ export function NavigationHistoryProvider({children}: {children: React.ReactNode
     androidBackFnRef.current = fn
   }
   const [animation, setAnimation] = useState<StackAnimationTypes>("simple_push")
+  // const rootNavigation = useNavigationContainerRef()
 
   useEffect(() => {
     const newPath = pathname
@@ -235,23 +236,18 @@ export function NavigationHistoryProvider({children}: {children: React.ReactNode
     historyRef.current = []
     historyParamsRef.current = []
     setDebugHistory([...historyRef.current])
-
-    // Only attempt dismiss operations if there are screens to dismiss
-    // This prevents POP_TO_TOP errors when navigation stack is empty
     try {
-      if (router.canDismiss()) {
-        router.dismissAll()
-      }
-    } catch {
-      // Silently ignore - may fail if no screens to dismiss
-    }
+      router.dismissAll()
+    } catch (_e) {}
     try {
-      if (router.canDismiss()) {
-        router.dismissTo("/home")
-      }
-    } catch {
-      // Silently ignore - may fail if already at home or no screens
-    }
+      router.dismissTo("/home")
+      // router.dismissTo("/")
+      // router.replace("/")
+      // router.
+    } catch (_e) {}
+    // try {
+    //   router.dismissTo("/")
+    // } catch (_e) {}
   }
 
   const setPendingRoute = (route: string | null) => {
@@ -273,18 +269,15 @@ export function NavigationHistoryProvider({children}: {children: React.ReactNode
     console.info("NAV: clearHistoryAndGoHome()")
     clearHistory()
     try {
-      // Set history state before navigation to prevent race conditions
-      historyRef.current = ["/home"]
-      historyParamsRef.current = [undefined]
-      setDebugHistory([...historyRef.current])
+      // router.dismissAll()
+      // router.dismissTo("/")
+      // router.navigate("/")
       router.replace("/home")
-    } catch (error) {
-      // Log but don't throw - navigation may recover on its own
-      console.warn("NAV: clearHistoryAndGoHome() warning:", error)
-      // Ensure history state is consistent even if navigation failed
       historyRef.current = ["/home"]
       historyParamsRef.current = [undefined]
       setDebugHistory([...historyRef.current])
+    } catch (error) {
+      console.error("NAV: clearHistoryAndGoHome() error", error)
     }
   }
 
@@ -293,15 +286,20 @@ export function NavigationHistoryProvider({children}: {children: React.ReactNode
   const replaceAll = (path: string, params?: any) => {
     console.info("NAV: replaceAll()", path)
     clearHistory()
-    // Set history state before navigation to prevent race conditions
+    // try {
+    //   // router.dismissAll()
+    //   // router.dismissTo("/")
+    //   // router.navigate("/")
+    //   // router.dismissAll()
+    //   // router.replace("/")
+    // } catch (_e) {
+    // }
+    // replace(path, params)
+    // push(path, params)
     historyRef.current = [path]
     historyParamsRef.current = [params]
     setDebugHistory([...historyRef.current])
-    try {
-      router.replace({pathname: path as any, params: params as any})
-    } catch (error) {
-      console.warn("NAV: replaceAll() warning:", error)
-    }
+    router.replace({pathname: path as any, params: params as any})
   }
 
   const pushUnder = (path: string, params?: any) => {
@@ -351,13 +349,12 @@ export function NavigationHistoryProvider({children}: {children: React.ReactNode
     setDebugHistory([...historyRef.current])
   }
 
-  // Used only by flows that are not on the tab navigator (e.g. pairing/success). pushPrevious
-  // uses router.replace() instead to avoid RESET not being handled on /home.
-  const _pushList = (routes: string[], params: any[]) => {
+  const pushList = (routes: string[], params: any[]) => {
     console.info("NAV: pushList()", routes)
     const first = routes.shift()
     const firstParams = params.shift()
     push(first!, firstParams)
+    // go bottom to top and pushUnder the rest (in reverse order):
     for (let i = routes.length - 1; i >= 0; i--) {
       pushUnder(routes[i], params[i])
     }
@@ -393,17 +390,16 @@ export function NavigationHistoryProvider({children}: {children: React.ReactNode
       return // we are already on home, so we are done
     }
 
-    // Navigate to the previous screen using router (expo-router). Do not use pushList/pushUnder
-    // here: pushUnder dispatches CommonActions.reset(), which the tab navigator does not handle
-    // when we're on /home, causing "The action 'RESET' was not handled by any navigator".
-    historyRef.current = updatedRoutes
-    historyParamsRef.current = updatedRoutesParams
-    setDebugHistory([...historyRef.current])
-    try {
-      router.replace({pathname: lastRoute as any, params: lastRouteParams})
-    } catch (error) {
-      console.warn("NAV: pushPrevious replace warning:", error)
+    // if /home is at the start of the list remove it:
+    if (updatedRoutes[0] === "/home") {
+      updatedRoutes.shift()
+      updatedRoutesParams.shift()
     }
+    updatedRoutes.reverse() // reverse for the pushList function
+    updatedRoutesParams.reverse() // must also reverse params to keep them aligned!
+    console.log("NAV: updatedRoutes", updatedRoutes)
+    console.log("NAV: updatedRoutesParams", updatedRoutesParams)
+    pushList(updatedRoutes, updatedRoutesParams)
 
     // rootNavigation.dispatch(StackActions.popToTop())
     // rootNavigation.dispatch(
@@ -487,22 +483,18 @@ export function useNavigationHistory() {
 }
 
 // screens that call this function will prevent the back button from being pressed:
-export const useFocusEffectPreventBack = (androidBackFn?: () => void, preventBack: boolean = true) => {
+export const focusEffectPreventBack = (androidBackFn?: () => void) => {
   const {incPreventBack, decPreventBack, setAndroidBackFn} = useNavigationHistory()
 
   useFocusEffect(
     useCallback(() => {
-      if (preventBack) {
-        incPreventBack()
-        if (androidBackFn) {
-          setAndroidBackFn(androidBackFn)
-        }
+      incPreventBack()
+      if (androidBackFn) {
+        setAndroidBackFn(androidBackFn)
       }
       return () => {
-        if (preventBack) {
-          decPreventBack()
-        }
+        decPreventBack()
       }
-    }, [incPreventBack, decPreventBack, androidBackFn, setAndroidBackFn, preventBack]),
+    }, [incPreventBack, decPreventBack]),
   )
 }
