@@ -516,24 +516,24 @@ export default function OtaProgressScreen() {
   const displayProgress = Math.round(progress / 5) * 5
   const currentUpdate = otaProgress?.currentUpdate
 
-  // Get update position string like "Update 1/3"
+  // Get update position string like "Update 1 of 3"
   const getUpdatePositionString = (): string => {
     const sequence = updateSequenceRef.current
     if (sequence.length <= 1) {
       return "Update"
     }
     const index = currentUpdateIndex + 1
-    return `Update ${index}/${sequence.length}`
+    return `Update ${index} of ${sequence.length}`
   }
 
-  // Get next update position string like "update 2/3"
+  // Get next update position string like "update 2 of 3"
   const getNextUpdatePositionString = (): string => {
     const sequence = updateSequenceRef.current
     const nextIndex = currentUpdateIndex + 1
     if (nextIndex >= sequence.length) {
       return "next update"
     }
-    return `update ${nextIndex + 1}/${sequence.length}`
+    return `update ${nextIndex + 1} of ${sequence.length}`
   }
 
   // DEBUG: Log render values
