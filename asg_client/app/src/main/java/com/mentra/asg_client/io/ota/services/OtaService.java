@@ -334,9 +334,20 @@ public class OtaService extends Service {
             long currentVersion = packageInfo.getLongVersionCode();
 
             if (previousVersion == -1) {
-                // First boot ever - just record current version, don't trigger update
-                Log.i(TAG, "First boot - recording initial ASG version: " + currentVersion);
+                // First time this feature runs - could be:
+                // 1. Literally first boot ever (factory fresh)
+                // 2. Update from old ASG client that didn't have this code
+                // In both cases, trigger OTA check - harmless if nothing to update,
+                // necessary if we just updated from an old version
+                Log.i(TAG, "📱 First boot with version tracking - recording ASG version: " + currentVersion);
                 prefs.edit().putLong("last_seen_asg_version", currentVersion).apply();
+
+                if (otaHelper != null) {
+                    Log.i(TAG, "📱 Triggering OTA check (first boot or update from old version)");
+                    // Use startOtaFromPhone() to properly set isPhoneInitiatedOta flag,
+                    // otherwise startVersionCheck() aborts when AUTONOMOUS_OTA_ENABLED=false
+                    otaHelper.startOtaFromPhone();
+                }
             } else if (currentVersion > previousVersion) {
                 // ASG client was updated - auto-trigger OTA check for MTK/BES
                 Log.i(TAG, "📱 ASG client was updated from " + previousVersion + " to " + currentVersion);
@@ -344,7 +355,9 @@ public class OtaService extends Service {
 
                 if (otaHelper != null) {
                     Log.i(TAG, "📱 Auto-resuming OTA check for MTK/BES updates");
-                    otaHelper.startVersionCheck(this);
+                    // Use startOtaFromPhone() to properly set isPhoneInitiatedOta flag,
+                    // otherwise startVersionCheck() aborts when AUTONOMOUS_OTA_ENABLED=false
+                    otaHelper.startOtaFromPhone();
                 }
             } else {
                 Log.d(TAG, "ASG version unchanged (" + currentVersion + ") - no auto-resume needed");
