@@ -16,7 +16,6 @@ import {useGlassesStore} from "@/stores/glasses"
 import showAlert from "@/utils/AlertUtils"
 import WifiCredentialsService from "@/utils/wifi/WifiCredentialsService"
 import {translate} from "@/i18n"
-import {ConnectionOverlay} from "@/components/glasses/ConnectionOverlay"
 import {BackgroundTimer} from "@/utils/timers"
 import {useCoreStore} from "@/stores/core"
 
@@ -250,8 +249,6 @@ export default function WifiScanScreen() {
       ) : (
         <Header title="Wi-Fi" rightIcon="repeat" onRightPress={startScan} />
       )}
-
-      <ConnectionOverlay />
 
       <View className="flex-1">
         {/* Header */}

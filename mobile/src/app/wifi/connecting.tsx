@@ -7,7 +7,6 @@ import {useNavigationHistory} from "@/contexts/NavigationHistoryContext"
 import {useAppTheme} from "@/contexts/ThemeContext"
 import {useGlassesStore} from "@/stores/glasses"
 import WifiCredentialsService from "@/utils/wifi/WifiCredentialsService"
-import {ConnectionOverlay} from "@/components/glasses/ConnectionOverlay"
 import {MentraLogoStandalone} from "@/components/brands/MentraLogoStandalone"
 import {translate} from "@/i18n"
 
@@ -173,7 +172,6 @@ export default function WifiConnectingScreen() {
       ) : (
         <Header />
       )}
-      <ConnectionOverlay />
       {renderContent()}
     </Screen>
   )

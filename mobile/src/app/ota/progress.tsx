@@ -3,7 +3,7 @@ import {useEffect, useState, useRef, useCallback} from "react"
 import {View, ActivityIndicator} from "react-native"
 
 import {MentraLogoStandalone} from "@/components/brands/MentraLogoStandalone"
-import {ConnectionOverlay} from "@/components/glasses/ConnectionOverlay"
+import {useConnectionOverlayConfig} from "@/components/glasses/GlobalConnectionOverlay"
 import {Screen, Header, Button, Text, Icon} from "@/components/ignite"
 import {focusEffectPreventBack, useNavigationHistory} from "@/contexts/NavigationHistoryContext"
 import {useAppTheme} from "@/contexts/ThemeContext"
@@ -773,6 +773,25 @@ export default function OtaProgressScreen() {
     wasFirmwareUpdateRef.current &&
     (progressState === "completed" || progressState === "restarting" || otaProgress?.progress === 100)
 
+  // Update global connection overlay config based on firmware completion state
+  const {setConfig, clearConfig} = useConnectionOverlayConfig()
+  useEffect(() => {
+    if (isFirmwareCompleting) {
+      setConfig({
+        customTitle: "Glasses are restarting",
+        customMessage: "Your glasses are rebooting to apply the firmware update. This may take a moment...",
+        hideStopButton: true,
+      })
+    } else {
+      clearConfig()
+    }
+
+    // Clear config on unmount
+    return () => {
+      clearConfig()
+    }
+  }, [isFirmwareCompleting, setConfig, clearConfig])
+
   // DEBUG: Track state for overlay
   const [debugInfo, setDebugInfo] = useState("")
   useEffect(() => {
@@ -789,15 +808,6 @@ completed: [${completedUpdates.join(", ")}]`
   return (
     <Screen preset="fixed" safeAreaEdges={["bottom"]}>
       <Header RightActionComponent={<MentraLogoStandalone />} />
-      <ConnectionOverlay
-        customTitle={isFirmwareCompleting ? "Glasses are restarting" : undefined}
-        customMessage={
-          isFirmwareCompleting
-            ? "Your glasses are rebooting to apply the firmware update. This may take a moment..."
-            : undefined
-        }
-        hideStopButton={isFirmwareCompleting}
-      />
 
       {/* DEBUG OVERLAY - Remove after debugging */}
       {__DEV__ && (

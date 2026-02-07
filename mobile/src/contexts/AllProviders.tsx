@@ -3,7 +3,7 @@ import * as Sentry from "@sentry/react-native"
 import {Stack} from "expo-router"
 import {PostHogProvider} from "posthog-react-native"
 import {Suspense, FunctionComponent, PropsWithChildren} from "react"
-import {Platform, View} from "react-native"
+import {View} from "react-native"
 import ErrorBoundary from "react-native-error-boundary"
 import {GestureHandlerRootView} from "react-native-gesture-handler"
 import {KeyboardProvider} from "react-native-keyboard-controller"
@@ -11,6 +11,7 @@ import {SafeAreaProvider, useSafeAreaInsets} from "react-native-safe-area-contex
 import Toast from "react-native-toast-message"
 
 // import {ErrorBoundary} from "@/components/error"
+import {GlobalConnectionOverlay} from "@/components/glasses/GlobalConnectionOverlay"
 import {Text} from "@/components/ignite"
 import {AppStoreProvider} from "@/contexts/AppStoreContext"
 import {AuthProvider} from "@/contexts/AuthContext"
@@ -20,7 +21,8 @@ import {useThemeProvider} from "@/contexts/ThemeContext"
 import {SETTINGS, useSetting, useSettingsStore} from "@/stores/settings"
 import {ModalProvider} from "@/utils/AlertUtils"
 import {KonamiCodeProvider} from "@/utils/debug/konami"
-import {getAnimation, JsStack, simplePush, woltScreenOptions} from "@/components/navigation/JsStack"
+// JsStack imports commented out - were used for Android-specific navigation (currently disabled)
+// import {getAnimation, JsStack, simplePush, woltScreenOptions} from "@/components/navigation/JsStack"
 
 // components at the top wrap everything below them in order:
 export const AllProviders = withWrappers(
@@ -141,19 +143,20 @@ export const AllProviders = withWrappers(
     const {preventBack, animation} = useNavigationHistory()
 
     // if (Platform.OS === "ios") {
-      return (
-        <>
-          {props.children}
-          <Stack
-            screenOptions={{
-              headerShown: false,
-              gestureEnabled: !preventBack,
-              gestureDirection: "horizontal",
-              animation: animation,
-            }}
-          />
-        </>
-      )
+    return (
+      <>
+        {props.children}
+        <GlobalConnectionOverlay />
+        <Stack
+          screenOptions={{
+            headerShown: false,
+            gestureEnabled: !preventBack,
+            gestureDirection: "horizontal",
+            animation: animation,
+          }}
+        />
+      </>
+    )
     // }
 
     // return (

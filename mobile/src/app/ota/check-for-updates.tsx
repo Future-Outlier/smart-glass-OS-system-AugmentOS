@@ -3,7 +3,6 @@ import {useEffect, useState, useCallback, useRef} from "react"
 import {View, ActivityIndicator} from "react-native"
 
 import {MentraLogoStandalone} from "@/components/brands/MentraLogoStandalone"
-import {ConnectionOverlay} from "@/components/glasses/ConnectionOverlay"
 import {Screen, Header, Button, Text, Icon} from "@/components/ignite"
 import {focusEffectPreventBack, useNavigationHistory} from "@/contexts/NavigationHistoryContext"
 import {useAppTheme} from "@/contexts/ThemeContext"
@@ -314,7 +313,6 @@ export default function OtaCheckForUpdatesScreen() {
   return (
     <Screen preset="fixed" safeAreaEdges={["bottom"]}>
       <Header RightActionComponent={<MentraLogoStandalone />} />
-      <ConnectionOverlay />
 
       {renderContent()}
     </Screen>
