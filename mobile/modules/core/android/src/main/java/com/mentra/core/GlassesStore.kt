@@ -109,14 +109,9 @@ object GlassesStore {
                     } else {
                         CoreManager.getInstance().handleDeviceDisconnected()
                     }
-                    // // if ready is true, set connected to true
-                    // if (value) {
-                    //     store.set("glasses", "connected", true)
-                    // }
-                    // // if ready is false, set connected to false
-                    // if (!value) {
-                    //     store.set("glasses", "connected", false)
-                    // }
+                    // connected state is driven by fullyBooted:
+                    // SOC must be ready for glasses to be considered connected
+                    store.set("glasses", "connected", value)
                 }
             }
             "glasses" to "headUp" -> {

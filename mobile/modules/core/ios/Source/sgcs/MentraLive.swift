@@ -731,7 +731,8 @@ extension MentraLive: CBPeripheralDelegate {
             Bridge.log("LIVE: ✅ Both TX and RX characteristics found - BLE connection ready")
             Bridge.log("LIVE: 🔄 Waiting for glasses SOC to become ready...")
 
-            GlassesStore.shared.apply("glasses", "connected", true)
+            // Don't set connected=true here - wait for SOC to be ready (fullyBooted=true)
+            // GlassesStore handles connected state based on fullyBooted
 
             // Keep state as connecting until glasses are ready
             connectionState = ConnTypes.CONNECTING

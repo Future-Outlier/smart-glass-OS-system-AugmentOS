@@ -574,10 +574,8 @@ public class MentraLive extends SGCManager {
         // Actually update the connection state!
         GlassesStore.INSTANCE.apply("glasses", "connectionState", state);
 
-        if (state.equals(ConnTypes.CONNECTED)) {
-            GlassesStore.INSTANCE.apply("glasses", "connected", true);
-        } else if (state.equals(ConnTypes.DISCONNECTED)) {
-            GlassesStore.INSTANCE.apply("glasses", "connected", false);
+        // connected state is now driven by fullyBooted in GlassesStore
+        if (state.equals(ConnTypes.DISCONNECTED)) {
             GlassesStore.INSTANCE.apply("glasses", "fullyBooted", false);
         }
     }
@@ -1059,7 +1057,8 @@ public class MentraLive extends SGCManager {
                         Bridge.log("LIVE: ✅ Core TX/RX and LC3 TX/RX characteristics found - BLE connection ready");
                         Bridge.log("LIVE: 🔄 Waiting for glasses SOC to become ready...");
 
-                        GlassesStore.INSTANCE.apply("glasses", "connected", true);
+                        // Don't set connected=true here - wait for SOC to be ready (fullyBooted=true)
+                        // GlassesStore handles connected state based on fullyBooted
 
                         // Keep the state as CONNECTING until the glasses SOC responds
                         // connectionEvent(SmartGlassesConnectionState.CONNECTING);
