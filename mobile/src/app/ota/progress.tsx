@@ -645,19 +645,17 @@ export default function OtaProgressScreen() {
     }
 
     // Restarting state - for BES updates that require power cycle
+    // This is shown after BES install finishes and glasses are rebooting/reconnecting
     if (progressState === "restarting") {
+      const allUpdatesCount = updateSequenceRef.current.length
+      const titleText = allUpdatesCount > 1 ? "Updates Installed" : "Update Installed"
+
       return (
         <>
           <View className="flex-1 items-center justify-center px-6">
             <Icon name="check" size={64} color={theme.colors.primary} />
             <View className="h-6" />
-            <Text text={`${updatePosition} Installed`} className="font-semibold text-xl text-center" />
-            <View className="h-2" />
-            <Text
-              text="Your glasses will power off. Please turn them back on to continue."
-              className="text-sm text-center"
-              style={{color: theme.colors.textDim}}
-            />
+            <Text text={titleText} className="font-semibold text-xl text-center" />
           </View>
 
           <View className="justify-center items-center">
@@ -674,6 +672,7 @@ export default function OtaProgressScreen() {
     // Completed state - only shown for final update
     if (progressState === "completed") {
       const allUpdatesCount = updateSequenceRef.current.length
+      const titleText = allUpdatesCount > 1 ? "Updates Complete" : "Update Complete"
       const completedMessage =
         allUpdatesCount > 1
           ? "All updates have been installed successfully."
@@ -684,7 +683,7 @@ export default function OtaProgressScreen() {
           <View className="flex-1 items-center justify-center px-6">
             <Icon name="check" size={64} color={theme.colors.primary} />
             <View className="h-6" />
-            <Text text="Update Complete" className="font-semibold text-xl text-center" />
+            <Text text={titleText} className="font-semibold text-xl text-center" />
             <View className="h-2" />
             <Text text={completedMessage} className="text-sm text-center" style={{color: theme.colors.textDim}} />
           </View>
