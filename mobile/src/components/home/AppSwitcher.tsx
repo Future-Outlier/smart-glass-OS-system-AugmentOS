@@ -200,6 +200,7 @@ export default function AppSwitcher({visible, onClose}: AppSwitcherProps) {
   const containerTranslateY = useSharedValue(100)
   const containerOpacity = useSharedValue(0)
   const targetIndex = useSharedValue(0)
+  const prevTranslationX = useSharedValue(0)
   const {push} = useNavigationHistory()
   const apps = useActiveApps()
 
@@ -235,9 +236,69 @@ export default function AppSwitcher({visible, onClose}: AppSwitcherProps) {
     .activeOffsetX([-10, 10])
     .onStart(() => {
       offsetX.value = translateX.value
+      prevTranslationX.value = 0
     })
     .onUpdate((event) => {
-      const newTranslateX = offsetX.value + event.translationX
+      const getScreenPositionByIndex = (tx: number, index: number) => {
+        const cardWidth = CARD_WIDTH + CARD_SPACING
+        let howFar = SCREEN_WIDTH / 4
+        let lin = tx / cardWidth + index
+        if (lin < 0) {
+          lin = 0
+        }
+        const power = Math.pow(lin, 1.7) * howFar
+        // const res = stat + power
+        const howFarPercent = (1 / (howFar / SCREEN_WIDTH)) * howFar
+        const screenPosition = power / howFarPercent
+        return screenPosition
+      }
+      const delta = event.translationX - prevTranslationX.value
+      prevTranslationX.value = event.translationX
+      // console.log("delta, velocityX", delta, event.velocityX)
+
+      const newTranslateX = offsetX.value + prevTranslationX.value + delta
+      let mult = 1
+      // console.log("newTranslateX", newTranslateX)
+      // find the closest card edge relative to the current position:
+      const cardWidth = CARD_WIDTH + CARD_SPACING
+      let howFar = SCREEN_WIDTH / 4
+      let lin = newTranslateX / cardWidth + 1
+      if (lin < 0) {
+        lin = 0
+      }
+      const power = Math.pow(lin, 1.7) * howFar
+      // const res = stat + power
+      const howFarPercent = (1 / (howFar / SCREEN_WIDTH)) * howFar
+      const screenPosition = power / howFarPercent
+
+      // get the touch position relative to the screen
+      // 0 is the left edge of the screen, 1 is the right edge of the screen
+      const touchPosition = event.absoluteX / SCREEN_WIDTH
+      // console.log("touchPosition", touchPosition)
+
+      // console.log("linearProgress", getScreenPositionByIndex(newTranslateX, 0))
+      
+
+      
+      let index1Pos = getScreenPositionByIndex(newTranslateX, 1)
+      if (touchPosition < index1Pos) {
+        mult = 3
+      }
+      let diff = Math.abs(index1Pos - touchPosition)
+      mult = (diff + 1) * 2
+      // console.log("mult", mult)
+      // if (event.velocityX < 0) {
+      // mult = 5
+      // }
+
+      // console.log(event.velocityX)
+      // mult = 0.1
+
+      // console.log("offsetX.value", offsetX.value)
+      // console.log("event.translationX", event.translationX)
+      // console.log("newTranslateX", newTranslateX)
+      // console.log("mult", mult)
+
       // const maxTranslate = 0
       // const minTranslate = -((apps.length - 1) * (CARD_WIDTH + CARD_SPACING))
       // if (newTranslateX > maxTranslate) {
@@ -247,7 +308,15 @@ export default function AppSwitcher({visible, onClose}: AppSwitcherProps) {
       // } else {
       //   translateX.value = newTranslateX
       // }
-      translateX.value = newTranslateX
+
+      // const newTranslateX = offsetX.value + prevTranslationX.value + delta
+      // let final = offsetX.value + prevTranslationX.value
+      let final = offsetX.value + delta * mult
+
+      // translateX.value += delta * mult
+      // let final = offsetX.value + event.translationX * mult
+      translateX.value = final
+      offsetX.value = final
     })
     .onEnd((event) => {
       const cardWidth = CARD_WIDTH + CARD_SPACING
@@ -274,7 +343,6 @@ export default function AppSwitcher({visible, onClose}: AppSwitcherProps) {
 
   const handleDismiss = useCallback(
     (packageName: string) => {
-
       let lastApp = apps[apps.length - 1]
       // Adjust if we were on the last card
       if (lastApp.packageName === packageName) {
