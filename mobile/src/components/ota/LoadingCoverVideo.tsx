@@ -24,12 +24,12 @@ export function LoadingCoverVideo({videoUrl, onClose}: LoadingCoverVideoProps) {
   useEffect(() => {
     if (!player) return
 
-    const statusSubscription = player.addListener("statusChange", (status) => {
-      console.log("LoadingCoverVideo: status changed:", status)
-      if (status === "readyToPlay") {
+    const statusSubscription = player.addListener("statusChange", (event) => {
+      console.log("LoadingCoverVideo: status changed:", event)
+      if (event.status === "readyToPlay") {
         setIsReady(true)
         player.play()
-      } else if (status === "error") {
+      } else if (event.status === "error") {
         console.log("LoadingCoverVideo: error loading video")
         setHasError(true)
       }
