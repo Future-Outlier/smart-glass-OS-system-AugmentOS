@@ -1,6 +1,6 @@
 import {useVideoPlayer, VideoView} from "expo-video"
 import {useEffect, useState} from "react"
-import {View, TouchableOpacity} from "react-native"
+import {View, TouchableOpacity, Modal} from "react-native"
 
 import {Icon} from "@/components/ignite"
 import {useAppTheme} from "@/contexts/ThemeContext"
@@ -65,22 +65,15 @@ export function LoadingCoverVideo({videoUrl, onClose}: LoadingCoverVideoProps) {
 
   // Ready - show fullscreen video overlay
   return (
-    <View
-      style={{
-        position: "absolute",
-        top: 0,
-        left: 0,
-        right: 0,
-        bottom: 0,
-        backgroundColor: "black",
-        zIndex: 1000,
-      }}>
-      <VideoView player={player} style={{flex: 1}} contentFit="contain" nativeControls={false} />
-      <TouchableOpacity style={{position: "absolute", top: 60, right: 20}} onPress={handleClose}>
-        <View style={{borderRadius: 20, padding: 8, opacity: 0.8, backgroundColor: theme.colors.background}}>
-          <Icon name="close" size={24} color={theme.colors.text} />
-        </View>
-      </TouchableOpacity>
-    </View>
+    <Modal transparent animationType="fade" visible={true}>
+      <View style={{flex: 1, backgroundColor: "black"}}>
+        <VideoView player={player} style={{flex: 1}} contentFit="contain" nativeControls={false} />
+        <TouchableOpacity style={{position: "absolute", top: 60, right: 20}} onPress={handleClose}>
+          <View style={{borderRadius: 20, padding: 8, opacity: 0.8, backgroundColor: theme.colors.background}}>
+            <Icon name="close" size={24} color={theme.colors.text} />
+          </View>
+        </TouchableOpacity>
+      </View>
+    </Modal>
   )
 }
