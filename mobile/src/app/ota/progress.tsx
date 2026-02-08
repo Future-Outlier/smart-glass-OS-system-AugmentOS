@@ -772,11 +772,13 @@ export default function OtaProgressScreen() {
           </View>
 
           <View className="justify-center items-center">
-            {continueButtonDisabled ? (
-              <ActivityIndicator size="large" color={theme.colors.foreground} />
-            ) : (
-              <Button preset="primary" tx="common:continue" flexContainer onPress={handleContinue} />
-            )}
+            <Button
+              preset="primary"
+              tx="common:continue"
+              flexContainer
+              onPress={handleContinue}
+              disabled={continueButtonDisabled}
+            />
           </View>
         </>
       )
@@ -892,7 +894,7 @@ export default function OtaProgressScreen() {
     if (isFirmwareCompleting) {
       setConfig({
         customTitle: "Glasses are restarting",
-        customMessage: "Your glasses are rebooting to apply the firmware update. This may take a moment...",
+        customMessage: "This will take up to a minute. Please keep your glasses nearby and connected.",
         hideStopButton: true,
       })
     } else {
