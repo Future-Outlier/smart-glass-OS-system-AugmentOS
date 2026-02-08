@@ -1,9 +1,9 @@
 import {useVideoPlayer, VideoView} from "expo-video"
 import {useEffect, useState} from "react"
-import {View, TouchableOpacity, Modal} from "react-native"
+import {View, Modal} from "react-native"
+import {useSafeAreaInsets} from "react-native-safe-area-context"
 
-import {Icon} from "@/components/ignite"
-import {useAppTheme} from "@/contexts/ThemeContext"
+import {Button} from "@/components/ignite"
 
 interface LoadingCoverVideoProps {
   videoUrl: string
@@ -11,7 +11,7 @@ interface LoadingCoverVideoProps {
 }
 
 export function LoadingCoverVideo({videoUrl, onClose}: LoadingCoverVideoProps) {
-  const {theme} = useAppTheme()
+  const insets = useSafeAreaInsets()
   const [isReady, setIsReady] = useState(false)
   const [hasError, setHasError] = useState(false)
   const [dismissed, setDismissed] = useState(false)
@@ -68,11 +68,9 @@ export function LoadingCoverVideo({videoUrl, onClose}: LoadingCoverVideoProps) {
     <Modal transparent animationType="fade" visible={true}>
       <View style={{flex: 1, backgroundColor: "black"}}>
         <VideoView player={player} style={{flex: 1}} contentFit="contain" nativeControls={false} />
-        <TouchableOpacity style={{position: "absolute", top: 60, right: 20}} onPress={handleClose}>
-          <View style={{borderRadius: 20, padding: 8, opacity: 0.8, backgroundColor: theme.colors.background}}>
-            <Icon name="close" size={24} color={theme.colors.text} />
-          </View>
-        </TouchableOpacity>
+        <View style={{position: "absolute", bottom: insets.bottom + 20, left: 20, right: 20}}>
+          <Button text="Close" preset="secondary" onPress={handleClose} />
+        </View>
       </View>
     </Modal>
   )
