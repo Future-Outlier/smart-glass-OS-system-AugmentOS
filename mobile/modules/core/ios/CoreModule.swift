@@ -200,6 +200,20 @@ public class CoreModule: Module {
             }
         }
 
+        // MARK: - Power Control Commands
+
+        AsyncFunction("sendShutdown") {
+            await MainActor.run {
+                CoreManager.shared.sendShutdown()
+            }
+        }
+
+        AsyncFunction("sendReboot") {
+            await MainActor.run {
+                CoreManager.shared.sendReboot()
+            }
+        }
+
         // MARK: - Video Recording Commands
 
         AsyncFunction("startBufferRecording") {

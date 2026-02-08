@@ -55,6 +55,8 @@ protocol SGCManager {
     func getBatteryStatus()
     func setSilentMode(_ enabled: Bool)
     func exit()
+    func sendShutdown()
+    func sendReboot()
     func sendRgbLedControl(
         requestId: String, packageName: String?, action: String, color: String?, ontime: Int,
         offtime: Int, count: Int

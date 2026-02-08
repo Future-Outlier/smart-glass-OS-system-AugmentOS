@@ -1067,6 +1067,20 @@ struct ViewState {
         sgc?.sendOtaStart()
     }
 
+    /// Send shutdown command to glasses.
+    /// This will initiate a graceful shutdown of the device.
+    func sendShutdown() {
+        Bridge.log("MAN: 🔌 Sending shutdown command to glasses")
+        sgc?.sendShutdown()
+    }
+
+    /// Send reboot command to glasses.
+    /// This will initiate a reboot of the device.
+    func sendReboot() {
+        Bridge.log("MAN: 🔄 Sending reboot command to glasses")
+        sgc?.sendReboot()
+    }
+
     func startBufferRecording() {
         Bridge.log("MAN: onStartBufferRecording")
         sgc?.startBufferRecording()

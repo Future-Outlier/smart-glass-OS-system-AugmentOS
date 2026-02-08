@@ -2866,6 +2866,28 @@ class MentraLive: NSObject, SGCManager {
         sendUserEmailToGlasses(storedEmail)
     }
 
+    // MARK: - Power Control Methods
+
+    /**
+     * Send shutdown command to the glasses.
+     * This will initiate a graceful shutdown of the device.
+     */
+    @objc func sendShutdown() {
+        Bridge.log("LIVE: 🔌 Sending shutdown command to glasses")
+        let json: [String: Any] = ["type": "shutdown"]
+        sendJson(json)
+    }
+
+    /**
+     * Send reboot command to the glasses.
+     * This will initiate a reboot of the device.
+     */
+    @objc func sendReboot() {
+        Bridge.log("LIVE: 🔄 Sending reboot command to glasses")
+        let json: [String: Any] = ["type": "reboot"]
+        sendJson(json)
+    }
+
     // MARK: - IMU Methods
 
     /**

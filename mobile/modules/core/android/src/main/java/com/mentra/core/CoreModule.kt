@@ -158,6 +158,12 @@ class CoreModule : Module() {
 
         AsyncFunction("sendOtaStart") { coreManager?.sendOtaStart() }
 
+        // MARK: - Power Control Commands
+
+        AsyncFunction("sendShutdown") { coreManager?.sendShutdown() }
+
+        AsyncFunction("sendReboot") { coreManager?.sendReboot() }
+
         // MARK: - Video Recording Commands
 
         AsyncFunction("startBufferRecording") { coreManager?.startBufferRecording() }

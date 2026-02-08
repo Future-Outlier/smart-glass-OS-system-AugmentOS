@@ -1446,6 +1446,14 @@ extension G1 {
         queueChunks([exitDataArray])
     }
 
+    func sendShutdown() {
+        Bridge.log("sendShutdown - not supported on G1")
+    }
+
+    func sendReboot() {
+        Bridge.log("sendReboot - not supported on G1")
+    }
+
     func sendRgbLedControl(
         requestId: String, packageName _: String?, action _: String, color _: String?,
         ontime _: Int, offtime _: Int, count _: Int

@@ -416,6 +416,14 @@ class MentraNex : SGCManager() {
         sendDataSequentially(byteArrayOf(0x18.toByte()), 100)
     }
 
+    override fun sendShutdown() {
+        Bridge.log("sendShutdown - not supported on Nex")
+    }
+
+    override fun sendReboot() {
+        Bridge.log("sendReboot - not supported on Nex")
+    }
+
     override fun sendRgbLedControl( requestId: String, packageName: String?, action: String, color: String?, ontime: Int, offtime: Int, count: Int) {
         Bridge.log("sendRgbLedControl - not supported on Nex");
         Bridge.sendRgbLedControlResponse(requestId, false, "device_not_supported");

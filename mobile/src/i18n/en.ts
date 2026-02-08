@@ -235,7 +235,7 @@ const en = {
     btClassicSubtitle: "Connect {{name}} as a Bluetooth audio device",
     openSettings: "Open settings",
     stepCounter: "Step {{index}} / {{total}}",
-    confirmSkip: "Yes, skip"
+    confirmSkip: "Yes, skip",
   },
   wifi: {
     networks: "Networks",

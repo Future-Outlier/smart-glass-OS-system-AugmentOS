@@ -52,6 +52,8 @@ abstract class SGCManager {
     abstract fun getBatteryStatus()
     abstract fun setSilentMode(enabled: Boolean)
     abstract fun exit()
+    abstract fun sendShutdown()
+    abstract fun sendReboot()
     abstract fun sendRgbLedControl(
             requestId: String,
             packageName: String?,

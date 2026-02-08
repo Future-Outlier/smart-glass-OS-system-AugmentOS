@@ -4479,6 +4479,39 @@ public class MentraLive extends SGCManager {
         }
     }
 
+    //---------------------------------------
+    // Power Control Methods
+    //---------------------------------------
+
+    /**
+     * Send shutdown command to the glasses.
+     * This will initiate a graceful shutdown of the device.
+     */
+    public void sendShutdown() {
+        Bridge.log("LIVE: 🔌 Sending shutdown command to glasses");
+        try {
+            JSONObject json = new JSONObject();
+            json.put("type", "shutdown");
+            sendJson(json, false);
+        } catch (JSONException e) {
+            Log.e(TAG, "Error creating shutdown command", e);
+        }
+    }
+
+    /**
+     * Send reboot command to the glasses.
+     * This will initiate a reboot of the device.
+     */
+    public void sendReboot() {
+        Bridge.log("LIVE: 🔄 Sending reboot command to glasses");
+        try {
+            JSONObject json = new JSONObject();
+            json.put("type", "reboot");
+            sendJson(json, false);
+        } catch (JSONException e) {
+            Log.e(TAG, "Error creating reboot command", e);
+        }
+    }
 
     //---------------------------------------
     // IMU Methods

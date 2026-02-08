@@ -1662,6 +1662,16 @@ public class G1 extends SGCManager {
     }
 
     @Override
+    public void sendShutdown() {
+        Bridge.log("sendShutdown - not supported on G1");
+    }
+
+    @Override
+    public void sendReboot() {
+        Bridge.log("sendReboot - not supported on G1");
+    }
+
+    @Override
     public void sendRgbLedControl(String requestId, String packageName, String action, String color, int ontime, int offtime, int count) {
         Bridge.log("sendRgbLedControl - not supported on G1");
         Bridge.sendRgbLedControlResponse(requestId, false, "device_not_supported");
