@@ -32,7 +32,7 @@ const OTA_COVER_VIDEO_URL = "https://mentra-videos-cdn.mentraglass.com/onboardin
 
 export default function OtaProgressScreen() {
   const {theme} = useAppTheme()
-  const {replace, push, goBack} = useNavigationHistory()
+  const {replace, push, pushPrevious, clearHistoryAndGoHome, getHistory} = useNavigationHistory()
   const otaProgress = useGlassesStore((state) => state.otaProgress)
   const otaUpdateAvailable = useGlassesStore((state) => state.otaUpdateAvailable)
   const glassesConnected = useGlassesStore((state) => state.connected)
@@ -591,8 +591,20 @@ export default function OtaProgressScreen() {
   }, [progressState])
 
   const handleContinue = () => {
-    console.log("OTA: Continue pressed - going back")
-    goBack()
+    const history = getHistory()
+    // Check if there's onboarding underneath (initial pairing flow)
+    const hasOnboardingUnderneath =
+      history.includes("/onboarding/os") || history.includes("/onboarding/live") || history.includes("/onboarding/g1")
+
+    if (hasOnboardingUnderneath) {
+      // Initial pairing flow - use pushPrevious to go to onboarding screen underneath
+      console.log("OTA: Continue pressed - pushPrevious to onboarding")
+      pushPrevious()
+    } else {
+      // Home OTA alert flow - clear stack and go home
+      console.log("OTA: Continue pressed - clearHistoryAndGoHome")
+      clearHistoryAndGoHome()
+    }
   }
 
   const handleRetry = () => {
