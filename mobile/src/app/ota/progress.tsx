@@ -10,6 +10,7 @@ import {focusEffectPreventBack, useNavigationHistory} from "@/contexts/Navigatio
 import {useAppTheme} from "@/contexts/ThemeContext"
 import {checkBesUpdate, findMatchingMtkPatch, fetchVersionInfo, OTA_VERSION_URL_PROD} from "@/effects/OtaUpdateChecker"
 import {useGlassesStore} from "@/stores/glasses"
+import {SETTINGS, useSetting} from "@/stores/settings"
 import GlobalEventEmitter from "@/utils/GlobalEventEmitter"
 
 type ProgressState =
@@ -33,6 +34,7 @@ const OTA_COVER_VIDEO_URL = "https://mentra-videos-cdn.mentraglass.com/onboardin
 export default function OtaProgressScreen() {
   const {theme} = useAppTheme()
   const {replace, push, pushPrevious, clearHistoryAndGoHome, getHistory} = useNavigationHistory()
+  const [superMode] = useSetting(SETTINGS.super_mode.key)
   const otaProgress = useGlassesStore((state) => state.otaProgress)
   const otaUpdateAvailable = useGlassesStore((state) => state.otaUpdateAvailable)
   const glassesConnected = useGlassesStore((state) => state.connected)
@@ -823,7 +825,7 @@ export default function OtaProgressScreen() {
 
           <View className="gap-3 pb-2">
             <Button preset="primary" tx="Retry" flexContainer onPress={handleRetry} />
-            {__DEV__ && <Button preset="secondary" text="Skip (dev only)" onPress={handleContinue} />}
+            {superMode && <Button preset="secondary" text="Skip (super)" onPress={handleContinue} />}
           </View>
         </>
       )
@@ -920,8 +922,8 @@ completed: [${completedUpdates.join(", ")}]`
     <Screen preset="fixed" safeAreaEdges={["bottom"]}>
       <Header RightActionComponent={<MentraLogoStandalone />} />
 
-      {/* DEBUG OVERLAY - Remove after debugging */}
-      {__DEV__ && (
+      {/* DEBUG OVERLAY - Only shows in super mode */}
+      {superMode && (
         <View
           style={{
             position: "absolute",
