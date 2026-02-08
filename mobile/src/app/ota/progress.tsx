@@ -29,7 +29,7 @@ const RETRY_INTERVAL_MS = 5000 // 5 seconds between retries
 const PROGRESS_TIMEOUT_MS = 120000 // 120 seconds - for APK/BES updates with regular progress
 const MTK_INSTALL_TIMEOUT_MS = 300000 // 5 minutes - MTK system install takes much longer with no progress updates
 const TRANSITION_TIMEOUT_MS = 30000 // 30 seconds max wait for next update to start
-const OTA_COVER_VIDEO_URL = "https://mentra-videos-cdn.mentraglass.com/onboarding/ota/ota_video.mp4"
+const OTA_COVER_VIDEO_URL = "https://mentra-videos-cdn.mentraglass.com/onboarding/ota/ota_video_2.mp4"
 
 export default function OtaProgressScreen() {
   const {theme} = useAppTheme()

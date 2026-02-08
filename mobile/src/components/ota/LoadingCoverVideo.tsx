@@ -69,7 +69,7 @@ export function LoadingCoverVideo({videoUrl, onClose}: LoadingCoverVideoProps) {
       <View style={{flex: 1, backgroundColor: "black"}}>
         <VideoView player={player} style={{flex: 1}} contentFit="contain" nativeControls={false} />
         <View style={{position: "absolute", bottom: insets.bottom + 20, left: 20, right: 20}}>
-          <Button text="Close" preset="secondary" onPress={handleClose} />
+          <Button text="Close Video" preset="secondary" onPress={handleClose} />
         </View>
       </View>
     </Modal>
