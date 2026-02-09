@@ -37,7 +37,7 @@ interface AppCardItemProps {
   onDismiss: (packageName: string) => void
   onSelect: (packageName: string) => void
   translateX: Animated.SharedValue<number>
-  // count: number
+  count: number
 }
 
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable)
@@ -46,7 +46,7 @@ function AppCardItem({
   app,
   index,
   // activeIndex,
-  // count,
+  count,
   translateX,
   onDismiss,
   onSelect,
@@ -57,30 +57,8 @@ function AppCardItem({
   // const cardScale = useSharedValue(1)
 
   useEffect(() => {
-    if (animatedIndex.value !== index) {
-      // console.log("animatedIndex", animatedIndex.value, index, animatedIndex.value > index)
-      // animatedIndex.value = index+2
-      // animatedIndex.value = index-0.25
-      // animatedIndex.value = withSpring(index, { damping: 4, stiffness: 40 })
-      // translateX.value = translateX.value + (CARD_WIDTH + CARD_SPACING)
-      // animatedIndex.value = index-0.1
-      // if (animatedIndex.value >= index) {
-      //   animatedIndex.value = withTiming(index, {
-      //     duration: 30000,
-      //   })
-      // } else {
-      //   animatedIndex.value = index
-      // }
-      animatedIndex.value = withTiming(index, {
-        duration: 2000,
-      })
-    }
-
-    // console.log("animatedIndex", animatedIndex.value, index)
-    // animatedIndex.value = withTiming(index+1, {
-    //   duration: 2000,
-    // })
-  }, [index])
+    animatedIndex.value = withSpring(index, {damping: 20, stiffness: 1000, velocity: 2})
+  }, [count])
 
   const dismissCard = useCallback(() => {
     onDismiss(app.packageName)
@@ -125,7 +103,8 @@ function AppCardItem({
     let animIndex = animatedIndex.value
 
     let cardWidth = CARD_WIDTH + CARD_SPACING
-    let stat = -animIndex * cardWidth
+    // let stat = -animIndex * cardWidth
+    let stat = -index * cardWidth// use real index for stat!!
 
     let howFar = SCREEN_WIDTH / 4
     let lin = translateX.value / cardWidth + animIndex
@@ -137,7 +116,6 @@ function AppCardItem({
 
     let howFarPercent = (1 / (howFar / SCREEN_WIDTH)) * howFar
     let linearProgress = power / howFarPercent
-
     let scale = interpolate(linearProgress, [0, 0.8], [0.96, 1], Extrapolation.CLAMP)
 
     return {
@@ -154,6 +132,7 @@ function AppCardItem({
           {
             width: CARD_WIDTH,
             height: CARD_HEIGHT - 16,
+            // zIndex: -index,// to reverse stack order
           },
           cardAnimatedStyle,
         ]}>
@@ -433,6 +412,7 @@ export default function AppSwitcher({visible, onClose}: AppSwitcherProps) {
                     app={app}
                     onDismiss={handleDismiss}
                     onSelect={handleSelect}
+                    count={apps.length}
                     // activeIndex={activeIndex}
                     translateX={translateX}
                     index={index}
