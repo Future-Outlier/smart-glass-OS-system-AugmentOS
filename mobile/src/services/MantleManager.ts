@@ -1,4 +1,4 @@
-import CoreModule, {CoreStatus, GlassesStatus} from "core"
+import CoreModule, {ButtonPressEvent, CoreStatus, GlassesStatus} from "core"
 import * as Calendar from "expo-calendar"
 import * as Location from "expo-location"
 import * as TaskManager from "expo-task-manager"
@@ -297,7 +297,7 @@ class MantleManager {
       this.subs.push(
         CoreModule.addListener("button_press", (event) => {
           console.log("MANTLE: BUTTON_PRESS event received:", event)
-          this.handle_button_press(event.buttonId, event.pressType, event.timestamp)
+          this.handle_button_press(event)
         }),
       )
 
@@ -688,14 +688,8 @@ class MantleManager {
     socketComms.sendLocalTranscription(data)
   }
 
-  public async handle_button_press(id: string, type: string, timestamp: string) {
-    // Emit event to React Native layer for handling
-    GlobalEventEmitter.emit("BUTTON_PRESS", {
-      buttonId: id,
-      pressType: type,
-      timestamp: timestamp,
-    })
-    socketComms.sendButtonPress(id, type)
+  public async handle_button_press(event: ButtonPressEvent) {
+    socketComms.sendButtonPress(event.buttonId, event.pressType)
   }
 }
 

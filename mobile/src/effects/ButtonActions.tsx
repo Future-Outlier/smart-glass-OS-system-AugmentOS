@@ -3,8 +3,8 @@ import {useEffect} from "react"
 import {useAppTheme} from "@/contexts/ThemeContext"
 import {useApplets, useStartApplet} from "@/stores/applets"
 import {SETTINGS, useSettingsStore} from "@/stores/settings"
-import GlobalEventEmitter from "@/utils/GlobalEventEmitter"
 import {askPermissionsUI} from "@/utils/PermissionsUtils"
+import CoreModule, {ButtonPressEvent} from "core"
 
 export function ButtonActions() {
   const applets = useApplets()
@@ -24,7 +24,7 @@ export function ButtonActions() {
 
       if (cameraApp) {
         if (currentDefaultApp !== cameraApp.packageName) {
-          console.log("🔘 Setting default button app to camera (glasses have camera)")
+          console.log("BUTTON_ACTION: Setting default button app to camera (glasses have camera)")
           await useSettingsStore.getState().setSetting(SETTINGS.default_button_action_app.key, cameraApp.packageName)
         }
         return
@@ -45,7 +45,7 @@ export function ButtonActions() {
       )
 
       if (firstCompatibleApp) {
-        console.log("🔘 Setting default button app to:", firstCompatibleApp.packageName)
+        console.log("BUTTON_ACTION: Setting default button app to:", firstCompatibleApp.packageName)
         await useSettingsStore
           .getState()
           .setSetting(SETTINGS.default_button_action_app.key, firstCompatibleApp.packageName)
@@ -57,13 +57,13 @@ export function ButtonActions() {
 
   // Listen for button press events from glasses
   useEffect(() => {
-    const onButtonPress = async (event: {buttonId: string; pressType: string; timestamp: number}) => {
-      console.log("🔘 BUTTON_PRESS event in ButtonActionProvider:", event)
+    const onButtonPress = async (event: ButtonPressEvent) => {
+      console.log("BUTTON_ACTION: BUTTON_PRESS event in ButtonActionProvider:", event)
 
       // For V1: Handle short+long button presses the same.
       // Later, we'll differentiate actions based on pressType and have a fancy button configuration system for it.
       // if (event.pressType !== "short") {
-      //   console.log("🔘 Ignoring non-short press:", event.pressType)
+      //   console.log("BUTTON_ACTION: Ignoring non-short press:", event.pressType)
       //   return
       // }
 
@@ -73,7 +73,7 @@ export function ButtonActions() {
         .getSetting(SETTINGS.default_button_action_enabled.key)
 
       if (!defaultButtonActionEnabled) {
-        console.log("🔘 Default button action is disabled")
+        console.log("BUTTON_ACTION: Default button action is disabled")
         return
       }
 
@@ -82,7 +82,7 @@ export function ButtonActions() {
 
       if (activeForegroundApp) {
         console.log(
-          "🔘 Foreground app is running - button event already sent to server for app:",
+          "BUTTON_ACTION: Foreground app is running - button event already sent to server for app:",
           activeForegroundApp.name,
         )
         return
@@ -92,36 +92,37 @@ export function ButtonActions() {
       const defaultAppPackageName = await useSettingsStore.getState().getSetting(SETTINGS.default_button_action_app.key)
 
       if (!defaultAppPackageName) {
-        console.log("🔘 No default app configured")
+        console.log("BUTTON_ACTION: No default app configured")
         return
       }
 
       // Validate app compatibility before starting
       const targetApp = applets.find((app) => app.packageName === defaultAppPackageName)
       if (!targetApp) {
-        console.log("🔘 Default app not found:", defaultAppPackageName)
+        console.log("BUTTON_ACTION: Default app not found:", defaultAppPackageName)
         return
       }
 
       if (targetApp.compatibility?.isCompatible === false) {
-        console.log("🔘 Default app is incompatible with current device:", defaultAppPackageName)
+        console.log("BUTTON_ACTION: Default app is incompatible with current device:", defaultAppPackageName)
         return
       }
 
       // Check and request permissions before starting
       const result = await askPermissionsUI(targetApp, theme)
       if (result !== 1) {
-        console.log("🔘 Permissions not granted for default app:", defaultAppPackageName)
+        console.log("BUTTON_ACTION: Permissions not granted for default app:", defaultAppPackageName)
         return
       }
 
-      console.log("🔘 Starting default app:", defaultAppPackageName)
+      console.log("BUTTON_ACTION: Starting default app:", defaultAppPackageName)
       startApplet(defaultAppPackageName)
     }
 
-    GlobalEventEmitter.on("BUTTON_PRESS", onButtonPress)
+    let sub = CoreModule.addListener("button_press", onButtonPress)
+
     return () => {
-      GlobalEventEmitter.removeListener("BUTTON_PRESS", onButtonPress)
+      sub.remove()
     }
   }, [applets, startApplet, theme])
 
