@@ -34,11 +34,16 @@ export const ForegroundAppsGrid: React.FC = () => {
 
     // Sort to put Camera app first, then alphabetical
     inactiveApps.sort((a, b) => {
-      // Camera app always comes first
-      if (a.packageName === "com.mentra.camera") return -1
-      if (b.packageName === "com.mentra.camera") return 1
-
-      // Otherwise sort alphabetically
+      const priority = (pkg: string) => {
+        if (pkg === "com.mentra.camera") return 0
+        if (pkg === "com.mentra.gallery") return 2
+        if (pkg === "com.mentra.settings") return 3
+        if (pkg === "com.mentra.store") return 4
+        return 1
+      }
+      const pa = priority(a.packageName)
+      const pb = priority(b.packageName)
+      if (pa !== pb) return pa - pb
       return a.name.localeCompare(b.name)
     })
 

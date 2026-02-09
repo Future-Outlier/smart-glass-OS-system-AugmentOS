@@ -5,6 +5,7 @@ import {useSafeAreaInsets} from "react-native-safe-area-context"
 import {Icon, IconTypes, Text} from "@/components/ignite"
 import {useAppTheme} from "@/contexts/ThemeContext"
 import {translate} from "@/i18n"
+import {SETTINGS, useSetting} from "@/stores/settings"
 
 type TabButtonProps = TabTriggerSlotProps & {
   iconName: IconTypes
@@ -15,6 +16,7 @@ type TabButtonProps = TabTriggerSlotProps & {
 export default function Layout() {
   const {theme} = useAppTheme()
   const {bottom} = useSafeAreaInsets()
+  const [appSwitcherUi] = useSetting(SETTINGS.app_switcher_ui.key)
 
   function TabButton({iconName, iconNameFilled, isFocused, label, ...props}: TabButtonProps) {
     let iconColor = isFocused ? theme.colors.primary_foreground : theme.colors.muted_foreground
@@ -34,12 +36,26 @@ export default function Layout() {
     const backgroundColor = isFocused ? theme.colors.primary : bottomBarColor
     const displayIcon = isFocused ? iconNameFilled : iconName
     return (
-      <Pressable {...props} className="flex-col flex-1 gap-1 justify-between items-center" style={{marginBottom: bottom}}>
+      <Pressable
+        {...props}
+        className="flex-col flex-1 gap-1 justify-between items-center"
+        style={{marginBottom: bottom}}>
         <View className="px-3 py-1 rounded-2xl" style={{backgroundColor: backgroundColor}}>
           <Icon name={displayIcon} size={24} color={iconColor} backgroundColor={iconBgColor} />
         </View>
         <Text text={label} className="text-sm font-medium" style={{color: textColor}} />
       </Pressable>
+    )
+  }
+
+  if (appSwitcherUi) {
+    return (
+      <Tabs>
+        <TabSlot />
+        <TabList className="h-0">
+          <TabTrigger name="home" href="/home" asChild></TabTrigger>
+        </TabList>
+      </Tabs>
     )
   }
 

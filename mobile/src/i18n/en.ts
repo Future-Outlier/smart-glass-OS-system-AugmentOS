@@ -817,6 +817,12 @@ const en = {
     search: "Search",
     noOptionsFound: "No options found",
   },
+  miniApps: {
+    gallery: "Gallery",
+    camera: "Camera",
+    settings: "Settings",
+    liveCaptions: "Live Captions",
+  },
 }
 
 export default en
