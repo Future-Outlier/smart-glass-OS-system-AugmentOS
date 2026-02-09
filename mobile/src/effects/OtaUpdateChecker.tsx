@@ -352,7 +352,7 @@ export function OtaUpdateChecker() {
     latestVersionInfo: VersionInfo
     updates: string[]
   } | null>(null)
-  const otaCheckTimeoutRef = useRef<NodeJS.Timeout | null>(null)
+  const otaCheckTimeoutRef = useRef<number | null>(null)
 
   // Reset OTA check flag when glasses disconnect (allows fresh check on reconnect)
   useEffect(() => {
@@ -448,8 +448,8 @@ export function OtaUpdateChecker() {
     const updateMessage = superMode
       ? `Updates available: ${updates.join(", ").toUpperCase()}`
       : updateCount === 1
-        ? "1 update available"
-        : `${updateCount} updates available`
+      ? "1 update available"
+      : `${updateCount} updates available`
 
     console.log("📱 WiFi connected - showing pending OTA update prompt")
 
@@ -469,7 +469,7 @@ export function OtaUpdateChecker() {
   useEffect(() => {
     // Log every effect run with full state for debugging
     console.log(
-      `📱 OTA effect triggered - pathname: ${pathname}, hasChecked: ${hasCheckedOta.current}, connected: ${glassesConnected}, build: ${buildNumber}`,
+      `OTA: effect triggered - pathname: ${pathname}, hasChecked: ${hasCheckedOta.current}, connected: ${glassesConnected}, build: ${buildNumber}`,
     )
 
     // only check if we're on the home screen:
@@ -479,17 +479,17 @@ export function OtaUpdateChecker() {
 
     // OTA check (only for WiFi-capable glasses)
     if (hasCheckedOta.current) {
-      console.log("📱 OTA check skipped - already checked this session")
+      console.log("OTA: check skipped - already checked this session")
       return
     }
     if (!glassesConnected || !buildNumber) {
-      console.log(`📱 OTA check skipped - missing data (connected: ${glassesConnected}, build: ${buildNumber})`)
+      console.log(`OTA: check skipped - missing data (connected: ${glassesConnected}, build: ${buildNumber})`)
       return
     }
 
     const features: Capabilities = getModelCapabilities(defaultWearable)
     if (!features?.hasWifi) {
-      console.log("📱 OTA check skipped - device doesn't have WiFi capability")
+      console.log("OTA: check skipped - device doesn't have WiFi capability")
       return
     }
 
@@ -500,15 +500,15 @@ export function OtaUpdateChecker() {
 
     // Delay OTA check by 500ms to allow all version_info chunks to arrive
     // (version_info_1, version_info_2, version_info_3 arrive sequentially with ~100ms gaps)
-    console.log("📱 OTA check scheduled - waiting 500ms for firmware version info...")
+    console.log("OTA: check scheduled - waiting 500ms for firmware version info...")
     otaCheckTimeoutRef.current = setTimeout(async () => {
       // Re-check conditions after delay (glasses might have disconnected)
       if (!useGlassesStore.getState().connected) {
-        console.log("📱 OTA check cancelled - glasses disconnected during delay")
+        console.log("OTA: check cancelled - glasses disconnected during delay")
         return
       }
       if (hasCheckedOta.current) {
-        console.log("📱 OTA check cancelled - already checked")
+        console.log("OTA: check cancelled - already checked")
         return
       }
 
@@ -520,55 +520,55 @@ export function OtaUpdateChecker() {
       // After BES reflash, the chip takes longer to report its version - the first
       // version_info_3 often has empty bes_fw_version while the chip initializes.
       if (!latestBesFwVersion) {
-        console.log("📱 OTA: BES version still unknown - waiting up to 5s for it to arrive...")
+        console.log("OTA: BES version still unknown - waiting up to 5s for it to arrive...")
         const besArrived = await waitForGlassesState("besFwVersion", (v) => !!v, 5000)
         if (besArrived) {
           latestBesFwVersion = useGlassesStore.getState().besFwVersion
-          console.log(`📱 OTA: BES version arrived: ${latestBesFwVersion}`)
+          console.log(`OTA: BES version arrived: ${latestBesFwVersion}`)
         } else {
-          console.log("📱 OTA: BES version still unknown after extended wait - proceeding without it")
+          console.log("OTA: BES version still unknown after extended wait - proceeding without it")
         }
         // Re-check connection after waiting
         if (!useGlassesStore.getState().connected) {
-          console.log("📱 OTA check cancelled - glasses disconnected while waiting for BES version")
+          console.log("OTA: check cancelled - glasses disconnected while waiting for BES version")
           return
         }
       }
 
       console.log(
-        `📱 OTA check starting (MTK: ${latestMtkFwVersion || "unknown"}, BES: ${latestBesFwVersion || "unknown"})`,
+        `OTA: check starting (MTK: ${latestMtkFwVersion || "unknown"}, BES: ${latestBesFwVersion || "unknown"})`,
       )
       hasCheckedOta.current = true // Mark as checked to prevent duplicate checks
 
       checkForOtaUpdate(OTA_VERSION_URL_PROD, buildNumber, latestMtkFwVersion, latestBesFwVersion)
         .then(({updateAvailable, latestVersionInfo, updates}) => {
           console.log(
-            `📱 OTA check completed - updateAvailable: ${updateAvailable}, updates: ${updates?.join(", ") || "none"}`,
+            `OTA: check completed - updateAvailable: ${updateAvailable}, updates: ${updates?.join(", ") || "none"}`,
           )
 
           // Filter out MTK if it was already updated this session (A/B updates don't change version until reboot)
           const mtkUpdatedThisSession = useGlassesStore.getState().mtkUpdatedThisSession
           let filteredUpdates = updates
           if (mtkUpdatedThisSession && updates.includes("mtk")) {
-            console.log("📱 OTA: Filtering out MTK - already updated this session (pending reboot)")
+            console.log("OTA: Filtering out MTK - already updated this session (pending reboot)")
             filteredUpdates = updates.filter((u) => u !== "mtk")
           }
 
           if (filteredUpdates.length === 0 || !latestVersionInfo) {
-            console.log("📱 OTA check result: No updates available")
+            console.log("OTA: check result: No updates available")
             return
           }
 
           // Verify glasses are still connected before showing alert
           const currentlyConnected = useGlassesStore.getState().connected
           if (!currentlyConnected) {
-            console.log("📱 OTA update found but glasses disconnected - skipping alert")
+            console.log("OTA: update found but glasses disconnected - skipping alert")
             return
           }
 
           // Only show update alert on the homepage - user may have navigated away during async check
           if (pathnameRef.current !== "/home") {
-            console.log(`📱 OTA update found but not on homepage (${pathnameRef.current}) - caching for later`)
+            console.log(`OTA: update found but not on homepage (${pathnameRef.current}) - caching for later`)
             pendingUpdate.current = {latestVersionInfo, updates: filteredUpdates}
             return
           }
@@ -580,12 +580,12 @@ export function OtaUpdateChecker() {
           const updateMessage = superMode
             ? `Updates available: ${updateList}`
             : updateCount === 1
-              ? "1 update available"
-              : `${updateCount} updates available`
+            ? "1 update available"
+            : `${updateCount} updates available`
 
           // Get current WiFi status from store (not stale closure from effect start)
           const currentWifiConnected = useGlassesStore.getState().wifiConnected
-          console.log(`📱 OTA showing alert - WiFi connected: ${currentWifiConnected}, updates: ${updateList}`)
+          console.log(`OTA: showing alert - WiFi connected: ${currentWifiConnected}, updates: ${updateList}`)
 
           if (currentWifiConnected) {
             // WiFi connected - go to OTA check screen to confirm and start update
@@ -617,7 +617,7 @@ export function OtaUpdateChecker() {
           }
         })
         .catch((error) => {
-          console.log(`📱 OTA check failed with error: ${error?.message || error}`)
+          console.log(`OTA: check failed with error: ${error?.message || error}`)
         })
     }, 500) // Delay to allow version_info_3 to arrive
 

@@ -15,6 +15,7 @@ interface GlassesState extends GlassesStatus {
   setMtkUpdatedThisSession: (updated: boolean) => void
   clearOtaState: () => void
   reset: () => void
+  mtkUpdatedThisSession: boolean
 }
 
 export const getGlasesInfoPartial = (state: GlassesStatus) => {
@@ -30,7 +31,11 @@ export const getGlasesInfoPartial = (state: GlassesStatus) => {
   }
 }
 
-const initialState: GlassesStatus = {
+interface GlassesStore extends GlassesStatus {
+  mtkUpdatedThisSession: boolean
+}
+
+const initialState: GlassesStore = {
   // state:
   fullyBooted: false,
   connected: false,

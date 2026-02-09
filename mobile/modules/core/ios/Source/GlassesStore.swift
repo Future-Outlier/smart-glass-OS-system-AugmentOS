@@ -245,6 +245,8 @@ class GlassesStore {
         case ("core", "device_name"):
             if let name = value as? String {
                 CoreManager.shared.checkCurrentAudioDevice()
+                // listen for when the audio device is paired and connected
+                CoreManager.shared.setupAudioPairing(deviceName: name)
             }
 
         case ("core", "lastLog"):
