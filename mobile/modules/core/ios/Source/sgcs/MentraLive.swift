@@ -988,16 +988,6 @@ class MentraLive: NSObject, SGCManager {
     private var globalMessageId = 0
     private var lastReceivedMessageId = 0
 
-    // Version info: Flexible parsing - glasses can send any version_info* message with any fields
-    // RN accumulates fields via setGlassesInfo({...state, ...info}) - no chunking/merging needed
-    private var glassesAppVersion: String = ""
-    private var glassesBuildNumber: String = ""
-    private var glassesDeviceModel: String = ""
-    private var glassesAndroidVersion: String = ""
-    private var glassesOtaVersionUrl: String = ""
-    private var glassesFirmwareVersion: String = ""
-    private var glassesBtMacAddress: String = ""
-
     private var fullyBooted: Bool {
         get { GlassesStore.shared.get("glasses", "fullyBooted") as? Bool ?? false }
         set { GlassesStore.shared.apply("glasses", "fullyBooted", newValue) }
@@ -1914,7 +1904,6 @@ class MentraLive: NSObject, SGCManager {
                     GlassesStore.shared.apply("glasses", "mtkFwVersion", mtkFwVersion)
                 }
                 if let btMacAddress = fields["bt_mac_address"] as? String {
-                    glassesBtMacAddress = btMacAddress
                     GlassesStore.shared.apply("glasses", "btMacAddress", btMacAddress)
                 }
 
