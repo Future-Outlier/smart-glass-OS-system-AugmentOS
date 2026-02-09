@@ -1,4 +1,4 @@
-import {useEffect, useState, useRef} from "react"
+import {useEffect, useState, useRef, createContext} from "react"
 import {View, Modal, ActivityIndicator} from "react-native"
 import {usePathname} from "expo-router"
 import {Text, Button} from "@/components/ignite"
@@ -42,7 +42,7 @@ export const useConnectionOverlayConfig = create<OverlayConfigState>((set) => ({
   clearConfig: () => set({customTitle: null, customMessage: null, hideStopButton: false}),
 }))
 
-export function GlobalConnectionOverlay() {
+function GlobalConnectionOverlay() {
   const {theme} = useAppTheme()
   const {clearHistoryAndGoHome} = useNavigationHistory()
   const pathname = usePathname()
@@ -121,5 +121,17 @@ export function GlobalConnectionOverlay() {
         </View>
       </View>
     </Modal>
+  )
+}
+
+type ConnectionOverlayContextType = {}
+
+const ConnectionOverlayContext = createContext<ConnectionOverlayContextType | null>(null)
+export default function ConnectionOverlayProvider({children}: {children: React.ReactNode}) {
+  return (
+    <ConnectionOverlayContext.Provider value={{}}>
+      {children}
+      <GlobalConnectionOverlay />
+    </ConnectionOverlayContext.Provider>
   )
 }

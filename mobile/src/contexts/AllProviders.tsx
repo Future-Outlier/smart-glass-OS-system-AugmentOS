@@ -11,7 +11,6 @@ import {SafeAreaProvider, useSafeAreaInsets} from "react-native-safe-area-contex
 import Toast from "react-native-toast-message"
 
 // import {ErrorBoundary} from "@/components/error"
-import {GlobalConnectionOverlay} from "@/components/glasses/GlobalConnectionOverlay"
 import {Text} from "@/components/ignite"
 import {AppStoreProvider} from "@/contexts/AppStoreContext"
 import {AuthProvider} from "@/contexts/AuthContext"
@@ -21,6 +20,7 @@ import {useThemeProvider} from "@/contexts/ThemeContext"
 import {SETTINGS, useSetting, useSettingsStore} from "@/stores/settings"
 import {ModalProvider} from "@/utils/AlertUtils"
 import {KonamiCodeProvider} from "@/utils/debug/konami"
+import ConnectionOverlayProvider from "@/contexts/ConnectionOverlayContext"
 // JsStack imports commented out - were used for Android-specific navigation (currently disabled)
 // import {getAnimation, JsStack, simplePush, woltScreenOptions} from "@/components/navigation/JsStack"
 
@@ -139,6 +139,7 @@ export const AllProviders = withWrappers(
       </>
     )
   },
+  ConnectionOverlayProvider,
   (props) => {
     const {preventBack, animation} = useNavigationHistory()
 
@@ -146,7 +147,6 @@ export const AllProviders = withWrappers(
     return (
       <>
         {props.children}
-        <GlobalConnectionOverlay />
         <Stack
           screenOptions={{
             headerShown: false,

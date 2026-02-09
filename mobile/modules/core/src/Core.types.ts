@@ -233,7 +233,6 @@ export type CoreEvent =
   | MtkUpdateCompleteEvent
   | OtaUpdateAvailableEvent
   | OtaProgressEvent
-  | VersionInfoEvent
   | GlassesNotReadyEvent
 
 export type CoreModuleEvents = {
