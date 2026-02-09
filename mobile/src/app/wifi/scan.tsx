@@ -40,6 +40,7 @@ export default function WifiScanScreen() {
 
   const secondLastRoute = getPreviousRoute(1)
   const showBack = backableRoutes.includes(getPreviousRoute() || "") || backableRoutes.includes(secondLastRoute || "")
+  const showSkip = wifiConnected
 
   const handleBack = () => {
     if (showBack) {
@@ -283,7 +284,8 @@ export default function WifiScanScreen() {
         </View>
 
         <Button tx="wifi:enterNetworkManually" preset="primary" onPress={handleManualEntry} />
-        {/* Skip button removed during onboarding - WiFi is mandatory for OTA */}
+        {/* show skip button if we are already connected to a network */}
+        {showSkip && <Button tx="common:skip" preset="secondary" onPress={handleBack} className="mt-3" />}
       </View>
     </Screen>
   )
