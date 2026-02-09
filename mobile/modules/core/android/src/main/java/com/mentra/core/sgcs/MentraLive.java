@@ -2590,8 +2590,6 @@ public class MentraLive extends SGCManager {
                         GlassesStore.INSTANCE.apply("glasses", "btMacAddress", (String) fields.get("bt_mac_address"));
                     }
 
-                    // Send fields immediately to RN - no waiting for other chunks
-                    Bridge.sendVersionInfo(fields);
 
                     Bridge.log("LIVE: Processed version_info fields and sent to RN");
                 } else {
