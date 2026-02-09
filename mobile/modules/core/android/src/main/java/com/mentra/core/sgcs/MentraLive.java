@@ -574,9 +574,13 @@ public class MentraLive extends SGCManager {
         // Actually update the connection state!
         GlassesStore.INSTANCE.apply("glasses", "connectionState", state);
 
-        // connected state is now driven by fullyBooted in GlassesStore
+        if (state.equals(ConnTypes.CONNECTED)) {
+            GlassesStore.INSTANCE.apply("glasses", "connected", true);
+        }
+        
         if (state.equals(ConnTypes.DISCONNECTED)) {
             GlassesStore.INSTANCE.apply("glasses", "fullyBooted", false);
+            GlassesStore.INSTANCE.apply("glasses", "connected", false);
         }
     }
 
