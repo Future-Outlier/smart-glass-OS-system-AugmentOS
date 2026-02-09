@@ -124,6 +124,7 @@ class Mach1: UltraliteBaseViewController, SGCManager {
             GlassesStore.shared.apply("glasses", "fullyBooted", newValue)
         }
     }
+
     private var connected: Bool {
         get { GlassesStore.shared.get("glasses", "connected") as? Bool ?? false }
         set { GlassesStore.shared.apply("glasses", "connected", newValue) }

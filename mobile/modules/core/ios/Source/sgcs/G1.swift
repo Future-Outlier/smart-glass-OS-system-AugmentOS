@@ -386,7 +386,6 @@ class G1: NSObject, SGCManager {
     @Published var quickNotes: [QuickNote] = []
     @Published var leftBatteryLevel: Int = -1
     @Published var rightBatteryLevel: Int = -1
-    
 
     private var batteryLevel: Int {
         get { GlassesStore.shared.get("glasses", "batteryLevel") as? Int ?? -1 }
