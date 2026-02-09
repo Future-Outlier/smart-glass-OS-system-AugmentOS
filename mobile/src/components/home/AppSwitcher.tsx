@@ -57,7 +57,7 @@ function AppCardItem({
   // const cardScale = useSharedValue(1)
 
   useEffect(() => {
-    animatedIndex.value = withSpring(index, {damping: 20, stiffness: 1000, velocity: 2})
+    animatedIndex.value = withSpring(index, {damping: 20, stiffness: 90})
   }, [count])
 
   const dismissCard = useCallback(() => {
