@@ -3,7 +3,7 @@ import {useEffect, useState, useRef, useCallback} from "react"
 import {View, ActivityIndicator} from "react-native"
 
 import {MentraLogoStandalone} from "@/components/brands/MentraLogoStandalone"
-import {useConnectionOverlayConfig} from "@/components/glasses/GlobalConnectionOverlay"
+import {useConnectionOverlayConfig} from "@/contexts/ConnectionOverlayContext"
 import {Screen, Header, Button, Text, Icon} from "@/components/ignite"
 import {LoadingCoverVideo} from "@/components/ota/LoadingCoverVideo"
 import {focusEffectPreventBack, useNavigationHistory} from "@/contexts/NavigationHistoryContext"
