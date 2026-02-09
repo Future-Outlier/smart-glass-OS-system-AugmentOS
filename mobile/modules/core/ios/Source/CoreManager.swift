@@ -41,7 +41,7 @@ struct ViewState {
      * Attempts to automatically activate Mentra Live as the system audio device
      * If not paired yet, prompts user to pair in Settings
      */
-    func setupAudioPairing(deviceName: String) {
+    func setupAudioPairing(deviceName _: String) {
         // Don't configure audio session - PhoneMic.swift handles that
         // Just check if audio session supports Bluetooth (informational only)
         if !AudioSessionMonitor.isAudioSessionConfigured() {
@@ -795,6 +795,7 @@ struct ViewState {
         Bridge.log("MAN: checkCurrentAudioDevice: audioDevicePattern: \(audioDevicePattern)")
 
         if audioDevicePattern.isEmpty || audioDevicePattern == DeviceTypes.SIMULATED {
+            glassesBtcConnected = false
             Bridge.log("MAN: Audio device pattern is empty or simulated, returning")
             return
         }
