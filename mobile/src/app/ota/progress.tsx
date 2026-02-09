@@ -79,6 +79,14 @@ export default function OtaProgressScreen() {
   const [showCoverVideo, setShowCoverVideo] = useState(false)
   const hasShownVideoRef = useRef(false)
 
+  // Progress simulation for MTK install stall (typically stalls around 49-50%)
+  // Uses timeout-based stall detection: when no real progress for 20s in the 45-55% zone,
+  // start incrementing by 1% every 15s to keep user informed (caps at 60%)
+  const [simulatedProgress, setSimulatedProgress] = useState<number | null>(null)
+  const simulationTimerRef = useRef<NodeJS.Timeout | null>(null)
+  const stallDetectionRef = useRef<NodeJS.Timeout | null>(null)
+  const lastRealProgressRef = useRef<number>(0)
+
   focusEffectPreventBack()
 
   // Show cover video when update begins (only once per session)
@@ -404,6 +412,106 @@ export default function OtaProgressScreen() {
     }
   }, [handleUpdateCompleted])
 
+  // Progress simulation for MTK install stalls
+  // Architecture: This effect ONLY depends on otaProgress (real progress from glasses).
+  // When real progress arrives, we cancel any existing stall timer and restart it.
+  // When the stall timer fires (30s of no real progress in 40-75% zone), we start
+  // incrementing by 5% every 30s (matching display granularity for visible changes).
+  // The simulation interval updates simulatedProgress state (triggers re-render for UI)
+  // but does NOT re-trigger this effect (not in dependency array).
+  useEffect(() => {
+    const currentUpdate = otaProgress?.currentUpdate
+    const realProgress = otaProgress?.progress ?? 0
+    const stage = otaProgress?.stage
+    const status = otaProgress?.status
+
+    const isMtkInstall =
+      currentUpdate === "mtk" && stage === "install" && (status === "STARTED" || status === "PROGRESS")
+
+    // Helper to clear all simulation timers
+    const clearAllSimulation = () => {
+      if (simulationTimerRef.current) {
+        clearInterval(simulationTimerRef.current)
+        simulationTimerRef.current = null
+      }
+      if (stallDetectionRef.current) {
+        clearTimeout(stallDetectionRef.current)
+        stallDetectionRef.current = null
+      }
+    }
+
+    // Not MTK install - tear everything down
+    if (!isMtkInstall) {
+      clearAllSimulation()
+      setSimulatedProgress(null)
+      return
+    }
+
+    // Track real progress
+    if (realProgress > 0 && realProgress !== lastRealProgressRef.current) {
+      lastRealProgressRef.current = realProgress
+      console.log(`🎯 OTA SIMULATION: Real progress updated to ${realProgress}%`)
+
+      // If real progress exceeded simulation, clear simulation
+      setSimulatedProgress((prev) => {
+        if (prev !== null && realProgress > prev) {
+          console.log(`🎯 OTA SIMULATION: Real progress ${realProgress}% exceeded simulated ${prev}%, clearing`)
+          return null
+        }
+        return prev
+      })
+    }
+
+    // Real progress arrived - cancel existing stall detection and simulation interval
+    // (we'll restart stall detection below if still in the zone)
+    clearAllSimulation()
+
+    // Set up stall detection if we're in the stall zone (45-55%)
+    const inStallZone = realProgress >= 45 && realProgress < 55
+
+    if (inStallZone) {
+      // After 20s of no new otaProgress, start/resume simulating
+      stallDetectionRef.current = setTimeout(() => {
+        const stalledAt = lastRealProgressRef.current
+
+        // Use functional update to never go backwards - start at stalledAt+1 or keep higher prev
+        setSimulatedProgress((prev) => {
+          let target = prev !== null ? Math.max(prev, stalledAt + 1) : stalledAt + 1
+          target = Math.max(target, 51)
+          console.log(
+            `🎯 OTA SIMULATION: Stall detected at ${stalledAt}%, ${prev !== null ? `resuming from ${prev}%` : `starting at ${target}% (min 51%)`}`,
+          )
+          return target
+        })
+
+        // Then increment by 1% every 15s (caps at 60%)
+        simulationTimerRef.current = setInterval(() => {
+          setSimulatedProgress((prev) => {
+            const current = prev ?? stalledAt + 1
+            const next = current + 1
+            const capped = Math.min(next, 60)
+            console.log(`🎯 OTA SIMULATION: Incrementing to ${capped}%`)
+
+            if (capped >= 60) {
+              console.log(`🎯 OTA SIMULATION: Hit cap at 60%, stopping timer`)
+              if (simulationTimerRef.current) {
+                clearInterval(simulationTimerRef.current)
+                simulationTimerRef.current = null
+              }
+            }
+
+            return capped
+          })
+        }, 15000) // 15 seconds between 1% increments
+      }, 20000) // 20 seconds before first simulation tick
+    }
+
+    return () => {
+      clearAllSimulation()
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [otaProgress]) // Only react to real progress changes - NOT simulatedProgress
+
   // Watch for OTA progress updates from glasses
   useEffect(() => {
     console.log("🔍 OTA EFFECT: otaProgress effect triggered, otaProgress =", otaProgress)
@@ -434,9 +542,10 @@ export default function OtaProgressScreen() {
       }
     }
 
-    // Clear transition timeout if we receive progress for the expected next update
-    if (progressState === "transitioning" && transitionTimeoutRef.current) {
-      console.log("OTA: Received progress while transitioning - clearing transition timeout")
+    // Clear transition timeout whenever we receive ANY progress
+    // (not just during "transitioning" state - React batching can cause the state to lag behind)
+    if (transitionTimeoutRef.current) {
+      console.log("OTA: Received progress - clearing transition timeout")
       clearTimeout(transitionTimeoutRef.current)
       transitionTimeoutRef.current = null
     }
@@ -575,6 +684,12 @@ export default function OtaProgressScreen() {
       if (transitionTimeoutRef.current) {
         clearTimeout(transitionTimeoutRef.current)
       }
+      if (simulationTimerRef.current) {
+        clearInterval(simulationTimerRef.current)
+      }
+      if (stallDetectionRef.current) {
+        clearTimeout(stallDetectionRef.current)
+      }
     }
   }, [])
 
@@ -625,9 +740,13 @@ export default function OtaProgressScreen() {
     hasReceivedProgress.current = false
   }
 
-  const progress = otaProgress?.progress ?? 0
-  const displayProgress = Math.round(progress / 5) * 5
+  // Use simulated progress if available and higher than real progress (for MTK only)
+  const realProgress = otaProgress?.progress ?? 0
   const currentUpdate = otaProgress?.currentUpdate
+  const isSimulating = simulatedProgress !== null && currentUpdate === "mtk" && simulatedProgress > realProgress
+  const progress = isSimulating ? simulatedProgress : realProgress
+  // Round real progress to nearest 5%, but show exact 1% increments during simulation
+  const displayProgress = isSimulating ? progress : Math.round(progress / 5) * 5
 
   // Get update position string like "Update 1 of 3"
   const getUpdatePositionString = (): string => {
@@ -910,15 +1029,36 @@ export default function OtaProgressScreen() {
   // DEBUG: Track state for overlay
   const [debugInfo, setDebugInfo] = useState("")
   useEffect(() => {
+    const simulationActive = simulatedProgress !== null
+    const simulationStatus = simulationActive
+      ? simulationTimerRef.current
+        ? `active (${simulatedProgress}%)`
+        : `holding (${simulatedProgress}%)`
+      : stallDetectionRef.current
+        ? "detecting stall..."
+        : "none"
+
     const info = `progressState: ${progressState}
 currentUpdate: ${currentUpdate || "null"}
 stage: ${otaProgress?.stage || "null"}
 status: ${otaProgress?.status || "null"}
-progress: ${progress}%
+realProgress: ${realProgress}%
+simulated: ${simulationStatus}
+displayProgress: ${displayProgress}%
 index: ${currentUpdateIndex}/${updateSequenceRef.current.length}
 completed: [${completedUpdates.join(", ")}]`
     setDebugInfo(info)
-  }, [progressState, currentUpdate, otaProgress, progress, currentUpdateIndex, completedUpdates])
+  }, [
+    progressState,
+    currentUpdate,
+    otaProgress,
+    progress,
+    currentUpdateIndex,
+    completedUpdates,
+    simulatedProgress,
+    realProgress,
+    displayProgress,
+  ])
 
   return (
     <Screen preset="fixed" safeAreaEdges={["bottom"]}>
