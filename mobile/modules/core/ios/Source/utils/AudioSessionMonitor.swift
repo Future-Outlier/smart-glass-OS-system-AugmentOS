@@ -203,7 +203,7 @@ class AudioSessionMonitor {
         }
     }
 
-    @objc private func handleAppBecameActive() {
+    @objc private static func handleAppBecameActive() {
         guard let pattern = AudioSessionMonitor.devicePattern else { return }
 
         Bridge.log("AudioMonitor: App became active, checking for paired device '\(pattern)'")

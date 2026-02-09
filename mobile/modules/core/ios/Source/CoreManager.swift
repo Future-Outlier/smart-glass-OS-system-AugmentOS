@@ -54,20 +54,7 @@ struct ViewState {
         // BLE name: "MENTRA_LIVE_BLE_ABC123"
         // BT Classic could be: "MENTRA_LIVE_BLE_ABC123" or "MENTRA_LIVE_BT_ABC123"
         // We need to match on the unique device ID part (e.g., "ABC123")
-        let audioDevicePattern: String
-        if let idRange = deviceName.range(of: "_BLE_", options: .caseInsensitive) {
-            // Extract the ID after "_BLE_" (e.g., "ABC123")
-            audioDevicePattern = String(deviceName[idRange.upperBound...])
-            Bridge.log("Audio: Extracted device ID: \(audioDevicePattern) from \(deviceName)")
-        } else if let idRange = deviceName.range(of: "_BT_", options: .caseInsensitive) {
-            // Extract the ID after "_BT_"
-            audioDevicePattern = String(deviceName[idRange.upperBound...])
-            Bridge.log("Audio: Extracted device ID: \(audioDevicePattern) from \(deviceName)")
-        } else {
-            // Fallback: use the full device name
-            audioDevicePattern = deviceName
-            Bridge.log("Audio: Using full device name as pattern: \(audioDevicePattern)")
-        }
+        let audioDevicePattern = getAudioDevicePattern()
 
         if audioDevicePattern.isEmpty || audioDevicePattern == DeviceTypes.SIMULATED {
             Bridge.log("Audio: Device pattern is empty or simulated, returning")
@@ -805,6 +792,7 @@ struct ViewState {
 
     func checkCurrentAudioDevice() {
         let audioDevicePattern = getAudioDevicePattern()
+        Bridge.log("MAN: checkCurrentAudioDevice: audioDevicePattern: \(audioDevicePattern)")
 
         if audioDevicePattern.isEmpty || audioDevicePattern == DeviceTypes.SIMULATED {
             Bridge.log("MAN: Audio device pattern is empty or simulated, returning")

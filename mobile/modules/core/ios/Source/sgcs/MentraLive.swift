@@ -2832,7 +2832,7 @@ class MentraLive: NSObject, SGCManager {
 
         let coreToken = GlassesStore.shared.get("core", "auth_token") as? String ?? ""
         if coreToken.isEmpty {
-            Bridge.log("No coreToken available to send to ASG client")
+            Bridge.log("LIVE: No coreToken available to send to ASG client")
             return
         }
 
@@ -3166,6 +3166,7 @@ class MentraLive: NSObject, SGCManager {
     private var readinessCheckDispatchTimer: DispatchSourceTimer?
 
     private func startReadinessCheckLoop() {
+        Bridge.log("LIVE: startReadinessCheckLoop()")
         stopReadinessCheckLoop()
 
         readinessCheckCounter = 0
@@ -3361,6 +3362,17 @@ class MentraLive: NSObject, SGCManager {
         if let peripheral = connectedPeripheral {
             centralManager?.cancelPeripheralConnection(peripheral)
         }
+
+        GlassesStore.shared.apply("glasses", "connected", false)
+        GlassesStore.shared.apply("glasses", "fullyBooted", false)
+        GlassesStore.shared.apply("glasses", "connectionState", ConnTypes.DISCONNECTED)
+        GlassesStore.shared.apply("glasses", "wifiConnected", false)
+        GlassesStore.shared.apply("glasses", "wifiSsid", "")
+        GlassesStore.shared.apply("glasses", "wifiLocalIp", "")
+        GlassesStore.shared.apply("glasses", "hotspotEnabled", false)
+        GlassesStore.shared.apply("glasses", "hotspotSsid", "")
+        GlassesStore.shared.apply("glasses", "hotspotPassword", "")
+        GlassesStore.shared.apply("glasses", "hotspotGatewayIp", "")
 
         connectedPeripheral = nil
         centralManager?.delegate = nil

@@ -103,7 +103,7 @@ class GlassesStore {
         // Trigger hardware updates based on setting changes
         switch (category, key) {
         case ("glasses", "fullyBooted"):
-            Bridge.log("MAN: Glasses ready changed to \(value)")
+            Bridge.log("STORE: Glasses fullyBooted changed to \(value)")
             if let ready = value as? Bool {
                 if ready {
                     CoreManager.shared.handleDeviceReady()
@@ -246,7 +246,7 @@ class GlassesStore {
             if let name = value as? String {
                 CoreManager.shared.checkCurrentAudioDevice()
                 // listen for when the audio device is paired and connected
-                CoreManager.shared.setupAudioPairing(deviceName: name)
+                // CoreManager.shared.setupAudioPairing(deviceName: name)
             }
 
         case ("core", "lastLog"):

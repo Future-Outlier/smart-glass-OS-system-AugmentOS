@@ -4,7 +4,6 @@ import {subscribeWithSelector} from "zustand/middleware"
 
 interface GlassesState extends GlassesStatus {
   setGlassesInfo: (info: Partial<GlassesStatus>) => void
-  setConnected: (connected: boolean) => void
   setBatteryInfo: (batteryLevel: number, charging: boolean, caseBatteryLevel: number, caseCharging: boolean) => void
   setWifiInfo: (connected: boolean, ssid: string) => void
   setHotspotInfo: (enabled: boolean, ssid: string, password: string, ip: string) => void
@@ -88,13 +87,13 @@ export const useGlassesStore = create<GlassesState>()(
         const next = {...state, ...info}
         // When glasses disconnect, reset all glasses state to initial values
         // This prevents stale device info, firmware versions, battery, wifi, etc. from persisting
-        if (next.connected === false) {
-          return {...initialState, ...info}
-        }
+        // console.log("GLASSES: setGlassesInfo called with: next.connected =", next.connected)
+        // if (next.connected === false) {
+        //   return {...initialState, ...info}
+        // }
         return next
       }),
 
-    setConnected: (connected) => set({connected}),
 
     setBatteryInfo: (batteryLevel, charging, caseBatteryLevel, caseCharging) =>
       set({

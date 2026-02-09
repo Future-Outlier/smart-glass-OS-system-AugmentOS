@@ -14,6 +14,7 @@ export default function CoreStatusBar() {
   const systemMicUnavailable = useCoreStore((state) => state.systemMicUnavailable)
   const lastLog = useCoreStore((state) => state.lastLog)
   const micDataRecvd = useDebugStore((state) => state.micDataRecvd)
+  const btcConnected = useGlassesStore((state) => state.btcConnected)
   const {theme} = useAppTheme()
 
   const scrollViewRef = useRef<ScrollView>(null)
@@ -88,6 +89,14 @@ export default function CoreStatusBar() {
           <Icon name="bluetooth" size={14} color={theme.colors.secondary_foreground} />
           <Text className="text-secondary-foreground text-sm font-medium ml-2">
             {glassesFullyBooted ? "Fully Booted" : "Not fully booted"}
+          </Text>
+        </View>
+      </View>
+      <View className="flex-row gap-2">
+        <View className="flex-row items-center self-center align-middle justify-center py-1 px-2 rounded-full bg-primary">
+          <Icon name="bluetooth" size={14} color={theme.colors.secondary_foreground} />
+          <Text className="text-secondary-foreground text-sm font-medium ml-2">
+            {btcConnected ? "BT Classic Connected" : "BT Classic Disconnected"}
           </Text>
         </View>
       </View>
