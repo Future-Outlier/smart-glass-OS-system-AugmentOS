@@ -13,6 +13,8 @@ import {useSettingsStore} from "@/stores/settings"
 import showAlert from "@/utils/AlertUtils"
 import {captureRef} from "react-native-view-shot"
 import {useAppletStatusStore} from "@/stores/applets"
+import {DualButton} from "@/components/miniapps/DualButton"
+import {useSafeAreaInsets} from "react-native-safe-area-context"
 
 export default function AppWebView() {
   const {theme} = useAppTheme()
@@ -261,26 +263,65 @@ export default function AppWebView() {
   }
 
   // Render WebView only when finalUrl is ready
+  const insets = useSafeAreaInsets()
   return (
     <Screen preset="fixed" KeyboardAvoidingViewProps={{enabled: false}}>
-      <Header
-        title={appName}
+      {/* <Header
+        // style={{position: "absolute", top: 0, flex: 1}}
+        // backgroundColor="transparent"
+        // backgroundColor={"red"}
+        leftText={appName}
+        // title={appName}
         titleMode="center"
-        leftIcon="chevron-left"
-        onLeftPress={handleExit}
-        rightIcon="settings"
-        rightIconColor={theme.colors.icon}
-        onRightPress={() => {
-          push("/applet/settings", {
-            packageName: packageName as string,
-            appName: appName as string,
-            fromWebView: "true",
-          })
-        }}
+        // leftIcon="chevron-left"
+        // onLeftPress={handleExit}
+        // rightIcon="settings"
+        // rightIconColor={theme.colors.icon}
+        // onRightPress={() => {
+        //   push("/applet/settings", {
+        //     packageName: packageName as string,
+        //     appName: appName as string,
+        //     fromWebView: "true",
+        //   })
+        // }}
+        // rightActionComponent={<MentraLogoStandalone />}
+        RightActionComponent={
+          <>
+            <DualButton
+              onMinusPress={handleExit}
+              onEllipsisPress={() => {
+                push("/applet/settings", {
+                  packageName: packageName as string,
+                  appName: appName as string,
+                  fromWebView: "true",
+                })
+              }}
+            />
+          </>
+        }
         // style={{height: 44}}
         // containerStyle={{paddingTop: 0}}
-      />
-      <View ref={viewShotRef} collapsable={false} collapsableChildren={false} style={{flex: 1, marginHorizontal: -theme.spacing.s6}}>
+      /> */}
+      <View style={{height: insets.top}} />
+      <View className="z-10 absolute h-13 w-full items-center justify-end flex-row" style={{top: insets.top}}>
+        <>
+          <DualButton
+            onMinusPress={handleExit}
+            onEllipsisPress={() => {
+              push("/applet/settings", {
+                packageName: packageName as string,
+                appName: appName as string,
+                fromWebView: "true",
+              })
+            }}
+          />
+        </>
+      </View>
+      <View
+        ref={viewShotRef}
+        collapsable={false}
+        collapsableChildren={false}
+        style={{flex: 1, marginHorizontal: -theme.spacing.s6}}>
         {finalUrl ? (
           <WebView
             ref={webViewRef}

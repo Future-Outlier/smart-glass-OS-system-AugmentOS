@@ -9,6 +9,7 @@ import {
   Info,
   LayoutDashboard,
   Locate,
+  Minus,
   Unlink,
   Unplug,
   UserRound,
@@ -119,6 +120,7 @@ const lucideIcons = {
   "house": HomeIcon,
   "house-filled": HomeIcon,
   "ellipsis": Ellipsis,
+  "minus": Minus,
 }
 
 const tablerIcons = {
