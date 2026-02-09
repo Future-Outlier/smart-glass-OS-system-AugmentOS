@@ -104,7 +104,7 @@ function AppCardItem({
 
     let cardWidth = CARD_WIDTH + CARD_SPACING
     // let stat = -animIndex * cardWidth
-    let stat = -index * cardWidth// use real index for stat!!
+    let stat = -index * cardWidth // use real index for stat!!
 
     let howFar = SCREEN_WIDTH / 4
     let lin = translateX.value / cardWidth + animIndex
@@ -356,17 +356,11 @@ export default function AppSwitcher({visible, onClose}: AppSwitcherProps) {
       return
     }
 
-    // Handle offline apps - navigate directly to React Native route
-    if (applet.offline) {
-      const offlineRoute = applet.offlineRoute
-      if (offlineRoute) {
-        push(offlineRoute)
-        return
-      }
-    }
 
-    // Check if app has webviewURL and navigate directly to it
-    if (applet.webviewUrl && applet.healthy) {
+    // Handle offline apps - navigate directly to React Native route
+    if (applet.offline && applet.offlineRoute) {
+      push(applet.offlineRoute)
+    } else if (applet.webviewUrl && applet.healthy) {
       push("/applet/webview", {
         webviewURL: applet.webviewUrl,
         appName: applet.name,

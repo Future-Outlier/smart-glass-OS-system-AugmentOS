@@ -23,12 +23,15 @@ export type NavObject = {
   setAnimation: (animation: StackAnimationTypes) => void
 }
 
+type PushParams = {
+  transition?: StackAnimationTypes
+}
 interface NavigationHistoryContextType {
   goBack: () => void
   getHistory: () => string[]
   getPreviousRoute: (index?: number) => string | null
   clearHistory: () => void
-  push: (path: string, params?: any) => void
+  push: (path: string, params?: any | PushParams) => void
   replace: (path: string, params?: any) => void
   setPendingRoute: (route: string | null) => void
   getPendingRoute: () => string | null

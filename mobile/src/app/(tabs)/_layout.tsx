@@ -48,16 +48,16 @@ export default function Layout() {
     )
   }
 
-  if (appSwitcherUi) {
-    return (
-      <Tabs>
-        <TabSlot />
-        <TabList className="h-0">
-          <TabTrigger name="home" href="/home" asChild></TabTrigger>
-        </TabList>
-      </Tabs>
-    )
-  }
+  // if (appSwitcherUi) {
+  //   return (
+  //     <Tabs>
+  //       <TabSlot />
+  //       <TabList className="h-0">
+  //         <TabTrigger name="home" href="/home" asChild></TabTrigger>
+  //       </TabList>
+  //     </Tabs>
+  //   )
+  // }
 
   return (
     <Tabs>

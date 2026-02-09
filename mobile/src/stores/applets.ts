@@ -66,6 +66,7 @@ export const cameraPackageName = "com.mentra.camera"
 export const captionsPackageName = "com.mentra.captions"
 export const galleryPackageName = "com.mentra.gallery"
 export const settingsPackageName = "com.mentra.settings"
+export const storePackageName = "com.mentra.store"
 
 const saveLocalAppRunningState = (packageName: string, status: boolean): AsyncResult<void, Error> => {
   return Res.try_async(async () => {
@@ -181,11 +182,28 @@ const getOfflineApplets = async (): Promise<ClientAppletInterface[]> => {
       loading: false,
       healthy: true,
       permissions: [],
-      offlineRoute: "/account",
+      offlineRoute: "/settings/account",
       webviewUrl: "",
       hardwareRequirements: [],
       onStart: () => saveLocalAppRunningState(settingsPackageName, true),
       onStop: () => saveLocalAppRunningState(settingsPackageName, false),
+    },
+    {
+      packageName: storePackageName,
+      name: "Get more apps",
+      offlineRoute: "/miniapps/store",
+      webviewUrl: "",
+      healthy: true,
+      permissions: [],
+      offline: true,
+      running: false,
+      loading: false,
+      hardwareRequirements: [],
+      type: "standard",
+      logoUrl: require("@assets/applet-icons/store.png"),
+      local: false,
+      onStart: () => saveLocalAppRunningState(storePackageName, true),
+      onStop: () => saveLocalAppRunningState(storePackageName, false),
     },
   ]
 
@@ -349,7 +367,7 @@ export const useAppletStatusStore = create<AppStatusState>((set, get) => ({
   },
 
   startApplet: async (packageName: string) => {
-    let allApps = [...get().apps, getMoreAppsApplet()]
+    let allApps = [...get().apps]
     const applet = allApps.find((a) => a.packageName === packageName)
 
     if (!applet) {

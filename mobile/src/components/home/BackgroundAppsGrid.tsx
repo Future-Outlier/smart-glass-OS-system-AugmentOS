@@ -36,7 +36,6 @@ export const BackgroundAppsGrid = () => {
     inactiveApps.sort((a, b) => {
       return a.name.localeCompare(b.name)
     })
-    inactiveApps.push(getMoreAppsApplet())
 
     // Calculate how many empty placeholders we need to fill the last row
     const totalItems = inactiveApps.length

@@ -8,7 +8,6 @@ import {useAppTheme} from "@/contexts/ThemeContext"
 import {
   ClientAppletInterface,
   DUMMY_APPLET,
-  getMoreAppsApplet,
   useInactiveForegroundApps,
   useStartApplet,
 } from "@/stores/applets"
@@ -47,9 +46,6 @@ export const ForegroundAppsGrid: React.FC = () => {
       return a.name.localeCompare(b.name)
     })
 
-    // add in the get more apps app
-    inactiveApps.push(getMoreAppsApplet())
-
     // Calculate how many empty placeholders we need to fill the last row
     const totalItems = inactiveApps.length
     const remainder = totalItems % GRID_COLUMNS
@@ -64,16 +60,13 @@ export const ForegroundAppsGrid: React.FC = () => {
   }, [foregroundApps])
 
   const handlePress = async (app: ClientAppletInterface) => {
-    const getMoreApplet = getMoreAppsApplet()
-    if (app.packageName === getMoreApplet.packageName) {
-      push(getMoreApplet.offlineRoute)
-      return
-    }
 
     const result = await askPermissionsUI(app, theme)
     if (result !== 1) {
       return
     }
+
+    push("/store")
 
     startApplet(app.packageName)
   }
