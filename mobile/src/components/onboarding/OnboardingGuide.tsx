@@ -35,6 +35,7 @@ interface VideoStep extends BaseStep {
   containerStyle?: ViewStyle
   containerClassName?: string
   replayable?: boolean
+  showButtonImmediately?: boolean // Show the continue/end button immediately without waiting for video to finish
 }
 
 interface ImageStep extends BaseStep {
@@ -458,6 +459,10 @@ export function OnboardingGuide({
 
       if (status.status === "readyToPlay") {
         currentPlayer.play()
+        // Show button immediately if the step has showButtonImmediately flag
+        if (step.type === "video" && step.showButtonImmediately) {
+          setShowNextButton(true)
+        }
       }
       if (status.error) {
         setShowNextButton(true)
@@ -465,7 +470,7 @@ export function OnboardingGuide({
     })
 
     return () => subscription.remove()
-  }, [currentPlayer, currentIndex, autoStart, isCurrentStepImage])
+  }, [currentPlayer, currentIndex, autoStart, isCurrentStepImage, step])
 
   useEffect(() => {
     const sub1 = player1.addListener("sourceLoad", (_status: any) => {

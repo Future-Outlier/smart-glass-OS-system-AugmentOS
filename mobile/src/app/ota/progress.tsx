@@ -865,7 +865,7 @@ export default function OtaProgressScreen() {
           <View className="h-4" />
           {isMtk ? (
             <Text
-              text="This may take up to 5 minutes. Please keep your glasses connected."
+              text="During the update, please plug the infinity cable into your Mentra Live, or put it in the case to charge. This may take up to 5 minutes."
               className="text-sm text-center"
               style={{color: theme.colors.textDim}}
             />
@@ -1012,8 +1012,8 @@ export default function OtaProgressScreen() {
   useEffect(() => {
     if (isFirmwareCompleting) {
       setConfig({
-        customTitle: "Glasses are restarting",
-        customMessage: "This will take up to a minute. Please keep your glasses nearby and connected.",
+        customTitle: "Please wait while Mentra Live restarts and automatically reconnects...",
+        customMessage: "",
         hideStopButton: true,
       })
     } else {

@@ -247,7 +247,8 @@ export default function PairingPrepScreen() {
         title: translate("pairing:powerOn"), // for spacing so it's consistent with the other steps
         subtitle: translate("onboarding:livePowerOnTutorial"),
         info: translate("onboarding:livePowerOnInfo"),
-        playCount: 99999, //1,
+        playCount: 99999,
+        showButtonImmediately: true,
       },
     ]
 

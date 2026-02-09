@@ -115,7 +115,7 @@ const en = {
     btClassicDisconnectedMessage:
       "Your glasses are connected to the app, but the bluetooth audio device is not connected.",
     powerOn: "Power on",
-    poweredOn: "Powered on"
+    poweredOn: "Continue"
   },
   pairingGuide: {
     mentraLivePreorder: "Get Mentra Live and experience computer vision on your smart glasses.",
@@ -243,10 +243,9 @@ const en = {
     enterNetworkManually: "Enter network manually",
     enterNetworkDetails: "Enter network details",
     addNetwork: "Add your Wi-Fi network",
-    addNetworkDescription:
-      "Add a network to import media and install device updates automatically while your device is charging.",
+    addNetworkDescription: "Add your network here to sync the media and software on your Mentra Live.",
     rememberPassword: "Remember password",
-    rememberPasswordDescription: "Save this password for future connections.",
+    rememberPasswordDescription: "",
     wifiPassword: "Wi-Fi password",
     enterNetworkName: "Enter network name",
     networkName: "Network name (SSID)",
@@ -256,7 +255,7 @@ const en = {
     connectionFailed: "Connection failed",
     networkAdded: "Network added",
     networkAddedDescription:
-      "Connected devices will perform automatic updates and media imports while charging through the Mentra app. Automatic updates can be disabled in Device settings at any time.",
+      "Connected devices can sync photos and videos, update firmware, and use Wi-Fi enabled apps like Livestreamer.",
     failedDescription: "Make sure the password was entered correctly",
     connectingDescription: "This may take up to 20 seconds",
     connectingToNetwork: "Connecting to {{network}}...",
