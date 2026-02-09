@@ -308,6 +308,8 @@ export interface GlassesStatus {
   deviceModel: string
   androidVersion: string
   fwVersion: string
+  besFwVersion: string
+  mtkFwVersion: string
   btMacAddress: string
   buildNumber: string
   otaVersionUrl: string
@@ -316,8 +318,6 @@ export interface GlassesStatus {
   serialNumber: string
   style: string
   color: string
-  mtkFwVersion: string
-  besFwVersion: string
   // wifi info
   wifiConnected: boolean
   wifiSsid: string

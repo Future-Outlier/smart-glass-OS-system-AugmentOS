@@ -115,8 +115,7 @@ const en = {
     btClassicDisconnectedMessage:
       "Your glasses are connected to the app, but the bluetooth audio device is not connected.",
     powerOn: "Power on",
-    poweredOn: "Powered on",
-    glassesBooting: "Glasses are booting...",
+    poweredOn: "Powered on"
   },
   pairingGuide: {
     mentraLivePreorder: "Get Mentra Live and experience computer vision on your smart glasses.",

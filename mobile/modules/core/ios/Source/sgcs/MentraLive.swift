@@ -1887,34 +1887,35 @@ class MentraLive: NSObject, SGCManager {
 
                 // Update local fields for any we recognize
                 if let appVersion = fields["app_version"] as? String {
-                    glassesAppVersion = appVersion
+                    GlassesStore.shared.apply("glasses", "appVersion", appVersion)
                 }
                 if let buildNumber = fields["build_number"] as? String {
-                    glassesBuildNumber = buildNumber
                     isNewVersion = (Int(buildNumber) ?? 0) >= 5
+                    GlassesStore.shared.apply("glasses", "buildNumber", buildNumber)
                 }
                 if let deviceModel = fields["device_model"] as? String {
-                    glassesDeviceModel = deviceModel
+                    GlassesStore.shared.apply("glasses", "deviceModel", deviceModel)
                 }
                 if let androidVersion = fields["android_version"] as? String {
-                    glassesAndroidVersion = androidVersion
+                    GlassesStore.shared.apply("glasses", "androidVersion", androidVersion)
                 }
                 if let otaVersionUrl = fields["ota_version_url"] as? String {
-                    glassesOtaVersionUrl = otaVersionUrl
+                    GlassesStore.shared.apply("glasses", "otaVersionUrl", otaVersionUrl)
                 }
                 if let firmwareVersion = fields["firmware_version"] as? String {
-                    glassesFirmwareVersion = firmwareVersion
+                    GlassesStore.shared.apply("glasses", "fwVersion", firmwareVersion)
                 }
                 if let besFwVersion = fields["bes_fw_version"] as? String {
-                    glassesFirmwareVersion = besFwVersion
+                    GlassesStore.shared.apply("glasses", "besFwVersion", besFwVersion)
                 }
                 if let mtkFwVersion = fields["mtk_fw_version"] as? String {
                     // MTK firmware version (e.g., "20241130")
                     // Note: Stored separately from BES version for OTA patch matching
-                    // Field is forwarded to RN via sendTypedMessage below
+                    GlassesStore.shared.apply("glasses", "mtkFwVersion", mtkFwVersion)
                 }
                 if let btMacAddress = fields["bt_mac_address"] as? String {
                     glassesBtMacAddress = btMacAddress
+                    GlassesStore.shared.apply("glasses", "btMacAddress", btMacAddress)
                 }
 
                 // Send fields immediately to RN - no waiting for other chunks

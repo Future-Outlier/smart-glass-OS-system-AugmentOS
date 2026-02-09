@@ -2581,10 +2581,13 @@ public class MentraLive extends SGCManager {
                         GlassesStore.INSTANCE.apply("glasses", "otaVersionUrl", (String) fields.get("ota_version_url"));
                     }
                     if (fields.containsKey("firmware_version")) {
-                        GlassesStore.INSTANCE.apply("glasses", "firmwareVersion", (String) fields.get("firmware_version"));
+                        GlassesStore.INSTANCE.apply("glasses", "fwVersion", (String) fields.get("firmware_version"));
                     }
                     if (fields.containsKey("bes_fw_version")) {
-                        GlassesStore.INSTANCE.apply("glasses", "firmwareVersion", (String) fields.get("bes_fw_version"));
+                        GlassesStore.INSTANCE.apply("glasses", "besFwVersion", (String) fields.get("bes_fw_version"));
+                    }
+                    if (fields.containsKey("mtk_fw_version")) {
+                        GlassesStore.INSTANCE.apply("glasses", "mtkFwVersion", (String) fields.get("mtk_fw_version"));
                     }
                     if (fields.containsKey("bt_mac_address")) {
                         GlassesStore.INSTANCE.apply("glasses", "btMacAddress", (String) fields.get("bt_mac_address"));
