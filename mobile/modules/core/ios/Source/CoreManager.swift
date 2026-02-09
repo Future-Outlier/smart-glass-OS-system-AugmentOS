@@ -69,6 +69,11 @@ struct ViewState {
             Bridge.log("Audio: Using full device name as pattern: \(audioDevicePattern)")
         }
 
+        if audioDevicePattern.isEmpty || audioDevicePattern == DeviceTypes.SIMULATED {
+            Bridge.log("Audio: Device pattern is empty or simulated, returning")
+            return
+        }
+
         // Check if device is paired (don't activate to preserve A2DP music playback)
         let isPaired = AudioSessionMonitor.isDevicePaired(devicePattern: audioDevicePattern)
 
