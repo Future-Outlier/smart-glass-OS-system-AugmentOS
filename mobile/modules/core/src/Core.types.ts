@@ -271,7 +271,6 @@ export type CoreModuleEvents = {
   mtk_update_complete: (event: MtkUpdateCompleteEvent) => void
   ota_update_available: (event: OtaUpdateAvailableEvent) => void
   ota_progress: (event: OtaProgressEvent) => void
-  version_info: (event: VersionInfoEvent) => void
 }
 
 export type GlassesConnectionState = "disconnected" | "connected" | "connecting"
