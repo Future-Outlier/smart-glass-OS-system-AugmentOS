@@ -1917,9 +1917,9 @@ class MentraLive: NSObject, SGCManager {
 
                 // Send fields immediately to RN - no waiting for other chunks
                 // All fields including mtk_fw_version are forwarded to RN
-                Bridge.sendTypedMessage("version_info", body: fields)
+                // Bridge.sendTypedMessage("version_info", body: fields)
 
-                Bridge.log("LIVE: Processed version_info fields and sent to RN")
+                // Bridge.log("LIVE: Processed version_info fields and sent to RN")
             } else {
                 Bridge.log("Unhandled message type: \(type)")
             }

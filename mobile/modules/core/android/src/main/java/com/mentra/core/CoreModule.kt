@@ -48,7 +48,6 @@ class CoreModule : Module() {
             "mtk_update_complete",
             "ota_update_available",
             "ota_progress",
-            "version_info",
         )
 
         OnCreate {

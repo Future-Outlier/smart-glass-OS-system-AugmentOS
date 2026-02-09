@@ -2406,18 +2406,6 @@ public class MentraLive extends SGCManager {
                     Log.e(TAG, "Failed to parse build number as integer: " + buildNumberLegacy);
                 }
 
-                Bridge.log("LIVE: Glasses Version - App: " + appVersionLegacy +
-                      ", Build: " + buildNumberLegacy +
-                      ", Device: " + deviceModelLegacy +
-                      ", Android: " + androidVersionLegacy +
-                      ", Firmware: " + firmwareVersionLegacy +
-                      ", BT MAC: " + btMacAddressLegacy +
-                      ", OTA URL: " + otaVersionUrlLegacy);
-
-                // Send version info event (matches iOS emitVersionInfo)
-                Bridge.sendVersionInfo(appVersionLegacy, buildNumberLegacy, deviceModelLegacy, androidVersionLegacy,
-                      otaVersionUrlLegacy != null ? otaVersionUrlLegacy : "", firmwareVersionLegacy, btMacAddressLegacy);
-
                 break;
 
             case "ota_download_progress":

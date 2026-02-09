@@ -469,41 +469,6 @@ public class Bridge private constructor() {
             sendTypedMessage("hotspot_error", eventBody as Map<String, Any>)
         }
 
-        /**
-         * Send version info with flexible fields (new flexible parsing approach)
-         * Accepts any fields from glasses and forwards to RN
-         */
-        @JvmStatic
-        fun sendVersionInfo(fields: Map<String, Any>) {
-            sendTypedMessage("version_info", fields)
-        }
-
-        /**
-         * Send version info - matches iOS MentraLive.swift emitVersionInfo (legacy)
-         * Kept for backwards compatibility with old glasses
-         */
-        @JvmStatic
-        fun sendVersionInfo(
-                appVersion: String,
-                buildNumber: String,
-                deviceModel: String,
-                androidVersion: String,
-                otaVersionUrl: String,
-                firmwareVersion: String,
-                btMacAddress: String
-        ) {
-            val eventBody = HashMap<String, Any>()
-            eventBody["app_version"] = appVersion
-            eventBody["build_number"] = buildNumber
-            eventBody["device_model"] = deviceModel
-            eventBody["android_version"] = androidVersion
-            eventBody["ota_version_url"] = otaVersionUrl
-            eventBody["firmware_version"] = firmwareVersion
-            eventBody["bt_mac_address"] = btMacAddress
-
-            sendTypedMessage("version_info", eventBody as Map<String, Any>)
-        }
-
         /** Send MTK firmware update complete notification - matches iOS implementation */
         @JvmStatic
         fun sendMtkUpdateComplete(message: String) {

@@ -760,10 +760,11 @@ export const checkPermissionsUI = async (app: AppletInterface) => {
         }
         break
       case "CAMERA":
-        const hasCamera = await checkFeaturePermissions(PermissionFeatures.GLASSES_CAMERA)
-        if (!hasCamera) {
-          neededPermissions.push(PermissionFeatures.GLASSES_CAMERA)
-        }
+        // glasses_camera is not a real permission since it doesn't need to be requested
+        // const hasCamera = await checkFeaturePermissions(PermissionFeatures.GLASSES_CAMERA)
+        // if (!hasCamera) {
+        //   neededPermissions.push(PermissionFeatures.GLASSES_CAMERA)
+        // }
         break
       case "CALENDAR":
         const hasCalendar = await checkFeaturePermissions(PermissionFeatures.CALENDAR)

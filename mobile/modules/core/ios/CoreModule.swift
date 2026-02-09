@@ -41,8 +41,7 @@ public class CoreModule: Module {
             "keep_alive_ack",
             "mtk_update_complete",
             "ota_update_available",
-            "ota_progress",
-            "version_info"
+            "ota_progress"
         )
 
         OnCreate {

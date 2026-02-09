@@ -110,9 +110,7 @@ class GlassesStore {
                 } else {
                     CoreManager.shared.handleDeviceDisconnected()
                 }
-                // connected state is driven by fullyBooted:
-                // SOC must be ready for glasses to be considered connected
-                store.set("glasses", "connected", ready)
+                // we shouldn't call store.set in this function as this is only intended for side-effects, not driving state updates
             }
 
         case ("glasses", "headUp"):
