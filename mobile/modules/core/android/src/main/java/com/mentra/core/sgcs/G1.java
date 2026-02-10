@@ -1742,6 +1742,12 @@ public class G1 extends SGCManager {
         Bridge.log("G1: sendGalleryModeActive - not supported on G1");
     }
 
+    @Override
+    public void requestVersionInfo() {
+        // G1 doesn't support version info requests
+        Bridge.log("G1: requestVersionInfo - not supported on G1");
+    }
+
     // private void sendDataSequentially(byte[] data, boolean onlyLeft) {
     // if (stopper) return;
     // stopper = true;

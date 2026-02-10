@@ -115,7 +115,7 @@ const en = {
     btClassicDisconnectedMessage:
       "Your glasses are connected to the app, but the bluetooth audio device is not connected.",
     powerOn: "Power on",
-    poweredOn: "Continue"
+    poweredOn: "Continue",
   },
   pairingGuide: {
     mentraLivePreorder: "Get Mentra Live and experience computer vision on your smart glasses.",
@@ -232,6 +232,7 @@ const en = {
     btClassicStep4: 'Return to the app once it says "Connected"',
     btClassicTitle: "Pair Audio",
     btClassicSubtitle: "Connect {{name}} as a Bluetooth audio device",
+    showDevicePicker: "Show device picker",
     openSettings: "Open settings",
     stepCounter: "Step {{index}} / {{total}}",
     confirmSkip: "Yes, skip",

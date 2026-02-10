@@ -113,6 +113,10 @@ class MentraNexSGC: NSObject, CBCentralManagerDelegate, CBPeripheralDelegate, SG
 
     func sendGalleryMode() {}
 
+    func requestVersionInfo() {
+        Bridge.log("MentraNex: requestVersionInfo - not supported on MentraNex")
+    }
+
     // MARK: - Properties
 
     private var centralManager: CBCentralManager?

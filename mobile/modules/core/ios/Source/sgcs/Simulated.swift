@@ -253,4 +253,10 @@ class Simulated: SGCManager {
     func sendGalleryMode() {
         Bridge.log("sendGalleryMode")
     }
+
+    // MARK: - Version Info
+
+    func requestVersionInfo() {
+        Bridge.log("requestVersionInfo - not supported on Simulated")
+    }
 }

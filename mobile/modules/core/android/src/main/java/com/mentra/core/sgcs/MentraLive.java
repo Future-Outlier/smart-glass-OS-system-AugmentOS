@@ -3150,6 +3150,22 @@ public class MentraLive extends SGCManager {
         }
     }
 
+    /**
+     * Request version info from glasses.
+     * Glasses will respond with version_info message containing build number, firmware version, etc.
+     */
+    @Override
+    public void requestVersionInfo() {
+        try {
+            JSONObject json = new JSONObject();
+            json.put("type", "request_version");
+            sendJson(json, false);
+            Bridge.log("LIVE: 📱 Requesting version info from glasses");
+        } catch (JSONException e) {
+            Log.e(TAG, "📱 Error creating request_version command", e);
+        }
+    }
+
     @Override
     public void sendGalleryMode() {
         boolean active = (Boolean) GlassesStore.INSTANCE.get("core", "gallery_mode");

@@ -1950,7 +1950,7 @@ class MentraLive: NSObject, SGCManager {
         switch command {
         case "sr_hrt":
             if let bodyObj = json["B"] as? [String: Any] {
-                let readyResponse = bodyObj["fullyBooted"] as? Int ?? 0
+                let readyResponse = bodyObj["ready"] as? Int ?? 0
 
                 // Extract battery info from heartbeat
                 let percentage = bodyObj["pt"] as? Int ?? 0
@@ -2822,7 +2822,7 @@ class MentraLive: NSObject, SGCManager {
         sendJson(json, wakeUp: true)
     }
 
-    private func requestVersionInfo() {
+    func requestVersionInfo() {
         let json: [String: Any] = ["type": "request_version"]
         sendJson(json)
     }

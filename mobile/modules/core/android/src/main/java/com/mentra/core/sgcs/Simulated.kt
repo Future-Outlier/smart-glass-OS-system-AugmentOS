@@ -212,4 +212,9 @@ class Simulated : SGCManager() {
     override fun sendGalleryMode() {
         Bridge.log("SIMULATED: 📸 Received gallery mode")
     }
+
+    // Version info
+    override fun requestVersionInfo() {
+        Bridge.log("SIMULATED: 📱 Requesting version info (no-op)")
+    }
 }

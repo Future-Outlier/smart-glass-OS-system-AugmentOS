@@ -324,6 +324,10 @@ class G1: NSObject, SGCManager {
 
     func sendOtaStart() {}
 
+    func requestVersionInfo() {
+        Bridge.log("G1: requestVersionInfo - not supported on G1")
+    }
+
     var connectionState: String = ConnTypes.DISCONNECTED
 
     func sendJson(_: [String: Any], wakeUp _: Bool, requireAck _: Bool) {}

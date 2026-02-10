@@ -376,6 +376,12 @@ public class Mach1 extends SGCManager {
         Bridge.log("Mach1: sendGalleryModeActive - not supported on Mach1");
     }
 
+    @Override
+    public void requestVersionInfo() {
+        // Mach1 doesn't support version info requests
+        Bridge.log("Mach1: requestVersionInfo - not supported on Mach1");
+    }
+
     public class UltraliteListener implements EventListener{
         @Override
         public void onTap(int tapCount) {

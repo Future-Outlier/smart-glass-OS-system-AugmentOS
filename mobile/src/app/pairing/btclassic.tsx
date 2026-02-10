@@ -87,12 +87,11 @@ export default function BtClassicPairingScreen() {
       {!otherBtConnected && (
         <View className="absolute bottom-16 w-full">
           <Button
-            text="TX: show music picker"
+            text={translate("onboarding:showDevicePicker")}
             preset="secondary"
             onPress={() => {
               CrustModule.showAVRoutePicker(theme.colors.text)
             }}
-            
           />
         </View>
       )}

@@ -448,8 +448,8 @@ export function OtaUpdateChecker() {
     const updateMessage = superMode
       ? `Updates available: ${updates.join(", ").toUpperCase()}`
       : updateCount === 1
-      ? "1 update available"
-      : `${updateCount} updates available`
+        ? "1 update available"
+        : `${updateCount} updates available`
 
     console.log("OTA: WiFi connected - showing pending OTA update prompt")
 
@@ -580,8 +580,8 @@ export function OtaUpdateChecker() {
           const updateMessage = superMode
             ? `Updates available: ${updateList}`
             : updateCount === 1
-            ? "1 update available"
-            : `${updateCount} updates available`
+              ? "1 update available"
+              : `${updateCount} updates available`
 
           // Get current WiFi status from store (not stale closure from effect start)
           const currentWifiConnected = useGlassesStore.getState().wifiConnected
