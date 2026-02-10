@@ -27,6 +27,7 @@ import { User } from "../../models/user.model";
 import appService from "../core/app.service";
 import * as developerService from "../core/developer.service";
 import { logger as rootLogger } from "../logging/pino-logger";
+import { metricsService } from "../metrics";
 import { PosthogService } from "../logging/posthog.service";
 import { IWebSocket, WebSocketReadyState } from "../websocket/types";
 
@@ -1651,6 +1652,7 @@ export class AppManager {
         try {
           // Send message successfully
           websocket.send(JSON.stringify(message));
+          metricsService.incrementMiniappMessagesOut();
           this.logger.debug(
             {
               packageName,

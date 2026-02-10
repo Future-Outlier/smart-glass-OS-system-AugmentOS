@@ -6,7 +6,7 @@ import { ExtendedStreamType, TranscriptionData } from "@mentra/sdk";
 import dotenv from "dotenv";
 import { Logger } from "pino";
 
-// eslint-disable-next-line no-restricted-imports
+ 
 import UserSession from "../UserSession";
 dotenv.config();
 
@@ -14,19 +14,15 @@ dotenv.config();
 export const AZURE_SPEECH_KEY = process.env.AZURE_SPEECH_KEY || "";
 export const AZURE_SPEECH_REGION = process.env.AZURE_SPEECH_REGION || "";
 export const SONIOX_API_KEY = process.env.SONIOX_API_KEY || "";
-export const SONIOX_ENDPOINT =
-  process.env.SONIOX_ENDPOINT || "wss://stt-rt.soniox.com/transcribe-websocket";
-export const ALIBABA_ENDPOINT =
-  process.env.ALIBABA_ENDPOINT ||
-  "wss://dashscope.aliyuncs.com/api-ws/v1/inference";
+export const SONIOX_ENDPOINT = process.env.SONIOX_ENDPOINT || "wss://stt-rt.soniox.com/transcribe-websocket";
+export const SONIOX_MODEL = process.env.SONIOX_MODEL || "stt-rt-v4";
+export const ALIBABA_ENDPOINT = process.env.ALIBABA_ENDPOINT || "wss://dashscope.aliyuncs.com/api-ws/v1/inference";
 export const ALIBABA_WORKSPACE = process.env.ALIBABA_WORKSPACE || "";
-export const ALIBABA_DASHSCOPE_API_KEY =
-  process.env.ALIBABA_DASHSCOPE_API_KEY || "";
+export const ALIBABA_DASHSCOPE_API_KEY = process.env.ALIBABA_DASHSCOPE_API_KEY || "";
 
 // Ensure required environment variables are set (warn if missing in development)
 if (!AZURE_SPEECH_KEY || !AZURE_SPEECH_REGION) {
-  const message =
-    "Missing required Azure Speech environment variables: AZURE_SPEECH_KEY and AZURE_SPEECH_REGION";
+  const message = "Missing required Azure Speech environment variables: AZURE_SPEECH_KEY and AZURE_SPEECH_REGION";
   if (process.env.NODE_ENV === "production") {
     throw new Error(message);
   } else {
@@ -34,8 +30,7 @@ if (!AZURE_SPEECH_KEY || !AZURE_SPEECH_REGION) {
   }
 }
 if (!SONIOX_API_KEY || !SONIOX_ENDPOINT) {
-  const message =
-    "Missing required Soniox environment variables: SONIOX_API_KEY and SONIOX_ENDPOINT";
+  const message = "Missing required Soniox environment variables: SONIOX_API_KEY and SONIOX_ENDPOINT";
   if (process.env.NODE_ENV === "production") {
     throw new Error(message);
   } else {
@@ -107,7 +102,7 @@ export interface AzureProviderConfig {
 export interface SonioxProviderConfig {
   apiKey: string;
   endpoint: string;
-  model?: string; // Default: 'stt-rt-v3-preview'
+  model?: string; // Default: SONIOX_MODEL env var or 'stt-rt-v4'
   maxConnections?: number;
 }
 
@@ -163,10 +158,7 @@ export interface TranscriptionProvider {
   dispose(): Promise<void>;
 
   // Stream Management
-  createTranscriptionStream(
-    language: string,
-    options: StreamOptions,
-  ): Promise<StreamInstance>;
+  createTranscriptionStream(language: string, options: StreamOptions): Promise<StreamInstance>;
 
   // Capabilities
   supportsSubscription(subscription: ExtendedStreamType): boolean;
@@ -306,12 +298,11 @@ export class AzureProviderError extends ProviderError {
     public readonly errorType: AzureErrorType,
     originalError?: Error,
   ) {
-    super(
-      `Azure error ${errorCode}: ${errorDetails}`,
-      ProviderType.AZURE,
-      originalError,
-      { errorCode, errorDetails, errorType },
-    );
+    super(`Azure error ${errorCode}: ${errorDetails}`, ProviderType.AZURE, originalError, {
+      errorCode,
+      errorDetails,
+      errorType,
+    });
     this.name = "AzureProviderError";
   }
 }
@@ -407,6 +398,7 @@ export const DEFAULT_TRANSCRIPTION_CONFIG: TranscriptionConfig = {
   soniox: {
     apiKey: SONIOX_API_KEY,
     endpoint: SONIOX_ENDPOINT,
+    model: SONIOX_MODEL,
   },
 
   alibaba: {
