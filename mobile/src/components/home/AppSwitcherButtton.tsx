@@ -5,7 +5,7 @@ import AppIcon from "@/components/home/AppIcon"
 import {Badge} from "@/components/ui"
 import {useAppTheme} from "@/contexts/ThemeContext"
 import {translate} from "@/i18n"
-import {useActiveApps, useActiveForegroundApp} from "@/stores/applets"
+import {useActiveApps, useActiveBackgroundApps, useActiveBackgroundAppsCount, useActiveForegroundApp} from "@/stores/applets"
 
 interface AppSwitcherButtonProps {
   onPress: () => void
@@ -13,8 +13,9 @@ interface AppSwitcherButtonProps {
 
 export default function AppSwitcherButton({onPress}: AppSwitcherButtonProps) {
   const {theme} = useAppTheme()
-  const apps = useActiveApps()
+  const backgroundApps = useActiveBackgroundApps()
   const foregroundApp = useActiveForegroundApp()
+  const apps = useActiveApps()
   const appsCount = apps.length
 
 
@@ -42,7 +43,7 @@ export default function AppSwitcherButton({onPress}: AppSwitcherButtonProps) {
         )}
 
         <View className="flex-row items-center">
-          {apps.slice(0, 3).map((app, index) => (
+          {backgroundApps.slice(0, 3).map((app, index) => (
             <View
               key={app.packageName}
               style={{

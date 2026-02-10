@@ -18,6 +18,8 @@ import showAlert from "@/utils/AlertUtils"
 import {CompatibilityResult, HardwareCompatibility} from "@/utils/hardware"
 import {BackgroundTimer} from "@/utils/timers"
 import {storage} from "@/utils/storage"
+import {shallow} from "zustand/shallow"
+import {useShallow} from "zustand/react/shallow"
 
 export interface ClientAppletInterface extends AppletInterface {
   offline: boolean
@@ -420,7 +422,7 @@ export const useAppletStatusStore = create<AppStatusState>((set, get) => ({
       if (applet.offline) {
         const offlineRoute = applet.offlineRoute
         if (offlineRoute) {
-          push(offlineRoute)
+          push(offlineRoute, {transition: "fade"})
         }
       }
 
@@ -430,6 +432,7 @@ export const useAppletStatusStore = create<AppStatusState>((set, get) => ({
           webviewURL: applet.webviewUrl,
           appName: applet.name,
           packageName: applet.packageName,
+          transition: "fade",
         })
       }
     }
@@ -493,6 +496,11 @@ export const useActiveApps = () => {
   return useMemo(() => apps.filter((app) => app.running), [apps])
 }
 
+export const useActiveBackgroundApps = () => {
+  const apps = useApplets()
+  return useMemo(() => apps.filter((app) => app.type === "background" && app.running), [apps])
+}
+
 export const useBackgroundApps = () => {
   const apps = useApplets()
   return useMemo(
@@ -531,6 +539,9 @@ export const useIncompatibleApps = () => {
 export const useLocalMiniApps = () => {
   return useAppletStatusStore.getState().apps.filter((app) => app.local)
 }
+
+export const useActiveAppPackageNames = () =>
+  useAppletStatusStore(useShallow((state) => state.apps.filter((app) => app.running).map((a) => a.packageName)))
 
 // export const useIncompatibleApps = async () => {
 //   const apps = useApplets()

@@ -1,4 +1,4 @@
-import React, {useCallback, useEffect} from "react"
+import React, {useCallback, useEffect, useMemo} from "react"
 import {View, Dimensions, Pressable, Image, TouchableOpacity} from "react-native"
 import {Text} from "@/components/ignite/"
 import Animated, {
@@ -12,7 +12,7 @@ import Animated, {
   useDerivedValue,
 } from "react-native-reanimated"
 import {Gesture, GestureDetector} from "react-native-gesture-handler"
-import {ClientAppletInterface, useActiveApps, useAppletStatusStore} from "@/stores/applets"
+import {ClientAppletInterface, useActiveAppPackageNames, useActiveApps, useAppletStatusStore} from "@/stores/applets"
 import AppIcon from "@/components/home/AppIcon"
 import {useNavigationHistory} from "@/contexts/NavigationHistoryContext"
 import {useSafeAreaInsets} from "react-native-safe-area-context"
@@ -132,7 +132,7 @@ function AppCardItem({
         style={[
           {
             width: CARD_WIDTH,
-            height: CARD_HEIGHT,// - 16,
+            height: CARD_HEIGHT, // - 16,
             // zIndex: -index,// to reverse stack order
           },
           cardAnimatedStyle,
@@ -187,8 +187,13 @@ export default function AppSwitcher({visible, onClose}: AppSwitcherProps) {
   const targetIndex = useSharedValue(0)
   const prevTranslationX = useSharedValue(0)
   const {push} = useNavigationHistory()
-  const apps = useActiveApps()
   const insets = useSafeAreaInsets()
+  const apps = useActiveApps()
+
+  // const activePackageNames = useActiveAppPackageNames()
+  // const apps = useMemo(() => {
+  //   return useAppletStatusStore.getState().apps.filter((a) => activePackageNames.includes(a.packageName))
+  // }, [activePackageNames])
 
   useEffect(() => {
     if (visible) {
@@ -388,13 +393,15 @@ export default function AppSwitcher({visible, onClose}: AppSwitcherProps) {
     return null
   }
 
+  // console.log("apps", apps.map((app) => app.packageName))
+
   return (
     <View
       className="absolute -mx-6 inset-0 z-[1000]"
       pointerEvents={visible ? "auto" : "none"}
       style={{paddingBottom: insets.bottom}}>
       {/* Blurred Backdrop */}
-      <Animated.View className="absolute inset-0 bg-black/30" style={backdropStyle}>
+      <Animated.View className="absolute inset-0 bg-black/70" style={backdropStyle}>
         <Pressable className="flex-1" onPress={onClose} />
       </Animated.View>
 
@@ -404,36 +411,34 @@ export default function AppSwitcher({visible, onClose}: AppSwitcherProps) {
           <Text className="text-white/50 text-sm font-medium" tx="appSwitcher:swipeUpToClose" />
         </View> */}
 
-        {/* Cards Carousel */}
-        {apps.length > 0 ? (
-          <GestureDetector gesture={panGesture}>
-            <Animated.View className="flex-1 justify-center" pointerEvents="box-none">
-              <Pressable className="absolute inset-0" onPress={onClose} />
-              <Animated.View className="flex-row items-center" pointerEvents="box-none">
-                {apps.map((app, index) => (
-                  <AppCardItem
-                    key={app.packageName}
-                    app={app}
-                    onDismiss={handleDismiss}
-                    onSelect={handleSelect}
-                    count={apps.length}
-                    // activeIndex={activeIndex}
-                    translateX={translateX}
-                    index={index}
-                  />
-                ))}
-              </Animated.View>
-            </Animated.View>
-          </GestureDetector>
-        ) : (
-          <View className="flex-1 items-center justify-center bg-black/70">
-            <Pressable className="absolute inset-0" onPress={onClose} />
+        {apps.length == 0 && (
+          <View className="flex-1 items-center justify-center">
             <Text className="text-white text-[22px] font-semibold mb-2" tx="appSwitcher:noAppsOpen" />
             <Text className="text-white/50 text-base" tx="appSwitcher:yourRecentlyUsedAppsWillAppearHere" />
           </View>
         )}
 
-        {/* Page Indicators */}
+        {/* Cards Carousel */}
+        <GestureDetector gesture={panGesture}>
+          <Animated.View className="flex-1 justify-center" pointerEvents="box-none">
+            <Pressable className="absolute inset-0" onPress={onClose} />
+            <Animated.View className="flex-row items-center" pointerEvents="box-none">
+              {apps.map((app, index) => (
+                <AppCardItem
+                  key={app.packageName}
+                  app={app}
+                  onDismiss={handleDismiss}
+                  onSelect={handleSelect}
+                  count={apps.length}
+                  // activeIndex={activeIndex}
+                  translateX={translateX}
+                  index={index}
+                />
+              ))}
+            </Animated.View>
+          </Animated.View>
+        </GestureDetector>
+
         {apps.length > 0 && (
           <View className="flex-row justify-center items-center gap-1.5 mb-5">
             {apps.map((_, index) => (
