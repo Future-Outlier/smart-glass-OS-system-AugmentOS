@@ -232,6 +232,7 @@ const en = {
     btClassicStep4: 'Return to the app once it says "Connected"',
     btClassicTitle: "Pair Audio",
     btClassicSubtitle: "Connect {{name}} as a Bluetooth audio device",
+    showDevicePicker: "Show device picker",
     openSettings: "Open settings",
     stepCounter: "Step {{index}} / {{total}}",
     confirmSkip: "Yes, skip",
