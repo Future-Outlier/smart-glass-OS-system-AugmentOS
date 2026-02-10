@@ -90,7 +90,6 @@ export const simplePush = ({current, next, layouts}: any) => {
   }
 }
 
-
 const fadeCardStyleInterpolator = ({current}: any) => {
   return {
     cardStyle: {

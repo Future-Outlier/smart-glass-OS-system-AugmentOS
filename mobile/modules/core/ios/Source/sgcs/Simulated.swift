@@ -179,6 +179,14 @@ class Simulated: SGCManager {
         Bridge.log("exit")
     }
 
+    func sendShutdown() {
+        Bridge.log("sendShutdown - not supported on Simulated")
+    }
+
+    func sendReboot() {
+        Bridge.log("sendReboot - not supported on Simulated")
+    }
+
     func sendRgbLedControl(requestId: String, packageName _: String?, action _: String, color _: String?, ontime _: Int, offtime _: Int, count _: Int) {
         Bridge.log("sendRgbLedControl - not supported on Simulated")
         Bridge.sendRgbLedControlResponse(requestId: requestId, success: false, error: "device_not_supported")

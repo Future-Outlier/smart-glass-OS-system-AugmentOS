@@ -1040,6 +1040,24 @@ class CoreManager {
         (sgc as? MentraLive)?.sendOtaStart()
     }
 
+    /**
+     * Send shutdown command to glasses.
+     * This will initiate a graceful shutdown of the device.
+     */
+    fun sendShutdown() {
+        Bridge.log("MAN: 🔌 Sending shutdown command to glasses")
+        sgc?.sendShutdown()
+    }
+
+    /**
+     * Send reboot command to glasses.
+     * This will initiate a reboot of the device.
+     */
+    fun sendReboot() {
+        Bridge.log("MAN: 🔄 Sending reboot command to glasses")
+        sgc?.sendReboot()
+    }
+
     fun startBufferRecording() {
         Bridge.log("MAN: onStartBufferRecording")
         sgc?.startBufferRecording()

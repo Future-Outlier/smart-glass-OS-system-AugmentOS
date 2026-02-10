@@ -30,6 +30,7 @@
   },
   "dependencies": {
     "@config-plugins/react-native-webrtc": "^13.0.0",
+    "@douglowder/expo-av-route-picker-view": "^0.0.5",
     "@dr.pogodin/react-native-fs": "^2.36.2",
     "@expo-google-fonts/red-hat-display": "^0.4.1",
     "@expo-google-fonts/space-grotesk": "^0.4.1",
@@ -49,6 +50,7 @@
     "axios": "^1.13.2",
     "babel-plugin-module-resolver": "5.0.0",
     "core": "file:./modules/core",
+    "crust": "file:./modules/crust",
     "date-fns": "^4.1.0",
     "dotenv": "^17.2.3",
     "expo": "~54.0.28",

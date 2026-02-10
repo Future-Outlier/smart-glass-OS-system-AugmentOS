@@ -386,7 +386,6 @@ class G1: NSObject, SGCManager {
     @Published var quickNotes: [QuickNote] = []
     @Published var leftBatteryLevel: Int = -1
     @Published var rightBatteryLevel: Int = -1
-    
 
     private var batteryLevel: Int {
         get { GlassesStore.shared.get("glasses", "batteryLevel") as? Int ?? -1 }
@@ -1444,6 +1443,14 @@ extension G1 {
         let exitData = Data([Commands.BLE_EXIT_ALL_FUNCTIONS.rawValue])
         let exitDataArray = exitData.map { UInt8($0) }
         queueChunks([exitDataArray])
+    }
+
+    func sendShutdown() {
+        Bridge.log("sendShutdown - not supported on G1")
+    }
+
+    func sendReboot() {
+        Bridge.log("sendReboot - not supported on G1")
     }
 
     func sendRgbLedControl(

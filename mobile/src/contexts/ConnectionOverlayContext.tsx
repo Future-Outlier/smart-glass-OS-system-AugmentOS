@@ -1,32 +1,63 @@
-import {useEffect, useState, useRef} from "react"
+import {useEffect, useState, useRef, createContext} from "react"
 import {View, Modal, ActivityIndicator} from "react-native"
+import {usePathname} from "expo-router"
 import {Text, Button} from "@/components/ignite"
 import {useAppTheme} from "@/contexts/ThemeContext"
 import {useNavigationHistory} from "@/contexts/NavigationHistoryContext"
 import {useGlassesStore} from "@/stores/glasses"
 import {translate} from "@/i18n"
+import {create} from "zustand"
 
 const CANCEL_BUTTON_DELAY_MS = 10000 // 10 seconds before enabling cancel button
 
-interface ConnectionOverlayProps {
-  /** Custom title to display instead of default "Glasses are reconnecting" */
-  customTitle?: string
-  /** Custom message to display instead of default reconnecting message */
-  customMessage?: string
-  /** Hide the "Stop trying" button entirely */
-  hideStopButton?: boolean
+// Routes that should show the connection overlay when glasses disconnect
+const OVERLAY_ROUTES = [
+  "/wifi/password",
+  "/wifi/connecting",
+  "/wifi/scan",
+  "/ota/progress",
+  "/ota/check-for-updates",
+  "/onboarding/live",
+]
+
+// Store for custom overlay configuration (used by OTA progress screen)
+interface OverlayConfigState {
+  customTitle: string | null
+  customMessage: string | null
+  hideStopButton: boolean
+  setConfig: (config: {customTitle?: string | null; customMessage?: string | null; hideStopButton?: boolean}) => void
+  clearConfig: () => void
 }
 
-export function ConnectionOverlay({customTitle, customMessage, hideStopButton}: ConnectionOverlayProps = {}) {
+export const useConnectionOverlayConfig = create<OverlayConfigState>((set) => ({
+  customTitle: null,
+  customMessage: null,
+  hideStopButton: false,
+  setConfig: (config) =>
+    set((state) => ({
+      customTitle: config.customTitle !== undefined ? config.customTitle : state.customTitle,
+      customMessage: config.customMessage !== undefined ? config.customMessage : state.customMessage,
+      hideStopButton: config.hideStopButton !== undefined ? config.hideStopButton : state.hideStopButton,
+    })),
+  clearConfig: () => set({customTitle: null, customMessage: null, hideStopButton: false}),
+}))
+
+function GlobalConnectionOverlay() {
   const {theme} = useAppTheme()
   const {clearHistoryAndGoHome} = useNavigationHistory()
+  const pathname = usePathname()
   const glassesConnected = useGlassesStore((state) => state.connected)
+  const {customTitle, customMessage, hideStopButton} = useConnectionOverlayConfig()
+
   const [showOverlay, setShowOverlay] = useState(false)
   const [cancelButtonEnabled, setCancelButtonEnabled] = useState(false)
-  const cancelButtonTimerRef = useRef<number | null>(null)
+  const cancelButtonTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  // Check if current route should show overlay
+  const shouldShowOnRoute = OVERLAY_ROUTES.some((route) => pathname.startsWith(route))
 
   useEffect(() => {
-    if (!glassesConnected) {
+    if (!glassesConnected && shouldShowOnRoute) {
       setShowOverlay(true)
       setCancelButtonEnabled(false)
       // Start timer to enable cancel button after delay
@@ -36,7 +67,7 @@ export function ConnectionOverlay({customTitle, customMessage, hideStopButton}: 
     } else {
       setShowOverlay(false)
       setCancelButtonEnabled(false)
-      // Clear timer if connection succeeds
+      // Clear timer if connection succeeds or we navigate away
       if (cancelButtonTimerRef.current) {
         clearTimeout(cancelButtonTimerRef.current)
         cancelButtonTimerRef.current = null
@@ -49,7 +80,7 @@ export function ConnectionOverlay({customTitle, customMessage, hideStopButton}: 
         cancelButtonTimerRef.current = null
       }
     }
-  }, [glassesConnected])
+  }, [glassesConnected, shouldShowOnRoute])
 
   const handleStopTrying = () => {
     if (!cancelButtonEnabled) return
@@ -90,5 +121,17 @@ export function ConnectionOverlay({customTitle, customMessage, hideStopButton}: 
         </View>
       </View>
     </Modal>
+  )
+}
+
+type ConnectionOverlayContextType = {}
+
+const ConnectionOverlayContext = createContext<ConnectionOverlayContextType | null>(null)
+export default function ConnectionOverlayProvider({children}: {children: React.ReactNode}) {
+  return (
+    <ConnectionOverlayContext.Provider value={{}}>
+      {children}
+      <GlobalConnectionOverlay />
+    </ConnectionOverlayContext.Provider>
   )
 }

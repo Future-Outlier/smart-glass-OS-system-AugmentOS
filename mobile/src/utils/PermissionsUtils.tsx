@@ -10,7 +10,19 @@ import showAlert, {showBluetoothAlert, showLocationAlert, showLocationServicesAl
 import {checkAndRequestNotificationAccessSpecialPermission} from "@/utils/NotificationServiceUtils"
 import {storage} from "@/utils/storage/storage"
 
-type UI_PERMISSION = "LOCATION" | "MICROPHONE" | "CALENDAR" | "POST_NOTIFICATIONS" | "READ_NOTIFICATIONS" | "BACKGROUND_LOCATION" | "CAMERA" | "GLASSES_CAMERA" | "BLUETOOTH" | "PHONE_STATE" | "BATTERY_OPTIMIZATION" | "BASIC"
+type _UI_PERMISSION =
+  | "LOCATION"
+  | "MICROPHONE"
+  | "CALENDAR"
+  | "POST_NOTIFICATIONS"
+  | "READ_NOTIFICATIONS"
+  | "BACKGROUND_LOCATION"
+  | "CAMERA"
+  | "GLASSES_CAMERA"
+  | "BLUETOOTH"
+  | "PHONE_STATE"
+  | "BATTERY_OPTIMIZATION"
+  | "BASIC"
 
 // Define permission features with their required permissions
 export const PermissionFeatures: Record<string, string> = {
@@ -748,10 +760,11 @@ export const checkPermissionsUI = async (app: AppletInterface) => {
         }
         break
       case "CAMERA":
-        const hasCamera = await checkFeaturePermissions(PermissionFeatures.GLASSES_CAMERA)
-        if (!hasCamera) {
-          neededPermissions.push(PermissionFeatures.GLASSES_CAMERA)
-        }
+        // glasses_camera is not a real permission since it doesn't need to be requested
+        // const hasCamera = await checkFeaturePermissions(PermissionFeatures.GLASSES_CAMERA)
+        // if (!hasCamera) {
+        //   neededPermissions.push(PermissionFeatures.GLASSES_CAMERA)
+        // }
         break
       case "CALENDAR":
         const hasCalendar = await checkFeaturePermissions(PermissionFeatures.CALENDAR)

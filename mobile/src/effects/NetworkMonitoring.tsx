@@ -2,6 +2,7 @@ import {useEffect, useState} from "react"
 
 import {networkConnectivityService, NetworkStatus} from "@/services/asg/networkConnectivityService"
 import {useGlassesStore} from "@/stores/glasses"
+import { asgCameraApi } from "@/services/asg/asgCameraApi"
 
 export function NetworkMonitoring() {
   const [networkStatus, setNetworkStatus] = useState<NetworkStatus>(networkConnectivityService.getStatus())
@@ -20,6 +21,12 @@ export function NetworkMonitoring() {
   const activeGlassesIp = phoneConnectedToHotspot && hotspotGatewayIp ? hotspotGatewayIp : undefined
   const activeConnection = phoneConnectedToHotspot
   const activeSSID = phoneConnectedToHotspot ? hotspotSsid : undefined
+
+  // useEffect(() => {
+  //   console.log("[NetworkMonitoring] Network status:", networkStatus)
+    
+  //   asgCameraApi.setServer(hotspotGatewayIp, 8089)
+  // }, [hotspotGatewayIp])
 
   // Initialize network monitoring
   useEffect(() => {

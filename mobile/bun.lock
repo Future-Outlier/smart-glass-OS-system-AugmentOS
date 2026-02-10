@@ -6,6 +6,7 @@
       "name": "mentraos",
       "dependencies": {
         "@config-plugins/react-native-webrtc": "^13.0.0",
+        "@douglowder/expo-av-route-picker-view": "^0.0.5",
         "@dr.pogodin/react-native-fs": "^2.36.2",
         "@expo-google-fonts/red-hat-display": "^0.4.1",
         "@expo-google-fonts/space-grotesk": "^0.4.1",
@@ -25,6 +26,7 @@
         "axios": "^1.13.2",
         "babel-plugin-module-resolver": "5.0.0",
         "core": "file:./modules/core",
+        "crust": "file:./modules/crust",
         "date-fns": "^4.1.0",
         "dotenv": "^17.2.3",
         "expo": "~54.0.28",
@@ -391,6 +393,8 @@
     "@bufbuild/protobuf": ["@bufbuild/protobuf@1.10.1", "", {}, "sha512-wJ8ReQbHxsAfXhrf9ixl0aYbZorRuOWpBNzm8pL8ftmSxQx/wnJD5Eg861NwJU/czy2VXFIebCeZnZrI9rktIQ=="],
 
     "@config-plugins/react-native-webrtc": ["@config-plugins/react-native-webrtc@13.0.0", "", { "peerDependencies": { "expo": "^54" } }, "sha512-EtRRLXmsU4GcDA3TgIxtqg++eh/CjbI6EV8N/1EFQTtaWI2lpww0fg+S0wd+ndXE0dFWaLqUFvZuyTAaAoOSeA=="],
+
+    "@douglowder/expo-av-route-picker-view": ["@douglowder/expo-av-route-picker-view@0.0.5", "", { "peerDependencies": { "expo": "*", "react": "*" } }, "sha512-oT4wf8aYYNfLEuZEkwZIH7CtEHKnEHWnjs6/hNwbFGEC0FnfjjWBNrQEt4fo5/gkafqa2G5ILkxndMyBZvk5dg=="],
 
     "@dr.pogodin/react-native-fs": ["@dr.pogodin/react-native-fs@2.36.2", "", { "dependencies": { "buffer": "^6.0.3", "http-status-codes": "^2.3.0" }, "peerDependencies": { "react": "*", "react-native": "*" } }, "sha512-n3V3G7L7BNbKC2bUfRLIdT0H283Q8SxsKhly+5BrCdVDtdgem2XJxYOBjClUuJSpDN6zivjTkHIrj/LUMJ4WDQ=="],
 
@@ -1121,6 +1125,8 @@
     "create-jest": ["create-jest@29.7.0", "", { "dependencies": { "@jest/types": "^29.6.3", "chalk": "^4.0.0", "exit": "^0.1.2", "graceful-fs": "^4.2.9", "jest-config": "^29.7.0", "jest-util": "^29.7.0", "prompts": "^2.0.1" }, "bin": { "create-jest": "bin/create-jest.js" } }, "sha512-Adz2bdH0Vq3F53KEMJOoftQFutWCukm6J24wbPWRO4k1kMY7gS7ds/uoJkNuV8wDCtWWnuwGcJwpWcih+zEW1Q=="],
 
     "cross-spawn": ["cross-spawn@7.0.6", "", { "dependencies": { "path-key": "^3.1.0", "shebang-command": "^2.0.0", "which": "^2.0.1" } }, "sha512-uV2QOWP2nWzsy2aMp8aRibhi9dlzF5Hgh5SHaB9OiTGEyDTiJJyx0uy51QXdyWbtAHNua4XJzUKca3OzKUd3vA=="],
+
+    "crust": ["crust@file:modules/crust", { "devDependencies": { "@types/react": "~19.1.0", "expo": "^54.0.27", "expo-module-scripts": "^5.0.8", "react-native": "0.81.5" }, "peerDependencies": { "expo": "*", "react": "*", "react-native": "*" } }],
 
     "crypto-js": ["crypto-js@4.2.0", "", {}, "sha512-KALDyEYgpY+Rlob/iriUtjV6d5Eq+Y191A5g4UqLAi8CyGP9N1+FdVbkc1SxKc2r4YAYqG8JzO2KGL+AizD70Q=="],
 

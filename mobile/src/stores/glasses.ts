@@ -4,7 +4,6 @@ import {subscribeWithSelector} from "zustand/middleware"
 
 interface GlassesState extends GlassesStatus {
   setGlassesInfo: (info: Partial<GlassesStatus>) => void
-  setConnected: (connected: boolean) => void
   setBatteryInfo: (batteryLevel: number, charging: boolean, caseBatteryLevel: number, caseCharging: boolean) => void
   setWifiInfo: (connected: boolean, ssid: string) => void
   setHotspotInfo: (enabled: boolean, ssid: string, password: string, ip: string) => void
@@ -12,8 +11,10 @@ interface GlassesState extends GlassesStatus {
   setOtaUpdateAvailable: (info: OtaUpdateInfo | null) => void
   setOtaProgress: (progress: OtaProgress | null) => void
   setOtaInProgress: (inProgress: boolean) => void
+  setMtkUpdatedThisSession: (updated: boolean) => void
   clearOtaState: () => void
   reset: () => void
+  mtkUpdatedThisSession: boolean
 }
 
 export const getGlasesInfoPartial = (state: GlassesStatus) => {
@@ -29,7 +30,11 @@ export const getGlasesInfoPartial = (state: GlassesStatus) => {
   }
 }
 
-const initialState: GlassesStatus = {
+interface GlassesStore extends GlassesStatus {
+  mtkUpdatedThisSession: boolean
+}
+
+const initialState: GlassesStore = {
   // state:
   fullyBooted: false,
   connected: false,
@@ -48,6 +53,8 @@ const initialState: GlassesStatus = {
   serialNumber: "",
   style: "",
   color: "",
+  mtkFwVersion: "",
+  besFwVersion: "",
   // wifi info
   wifiConnected: false,
   wifiSsid: "",
@@ -68,15 +75,25 @@ const initialState: GlassesStatus = {
   otaUpdateAvailable: null,
   otaProgress: null,
   otaInProgress: false,
+  mtkUpdatedThisSession: false,
 }
 
 export const useGlassesStore = create<GlassesState>()(
   subscribeWithSelector((set) => ({
     ...initialState,
 
-    setGlassesInfo: (info) => set((state) => ({...state, ...info})),
+    setGlassesInfo: (info) =>
+      set((state) => {
+        const next = {...state, ...info}
+        // When glasses disconnect, reset all glasses state to initial values
+        // This prevents stale device info, firmware versions, battery, wifi, etc. from persisting
+        // console.log("GLASSES: setGlassesInfo called with: next.connected =", next.connected)
+        // if (next.connected === false) {
+        //   return {...initialState, ...info}
+        // }
+        return next
+      }),
 
-    setConnected: (connected) => set({connected}),
 
     setBatteryInfo: (batteryLevel, charging, caseBatteryLevel, caseCharging) =>
       set({
@@ -107,16 +124,21 @@ export const useGlassesStore = create<GlassesState>()(
       set((_state) => {
         // Auto-detect otaInProgress from status
         const otaInProgress = progress !== null && progress.status !== "FINISHED" && progress.status !== "FAILED"
+        console.log("🔍 GLASSES STORE: setOtaProgress called with:", JSON.stringify(progress))
+        console.log("🔍 GLASSES STORE: otaInProgress =", otaInProgress)
         return {otaProgress: progress, otaInProgress}
       }),
 
     setOtaInProgress: (inProgress: boolean) => set({otaInProgress: inProgress}),
+
+    setMtkUpdatedThisSession: (updated: boolean) => set({mtkUpdatedThisSession: updated}),
 
     clearOtaState: () =>
       set({
         otaUpdateAvailable: null,
         otaProgress: null,
         otaInProgress: false,
+        // Note: mtkUpdatedThisSession is NOT cleared here - it stays true until glasses disconnect/reboot
       }),
 
     reset: () => set(initialState),

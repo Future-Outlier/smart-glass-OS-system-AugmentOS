@@ -138,6 +138,14 @@ class Simulated : SGCManager() {
         Bridge.log("exit")
     }
 
+    override fun sendShutdown() {
+        Bridge.log("sendShutdown - not supported on Simulated")
+    }
+
+    override fun sendReboot() {
+        Bridge.log("sendReboot - not supported on Simulated")
+    }
+
     override fun sendRgbLedControl(
             requestId: String,
             packageName: String?,
