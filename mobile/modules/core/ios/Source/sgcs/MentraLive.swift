@@ -2822,7 +2822,7 @@ class MentraLive: NSObject, SGCManager {
         sendJson(json, wakeUp: true)
     }
 
-    private func requestVersionInfo() {
+    func requestVersionInfo() {
         let json: [String: Any] = ["type": "request_version"]
         sendJson(json)
     }

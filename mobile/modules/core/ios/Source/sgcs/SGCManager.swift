@@ -87,6 +87,10 @@ protocol SGCManager {
 
     func queryGalleryStatus()
     func sendGalleryMode()
+
+    // MARK: - Version Info
+
+    func requestVersionInfo()
 }
 
 // doesn't seem to work for concurrency reasons :(

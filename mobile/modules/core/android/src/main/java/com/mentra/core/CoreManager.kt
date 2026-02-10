@@ -1041,6 +1041,15 @@ class CoreManager {
     }
 
     /**
+     * Request version info from glasses.
+     * Glasses will respond with version_info message containing build number, firmware version, etc.
+     */
+    fun requestVersionInfo() {
+        Bridge.log("MAN: 📱 Requesting version info from glasses")
+        sgc?.requestVersionInfo()
+    }
+
+    /**
      * Send shutdown command to glasses.
      * This will initiate a graceful shutdown of the device.
      */

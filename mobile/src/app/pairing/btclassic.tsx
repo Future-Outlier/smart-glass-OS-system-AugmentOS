@@ -92,7 +92,6 @@ export default function BtClassicPairingScreen() {
             onPress={() => {
               CrustModule.showAVRoutePicker(theme.colors.text)
             }}
-            
           />
         </View>
       )}

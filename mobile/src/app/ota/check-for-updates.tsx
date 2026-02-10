@@ -1,6 +1,7 @@
 import {useFocusEffect} from "expo-router"
 import {useEffect, useState, useCallback, useRef} from "react"
 import {View, ActivityIndicator} from "react-native"
+import CoreModule from "core"
 
 import {MentraLogoStandalone} from "@/components/brands/MentraLogoStandalone"
 import {Screen, Header, Button, Text, Icon} from "@/components/ignite"
@@ -95,6 +96,10 @@ export default function OtaCheckForUpdatesScreen() {
           waitStartTimeRef.current = Date.now()
           hasInitiatedCheckRef.current = true // Mark as initiated when starting wait
           console.log("OTA: Starting version_info wait timeout (" + MAX_WAIT_FOR_VERSION_INFO_MS + "ms)")
+
+          // Request version info since we don't have it yet
+          console.log("OTA: Requesting version_info from glasses")
+          CoreModule.requestVersionInfo()
 
           versionInfoTimeoutRef.current = setTimeout(() => {
             console.log("OTA: Timeout waiting for version_info - proceeding to next step")

@@ -85,6 +85,9 @@ abstract class SGCManager {
     abstract fun queryGalleryStatus()
     abstract fun sendGalleryMode()
 
+    // Version info
+    abstract fun requestVersionInfo()
+
     // GlassesStore-backed read-only getters for convenience
     val fullyBooted: Boolean
         get() = GlassesStore.get("glasses", "fullyBooted") as? Boolean ?: false

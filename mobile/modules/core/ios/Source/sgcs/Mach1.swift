@@ -70,6 +70,10 @@ class Mach1: UltraliteBaseViewController, SGCManager {
 
     func queryGalleryStatus() {}
 
+    func requestVersionInfo() {
+        Bridge.log("Mach1: requestVersionInfo - not supported on Mach1")
+    }
+
     func showDashboard() {}
 
     func setDashboardPosition(_: Int, _: Int) {}

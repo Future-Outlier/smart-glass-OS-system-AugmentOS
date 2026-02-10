@@ -94,7 +94,6 @@ export const useGlassesStore = create<GlassesState>()(
         return next
       }),
 
-
     setBatteryInfo: (batteryLevel, charging, caseBatteryLevel, caseCharging) =>
       set({
         batteryLevel,

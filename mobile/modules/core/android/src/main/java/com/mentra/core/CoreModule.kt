@@ -157,6 +157,10 @@ class CoreModule : Module() {
 
         AsyncFunction("sendOtaStart") { coreManager?.sendOtaStart() }
 
+        // MARK: - Version Info Commands
+
+        AsyncFunction("requestVersionInfo") { coreManager?.requestVersionInfo() }
+
         // MARK: - Power Control Commands
 
         AsyncFunction("sendShutdown") { coreManager?.sendShutdown() }

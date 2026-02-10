@@ -199,6 +199,14 @@ public class CoreModule: Module {
             }
         }
 
+        // MARK: - Version Info Commands
+
+        AsyncFunction("requestVersionInfo") {
+            await MainActor.run {
+                CoreManager.shared.requestVersionInfo()
+            }
+        }
+
         // MARK: - Power Control Commands
 
         AsyncFunction("sendShutdown") {

@@ -509,7 +509,6 @@ export default function OtaProgressScreen() {
     return () => {
       clearAllSimulation()
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [otaProgress]) // Only react to real progress changes - NOT simulatedProgress
 
   // Watch for OTA progress updates from glasses
