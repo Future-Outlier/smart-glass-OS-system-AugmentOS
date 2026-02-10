@@ -137,10 +137,10 @@ function AppCardItem({
           },
           cardAnimatedStyle,
         ]}>
-        <View className="flex-1 rounded-3xl overflow-hidden w-full shadow-2xl bg-gray-600">
-          <View className="pl-6 h-12 gap-2 justify-start w-full flex-row items-center bg-gray-700">
+        <View className="flex-1 rounded-3xl overflow-hidden w-full shadow-2xl bg-primary-foreground">
+          <View className="pl-6 h-12 gap-2 justify-start w-full flex-row items-center bg-primary-foreground">
             <AppIcon app={app} style={{width: 32, height: 32, borderRadius: 8}} />
-            <Text className="text-white text-md font-medium text-center" numberOfLines={1}>
+            <Text className="text-foreground text-md font-medium text-center" numberOfLines={1}>
               {app.name}
             </Text>
           </View>
@@ -156,7 +156,7 @@ function AppCardItem({
               <Image
                 source={{uri: app.screenshot}}
                 className="w-full h-full"
-                style={{resizeMode: "contain"}}
+                style={{resizeMode: "cover"}}
                 blurRadius={3}
               />
             </View>

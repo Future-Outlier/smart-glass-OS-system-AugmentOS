@@ -1,6 +1,6 @@
 import {useFocusEffect} from "@react-navigation/native"
 import {useCallback, useEffect, useRef, useState} from "react"
-import {ScrollView, View} from "react-native"
+import {ScrollView, View, NativeScrollEvent, NativeSyntheticEvent} from "react-native"
 
 import {MentraLogoStandalone} from "@/components/brands/MentraLogoStandalone"
 import {ActiveForegroundApp} from "@/components/home/ActiveForegroundApp"
@@ -22,6 +22,7 @@ import {attemptReconnect} from "@/effects/Reconnect"
 import AppSwitcherButton from "@/components/home/AppSwitcherButtton"
 import AppSwitcher from "@/components/home/AppSwitcher"
 
+
 export default function Homepage() {
   const refreshApplets = useRefreshApplets()
   const [defaultWearable] = useSetting(SETTINGS.default_wearable.key)
@@ -32,6 +33,8 @@ export default function Homepage() {
   const hasAttemptedInitialConnect = useRef(false)
   const [appSwitcherUi] = useSetting(SETTINGS.app_switcher_ui.key)
   const [showSwitcher, setShowSwitcher] = useState(false)
+  const hasTriggered = useRef(false)
+  const PULL_THRESHOLD = 80 // How far to pull down to trigger
 
   useFocusEffect(
     useCallback(() => {
@@ -39,11 +42,8 @@ export default function Homepage() {
     }, [refreshApplets]),
   )
 
-  // Auto-connect on initial app startup when home screen is reached
-  // This ensures all initialization is complete before attempting connection
   useEffect(() => {
     const attemptInitialConnect = async () => {
-      // Only attempt once per app session
       if (hasAttemptedInitialConnect.current) {
         return
       }
@@ -55,6 +55,32 @@ export default function Homepage() {
 
     attemptInitialConnect()
   }, [glassesConnected, isSearching, defaultWearable])
+
+  const handleScroll = useCallback(
+    (event: NativeSyntheticEvent<NativeScrollEvent>) => {
+      const {contentOffset, contentSize, layoutMeasurement} = event.nativeEvent
+      
+      // How far past the bottom the user has scrolled
+      const overscroll = contentOffset.y - (contentSize.height - layoutMeasurement.height)
+  
+      // Trigger when pulling past the bottom
+      if (overscroll > PULL_THRESHOLD && !hasTriggered.current && !showSwitcher) {
+        hasTriggered.current = true
+        setShowSwitcher(true)
+      }
+    },
+    [showSwitcher],
+  )
+
+  const handleScrollEndDrag = useCallback(() => {
+    // Reset trigger when user releases
+    hasTriggered.current = false
+  }, [])
+
+  const handleCloseSwitcher = useCallback(() => {
+    setShowSwitcher(false)
+    hasTriggered.current = false
+  }, [])
 
   const renderContent = () => {
     if (!defaultWearable) {
@@ -97,13 +123,18 @@ export default function Homepage() {
         }
       />
 
-      <ScrollView contentInsetAdjustmentBehavior="automatic" showsVerticalScrollIndicator={false}>
+      <ScrollView
+        contentInsetAdjustmentBehavior="automatic"
+        showsVerticalScrollIndicator={false}
+        onScroll={appSwitcherUi ? handleScroll : undefined}
+        onScrollEndDrag={appSwitcherUi ? handleScrollEndDrag : undefined}
+        scrollEventThrottle={16}>
         <View className="h-4" />
         {renderContent()}
         <View className="h-4" />
         <IncompatibleApps />
       </ScrollView>
-      {appSwitcherUi && <AppSwitcher visible={showSwitcher} onClose={() => setShowSwitcher(false)} />}
+      {appSwitcherUi && <AppSwitcher visible={showSwitcher} onClose={handleCloseSwitcher} />}
     </Screen>
   )
 }
