@@ -114,10 +114,13 @@ function AppCardItem({
     }
     let power = Math.pow(lin, 1.7) * howFar
     let res = stat + power
-
+    
     let howFarPercent = (1 / (howFar / SCREEN_WIDTH)) * howFar
     let linearProgress = power / howFarPercent
     let scale = interpolate(linearProgress, [0, 0.8], [0.96, 1], Extrapolation.CLAMP)
+    // account for scaling of the card:
+    let offset = (1 - scale) * cardWidth
+    res = res - offset * animIndex
 
     return {
       transform: [{translateY: translateY.value}, {scale: scale}, {translateX: res}],
