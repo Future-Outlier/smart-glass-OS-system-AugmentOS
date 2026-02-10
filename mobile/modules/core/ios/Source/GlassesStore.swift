@@ -52,6 +52,7 @@ class GlassesStore {
         store.set("core", "wifiScanResults", [])
         store.set("core", "micRanking", MicMap.map["auto"]!)
         store.set("core", "lastLog", [])
+        store.set("core", "otherBtConnected", false)
 
         // CORE SETTINGS:
         store.set("core", "default_wearable", "")

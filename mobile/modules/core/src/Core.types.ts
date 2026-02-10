@@ -363,4 +363,5 @@ export interface CoreStatus {
   searchResults: DeviceSearchResult[]
   wifiScanResults: WifiSearchResult[]
   lastLog: string[]
+  otherBtConnected: boolean
 }
