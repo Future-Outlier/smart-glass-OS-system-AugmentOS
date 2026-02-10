@@ -494,9 +494,14 @@ async function publishApp(c: AppContext) {
       return c.json({ error: "App not found" }, 404);
     }
 
-    // Verify the caller's org owns this app
+    // Verify the caller has admin access to the app's owning org
     if (appDoc.organizationId) {
-      if (!orgId || appDoc.organizationId.toString() !== orgId.toString()) {
+      const user = await User.findOne({ email });
+      if (!user) {
+        return c.json({ error: "User not found" }, 404);
+      }
+      const isAdmin = await OrganizationService.isOrgAdmin(user, appDoc.organizationId);
+      if (!isAdmin) {
         return c.json({ error: "You do not have permission to publish this app" }, 403);
       }
     } else if (appDoc.developerId) {
