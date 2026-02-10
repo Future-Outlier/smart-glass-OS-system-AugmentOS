@@ -238,14 +238,14 @@ extension Data {
 
 private enum K900ProtocolUtils {
     // Protocol constants
-    static let CMD_START_CODE: [UInt8] = [0x23, 0x23] // ##
-    static let CMD_END_CODE: [UInt8] = [0x24, 0x24] // $$
-    static let CMD_TYPE_STRING: UInt8 = 0x30 // String/JSON type
+    static let CMD_START_CODE: [UInt8] = [0x23, 0x23]  // ##
+    static let CMD_END_CODE: [UInt8] = [0x24, 0x24]  // $$
+    static let CMD_TYPE_STRING: UInt8 = 0x30  // String/JSON type
 
     // JSON Field constants
-    static let FIELD_C = "C" // Command/Content field
-    static let FIELD_V = "V" // Version field
-    static let FIELD_B = "B" // Body field
+    static let FIELD_C = "C"  // Command/Content field
+    static let FIELD_V = "V"  // Version field
+    static let FIELD_B = "B"  // Body field
 
     // Command types
     static let CMD_TYPE_PHOTO: UInt8 = 0x31
@@ -255,7 +255,7 @@ private enum K900ProtocolUtils {
     static let CMD_TYPE_DATA: UInt8 = 0x35
 
     // File transfer constants
-    static let FILE_PACK_SIZE = 400 // Max data size per packet
+    static let FILE_PACK_SIZE = 400  // Max data size per packet
     static let LENGTH_FILE_START = 2
     static let LENGTH_FILE_TYPE = 1
     static let LENGTH_FILE_PACKSIZE = 2
@@ -284,7 +284,7 @@ private enum K900ProtocolUtils {
         }
 
         var info = FilePacketInfo()
-        var pos = LENGTH_FILE_START // Skip start code
+        var pos = LENGTH_FILE_START  // Skip start code
 
         // File type
         info.fileType = protocolData[pos]
@@ -301,20 +301,20 @@ private enum K900ProtocolUtils {
         // File size (big-endian)
         info.fileSize =
             (UInt32(protocolData[pos]) << 24) | (UInt32(protocolData[pos + 1]) << 16)
-                | (UInt32(protocolData[pos + 2]) << 8) | UInt32(protocolData[pos + 3])
+            | (UInt32(protocolData[pos + 2]) << 8) | UInt32(protocolData[pos + 3])
         pos += LENGTH_FILE_SIZE
 
         // File name
-        let nameBytes = protocolData.subdata(in: pos ..< (pos + LENGTH_FILE_NAME))
+        let nameBytes = protocolData.subdata(in: pos..<(pos + LENGTH_FILE_NAME))
 
         // Find null terminator
         var nameLen = 0
-        for i in 0 ..< LENGTH_FILE_NAME {
+        for i in 0..<LENGTH_FILE_NAME {
             if nameBytes[i] == 0 { break }
             nameLen += 1
         }
 
-        if let fileName = String(data: nameBytes.subdata(in: 0 ..< nameLen), encoding: .utf8) {
+        if let fileName = String(data: nameBytes.subdata(in: 0..<nameLen), encoding: .utf8) {
             info.fileName = fileName
         }
         pos += LENGTH_FILE_NAME
@@ -333,7 +333,7 @@ private enum K900ProtocolUtils {
         }
 
         // Data
-        info.data = protocolData.subdata(in: pos ..< (pos + Int(info.packSize)))
+        info.data = protocolData.subdata(in: pos..<(pos + Int(info.packSize)))
         pos += Int(info.packSize)
 
         // Verify code
@@ -370,8 +370,8 @@ private enum K900ProtocolUtils {
 
 private struct FileTransferSession {
     let fileName: String
-    let fileSize: Int // NOTE: May be "fake" (inflated) due to BES firmware workaround
-    var actualPackSize: Int = 0 // Actual pack size from first received packet
+    let fileSize: Int  // NOTE: May be "fake" (inflated) due to BES firmware workaround
+    var actualPackSize: Int = 0  // Actual pack size from first received packet
     var totalPackets: Int
     var expectedNextPacket: Int = 0
     var receivedPackets: [Int: Data] = [:]
@@ -415,20 +415,26 @@ private struct FileTransferSession {
         self.actualPackSize = actualPackSize
 
         // Detect BES lie: if fileSize is exact multiple of 400, glasses used the lie strategy
-        let isBesLie = (fileSize % Self.BES_HARDCODED_PACK_SIZE == 0) && (actualPackSize != Self.BES_HARDCODED_PACK_SIZE)
+        let isBesLie =
+            (fileSize % Self.BES_HARDCODED_PACK_SIZE == 0)
+            && (actualPackSize != Self.BES_HARDCODED_PACK_SIZE)
 
         let newTotalPackets: Int
         if isBesLie {
             // BES lie detected: totalPackets = fileSize / 400
             newTotalPackets = fileSize / Self.BES_HARDCODED_PACK_SIZE
-            print("📦 BES Lie detected! fakeFileSize=\(fileSize), totalPackets=\(newTotalPackets), actualPackSize=\(actualPackSize)")
+            print(
+                "📦 BES Lie detected! fakeFileSize=\(fileSize), totalPackets=\(newTotalPackets), actualPackSize=\(actualPackSize)"
+            )
         } else {
             // Normal case: calculate based on actual pack size
             newTotalPackets = (fileSize + actualPackSize - 1) / actualPackSize
         }
 
         if newTotalPackets != totalPackets {
-            print("📦 Recalculating totalPackets: \(totalPackets) -> \(newTotalPackets) (packSize=\(actualPackSize), fileSize=\(fileSize))")
+            print(
+                "📦 Recalculating totalPackets: \(totalPackets) -> \(newTotalPackets) (packSize=\(actualPackSize), fileSize=\(fileSize))"
+            )
             totalPackets = newTotalPackets
         }
     }
@@ -465,7 +471,7 @@ private struct FileTransferSession {
 
     func missingPacketIndices() -> [Int] {
         guard totalPackets > receivedPackets.count else { return [] }
-        return (0 ..< totalPackets).compactMap { receivedPackets[$0] == nil ? $0 : nil }
+        return (0..<totalPackets).compactMap { receivedPackets[$0] == nil ? $0 : nil }
     }
 
     /// Assemble file from received packets.
@@ -477,11 +483,13 @@ private struct FileTransferSession {
         // Calculate actual file size by summing all received packet sizes
         let actualFileSize = receivedPackets.values.reduce(0) { $0 + $1.count }
 
-        print("📦 Assembling file: headerFileSize=\(fileSize), actualFileSize=\(actualFileSize), totalPackets=\(totalPackets)")
+        print(
+            "📦 Assembling file: headerFileSize=\(fileSize), actualFileSize=\(actualFileSize), totalPackets=\(totalPackets)"
+        )
 
         var fileData = Data(capacity: actualFileSize)
 
-        for i in 0 ..< totalPackets {
+        for i in 0..<totalPackets {
             if let packet = receivedPackets[i] {
                 fileData.append(packet)
             }
@@ -518,7 +526,7 @@ extension MentraLive: CBCentralManagerDelegate {
             Bridge.log("LIVE: Bluetooth powered on")
             // If we have a saved device, try to reconnect
             if let savedDeviceName = UserDefaults.standard.string(forKey: PREFS_DEVICE_NAME),
-               !savedDeviceName.isEmpty
+                !savedDeviceName.isEmpty
             {
                 startScan()
             }
@@ -557,7 +565,7 @@ extension MentraLive: CBCentralManagerDelegate {
 
             // Check if this is the device we want to connect to
             if let savedDeviceName = UserDefaults.standard.string(forKey: PREFS_DEVICE_NAME),
-               savedDeviceName == name
+                savedDeviceName == name
             {
                 Bridge.log("Found our remembered device by name, connecting: \(name)")
                 // stopScan()
@@ -609,7 +617,8 @@ extension MentraLive: CBCentralManagerDelegate {
         isConnecting = false
 
         connectedPeripheral = nil
-        ready = false
+        fullyBooted = false
+        connected = false
         connectionState = ConnTypes.DISCONNECTED
         rgbLedAuthorityClaimed = false
 
@@ -699,7 +708,9 @@ extension MentraLive: CBPeripheralDelegate {
                 Bridge.log("LIVE: ✅ Found TX characteristic")
             } else if characteristic.uuid == RX_CHAR_UUID {
                 rxCharacteristic = characteristic
-                Bridge.log("LIVE: ✅ Found RX characteristic - hasNotify=\(props.contains(.notify)), hasIndicate=\(props.contains(.indicate))")
+                Bridge.log(
+                    "LIVE: ✅ Found RX characteristic - hasNotify=\(props.contains(.notify)), hasIndicate=\(props.contains(.indicate))"
+                )
             } else if characteristic.uuid == FILE_READ_UUID {
                 fileReadCharacteristic = characteristic
                 Bridge.log("LIVE: 📁 Found FILE_READ characteristic (72FF)!")
@@ -719,6 +730,8 @@ extension MentraLive: CBPeripheralDelegate {
         if let tx = txCharacteristic, let rx = rxCharacteristic {
             Bridge.log("LIVE: ✅ Both TX and RX characteristics found - BLE connection ready")
             Bridge.log("LIVE: 🔄 Waiting for glasses SOC to become ready...")
+
+            GlassesStore.shared.apply("glasses", "connected", true)
 
             // Keep state as connecting until glasses are ready
             connectionState = ConnTypes.CONNECTING
@@ -855,10 +868,6 @@ typealias JSONObject = [String: Any]
 class MentraLive: NSObject, SGCManager {
     var connectionState: String = ConnTypes.DISCONNECTED
 
-    var caseBatteryLevel: Int = -1
-    var glassesSerialNumber: String = ""
-    var glassesStyle: String = ""
-    var glassesColor: String = ""
     func setDashboardPosition(_: Int, _: Int) {}
     func setSilentMode(_: Bool) {}
     func exit() {}
@@ -887,14 +896,10 @@ class MentraLive: NSObject, SGCManager {
 
     var type = "Mentra Live"
     var hasMic = true
-    var micEnabled = false
-    var isHeadUp = false
-    var caseOpen = false
-    var caseRemoved = true
-    var caseCharging = false
+
     func setMicEnabled(_ enabled: Bool) {
         Bridge.log("LIVE: setMicEnabled called: \(enabled)")
-        micEnabled = enabled
+        GlassesStore.shared.apply("glasses", "micEnabled", enabled)
         // Only enable if device supports LC3 audio
         guard supportsLC3Audio else {
             Bridge.log("LIVE: Device does not support LC3 audio, ignoring mic enable request")
@@ -919,8 +924,8 @@ class MentraLive: NSObject, SGCManager {
 
     // BLE UUIDs
     private let SERVICE_UUID = CBUUID(string: "00004860-0000-1000-8000-00805f9b34fb")
-    private let RX_CHAR_UUID = CBUUID(string: "000070FF-0000-1000-8000-00805f9b34fb") // Central receives on peripheral's TX
-    private let TX_CHAR_UUID = CBUUID(string: "000071FF-0000-1000-8000-00805f9b34fb") // Central transmits on peripheral's RX
+    private let RX_CHAR_UUID = CBUUID(string: "000070FF-0000-1000-8000-00805f9b34fb")  // Central receives on peripheral's TX
+    private let TX_CHAR_UUID = CBUUID(string: "000071FF-0000-1000-8000-00805f9b34fb")  // Central transmits on peripheral's RX
     private let FILE_READ_UUID = CBUUID(string: "000072FF-0000-1000-8000-00805f9b34fb")
     private let FILE_WRITE_UUID = CBUUID(string: "000073FF-0000-1000-8000-00805f9b34fb")
 
@@ -942,22 +947,22 @@ class MentraLive: NSObject, SGCManager {
     private var lc3WriteCharacteristic: CBCharacteristic?
     private var supportsLC3Audio = true
     private var lastReceivedLc3Sequence: Int8 = -1
-    private let LC3_FRAME_SIZE = 40 // bytes per LC3 frame
-    private let MICBEAT_INTERVAL_MS: TimeInterval = 30 * 60 // 30 minutes in seconds
+    private let LC3_FRAME_SIZE = 40  // bytes per LC3 frame
+    private let MICBEAT_INTERVAL_MS: TimeInterval = 30 * 60  // 30 minutes in seconds
     private var micBeatTimer: Timer?
     private var micBeatCount = 0
     private var shouldUseGlassesMic = false
 
     // Timing Constants
-    private let BASE_RECONNECT_DELAY_MS: UInt64 = 1_000_000_000 // 1 second in nanoseconds
-    private let MAX_RECONNECT_DELAY_MS: UInt64 = 30_000_000_000 // 30 seconds
+    private let BASE_RECONNECT_DELAY_MS: UInt64 = 1_000_000_000  // 1 second in nanoseconds
+    private let MAX_RECONNECT_DELAY_MS: UInt64 = 30_000_000_000  // 30 seconds
     private let MAX_RECONNECT_ATTEMPTS = 10
-    private let KEEP_ALIVE_INTERVAL_MS: UInt64 = 5_000_000_000 // 5 seconds
-    private let CONNECTION_TIMEOUT_MS: UInt64 = 100_000_000_000 // 100 seconds
-    private let HEARTBEAT_INTERVAL_MS: TimeInterval = 30.0 // 30 seconds
+    private let KEEP_ALIVE_INTERVAL_MS: UInt64 = 5_000_000_000  // 5 seconds
+    private let CONNECTION_TIMEOUT_MS: UInt64 = 100_000_000_000  // 100 seconds
+    private let HEARTBEAT_INTERVAL_MS: TimeInterval = 30.0  // 30 seconds
     private let BATTERY_REQUEST_EVERY_N_HEARTBEATS = 10
-    private let MIN_SEND_DELAY_MS: UInt64 = 160_000_000 // 160ms in nanoseconds
-    private let READINESS_CHECK_INTERVAL_MS: TimeInterval = 2.5 // 2.5 seconds
+    private let MIN_SEND_DELAY_MS: UInt64 = 160_000_000  // 160ms in nanoseconds
+    private let READINESS_CHECK_INTERVAL_MS: TimeInterval = 2.5  // 2.5 seconds
 
     // Device Settings Keys
     private let PREFS_DEVICE_NAME = "MentraLiveLastConnectedDeviceName"
@@ -971,7 +976,7 @@ class MentraLive: NSObject, SGCManager {
     private var connectedPeripheral: CBPeripheral?
     private var txCharacteristic: CBCharacteristic?
     private var rxCharacteristic: CBCharacteristic?
-    private var currentMtu: Int = 23 // Default BLE MTU
+    private var currentMtu: Int = 23  // Default BLE MTU
 
     // State Tracking
     private var isScanning = false
@@ -981,46 +986,20 @@ class MentraLive: NSObject, SGCManager {
     private var isNewVersion = false
     private var globalMessageId = 0
     private var lastReceivedMessageId = 0
-    var glassesAppVersion: String = ""
-    var glassesBuildNumber: String = ""
-    var glassesOtaVersionUrl: String = ""
-    var glassesFirmwareVersion: String = ""
-    var glassesBtMacAddress: String = ""
-    var glassesDeviceModel: String = ""
-    var glassesAndroidVersion: String = ""
 
     // Version info chunking support (for MTU workaround)
     // Glasses send version_info in 2 chunks to fit within BLE MTU limits
     private var pendingVersionInfoChunk1: [String: Any]?
 
-    var _ready = false
-    var ready: Bool {
-        get { return _ready }
-        set {
-            let oldValue = _ready
-            _ready = newValue
-            if oldValue != newValue {
-                // Call the callback when state changes
-                CoreManager.shared.handleConnectionStateChanged()
-                Bridge.log("LIVE: connection state changed to: \(newValue)")
-            }
-            if !newValue {
-                // Reset battery levels when disconnected
-                batteryLevel = -1
-            }
-        }
+    private var fullyBooted: Bool {
+        get { GlassesStore.shared.get("glasses", "fullyBooted") as? Bool ?? false }
+        set { GlassesStore.shared.apply("glasses", "fullyBooted", newValue) }
     }
 
-    // Data Properties
-    @Published var batteryLevel: Int = -1
-    @Published var isCharging: Bool = false
-    @Published var wifiConnected: Bool = false
-    @Published var wifiSsid: String = ""
-    @Published var wifiLocalIp: String = ""
-    @Published var isHotspotEnabled: Bool = false
-    @Published var hotspotSsid: String = ""
-    @Published var hotspotPassword: String = ""
-    @Published var hotspotGatewayIp: String = "" // The gateway IP to connect to when on hotspot
+    private var connected: Bool {
+        get { GlassesStore.shared.get("glasses", "connected") as? Bool ?? false }
+        set { GlassesStore.shared.apply("glasses", "connected", newValue) }
+    }
 
     // Queue Management
     private let commandQueue = CommandQueue()
@@ -1055,7 +1034,7 @@ class MentraLive: NSObject, SGCManager {
 
     // MARK: - React Native Interface
 
-    private var discoveredPeripherals = [String: CBPeripheral]() // name -> peripheral
+    private var discoveredPeripherals = [String: CBPeripheral]()  // name -> peripheral
 
     func findCompatibleDevices() {
         Bridge.log("Finding compatible Mentra Live glasses")
@@ -1067,7 +1046,7 @@ class MentraLive: NSObject, SGCManager {
                     options: ["CBCentralManagerOptionShowPowerAlertKey": 0]
                 )
                 // wait for the central manager to be fully initialized before we start scanning:
-                try? await Task.sleep(nanoseconds: 100 * 1_000_000) // 100ms
+                try? await Task.sleep(nanoseconds: 100 * 1_000_000)  // 100ms
             }
 
             // clear the saved device name:
@@ -1092,13 +1071,13 @@ class MentraLive: NSObject, SGCManager {
 
         // Check for already-connected peripherals first
         let connectedPeripherals = centralManager!.retrieveConnectedPeripherals(withServices: [
-            SERVICE_UUID,
+            SERVICE_UUID
         ])
         for peripheral in connectedPeripherals {
             Bridge.log("Found already-connected peripheral: \(peripheral.name ?? "Unknown")")
             if let name = peripheral.name,
-               name == "Xy_A" || name.hasPrefix("XyBLE_") || name.hasPrefix("MENTRA_LIVE_BLE")
-               || name.hasPrefix("MENTRA_LIVE_BT")
+                name == "Xy_A" || name.hasPrefix("XyBLE_") || name.hasPrefix("MENTRA_LIVE_BLE")
+                    || name.hasPrefix("MENTRA_LIVE_BT")
             {
                 Bridge.log("Found already-connected peripheral: \(name)")
                 discoveredPeripherals[name] = peripheral
@@ -1346,14 +1325,14 @@ class MentraLive: NSObject, SGCManager {
                         await self.processSendQueue(command)
                     }
                 }
-                try? await Task.sleep(nanoseconds: 100_000_000) // 100ms
+                try? await Task.sleep(nanoseconds: 100_000_000)  // 100ms
             }
         }
     }
 
     private func processSendQueue(_ message: PendingMessage) async {
         guard let peripheral = connectedPeripheral,
-              let txChar = txCharacteristic
+            let txChar = txCharacteristic
         else {
             return
         }
@@ -1440,7 +1419,7 @@ class MentraLive: NSObject, SGCManager {
         startReadinessCheckLoop()
 
         let scanOptions: [String: Any] = [
-            CBCentralManagerScanOptionAllowDuplicatesKey: false,
+            CBCentralManagerScanOptionAllowDuplicatesKey: false
         ]
 
         // let knownPeripherals = centralManager?.retrieveConnectedPeripherals(withServices: [SERVICE_UUID])
@@ -1575,9 +1554,9 @@ class MentraLive: NSObject, SGCManager {
         }
 
         // Check for JSON data
-        if bytes[0] == 0x7B { // '{'
+        if bytes[0] == 0x7B {  // '{'
             if let jsonString = String(data: data, encoding: .utf8),
-               jsonString.hasPrefix("{"), jsonString.hasSuffix("}")
+                jsonString.hasPrefix("{"), jsonString.hasSuffix("}")
             {
                 processJsonMessage(jsonString)
             }
@@ -1610,14 +1589,14 @@ class MentraLive: NSObject, SGCManager {
                 // BES chip handles ACKs automatically
             }
 
-            return // Exit after processing file packet
+            return  // Exit after processing file packet
         }
 
         let payloadLength: Int
 
         // Determine endianness based on device name
         if let deviceName = connectedPeripheral?.name,
-           deviceName.hasPrefix("XyBLE_") || deviceName.lowercased().hasPrefix("mentra_live")
+            deviceName.hasPrefix("XyBLE_") || deviceName.lowercased().hasPrefix("mentra_live")
         {
             // K900 device - big-endian
             payloadLength = (Int(bytes[3]) << 8) | Int(bytes[4])
@@ -1633,7 +1612,7 @@ class MentraLive: NSObject, SGCManager {
         // Extract payload if it's JSON data
         if commandType == 0x30, data.count >= payloadLength + 7 {
             if bytes[5 + payloadLength] == 0x24, bytes[6 + payloadLength] == 0x24 {
-                let payloadData = data.subdata(in: 5 ..< (5 + payloadLength))
+                let payloadData = data.subdata(in: 5..<(5 + payloadLength))
                 if let payloadString = String(data: payloadData, encoding: .utf8) {
                     processJsonMessage(payloadString)
                 }
@@ -1646,7 +1625,7 @@ class MentraLive: NSObject, SGCManager {
 
         do {
             guard let data = jsonString.data(using: .utf8),
-                  let json = try JSONSerialization.jsonObject(with: data) as? [String: Any]
+                let json = try JSONSerialization.jsonObject(with: data) as? [String: Any]
             else {
                 return
             }
@@ -1687,7 +1666,7 @@ class MentraLive: NSObject, SGCManager {
                         "LIVE: Received unexpected ACK! expected: \(pending!.id), received: \(mId)")
                 }
             }
-            return // Don't send ACK for ACKs!
+            return  // Don't send ACK for ACKs!
         }
 
         // Check for message ID that needs ACK (glasses → phone)
@@ -1703,8 +1682,8 @@ class MentraLive: NSObject, SGCManager {
 
         case "battery_status":
             let level = json["level"] as? Int ?? batteryLevel
-            let charging = json["charging"] as? Bool ?? isCharging
-            updateBatteryStatus(level: level, charging: charging)
+            let isCharging = json["charging"] as? Bool ?? charging
+            updateBatteryStatus(level: level, isCharging: isCharging)
 
         case "wifi_status":
             let connected = json["connected"] as? Bool ?? false
@@ -1750,7 +1729,7 @@ class MentraLive: NSObject, SGCManager {
             // Chunk 1 of version info (MTU workaround) - contains basic device info
             print("LIVE: Received version_info_1 (chunk 1/2): \(json)")
             pendingVersionInfoChunk1 = json
-            // Wait for chunk 2 to arrive before processing
+        // Wait for chunk 2 to arrive before processing
 
         case "version_info_2":
             // Chunk 2 of version info (MTU workaround) - contains URLs and identifiers
@@ -1783,10 +1762,28 @@ class MentraLive: NSObject, SGCManager {
         case "touch_event":
             let gestureName = json["gesture_name"] as? String ?? "unknown"
             let timestamp = parseTimestamp(json["timestamp"])
-            let deviceModel = json["device_model"] as? String ?? glassesDeviceModel
-            Bridge.sendTouchEvent(
-                deviceModel: deviceModel, gestureName: gestureName, timestamp: timestamp
-            )
+            let deviceModel = json["device_model"] as? String ?? deviceModel
+        // Bridge.sendTouchEvent(
+        //     deviceModel: deviceModel, gestureName: gestureName, timestamp: timestamp
+        // )
+
+        case "sr_tpevt":
+            // K900 touchpad event - convert to touch_event for frontend
+            if let bodyObj = json["B"] as? [String: Any],
+                let gestureType = bodyObj["type"] as? Int
+            {
+                if let gestureName = mapK900GestureType(gestureType) {
+                    Bridge.log(
+                        "LIVE: 👆 K900 touchpad event - Type: \(gestureType) -> \(gestureName)")
+                    Bridge.sendTouchEvent(
+                        deviceModel: "Mentra Live",
+                        gestureName: gestureName,
+                        timestamp: Int64(Date().timeIntervalSince1970 * 1000)
+                    )
+                } else {
+                    Bridge.log("Unknown K900 gesture type: \(gestureType)")
+                }
+            }
 
         case "swipe_volume_status":
             let enabled = json["enabled"] as? Bool ?? false
@@ -1811,7 +1808,7 @@ class MentraLive: NSObject, SGCManager {
             Bridge.log("LIVE: Received pong response - connection healthy")
 
         case "imu_response", "imu_stream_response", "imu_gesture_response",
-             "imu_gesture_subscribed", "imu_ack", "imu_error":
+            "imu_gesture_subscribed", "imu_ack", "imu_error":
             // Handle IMU-related responses
             handleImuResponse(json)
 
@@ -1899,6 +1896,21 @@ class MentraLive: NSObject, SGCManager {
         }
     }
 
+    /// Maps K900 gesture type codes to gesture names
+    private func mapK900GestureType(_ type: Int) -> String? {
+        switch type {
+        case 0: return "single_tap"
+        case 1: return "double_tap"
+        case 2: return "triple_tap"
+        case 3: return "long_press"
+        case 4: return "forward_swipe"
+        case 5: return "backward_swipe"
+        case 6: return "up_swipe"
+        case 7: return "down_swipe"
+        default: return nil
+        }
+    }
+
     private func processK900JsonMessage(_ json: [String: Any]) {
         guard let command = json["C"] as? String else { return }
 
@@ -1916,16 +1928,21 @@ class MentraLive: NSObject, SGCManager {
         switch command {
         case "sr_hrt":
             if let bodyObj = json["B"] as? [String: Any] {
-                let readyResponse = bodyObj["ready"] as? Int ?? 0
+                let readyResponse = bodyObj["fullyBooted"] as? Int ?? 0
 
                 // Extract battery info from heartbeat
                 let percentage = bodyObj["pt"] as? Int ?? 0
                 let voltage = bodyObj["vt"] as? Int ?? 0
                 let charging = (bodyObj["charg"] as? Int ?? 0) == 1
 
-                // Check for low battery during pairing
-                if percentage > 0, percentage <= 20 {
-                    if !ready {
+                // SOC is still booting
+                if readyResponse == 0 {
+                    Bridge.log("LIVE: K900 SOC not ready (ready=0)")
+                    GlassesStore.shared.apply("glasses", "fullyBooted", false)
+                    Bridge.sendTypedMessage("glasses_not_ready", body: [:])
+
+                    // Check for low battery during pairing
+                    if percentage > 0, percentage <= 20 {
                         Bridge.sendPairFailureEvent("errors:pairingBatteryTooLow")
                         return
                     }
@@ -1933,7 +1950,7 @@ class MentraLive: NSObject, SGCManager {
 
                 // Update battery status if we have valid data
                 if percentage > 0 {
-                    updateBatteryStatus(level: percentage, charging: charging)
+                    updateBatteryStatus(level: percentage, isCharging: charging)
                     if voltage > 0 {
                         let voltageVolts = Double(voltage) / 1000.0
                         // Bridge.log(
@@ -1947,7 +1964,7 @@ class MentraLive: NSObject, SGCManager {
                     // Only send phone_ready if we haven't already established connection
                     // This prevents re-initialization on every heartbeat after initial connection
                     // The ready flag is reset on disconnect/reconnect, so this won't prevent proper reconnection
-                    if !ready {
+                    if !fullyBooted {
                         let readyMsg: [String: Any] = [
                             "type": "phone_ready",
                             "timestamp": Int64(Date().timeIntervalSince1970 * 1000),
@@ -1960,15 +1977,15 @@ class MentraLive: NSObject, SGCManager {
 
         case "sr_batv":
             if let body = json["B"] as? [String: Any],
-               let voltage = body["vt"] as? Int,
-               let percentage = body["pt"] as? Int
+                let voltage = body["vt"] as? Int,
+                let percentage = body["pt"] as? Int
             {
                 let voltageVolts = Double(voltage) / 1000.0
                 let isCharging = voltage > 4000
 
                 Bridge.log(
                     "🔋 K900 Battery Status - Voltage: \(voltageVolts)V, Level: \(percentage)%")
-                updateBatteryStatus(level: percentage, charging: isCharging)
+                updateBatteryStatus(level: percentage, isCharging: isCharging)
             }
 
         case "sr_shut":
@@ -1982,6 +1999,23 @@ class MentraLive: NSObject, SGCManager {
             // }
             // Notify the system that glasses are intentionally disconnected
             connectionState = ConnTypes.DISCONNECTED
+
+        case "sr_tpevt":
+            // K900 touchpad event - convert to touch_event for frontend
+            if let bodyObj = json["B"] as? [String: Any],
+               let gestureType = bodyObj["type"] as? Int
+            {
+                if let gestureName = mapK900GestureType(gestureType) {
+                    Bridge.log("LIVE: 👆 K900 touchpad event - Type: \(gestureType) -> \(gestureName)")
+                    Bridge.sendTouchEvent(
+                        deviceModel: deviceModel,
+                        gestureName: gestureName,
+                        timestamp: Int64(Date().timeIntervalSince1970 * 1000)
+                    )
+                } else {
+                    Bridge.log("Unknown K900 gesture type: \(gestureType)")
+                }
+            }
 
         default:
             // Bridge.log("Unknown K900 command: \(command)")
@@ -2061,14 +2095,14 @@ class MentraLive: NSObject, SGCManager {
         Bridge.log("LIVE: 📸 Querying gallery status from glasses")
 
         let json: [String: Any] = [
-            "type": "query_gallery_status",
+            "type": "query_gallery_status"
         ]
 
         sendJson(json, wakeUp: true)
     }
 
     func sendGalleryMode() {
-        let active = CoreManager.shared.galleryMode
+        let active = GlassesStore.shared.get("core", "gallery_mode") as! Bool
         Bridge.log("LIVE: 📸 Sending gallery mode active to glasses: \(active)")
 
         let json: [String: Any] = [
@@ -2119,7 +2153,8 @@ class MentraLive: NSObject, SGCManager {
         // Start heartbeat
         startHeartbeat()
 
-        ready = true
+        fullyBooted = true
+        connected = true
         connectionState = ConnTypes.CONNECTED
         // maybe add audio monitoring here?
     }
@@ -2130,12 +2165,9 @@ class MentraLive: NSObject, SGCManager {
         // First, check for enhanced format (networks_neo)
         if let networksNeoArray = json["networks_neo"] as? [[String: Any]] {
             networks = networksNeoArray
-            // Bridge.log(
-            //     "Received enhanced WiFi scan results: \(networks.count) networks with security info"
-            // )
         }
 
-        Bridge.sendWifiScanResults(networks)
+        Bridge.updateWifiScanResults(networks)
     }
 
     private func handleButtonPress(_ json: [String: Any]) {
@@ -2155,14 +2187,14 @@ class MentraLive: NSObject, SGCManager {
         let firmwareVersion = json["firmware_version"] as? String ?? ""
         let btMacAddress = json["bt_mac_address"] as? String ?? ""
 
-        glassesAppVersion = appVersion
-        glassesBuildNumber = buildNumber
-        glassesOtaVersionUrl = otaVersionUrl
-        glassesFirmwareVersion = firmwareVersion
-        glassesBtMacAddress = btMacAddress
+        GlassesStore.shared.apply("glasses", "appVersion", appVersion)
+        GlassesStore.shared.apply("glasses", "buildNumber", buildNumber)
+        GlassesStore.shared.apply("glasses", "otaVersionUrl", otaVersionUrl)
+        GlassesStore.shared.apply("glasses", "fwVersion", firmwareVersion)
+        GlassesStore.shared.apply("glasses", "btMacAddress", btMacAddress)
         isNewVersion = (Int(buildNumber) ?? 0) >= 5
-        glassesDeviceModel = deviceModel
-        glassesAndroidVersion = androidVersion
+        GlassesStore.shared.apply("glasses", "deviceModel", deviceModel)
+        GlassesStore.shared.apply("glasses", "androidVersion", androidVersion)
 
         // Detect LC3 audio support: K901+ devices have microphone, K900 does not
         // supportsLC3Audio = deviceModel != "K900"
@@ -2174,12 +2206,10 @@ class MentraLive: NSObject, SGCManager {
         Bridge.log("LIVE: LC3 Audio Support: \(supportsLC3Audio), Has Mic: \(hasMic)")
         emitVersionInfo(
             appVersion: appVersion, buildNumber: buildNumber, deviceModel: deviceModel,
-            androidVersion: androidVersion, otaVersionUrl: otaVersionUrl, firmwareVersion: firmwareVersion,
+            androidVersion: androidVersion, otaVersionUrl: otaVersionUrl,
+            firmwareVersion: firmwareVersion,
             btMacAddress: btMacAddress
         )
-
-        // Trigger status update so React Native gets the updated glasses info with version details
-        CoreManager.shared.getStatus()
     }
 
     private func handleAck(_: [String: Any]) {
@@ -2207,7 +2237,7 @@ class MentraLive: NSObject, SGCManager {
         }
 
         let sequenceNumber = Int8(bitPattern: data[1])
-        let lc3Data = data.subdata(in: 2 ..< data.count)
+        let lc3Data = data.subdata(in: 2..<data.count)
 
         // Validate sequence number for packet loss detection
         if lastReceivedLc3Sequence != -1 && (lastReceivedLc3Sequence &+ 1) != sequenceNumber {
@@ -2250,7 +2280,7 @@ class MentraLive: NSObject, SGCManager {
         // Update the transfer with glasses compression duration
         if var transfer = blePhotoTransfers[bleImgId] {
             transfer.glassesCompressionDurationMs = compressionDurationMs
-            transfer.bleTransferStartTime = Date() // BLE transfer starts now
+            transfer.bleTransferStartTime = Date()  // BLE transfer starts now
             blePhotoTransfers[bleImgId] = transfer
             Bridge.log("LIVE: ⏱️ Glasses compression took: \(compressionDurationMs)ms")
         } else {
@@ -2308,9 +2338,9 @@ class MentraLive: NSObject, SGCManager {
         if var bleTransfer = blePhotoTransfers[bleImgId] {
             var bleSession =
                 bleTransfer.session
-                    ?? FileTransferSession(
-                        fileName: fileName, fileSize: fileSize, announcedPackets: totalPackets
-                    )
+                ?? FileTransferSession(
+                    fileName: fileName, fileSize: fileSize, announcedPackets: totalPackets
+                )
             bleSession.updateAnnouncedPackets(totalPackets)
             bleTransfer.session = bleSession
             blePhotoTransfers[bleImgId] = bleTransfer
@@ -2403,7 +2433,7 @@ class MentraLive: NSObject, SGCManager {
                             transferEndTime.timeIntervalSince(photoTransfer.phoneStartTime) * 1000
                         let bleTransferDuration =
                             photoTransfer.bleTransferStartTime != nil
-                                ? transferEndTime.timeIntervalSince(photoTransfer.bleTransferStartTime!)
+                            ? transferEndTime.timeIntervalSince(photoTransfer.bleTransferStartTime!)
                                 * 1000 : 0
 
                         Bridge.log("✅ BLE photo transfer complete: \(packetInfo.fileName)")
@@ -2532,7 +2562,7 @@ class MentraLive: NSObject, SGCManager {
                 if let dotIndex = fileName.lastIndex(of: ".") {
                     fileExtension = String(fileName[dotIndex...])
                 } else {
-                    fileExtension = ".jpg" // Default to JPEG if no extension
+                    fileExtension = ".jpg"  // Default to JPEG if no extension
                 }
             case K900ProtocolUtils.CMD_TYPE_VIDEO:
                 fileExtension = ".mp4"
@@ -2625,7 +2655,7 @@ class MentraLive: NSObject, SGCManager {
         do {
             var json = jsonOriginal
             var messageId: Int64 = -1
-            var trackingId = "-1" // -1 means no ACK tracking needed
+            var trackingId = "-1"  // -1 means no ACK tracking needed
 
             if isNewVersion, requireAck {
                 messageId = Int64(globalMessageId)
@@ -2661,7 +2691,7 @@ class MentraLive: NSObject, SGCManager {
                         if let chunkStr = String(data: chunkData, encoding: .utf8) {
                             // Pack each chunk using the normal K900 protocol
                             let packedData =
-                                packJson(chunkStr, wakeUp: wakeUp && index == 0) ?? Data() // Only wakeup on first chunk
+                                packJson(chunkStr, wakeUp: wakeUp && index == 0) ?? Data()  // Only wakeup on first chunk
 
                             // Queue the chunk for sending
                             // Only track ACK for the final chunk (which has the mId)
@@ -2672,7 +2702,7 @@ class MentraLive: NSObject, SGCManager {
 
                             // Add small delay between chunks to avoid overwhelming the connection
                             if index < chunks.count - 1 {
-                                Thread.sleep(forTimeInterval: 0.05) // 50ms delay between chunks
+                                Thread.sleep(forTimeInterval: 0.05)  // 50ms delay between chunks
                             }
                         }
                     }
@@ -2721,7 +2751,7 @@ class MentraLive: NSObject, SGCManager {
     private func sendCoreTokenToAsgClient() {
         Bridge.log("Preparing to send coreToken to ASG client")
 
-        let coreToken = CoreManager.shared.coreToken
+        let coreToken = GlassesStore.shared.get("core", "auth_token") as? String ?? ""
         if coreToken.isEmpty {
             Bridge.log("No coreToken available to send to ASG client")
             return
@@ -2738,7 +2768,7 @@ class MentraLive: NSObject, SGCManager {
 
     /// Send stored user email to the ASG client for Sentry crash reporting
     private func sendStoredUserEmailToAsgClient() {
-        let storedEmail = CoreManager.shared.userEmail
+        let storedEmail = GlassesStore.shared.store.get("core", "auth_email") as? String ?? ""
 
         guard !storedEmail.isEmpty else {
             Bridge.log("LIVE: No stored user email to send to ASG client")
@@ -2855,10 +2885,10 @@ class MentraLive: NSObject, SGCManager {
 
     private func handleSingleImuData(_ json: [String: Any]) {
         guard let accel = json["accel"] as? [Double],
-              let gyro = json["gyro"] as? [Double],
-              let mag = json["mag"] as? [Double],
-              let quat = json["quat"] as? [Double],
-              let euler = json["euler"] as? [Double]
+            let gyro = json["gyro"] as? [Double],
+            let mag = json["mag"] as? [Double],
+            let quat = json["quat"] as? [Double],
+            let euler = json["euler"] as? [Double]
         else {
             Bridge.log("LIVE: Invalid IMU data format")
             return
@@ -2867,7 +2897,7 @@ class MentraLive: NSObject, SGCManager {
         Bridge.log(
             String(
                 format:
-                "LIVE: IMU Single Reading - Accel: [%.2f, %.2f, %.2f], Euler: [%.1f°, %.1f°, %.1f°]",
+                    "LIVE: IMU Single Reading - Accel: [%.2f, %.2f, %.2f], Euler: [%.1f°, %.1f°, %.1f°]",
                 accel[0], accel[1], accel[2],
                 euler[0], euler[1], euler[2]
             ))
@@ -2881,7 +2911,7 @@ class MentraLive: NSObject, SGCManager {
                 "quat": quat,
                 "euler": euler,
                 "timestamp": Date().timeIntervalSince1970 * 1000,
-            ],
+            ]
         ]
         Bridge.sendTypedMessage("imu_data_event", body: eventBody)
     }
@@ -2912,38 +2942,33 @@ class MentraLive: NSObject, SGCManager {
             "imu_gesture": [
                 "gesture": gesture,
                 "timestamp": timestamp,
-            ],
+            ]
         ]
         Bridge.sendTypedMessage("imu_gesture_event", body: eventBody)
     }
 
     // MARK: - Update Methods
 
-    private func updateBatteryStatus(level: Int, charging: Bool) {
-        batteryLevel = level
-        isCharging = charging
-        CoreManager.shared.getStatus()
-        // emitBatteryLevelEvent(level: level, charging: charging)
+    private func updateBatteryStatus(level: Int, isCharging: Bool) {
+        GlassesStore.shared.apply("glasses", "batteryLevel", level)
+        GlassesStore.shared.apply("glasses", "charging", isCharging)
     }
 
     private func updateWifiStatus(connected: Bool, ssid: String, ip: String) {
         Bridge.log("LIVE: 🌐 Updating WiFi status - connected: \(connected), ssid: \(ssid)")
-        wifiConnected = connected
-        wifiSsid = ssid
-        wifiLocalIp = ip
+        GlassesStore.shared.apply("glasses", "wifiConnected", connected)
+        GlassesStore.shared.apply("glasses", "wifiSsid", ssid)
+        GlassesStore.shared.apply("glasses", "wifiLocalIp", ip)
         emitWifiStatusChange()
     }
 
     private func updateHotspotStatus(enabled: Bool, ssid: String, password: String, ip: String) {
         Bridge.log("LIVE: 🔥 Updating hotspot status - enabled: \(enabled), ssid: \(ssid)")
-        isHotspotEnabled = enabled
-        hotspotSsid = ssid
-        hotspotPassword = password
-        hotspotGatewayIp = ip // This is the gateway IP from glasses
+        GlassesStore.shared.apply("glasses", "hotspotEnabled", enabled)
+        GlassesStore.shared.apply("glasses", "hotspotSsid", ssid)
+        GlassesStore.shared.apply("glasses", "hotspotPassword", password)
+        GlassesStore.shared.apply("glasses", "hotspotGatewayIp", ip)  // This is the gateway IP from glasses
         emitHotspotStatusChange()
-
-        // Trigger a full status update so React Native gets the updated glasses_info
-        CoreManager.shared.getStatus()
     }
 
     private func handleHotspotError(errorMessage: String, timestamp: Int64) {
@@ -2967,7 +2992,7 @@ class MentraLive: NSObject, SGCManager {
             "LIVE: 📸 Received gallery status - photos: \(photoCount), videos: \(videoCount), total size: \(totalSize) bytes"
         )
 
-        // Emit gallery status event as CoreMessageEvent like other status events
+        // Emit gallery status event like other status events
         let eventBody =
             [
                 "photos": photoCount,
@@ -3010,8 +3035,8 @@ class MentraLive: NSObject, SGCManager {
     }
 
     private func sendHeartbeat() {
-        guard ready, connectionState == ConnTypes.CONNECTED else {
-            Bridge.log("LIVE: Skipping heartbeat - glasses not ready or not connected")
+        guard fullyBooted, connectionState == ConnTypes.CONNECTED else {
+            Bridge.log("LIVE: Skipping heartbeat - glasses not fully booted or not connected")
             return
         }
 
@@ -3022,7 +3047,7 @@ class MentraLive: NSObject, SGCManager {
         // Send heartbeat to AsgClientService for connection monitoring
         let serviceHeartbeat: [String: Any] = [
             "type": "service_heartbeat",
-            "timestamp": Int64(Date().timeIntervalSince1970 * 1000), // milliseconds
+            "timestamp": Int64(Date().timeIntervalSince1970 * 1000),  // milliseconds
             "heartbeat_counter": heartbeatCounter,
         ]
         sendJson(serviceHeartbeat, requireAck: false)
@@ -3043,7 +3068,8 @@ class MentraLive: NSObject, SGCManager {
         stopReadinessCheckLoop()
 
         readinessCheckCounter = 0
-        ready = false
+        fullyBooted = false
+        connected = false
 
         Bridge.log("LIVE: 🔄 Starting glasses SOC readiness check loop")
 
@@ -3076,8 +3102,8 @@ class MentraLive: NSObject, SGCManager {
         // cs_hrt is a K900 protocol command handled directly by BES2700
         // It doesn't go through MTK Android, so it doesn't use ACK system
         let command: [String: Any] = [
-            "C": "cs_hrt", // Heartbeat command for BES2700
-            "B": "", // Empty body
+            "C": "cs_hrt",  // Heartbeat command for BES2700
+            "B": "",  // Empty body
         ]
 
         if sendRawK900Command(command) {
@@ -3122,7 +3148,7 @@ class MentraLive: NSObject, SGCManager {
         stopHeartbeat()
         stopReadinessCheckLoop()
         stopConnectionTimeout()
-        stopMicBeat() // Stop LC3 audio micbeat
+        stopMicBeat()  // Stop LC3 audio micbeat
         pendingMessageTimer?.invalidate()
         pendingMessageTimer = nil
         reconnectionWorkItem?.cancel()
@@ -3134,19 +3160,20 @@ class MentraLive: NSObject, SGCManager {
     private func emitDiscoveredDevice(_ name: String) {
         // Use the standardized typed message function
         let body = [
-            "model_name": "Mentra Live",
+            "device_model": "Mentra Live",
             "device_name": name,
             "device_address": "",
         ]
-        Bridge.sendTypedMessage("compatible_glasses_search_result", body: body)
+        // Bridge.sendTypedMessage("compatible_glasses_search_result", body: body)
+        Bridge.sendDiscoveredDevice("Mentra Live", name)
     }
 
     private func emitStopScanEvent() {
         // Use the standardized typed message function
         let body = [
             "compatible_glasses_search_stop": [
-                "model_name": "Mentra Live",
-            ],
+                "device_model": "Mentra Live"
+            ]
         ]
         Bridge.sendTypedMessage("compatible_glasses_search_stop", body: body)
     }
@@ -3170,10 +3197,10 @@ class MentraLive: NSObject, SGCManager {
 
     private func emitHotspotStatusChange() {
         let eventBody: [String: Any] = [
-            "enabled": isHotspotEnabled,
+            "enabled": hotspotEnabled,
             "ssid": hotspotSsid,
             "password": hotspotPassword,
-            "local_ip": hotspotGatewayIp, // Using gateway IP for consistency with Android
+            "local_ip": hotspotGatewayIp,  // Using gateway IP for consistency with Android
         ]
         Bridge.sendTypedMessage("hotspot_status_change", body: eventBody)
     }
@@ -3190,7 +3217,7 @@ class MentraLive: NSObject, SGCManager {
             "timestamp": timestamp,
         ]
 
-        // emitEvent("CoreMessageEvent", body: eventBody)
+        // emitEvent("onCoreEvent", body: eventBody)
     }
 
     private func emitVersionInfo(
@@ -3255,7 +3282,7 @@ extension MentraLive {
         let dataLength = data.count
 
         // Command structure: ## + type + length(2 bytes) + data + $$
-        var result = Data(capacity: dataLength + 7) // 2(start) + 1(type) + 2(length) + data + 2(end)
+        var result = Data(capacity: dataLength + 7)  // 2(start) + 1(type) + 2(length) + data + 2(end)
 
         // Start code ##
         result.append(contentsOf: K900ProtocolUtils.CMD_START_CODE)
@@ -3264,8 +3291,8 @@ extension MentraLive {
         result.append(cmdType)
 
         // Length (2 bytes, big-endian)
-        result.append(UInt8((dataLength >> 8) & 0xFF)) // MSB first
-        result.append(UInt8(dataLength & 0xFF)) // LSB second
+        result.append(UInt8((dataLength >> 8) & 0xFF))  // MSB first
+        result.append(UInt8(dataLength & 0xFF))  // LSB second
 
         // Copy the data
         result.append(data)
@@ -3287,7 +3314,7 @@ extension MentraLive {
         let dataLength = data.count
 
         // Command structure: ## + type + length(2 bytes) + data + $$
-        var result = Data(capacity: dataLength + 7) // 2(start) + 1(type) + 2(length) + data + 2(end)
+        var result = Data(capacity: dataLength + 7)  // 2(start) + 1(type) + 2(length) + data + 2(end)
 
         // Start code ##
         result.append(contentsOf: K900ProtocolUtils.CMD_START_CODE)
@@ -3296,8 +3323,8 @@ extension MentraLive {
         result.append(cmdType)
 
         // Length (2 bytes, little-endian for phone-to-device)
-        result.append(UInt8(dataLength & 0xFF)) // LSB first
-        result.append(UInt8((dataLength >> 8) & 0xFF)) // MSB second
+        result.append(UInt8(dataLength & 0xFF))  // LSB first
+        result.append(UInt8((dataLength >> 8) & 0xFF))  // MSB second
 
         // Copy the data
         result.append(data)
@@ -3320,7 +3347,7 @@ extension MentraLive {
             // First wrap with C-field
             var wrapper: [String: Any] = [K900ProtocolUtils.FIELD_C: jsonData]
             if wakeUp {
-                wrapper["W"] = 1 // Add W field as seen in MentraLiveSGC (optional)
+                wrapper["W"] = 1  // Add W field as seen in MentraLiveSGC (optional)
             }
 
             // Convert to string
@@ -3472,7 +3499,7 @@ extension MentraLive {
         offtime: Int,
         count: Int
     ) {
-        guard connectionState == ConnTypes.CONNECTED, ready else {
+        guard connectionState == ConnTypes.CONNECTED, fullyBooted else {
             Bridge.log("LIVE: Cannot handle RGB LED control - glasses not connected")
             Bridge.sendRgbLedControlResponse(
                 requestId: requestId, success: false, error: "glasses_not_connected"
@@ -3485,7 +3512,7 @@ extension MentraLive {
         }
 
         var command: [String: Any] = [
-            "requestId": requestId,
+            "requestId": requestId
         ]
 
         if let packageName, !packageName.isEmpty {
@@ -3555,9 +3582,9 @@ extension MentraLive {
 
             // Check for full K900 format {"C": "command", "V": val, "B": body}
             if let json,
-               json.keys.contains(K900ProtocolUtils.FIELD_C),
-               json.keys.contains(K900ProtocolUtils.FIELD_V),
-               json.keys.contains(K900ProtocolUtils.FIELD_B)
+                json.keys.contains(K900ProtocolUtils.FIELD_C),
+                json.keys.contains(K900ProtocolUtils.FIELD_V),
+                json.keys.contains(K900ProtocolUtils.FIELD_B)
             {
                 return true
             }
@@ -3574,8 +3601,8 @@ extension MentraLive {
      */
     private func extractPayloadFromK900(_ protocolData: Data?) -> Data? {
         guard let protocolData,
-              isK900ProtocolFormat(protocolData),
-              protocolData.count >= 7
+            isK900ProtocolFormat(protocolData),
+            protocolData.count >= 7
         else {
             return nil
         }
@@ -3586,18 +3613,18 @@ extension MentraLive {
         let length = Int(bytes[3]) | (Int(bytes[4]) << 8)
 
         if length + 7 > protocolData.count {
-            return nil // Invalid length
+            return nil  // Invalid length
         }
 
         // Extract payload
-        let payload = protocolData.subdata(in: 5 ..< (5 + length))
+        let payload = protocolData.subdata(in: 5..<(5 + length))
         return payload
     }
 
     // MARK: - Button Mode Settings
 
     func sendButtonModeSetting() {
-        let mode = CoreManager.shared.buttonPressMode
+        let mode = GlassesStore.shared.get("core", "button_mode") as! String
         Bridge.log("Sending button mode setting to glasses: \(mode)")
 
         guard connectionState == ConnTypes.CONNECTED else {
@@ -3623,7 +3650,7 @@ extension MentraLive {
         }
 
         let json: [String: Any] = [
-            "type": "start_buffer_recording",
+            "type": "start_buffer_recording"
         ]
         sendJson(json)
     }
@@ -3637,7 +3664,7 @@ extension MentraLive {
         }
 
         let json: [String: Any] = [
-            "type": "stop_buffer_recording",
+            "type": "stop_buffer_recording"
         ]
         sendJson(json)
     }
@@ -3668,7 +3695,8 @@ extension MentraLive {
         sendButtonVideoRecordingSettings()
 
         // Send button max recording time
-        sendButtonMaxRecordingTime(CoreManager.shared.buttonMaxRecordingTime)
+        let maxTime = GlassesStore.shared.get("core", "button_max_recording_time") as! Int
+        sendButtonMaxRecordingTime(maxTime)
 
         // Send button photo settings
         sendButtonPhotoSettings()
@@ -3681,9 +3709,15 @@ extension MentraLive {
     }
 
     func sendButtonVideoRecordingSettings() {
-        let width = CoreManager.shared.buttonVideoWidth
-        let height = CoreManager.shared.buttonVideoHeight
-        let fps = CoreManager.shared.buttonVideoFps
+        let settings =
+            GlassesStore.shared.get("core", "button_video_settings") as? [String: Any] ?? [
+                "width": 1280,
+                "height": 720,
+                "fps": 30,
+            ]
+        let width = settings["width"] as? Int ?? 1280
+        let height = settings["height"] as? Int ?? 720
+        let fps = settings["fps"] as? Int ?? 30
 
         // Use defaults if not set
         let finalWidth = width > 0 ? width : 1280
@@ -3710,7 +3744,7 @@ extension MentraLive {
     }
 
     func sendButtonMaxRecordingTime() {
-        let maxTime = CoreManager.shared.buttonMaxRecordingTime
+        let maxTime = GlassesStore.shared.get("core", "button_max_recording_time") as? Int ?? 10
         Bridge.log("Sending button max recording time: \(maxTime) minutes")
 
         guard connectionState == ConnTypes.CONNECTED else {
@@ -3726,7 +3760,7 @@ extension MentraLive {
     }
 
     func sendButtonPhotoSettings() {
-        let size = CoreManager.shared.buttonPhotoSize
+        let size = GlassesStore.shared.get("core", "button_photo_size") as! String
 
         Bridge.log("Sending button photo setting: \(size)")
 
@@ -3743,7 +3777,7 @@ extension MentraLive {
     }
 
     func sendButtonCameraLedSetting() {
-        let enabled = CoreManager.shared.buttonCameraLed
+        let enabled = GlassesStore.shared.get("core", "button_camera_led") as! Bool
 
         Bridge.log("Sending button camera LED setting: \(enabled)")
 
@@ -3760,7 +3794,8 @@ extension MentraLive {
     }
 
     func startVideoRecording(requestId: String, save: Bool, silent: Bool) {
-        startVideoRecording(requestId: requestId, save: save, silent: silent, width: 0, height: 0, fps: 0)
+        startVideoRecording(
+            requestId: requestId, save: save, silent: silent, width: 0, height: 0, fps: 0)
     }
 
     // MARK: - SGCManager Protocol Compliance
@@ -3782,7 +3817,9 @@ extension MentraLive {
         sendJson(json, wakeUp: true)
     }
 
-    func startVideoRecording(requestId: String, save: Bool, silent: Bool, width: Int, height: Int, fps: Int) {
+    func startVideoRecording(
+        requestId: String, save: Bool, silent: Bool, width: Int, height: Int, fps: Int
+    ) {
         Bridge.log(
             "Starting video recording on glasses: requestId=\(requestId), save=\(save), silent=\(silent), resolution=\(width)x\(height)@\(fps)fps"
         )

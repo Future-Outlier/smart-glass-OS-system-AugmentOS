@@ -25,43 +25,9 @@ class Mach1: UltraliteBaseViewController, SGCManager {
 
     var connectionState: String = ConnTypes.DISCONNECTED
 
+    func sendOtaStart() {}
+
     func sendJson(_: [String: Any], wakeUp _: Bool, requireAck _: Bool) {}
-
-    var caseBatteryLevel: Int = -1
-
-    var glassesAppVersion: String = ""
-
-    var glassesBuildNumber: String = ""
-
-    var glassesDeviceModel: String = ""
-
-    var glassesAndroidVersion: String = ""
-
-    var glassesOtaVersionUrl: String = ""
-
-    var glassesFirmwareVersion: String = ""
-
-    var glassesBtMacAddress: String = ""
-
-    var glassesSerialNumber: String = ""
-
-    var glassesStyle: String = ""
-
-    var glassesColor: String = ""
-
-    var wifiSsid: String = ""
-
-    var wifiConnected: Bool = false
-
-    var wifiLocalIp: String = ""
-
-    var isHotspotEnabled: Bool = false
-
-    var hotspotSsid: String = ""
-
-    var hotspotPassword: String = ""
-
-    var hotspotGatewayIp: String = ""
 
     func sendButtonPhotoSettings() {}
 
@@ -129,11 +95,7 @@ class Mach1: UltraliteBaseViewController, SGCManager {
     func cleanup() {}
 
     var type: String = DeviceTypes.MACH1
-    let hasMic: Bool = false
-    var micEnabled: Bool = false
-    var caseOpen = false
-    var caseRemoved = true
-    var caseCharging = false
+    var hasMic: Bool = false
 
     func setMicEnabled(_: Bool) {
         // N/A
@@ -147,16 +109,16 @@ class Mach1: UltraliteBaseViewController, SGCManager {
     var onConnectionStateChanged: (() -> Void)?
     @Published var batteryLevel: Int = -1
     @Published var isConnected: Bool = false
-    var _ready = false
     var ready: Bool {
-        get { return _ready }
+        get { GlassesStore.shared.get("glasses", "fullyBooted") as? Bool ?? false }
         set {
-            let oldValue = _ready
-            _ready = newValue
-            if oldValue != newValue {
-                CoreManager.shared.handleConnectionStateChanged()
-            }
+            let oldValue = GlassesStore.shared.get("glasses", "fullyBooted") as? Bool ?? false
+            GlassesStore.shared.apply("glasses", "fullyBooted", newValue)
         }
+    }
+    private var connected: Bool {
+        get { GlassesStore.shared.get("glasses", "connected") as? Bool ?? false }
+        set { GlassesStore.shared.apply("glasses", "connected", newValue) }
     }
 
     // Store discovered peripherals by their identifier
@@ -169,7 +131,6 @@ class Mach1: UltraliteBaseViewController, SGCManager {
     private var isConnectedListener: BondListener<Bool>?
     private var batteryLevelListener: BondListener<Int>?
     private var setupDone: Bool = false
-    @Published var isHeadUp = false
 
     func setup() {
         if setupDone { return }
@@ -190,9 +151,11 @@ class Mach1: UltraliteBaseViewController, SGCManager {
                 Bridge.log("MACH1: gotControl: \(gotControl ?? false)")
                 if batteryLevel != -1 {
                     ready = true
+                    connected = true
                 }
             } else {
                 ready = false
+                connected = false
             }
         })
 
@@ -201,6 +164,7 @@ class Mach1: UltraliteBaseViewController, SGCManager {
             Bridge.log("MACH1: batteryLevelListener: \(value)")
             batteryLevel = value
             ready = true
+            connected = true
         })
 
         NotificationCenter.default.addObserver(
@@ -236,16 +200,16 @@ class Mach1: UltraliteBaseViewController, SGCManager {
         Bridge.log("MACH1: Tap detected! Count: \(tapNumberInt)")
 
         if tapNumberInt >= 2 {
-            isHeadUp = !isHeadUp
-            // Notify CoreManager of head up state change (same as G1 does with IMU)
-            CoreManager.shared.updateHeadUp(isHeadUp)
+            let hUp = GlassesStore.shared.get("glasses", "headUp") as? Bool ?? false
+            GlassesStore.shared.apply("glasses", "headUp", !hUp)
 
             // start a timer and auto turn off the dashboard after 15 seconds:
-            if isHeadUp {
+            if !hUp {
                 DispatchQueue.main.asyncAfter(deadline: .now() + 15) {
-                    if self.isHeadUp {
-                        self.isHeadUp = false
-                        CoreManager.shared.updateHeadUp(false)
+                    let currentHeadUp =
+                        GlassesStore.shared.get("glasses", "headUp") as? Bool ?? false
+                    if currentHeadUp {
+                        GlassesStore.shared.apply("glasses", "headUp", false)
                     }
                 }
             }
@@ -287,6 +251,7 @@ class Mach1: UltraliteBaseViewController, SGCManager {
             )
             Bridge.log("MACH1: Already connected, gotControl: \(gotControl ?? false)")
             ready = true
+            connected = true
             return
         }
 
@@ -315,12 +280,14 @@ class Mach1: UltraliteBaseViewController, SGCManager {
         guard let device = UltraliteManager.shared.currentDevice else {
             Bridge.log("Mach1Manager: No current device")
             ready = false
+            connected = false
             return
         }
 
         if !device.isConnected.value {
             Bridge.log("Mach1Manager: Device not connected")
             ready = false
+            connected = false
             return
         }
 
@@ -334,6 +301,7 @@ class Mach1: UltraliteBaseViewController, SGCManager {
     func disconnect() {
         UltraliteManager.shared.stopScan()
         ready = false
+        connected = false
     }
 
     func sendTextWall(_ text: String) {
@@ -341,12 +309,14 @@ class Mach1: UltraliteBaseViewController, SGCManager {
         guard let device = UltraliteManager.shared.currentDevice else {
             Bridge.log("Mach1Manager: No current device")
             ready = false
+            connected = false
             return
         }
 
         if !device.isConnected.value {
             Bridge.log("Mach1Manager: Device not connected")
             ready = false
+            connected = false
             return
         }
 
@@ -368,12 +338,14 @@ class Mach1: UltraliteBaseViewController, SGCManager {
         guard let device = UltraliteManager.shared.currentDevice else {
             Bridge.log("Mach1Manager: No current device")
             ready = false
+            connected = false
             return
         }
 
         if !device.isConnected.value {
             Bridge.log("Mach1Manager: Device not connected")
             ready = false
+            connected = false
             return
         }
 

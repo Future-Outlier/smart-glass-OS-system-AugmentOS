@@ -26,7 +26,7 @@ module.exports = ({config}: ConfigContext): Partial<ExpoConfig> => {
     android: {
       icon: "./assets/app-icons/ic_launcher.png",
       package: "com.mentra.mentra",
-      versionCode: 80,
+      versionCode: 83,
       adaptiveIcon: {
         foregroundImage: "./assets/app-icons/ic_launcher_foreground.png",
         backgroundImage: "./assets/app-icons/ic_launcher.png",
@@ -130,17 +130,20 @@ module.exports = ({config}: ConfigContext): Partial<ExpoConfig> => {
         {
           photosPermission: "Allow MentraOS to save photos from your glasses.",
           savePhotosPermission: "Allow MentraOS to save photos from your glasses.",
-          isAccessMediaLocationEnabled: true,
+          // Disabled - we save photos from glasses, we don't need to read EXIF location from user's library
+          // Google Play rejects ACCESS_MEDIA_LOCATION for apps without core photo gallery functionality
+          isAccessMediaLocationEnabled: false,
         },
       ],
       [
         "expo-splash-screen",
         {
-          image: "./assets/splash/splash.png",
+          image: "./assets/logo/logo.png",
           resizeMode: "contain",
-          backgroundColor: "#fffaf0",
+          imageWidth: 100,
+          backgroundColor: "#fff",
           dark: {
-            backgroundColor: "#2D2C2F",
+            backgroundColor: "#171717",
           },
         },
       ],
