@@ -777,15 +777,12 @@ struct ViewState {
         if let idRange = deviceName.range(of: "_BLE_", options: .caseInsensitive) {
             // Extract the ID after "_BLE_" (e.g., "ABC123")
             audioDevicePattern = String(deviceName[idRange.upperBound...])
-            Bridge.log("Audio: Extracted device ID: \(audioDevicePattern) from \(deviceName)")
         } else if let idRange = deviceName.range(of: "_BT_", options: .caseInsensitive) {
             // Extract the ID after "_BT_"
             audioDevicePattern = String(deviceName[idRange.upperBound...])
-            Bridge.log("Audio: Extracted device ID: \(audioDevicePattern) from \(deviceName)")
         } else {
             // Fallback: use the full device name
             audioDevicePattern = deviceName
-            Bridge.log("Audio: Using full device name as pattern: \(audioDevicePattern)")
         }
         return audioDevicePattern
     }
