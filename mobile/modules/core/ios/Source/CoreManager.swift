@@ -898,6 +898,9 @@ struct ViewState {
             handleMach1Ready()  // Z100 uses same initialization as Mach1
         }
 
+        // check current audio device:
+        checkCurrentAudioDevice()
+
         // save the default_wearable now that we're connected:
         Bridge.saveSetting("default_wearable", defaultWearable)
         Bridge.saveSetting("device_name", deviceName)

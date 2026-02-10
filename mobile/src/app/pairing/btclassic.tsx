@@ -11,6 +11,7 @@ import {useCoreStore} from "@/stores/core"
 import {View} from "react-native"
 import {ExpoAvRoutePickerView} from "@douglowder/expo-av-route-picker-view"
 import {useAppTheme} from "@/contexts/ThemeContext"
+import CrustModule from "crust"
 
 export default function BtClassicPairingScreen() {
   const {pushPrevious, goBack} = useNavigationHistory()
@@ -88,15 +89,10 @@ export default function BtClassicPairingScreen() {
           <Button
             text="TX: show music picker"
             preset="secondary"
-            onPress={() => {}}
-            disabled={true}
-            RightAccessory={() => (
-              <ExpoAvRoutePickerView
-                style={{height: 48, width: 300, backgroundColor: "red", alignSelf: "flex-end"}}
-                // className="absolute bottom-16 z-10 w-full h-[10px]"
-                activeTintColor={theme.colors.text}
-              />
-            )}
+            onPress={() => {
+              CrustModule.showAVRoutePicker(theme.colors.text)
+            }}
+            
           />
         </View>
       )}
