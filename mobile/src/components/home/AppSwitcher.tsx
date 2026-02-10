@@ -153,7 +153,12 @@ function AppCardItem({
 
           {app.screenshot && (
             <View className="flex-1 items-center justify-center">
-              <Image source={{uri: app.screenshot}} className="w-full h-full" style={{resizeMode: "cover"}} blurRadius={3} />
+              <Image
+                source={{uri: app.screenshot}}
+                className="w-full h-full"
+                style={{resizeMode: "cover"}}
+                blurRadius={3}
+              />
             </View>
           )}
         </View>
@@ -360,17 +365,19 @@ export default function AppSwitcher({visible, onClose}: AppSwitcherProps) {
 
     // Handle offline apps - navigate directly to React Native route
     if (applet.offline && applet.offlineRoute) {
-      push(applet.offlineRoute)
+      push(applet.offlineRoute, {transition: "fade"})
     } else if (applet.webviewUrl && applet.healthy) {
       push("/applet/webview", {
         webviewURL: applet.webviewUrl,
         appName: applet.name,
         packageName: applet.packageName,
+        transition: "fade",
       })
     } else {
       push("/applet/settings", {
         packageName: applet.packageName,
         appName: applet.name,
+        transition: "fade",
       })
     }
 
@@ -380,7 +387,6 @@ export default function AppSwitcher({visible, onClose}: AppSwitcherProps) {
   if (!visible && containerOpacity.value === 0) {
     return null
   }
-
 
   return (
     <View

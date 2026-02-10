@@ -210,7 +210,18 @@ export function NavigationHistoryProvider({children}: {children: React.ReactNode
     historyParamsRef.current.push(params)
     setDebugHistory([...historyRef.current])
 
+    if (params?.transition) {
+      setAnimation(params.transition)
+    }
+
     router.push({pathname: path as any, params: params as any})
+
+    // reset the animation to simple_push after a short delay:
+    if (params?.transition) {
+      setTimeout(() => {
+        setAnimation("simple_push")
+      }, 100)
+    }
   }
 
   const replace = (path: string, params?: any): void => {
