@@ -257,6 +257,11 @@ struct ViewState {
         set { GlassesStore.shared.apply("core", "lastLog", newValue) }
     }
 
+    private var otherBtConnected: Bool {
+        get { GlassesStore.shared.get("core", "otherBtConnected") as? Bool ?? false }
+        set { GlassesStore.shared.apply("core", "otherBtConnected", newValue) }
+    }
+
     // LC3 Audio Encoding
     // Audio output format enum
     enum AudioOutputFormat { case lc3, pcm }
@@ -799,11 +804,19 @@ struct ViewState {
         }
 
         // check if the device disconnected:
-        let isConnected = AudioSessionMonitor.isDevicePaired(devicePattern: audioDevicePattern)
+        let isConnected = AudioSessionMonitor.isAudioDeviceConnected(
+            devicePattern: audioDevicePattern)
+
 
         if !isConnected {
             Bridge.log("MAN: Device '\(deviceName)' disconnected")
             glassesBtcConnected = false
+
+            let isOtherDeviceConnected = AudioSessionMonitor.isOtherAudioDeviceConnected()
+            if isOtherDeviceConnected {
+                Bridge.log("MAN: Other device connected, returning")
+                otherBtConnected = true
+            }
             return
         }
 

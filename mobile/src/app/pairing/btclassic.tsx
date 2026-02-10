@@ -1,5 +1,5 @@
 import {useEffect} from "react"
-import {Screen} from "@/components/ignite"
+import {Button, Screen} from "@/components/ignite"
 import {OnboardingGuide, OnboardingStep} from "@/components/onboarding/OnboardingGuide"
 import {translate} from "@/i18n"
 import {focusEffectPreventBack, useNavigationHistory} from "@/contexts/NavigationHistoryContext"
@@ -7,10 +7,13 @@ import {useGlassesStore} from "@/stores/glasses"
 import CoreModule from "core"
 import {SETTINGS, useSetting} from "@/stores/settings"
 import {SettingsNavigationUtils} from "@/utils/SettingsNavigationUtils"
+import { useCoreStore } from "@/stores/core"
+import { View } from "react-native"
 
 export default function BtClassicPairingScreen() {
   const {pushPrevious, goBack} = useNavigationHistory()
   const btcConnected = useGlassesStore((state) => state.btcConnected)
+  const otherBtConnected = useCoreStore((state) => state.otherBtConnected)
   const [deviceName] = useSetting(SETTINGS.device_name.key)
 
   focusEffectPreventBack()
@@ -71,13 +74,19 @@ export default function BtClassicPairingScreen() {
       <OnboardingGuide
         steps={steps}
         autoStart={true}
-        mainTitle={translate("onboarding:liveWelcomeTitle")}
-        mainSubtitle={translate("onboarding:liveWelcomeSubtitle")}
         showCloseButton={false}
         endButtonText={translate("onboarding:openSettings")}
         endButtonFn={handleOpenSettings}
         showSkipButton={false}
       />
+
+      {!otherBtConnected && (
+        <View className="absolute bottom-16 w-full">
+          <Button text="TX: show music picker" preset="secondary" onPress={() => {
+            
+          }} />
+        </View>
+      )}
     </Screen>
   )
 }
