@@ -1,6 +1,6 @@
 import {useScrollToTop} from "@react-navigation/native"
 import {StatusBar, StatusBarProps, StatusBarStyle} from "expo-status-bar"
-import {ReactNode, RefObject, useRef, useState} from "react"
+import {ReactNode, useRef, useState} from "react"
 import {
   KeyboardAvoidingView,
   KeyboardAvoidingViewProps,

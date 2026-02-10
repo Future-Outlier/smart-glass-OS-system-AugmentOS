@@ -153,7 +153,7 @@ function AppCardItem({
 
           {app.screenshot && (
             <View className="flex-1 items-center justify-center">
-              <Image source={{uri: app.screenshot}} className="w-full h-full" style={{resizeMode: "contain"}} />
+              <Image source={{uri: app.screenshot}} className="w-full h-full" style={{resizeMode: "cover"}} blurRadius={3} />
             </View>
           )}
         </View>

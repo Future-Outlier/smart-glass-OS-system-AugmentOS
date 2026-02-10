@@ -49,17 +49,17 @@ export const OTA_VERSION_URL_PROD = "https://ota.mentraglass.com/prod_live_versi
 
 export async function fetchVersionInfo(url: string): Promise<VersionJson | null> {
   try {
-    console.log("📱 Fetching version info from URL: " + url)
+    // console.log("OTA: Fetching version info from URL: " + url)
     const response = await fetch(url)
     if (!response.ok) {
       console.error("Failed to fetch version info:", response.status)
       return null
     }
     const versionJson = await response.json()
-    console.log("📱 versionInfo: " + JSON.stringify(versionJson))
+    // console.log("OTA: versionInfo: " + JSON.stringify(versionJson))
     return versionJson
   } catch (error) {
-    console.error("Error fetching version info:", error)
+    console.error("OTA: Error fetching version info:", error)
     return null
   }
 }
