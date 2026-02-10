@@ -576,9 +576,11 @@ public class MentraLive extends SGCManager {
 
         if (state.equals(ConnTypes.CONNECTED)) {
             GlassesStore.INSTANCE.apply("glasses", "connected", true);
-        } else if (state.equals(ConnTypes.DISCONNECTED)) {
-            GlassesStore.INSTANCE.apply("glasses", "connected", false);
+        }
+        
+        if (state.equals(ConnTypes.DISCONNECTED)) {
             GlassesStore.INSTANCE.apply("glasses", "fullyBooted", false);
+            GlassesStore.INSTANCE.apply("glasses", "connected", false);
         }
     }
 
@@ -1059,7 +1061,8 @@ public class MentraLive extends SGCManager {
                         Bridge.log("LIVE: ✅ Core TX/RX and LC3 TX/RX characteristics found - BLE connection ready");
                         Bridge.log("LIVE: 🔄 Waiting for glasses SOC to become ready...");
 
-                        GlassesStore.INSTANCE.apply("glasses", "connected", true);
+                        // Don't set connected=true here - wait for SOC to be ready (fullyBooted=true)
+                        // GlassesStore handles connected state based on fullyBooted
 
                         // Keep the state as CONNECTING until the glasses SOC responds
                         // connectionEvent(SmartGlassesConnectionState.CONNECTING);
@@ -2407,18 +2410,6 @@ public class MentraLive extends SGCManager {
                     Log.e(TAG, "Failed to parse build number as integer: " + buildNumberLegacy);
                 }
 
-                Bridge.log("LIVE: Glasses Version - App: " + appVersionLegacy +
-                      ", Build: " + buildNumberLegacy +
-                      ", Device: " + deviceModelLegacy +
-                      ", Android: " + androidVersionLegacy +
-                      ", Firmware: " + firmwareVersionLegacy +
-                      ", BT MAC: " + btMacAddressLegacy +
-                      ", OTA URL: " + otaVersionUrlLegacy);
-
-                // Send version info event (matches iOS emitVersionInfo)
-                Bridge.sendVersionInfo(appVersionLegacy, buildNumberLegacy, deviceModelLegacy, androidVersionLegacy,
-                      otaVersionUrlLegacy != null ? otaVersionUrlLegacy : "", firmwareVersionLegacy, btMacAddressLegacy);
-
                 break;
 
             case "ota_download_progress":
@@ -2590,17 +2581,18 @@ public class MentraLive extends SGCManager {
                         GlassesStore.INSTANCE.apply("glasses", "otaVersionUrl", (String) fields.get("ota_version_url"));
                     }
                     if (fields.containsKey("firmware_version")) {
-                        GlassesStore.INSTANCE.apply("glasses", "firmwareVersion", (String) fields.get("firmware_version"));
+                        GlassesStore.INSTANCE.apply("glasses", "fwVersion", (String) fields.get("firmware_version"));
                     }
                     if (fields.containsKey("bes_fw_version")) {
-                        GlassesStore.INSTANCE.apply("glasses", "firmwareVersion", (String) fields.get("bes_fw_version"));
+                        GlassesStore.INSTANCE.apply("glasses", "besFwVersion", (String) fields.get("bes_fw_version"));
+                    }
+                    if (fields.containsKey("mtk_fw_version")) {
+                        GlassesStore.INSTANCE.apply("glasses", "mtkFwVersion", (String) fields.get("mtk_fw_version"));
                     }
                     if (fields.containsKey("bt_mac_address")) {
                         GlassesStore.INSTANCE.apply("glasses", "btMacAddress", (String) fields.get("bt_mac_address"));
                     }
 
-                    // Send fields immediately to RN - no waiting for other chunks
-                    Bridge.sendVersionInfo(fields);
 
                     Bridge.log("LIVE: Processed version_info fields and sent to RN");
                 } else {
@@ -3155,6 +3147,22 @@ public class MentraLive extends SGCManager {
             Bridge.log("LIVE: 📱 Sending ota_start command to glasses");
         } catch (JSONException e) {
             Log.e(TAG, "📱 Error creating ota_start command", e);
+        }
+    }
+
+    /**
+     * Request version info from glasses.
+     * Glasses will respond with version_info message containing build number, firmware version, etc.
+     */
+    @Override
+    public void requestVersionInfo() {
+        try {
+            JSONObject json = new JSONObject();
+            json.put("type", "request_version");
+            sendJson(json, false);
+            Bridge.log("LIVE: 📱 Requesting version info from glasses");
+        } catch (JSONException e) {
+            Log.e(TAG, "📱 Error creating request_version command", e);
         }
     }
 
@@ -4480,6 +4488,39 @@ public class MentraLive extends SGCManager {
         }
     }
 
+    //---------------------------------------
+    // Power Control Methods
+    //---------------------------------------
+
+    /**
+     * Send shutdown command to the glasses.
+     * This will initiate a graceful shutdown of the device.
+     */
+    public void sendShutdown() {
+        Bridge.log("LIVE: 🔌 Sending shutdown command to glasses");
+        try {
+            JSONObject json = new JSONObject();
+            json.put("type", "shutdown");
+            sendJson(json, false);
+        } catch (JSONException e) {
+            Log.e(TAG, "Error creating shutdown command", e);
+        }
+    }
+
+    /**
+     * Send reboot command to the glasses.
+     * This will initiate a reboot of the device.
+     */
+    public void sendReboot() {
+        Bridge.log("LIVE: 🔄 Sending reboot command to glasses");
+        try {
+            JSONObject json = new JSONObject();
+            json.put("type", "reboot");
+            sendJson(json, false);
+        } catch (JSONException e) {
+            Log.e(TAG, "Error creating reboot command", e);
+        }
+    }
 
     //---------------------------------------
     // IMU Methods

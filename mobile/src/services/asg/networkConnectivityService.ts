@@ -45,7 +45,7 @@ class NetworkConnectivityService {
     this.netInfoSubscription = NetInfo.addEventListener(this.handleNetworkChange)
 
     // Do an initial check
-    this.checkConnectivity()
+    // this.checkConnectivity()
   }
 
   /**

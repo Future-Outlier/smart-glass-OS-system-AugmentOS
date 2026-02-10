@@ -1,9 +1,9 @@
 import {useFocusEffect} from "expo-router"
 import {useEffect, useState, useCallback, useRef} from "react"
 import {View, ActivityIndicator} from "react-native"
+import CoreModule from "core"
 
 import {MentraLogoStandalone} from "@/components/brands/MentraLogoStandalone"
-import {ConnectionOverlay} from "@/components/glasses/ConnectionOverlay"
 import {Screen, Header, Button, Text, Icon} from "@/components/ignite"
 import {focusEffectPreventBack, useNavigationHistory} from "@/contexts/NavigationHistoryContext"
 import {useAppTheme} from "@/contexts/ThemeContext"
@@ -97,6 +97,10 @@ export default function OtaCheckForUpdatesScreen() {
           hasInitiatedCheckRef.current = true // Mark as initiated when starting wait
           console.log("OTA: Starting version_info wait timeout (" + MAX_WAIT_FOR_VERSION_INFO_MS + "ms)")
 
+          // Request version info since we don't have it yet
+          console.log("OTA: Requesting version_info from glasses")
+          CoreModule.requestVersionInfo()
+
           versionInfoTimeoutRef.current = setTimeout(() => {
             console.log("OTA: Timeout waiting for version_info - proceeding to next step")
             waitStartTimeRef.current = null
@@ -151,6 +155,14 @@ export default function OtaCheckForUpdatesScreen() {
             setAvailableUpdates(filteredUpdates)
             // If isRequired is not specified in version.json, default to true (forced update)
             setIsUpdateRequired(result.latestVersionInfo?.isRequired !== false)
+            // Store the update info in global state so progress screen can access the sequence
+            useGlassesStore.getState().setOtaUpdateAvailable({
+              available: true,
+              versionCode: result.latestVersionInfo?.versionCode || 0,
+              versionName: result.latestVersionInfo?.versionName || "",
+              updates: filteredUpdates,
+              totalSize: 0,
+            })
             setCheckState("update_available")
           } else {
             console.log("📱 No updates available after filtering - setting no_update state")
@@ -214,15 +226,13 @@ export default function OtaCheckForUpdatesScreen() {
     if (checkState === "checking") {
       return (
         <>
-          <View className="flex items-center justify-center pt-8">
-            <Icon name="world-download" size={48} color={theme.colors.primary} />
+          <View className="flex-1 items-center justify-center px-6">
+            <Icon name="world-download" size={64} color={theme.colors.primary} />
             <View className="h-6" />
-            <Text tx="ota:checkingForUpdates" className="font-semibold text-lg" />
+            <Text tx="ota:checkingForUpdates" className="font-semibold text-xl text-center" />
             <View className="h-2" />
-            <Text tx="ota:checkingForUpdatesMessage" className="text-sm text-center px-6" />
-          </View>
-
-          <View className="flex-1 items-center justify-center">
+            <Text tx="ota:checkingForUpdatesMessage" className="text-sm text-center" />
+            <View className="h-6" />
             <ActivityIndicator size="large" color={theme.colors.foreground} />
           </View>
 
@@ -249,11 +259,7 @@ export default function OtaCheckForUpdatesScreen() {
             <View className="h-6" />
             <Text text={translate("ota:updateAvailable", {deviceName})} className="font-semibold text-xl text-center" />
             <View className="h-2" />
-            <Text
-              text={updateText}
-              className="text-base text-center"
-              style={{color: theme.colors.textDim}}
-            />
+            <Text text={updateText} className="text-base text-center" style={{color: theme.colors.textDim}} />
             <View className="h-4" />
             <Text tx="ota:updateDescription" className="text-sm text-center" style={{color: theme.colors.textDim}} />
           </View>
@@ -310,7 +316,6 @@ export default function OtaCheckForUpdatesScreen() {
   return (
     <Screen preset="fixed" safeAreaEdges={["bottom"]}>
       <Header RightActionComponent={<MentraLogoStandalone />} />
-      <ConnectionOverlay />
 
       {renderContent()}
     </Screen>
