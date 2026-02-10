@@ -7,15 +7,17 @@ import {useGlassesStore} from "@/stores/glasses"
 import CoreModule from "core"
 import {SETTINGS, useSetting} from "@/stores/settings"
 import {SettingsNavigationUtils} from "@/utils/SettingsNavigationUtils"
-import { useCoreStore } from "@/stores/core"
-import { View } from "react-native"
-import { ExpoAvRoutePickerView } from 'expo-av-route-picker-view';
+import {useCoreStore} from "@/stores/core"
+import {View} from "react-native"
+import {ExpoAvRoutePickerView} from "@douglowder/expo-av-route-picker-view"
+import {useAppTheme} from "@/contexts/ThemeContext"
 
 export default function BtClassicPairingScreen() {
   const {pushPrevious, goBack} = useNavigationHistory()
   const btcConnected = useGlassesStore((state) => state.btcConnected)
   const otherBtConnected = useCoreStore((state) => state.otherBtConnected)
   const [deviceName] = useSetting(SETTINGS.device_name.key)
+  const {theme} = useAppTheme()
 
   focusEffectPreventBack()
 
@@ -83,12 +85,27 @@ export default function BtClassicPairingScreen() {
 
       {!otherBtConnected && (
         <View className="absolute bottom-16 w-full">
-          <Button text="TX: show music picker" preset="secondary" onPress={() => {
-
-          }} />
+          <Button
+            text="TX: show music picker"
+            preset="secondary"
+            onPress={() => {}}
+            disabled={true}
+            RightAccessory={() => (
+              <ExpoAvRoutePickerView
+                style={{height: 48, width: 300, backgroundColor: "red", alignSelf: "flex-end"}}
+                // className="absolute bottom-16 z-10 w-full h-[10px]"
+                activeTintColor={theme.colors.text}
+              />
+            )}
+          />
         </View>
       )}
-      <ExpoAvRoutePickerView />
+      {/* <ExpoAvRoutePickerView className="w-12 h-12 absolute bottom-16 z-10" activeTintColor={theme.colors.text}/> */}
+      {/* <ExpoAvRoutePickerView
+        style={{height: "100%"}}
+        className="absolute bottom-16 z-10 w-full h-[10px]"
+        activeTintColor={theme.colors.text}
+      /> */}
     </Screen>
   )
 }

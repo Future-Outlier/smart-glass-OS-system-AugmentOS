@@ -812,7 +812,7 @@ struct ViewState {
             Bridge.log("MAN: Device '\(deviceName)' disconnected")
             glassesBtcConnected = false
 
-            let isOtherDeviceConnected = AudioSessionMonitor.isOtherAudioDeviceConnected()
+            let isOtherDeviceConnected = AudioSessionMonitor.isOtherAudioDeviceConnected(devicePattern: audioDevicePattern)
             if isOtherDeviceConnected {
                 Bridge.log("MAN: Other device connected, returning")
                 otherBtConnected = true
