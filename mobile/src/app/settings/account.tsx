@@ -50,12 +50,11 @@ export default function AccountPage() {
 
   return (
     <Screen preset="fixed" safeAreaEdges={["top"]} ref={viewShotRef}>
-      {/* <Header leftTx="settings:title" RightActionComponent={<MentraLogoStandalone />} /> */}
-      <View className="z-2 absolute top-2 w-full items-center justify-end flex-row">
+      <View className="z-2 absolute top-7.5 w-full items-center justify-end flex-row">
         <DualButton onMinusPress={handleExit} onEllipsisPress={() => {}} />
       </View>
 
-      <ScrollView style={themed($styles.scrollView)} contentInsetAdjustmentBehavior="automatic">
+      <ScrollView style={themed($styles.scrollView)} className="pt-6" contentInsetAdjustmentBehavior="automatic">
         <ProfileCard />
 
         <View style={{flex: 1, gap: theme.spacing.s6}}>

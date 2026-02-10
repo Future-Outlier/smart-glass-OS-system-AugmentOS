@@ -18,8 +18,8 @@ import {useNavigationHistory} from "@/contexts/NavigationHistoryContext"
 import {useSafeAreaInsets} from "react-native-safe-area-context"
 
 const {width: SCREEN_WIDTH, height: SCREEN_HEIGHT} = Dimensions.get("window")
-const CARD_WIDTH = SCREEN_WIDTH * 0.6
-const CARD_HEIGHT = SCREEN_HEIGHT * 0.6
+const CARD_WIDTH = SCREEN_WIDTH * 0.67
+const CARD_HEIGHT = SCREEN_HEIGHT * 0.67
 const CARD_SPACING = 0
 const DISMISS_THRESHOLD = -180
 const VELOCITY_THRESHOLD = -800
@@ -132,7 +132,7 @@ function AppCardItem({
         style={[
           {
             width: CARD_WIDTH,
-            height: CARD_HEIGHT - 16,
+            height: CARD_HEIGHT,// - 16,
             // zIndex: -index,// to reverse stack order
           },
           cardAnimatedStyle,
@@ -156,7 +156,7 @@ function AppCardItem({
               <Image
                 source={{uri: app.screenshot}}
                 className="w-full h-full"
-                style={{resizeMode: "cover"}}
+                style={{resizeMode: "contain"}}
                 blurRadius={3}
               />
             </View>

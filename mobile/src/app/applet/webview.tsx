@@ -217,7 +217,7 @@ export default function AppWebView() {
 
   // Render WebView only when finalUrl is ready
   return (
-    <Screen preset="fixed" safeAreaEdges={["top"]} KeyboardAvoidingViewProps={{enabled: false}} ref={viewShotRef}>
+    <Screen preset="fixed" safeAreaEdges={["top"]} KeyboardAvoidingViewProps={{enabled: true}} ref={viewShotRef}>
       <View className="z-2 absolute top-7.5 w-full items-center justify-end flex-row">
         <>
           <DualButton
