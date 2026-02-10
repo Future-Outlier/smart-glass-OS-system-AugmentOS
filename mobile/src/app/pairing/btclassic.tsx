@@ -9,6 +9,7 @@ import {SETTINGS, useSetting} from "@/stores/settings"
 import {SettingsNavigationUtils} from "@/utils/SettingsNavigationUtils"
 import { useCoreStore } from "@/stores/core"
 import { View } from "react-native"
+import { ExpoAvRoutePickerView } from 'expo-av-route-picker-view';
 
 export default function BtClassicPairingScreen() {
   const {pushPrevious, goBack} = useNavigationHistory()
@@ -83,10 +84,11 @@ export default function BtClassicPairingScreen() {
       {!otherBtConnected && (
         <View className="absolute bottom-16 w-full">
           <Button text="TX: show music picker" preset="secondary" onPress={() => {
-            
+
           }} />
         </View>
       )}
+      <ExpoAvRoutePickerView />
     </Screen>
   )
 }
