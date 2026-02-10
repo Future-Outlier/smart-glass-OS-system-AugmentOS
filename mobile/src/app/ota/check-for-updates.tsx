@@ -221,15 +221,13 @@ export default function OtaCheckForUpdatesScreen() {
     if (checkState === "checking") {
       return (
         <>
-          <View className="flex items-center justify-center pt-8">
-            <Icon name="world-download" size={48} color={theme.colors.primary} />
+          <View className="flex-1 items-center justify-center px-6">
+            <Icon name="world-download" size={64} color={theme.colors.primary} />
             <View className="h-6" />
-            <Text tx="ota:checkingForUpdates" className="font-semibold text-lg" />
+            <Text tx="ota:checkingForUpdates" className="font-semibold text-xl text-center" />
             <View className="h-2" />
-            <Text tx="ota:checkingForUpdatesMessage" className="text-sm text-center px-6" />
-          </View>
-
-          <View className="flex-1 items-center justify-center">
+            <Text tx="ota:checkingForUpdatesMessage" className="text-sm text-center" />
+            <View className="h-6" />
             <ActivityIndicator size="large" color={theme.colors.foreground} />
           </View>
 

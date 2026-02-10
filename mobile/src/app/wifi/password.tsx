@@ -133,8 +133,8 @@ export default function WifiPasswordScreen() {
             labelPosition="right"
             label="Remember password"
             labelTx="wifi:rememberPassword"
-            helper="Save password for future connections"
-            helperTx="wifi:rememberPasswordDescription"
+            //helper="Save password for future connections"
+            //helperTx="wifi:rememberPasswordDescription"
           />
         </View>
 
