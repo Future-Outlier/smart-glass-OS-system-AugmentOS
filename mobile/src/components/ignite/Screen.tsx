@@ -1,6 +1,6 @@
 import {useScrollToTop} from "@react-navigation/native"
 import {StatusBar, StatusBarProps, StatusBarStyle} from "expo-status-bar"
-import {ReactNode, useRef, useState} from "react"
+import {ReactNode, RefObject, useRef, useState} from "react"
 import {
   KeyboardAvoidingView,
   KeyboardAvoidingViewProps,
@@ -237,7 +237,7 @@ function ScreenWithScrolling(props: ScreenProps) {
  * @param {ScreenProps} props - The props for the `Screen` component.
  * @returns {JSX.Element} The rendered `Screen` component.
  */
-export function Screen(props: ScreenProps) {
+export function Screen(props: ScreenProps & {ref?: any}) {
   const {
     theme: {colors},
     themeContext,
@@ -249,6 +249,7 @@ export function Screen(props: ScreenProps) {
     safeAreaEdges,
     StatusBarProps,
     statusBarStyle,
+    ref,
   } = props
 
   let $containerInsets = useSafeAreaInsetsStyle(safeAreaEdges)
@@ -274,12 +275,16 @@ export function Screen(props: ScreenProps) {
 
   return (
     <View
+      ref={ref}
       style={[
         {paddingHorizontal: theme.spacing.s6},
         {backgroundColor: backgroundColor || colors.background},
         {...$containerInsets},
         {flex: 1},
-      ]}>
+      ]}
+      collapsable={false}
+      collapsableChildren={false}
+      >
       <StatusBar style={statusBarStyle || (themeContext === "dark" ? "light" : "dark")} {...StatusBarProps} />
       <KeyboardAvoidingView
         behavior={isIos ? "padding" : "height"}

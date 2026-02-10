@@ -13,6 +13,11 @@ import {useAppTheme} from "@/contexts/ThemeContext"
 import {translate} from "@/i18n"
 import {SETTINGS, useSetting} from "@/stores/settings"
 import {$styles} from "@/theme"
+import {focusEffectPreventBack} from "@/contexts/NavigationHistoryContext"
+import {useAppletStatusStore} from "@/stores/applets"
+import {captureRef} from "react-native-view-shot"
+import {useRef} from "react"
+import {DualButton} from "@/components/miniapps/DualButton"
 
 export default function AccountPage() {
   const {theme, themed} = useAppTheme()
@@ -21,9 +26,34 @@ export default function AccountPage() {
   const [superMode] = useSetting(SETTINGS.super_mode.key)
   const [defaultWearable] = useSetting(SETTINGS.default_wearable.key)
 
+  const {goBack} = useNavigationHistory()
+  const viewShotRef = useRef(null)
+
+  const handleExit = async () => {
+    // take a screenshot of the webview and save it to the applet zustand store:
+    try {
+      const uri = await captureRef(viewShotRef, {
+        format: "jpg",
+        quality: 0.5,
+      })
+      // save uri to zustand stoare
+      await useAppletStatusStore.getState().saveScreenshot("com.mentra.settings", uri)
+    } catch (e) {
+      console.warn("screenshot failed:", e)
+    }
+    goBack()
+  }
+
+  focusEffectPreventBack(() => {
+    handleExit()
+  })
+
   return (
-    <Screen preset="fixed">
-      <Header leftTx="settings:title" RightActionComponent={<MentraLogoStandalone />} />
+    <Screen preset="fixed" safeAreaEdges={["top"]} ref={viewShotRef}>
+      {/* <Header leftTx="settings:title" RightActionComponent={<MentraLogoStandalone />} /> */}
+      <View className="z-2 absolute top-2 w-full items-center justify-end flex-row">
+        <DualButton onMinusPress={handleExit} onEllipsisPress={() => {}} />
+      </View>
 
       <ScrollView style={themed($styles.scrollView)} contentInsetAdjustmentBehavior="automatic">
         <ProfileCard />

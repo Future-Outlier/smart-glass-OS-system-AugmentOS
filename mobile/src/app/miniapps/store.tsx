@@ -193,11 +193,11 @@ export default function AppStoreWeb() {
 
   // If the prefetched WebView is ready, show it in the correct style
   return (
-    <Screen preset="fixed" safeAreaEdges={["top"]}> 
+    <Screen preset="fixed" safeAreaEdges={["top"]} ref={viewShotRef}> 
       <View className="absolute top-7.5 z-2 w-full justify-end items-center flex-row">
         <DualButton onMinusPress={() => {handleExit()}} onEllipsisPress={() => {}} />
       </View>
-      <View style={[themed($webViewContainer), {marginHorizontal: -theme.spacing.s6}]} ref={viewShotRef}>
+      <View style={[themed($webViewContainer), {marginHorizontal: -theme.spacing.s6}]}>
         {/* Show the prefetched WebView, but now visible and full size */}
         <WebView
           ref={prefetchedWebviewRef}
