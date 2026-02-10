@@ -35,11 +35,10 @@ export function KonamiCodeProvider({children}: {children: React.ReactNode}) {
 
   useEffect(() => {
     if (!enabled) return
-  
+
     const matchesCode = (code: Direction[]) =>
-      sequence.length >= code.length &&
-      code.every((dir, i) => dir === sequence[sequence.length - code.length + i])
-  
+      sequence.length >= code.length && code.every((dir, i) => dir === sequence[sequence.length - code.length + i])
+
     if (matchesCode(KONAMI_CODE)) {
       console.log("KONAMI: Konami code activated!")
       goHomeAndPush("/settings/developer")

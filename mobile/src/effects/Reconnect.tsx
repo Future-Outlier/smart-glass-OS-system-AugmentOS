@@ -9,10 +9,9 @@ import {useCoreStore} from "@/stores/core"
 import {DeviceTypes} from "@/../../cloud/packages/types/src"
 
 export async function attemptReconnect(): Promise<boolean> {
-  
   const reconnectOnAppForeground = await useSettingsStore
-  .getState()
-  .getSetting(SETTINGS.reconnect_on_app_foreground.key)
+    .getState()
+    .getSetting(SETTINGS.reconnect_on_app_foreground.key)
   if (!reconnectOnAppForeground) {
     return true
   }

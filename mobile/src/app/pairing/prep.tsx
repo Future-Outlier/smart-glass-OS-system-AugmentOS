@@ -241,13 +241,14 @@ export default function PairingPrepScreen() {
       {
         name: "power_on_tutorial",
         type: "video",
-        source: `${CDN_BASE}/ONB1_power_button.mp4`,
-        // poster: require("@assets/onboarding/live/thumbnails/ONB0_power.png"),
+        source: `${CDN_BASE}/ONB1_power_button_loop.mp4`,
+        poster: require("@assets/onboarding/live/thumbnails/ONB0_power.png"),
         transition: false,
         title: translate("pairing:powerOn"), // for spacing so it's consistent with the other steps
         subtitle: translate("onboarding:livePowerOnTutorial"),
         info: translate("onboarding:livePowerOnInfo"),
-        playCount: 99999, //1,
+        playCount: -1, // repeat forever
+        showButtonImmediately: true,
       },
     ]
 

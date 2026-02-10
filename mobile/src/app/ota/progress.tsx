@@ -3,17 +3,21 @@ import {useEffect, useState, useRef, useCallback} from "react"
 import {View, ActivityIndicator} from "react-native"
 
 import {MentraLogoStandalone} from "@/components/brands/MentraLogoStandalone"
-import {ConnectionOverlay} from "@/components/glasses/ConnectionOverlay"
+import {useConnectionOverlayConfig} from "@/contexts/ConnectionOverlayContext"
 import {Screen, Header, Button, Text, Icon} from "@/components/ignite"
+import {LoadingCoverVideo} from "@/components/ota/LoadingCoverVideo"
 import {focusEffectPreventBack, useNavigationHistory} from "@/contexts/NavigationHistoryContext"
 import {useAppTheme} from "@/contexts/ThemeContext"
+import {checkBesUpdate, findMatchingMtkPatch, fetchVersionInfo, OTA_VERSION_URL_PROD} from "@/effects/OtaUpdateChecker"
 import {useGlassesStore} from "@/stores/glasses"
+import {SETTINGS, useSetting} from "@/stores/settings"
 import GlobalEventEmitter from "@/utils/GlobalEventEmitter"
 
 type ProgressState =
   | "starting"
   | "downloading"
   | "installing"
+  | "transitioning" // NEW: Between updates, waiting for next to start
   | "completed"
   | "failed"
   | "disconnected"
@@ -24,51 +28,95 @@ const MAX_RETRIES = 3
 const RETRY_INTERVAL_MS = 5000 // 5 seconds between retries
 const PROGRESS_TIMEOUT_MS = 120000 // 120 seconds - for APK/BES updates with regular progress
 const MTK_INSTALL_TIMEOUT_MS = 300000 // 5 minutes - MTK system install takes much longer with no progress updates
+const TRANSITION_TIMEOUT_MS = 30000 // 30 seconds max wait for next update to start
+const OTA_COVER_VIDEO_URL = "https://mentra-videos-cdn.mentraglass.com/onboarding/ota/ota_video_2.mp4"
 
 export default function OtaProgressScreen() {
   const {theme} = useAppTheme()
-  const {replace, push, goBack} = useNavigationHistory()
+  const {replace, push, pushPrevious, clearHistoryAndGoHome, getHistory} = useNavigationHistory()
+  const [superMode] = useSetting(SETTINGS.super_mode.key)
   const otaProgress = useGlassesStore((state) => state.otaProgress)
+  const otaUpdateAvailable = useGlassesStore((state) => state.otaUpdateAvailable)
   const glassesConnected = useGlassesStore((state) => state.connected)
   const wifiConnected = useGlassesStore((state) => state.wifiConnected)
   const buildNumber = useGlassesStore((state) => state.buildNumber)
+  const besFwVersion = useGlassesStore((state) => state.besFwVersion)
+  const mtkFwVersion = useGlassesStore((state) => state.mtkFwVersion)
 
   const [progressState, setProgressState] = useState<ProgressState>("starting")
   const [retryCount, setRetryCount] = useState(0)
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
   const [continueButtonDisabled, setContinueButtonDisabled] = useState(false)
 
+  // Track the full update sequence and current position
+  const updateSequenceRef = useRef<string[]>([])
+  const [currentUpdateIndex, setCurrentUpdateIndex] = useState(0)
+  const [completedUpdates, setCompletedUpdates] = useState<string[]>([])
+
   // DEBUG: Log otaProgress changes
   useEffect(() => {
     console.log("🔍 OTA DEBUG: otaProgress changed:", JSON.stringify(otaProgress, null, 2))
     console.log("🔍 OTA DEBUG: progressState:", progressState)
     console.log("🔍 OTA DEBUG: glassesConnected:", glassesConnected)
-  }, [otaProgress, progressState, glassesConnected])
+    console.log("🔍 OTA DEBUG: currentUpdateIndex:", currentUpdateIndex, "of", updateSequenceRef.current.length)
+  }, [otaProgress, progressState, glassesConnected, currentUpdateIndex])
 
   // Track if we've received any progress from glasses
   const hasReceivedProgress = useRef(false)
   const retryTimeoutRef = useRef<NodeJS.Timeout | null>(null)
   const progressTimeoutRef = useRef<NodeJS.Timeout | null>(null)
+  const transitionTimeoutRef = useRef<NodeJS.Timeout | null>(null)
 
   // Track initial build number to detect successful install
   const initialBuildNumber = useRef<string | null>(null)
+  // Track which update type the build number was captured for
+  const buildNumberCapturedForUpdate = useRef<string | null>(null)
 
   // Track if we're doing a firmware update (persists across reconnection for ConnectionOverlay)
   const wasFirmwareUpdateRef = useRef(false)
 
-  // Track last completed update type to handle MTK→BES transition
-  const lastCompletedUpdateRef = useRef<string | null>(null)
+  // Cover video state - only show once per OTA session
+  const [showCoverVideo, setShowCoverVideo] = useState(false)
+  const hasShownVideoRef = useRef(false)
+
+  // Progress simulation for MTK install stall (typically stalls around 49-50%)
+  // Uses timeout-based stall detection: when no real progress for 20s in the 45-55% zone,
+  // start incrementing by 1% every 15s to keep user informed (caps at 60%)
+  const [simulatedProgress, setSimulatedProgress] = useState<number | null>(null)
+  const simulationTimerRef = useRef<NodeJS.Timeout | null>(null)
+  const stallDetectionRef = useRef<NodeJS.Timeout | null>(null)
+  const lastRealProgressRef = useRef<number>(0)
 
   focusEffectPreventBack()
 
-  // DEBUG: Log component mount and clear stale OTA state
+  // Show cover video when update begins (only once per session)
+  useEffect(() => {
+    if ((progressState === "downloading" || progressState === "installing") && !hasShownVideoRef.current) {
+      console.log("OTA: Starting cover video")
+      hasShownVideoRef.current = true
+      setShowCoverVideo(true)
+    }
+  }, [progressState])
+
+  // Handle cover video close (either finished or user dismissed)
+  const handleCoverVideoClosed = useCallback(() => {
+    console.log("OTA: Cover video closed")
+    setShowCoverVideo(false)
+  }, [])
+
+  // Capture the update sequence on mount from otaUpdateAvailable
   useEffect(() => {
     console.log("🔍 OTA PROGRESS SCREEN MOUNTED")
     console.log("🔍 OTA MOUNT: Initial otaProgress =", JSON.stringify(otaProgress))
-    console.log("🔍 OTA MOUNT: Initial progressState =", progressState)
+    console.log("🔍 OTA MOUNT: otaUpdateAvailable =", JSON.stringify(otaUpdateAvailable))
+
+    // Capture the update sequence if available
+    if (otaUpdateAvailable?.updates && otaUpdateAvailable.updates.length > 0) {
+      updateSequenceRef.current = [...otaUpdateAvailable.updates]
+      console.log("🔍 OTA MOUNT: Update sequence =", updateSequenceRef.current)
+    }
 
     // Clear any stale OTA progress from previous attempts
-    // This ensures we start fresh each time the screen mounts
     useGlassesStore.getState().setOtaProgress(null)
 
     return () => {
@@ -76,43 +124,168 @@ export default function OtaProgressScreen() {
     }
   }, [])
 
-  // Capture initial build number on mount
+  // Capture initial build number on mount (only for APK updates)
   useEffect(() => {
     if (buildNumber && !initialBuildNumber.current) {
       initialBuildNumber.current = buildNumber
+      // Only mark as captured for APK if APK is in the sequence
+      if (updateSequenceRef.current.includes("apk")) {
+        buildNumberCapturedForUpdate.current = "apk"
+      }
       console.log("OTA: Initial build number:", buildNumber)
     }
   }, [buildNumber])
 
-  // Detect successful install by watching for build number increase after installing
+  // Re-validate update sequence when firmware versions change mid-flow
+  // This handles the case where glasses report their actual firmware version after ASG client update,
+  // and we discover that some updates in the queue are no longer needed
   useEffect(() => {
+    const revalidateUpdateSequence = async () => {
+      // Only revalidate if we have pending updates
+      if (updateSequenceRef.current.length === 0) return
+
+      // Fetch the latest version.json to check against
+      const versionJson = await fetchVersionInfo(OTA_VERSION_URL_PROD)
+      if (!versionJson) {
+        console.log("OTA REVALIDATE: Could not fetch version.json")
+        return
+      }
+
+      let sequenceChanged = false
+      const originalSequence = [...updateSequenceRef.current]
+
+      // Check if BES update is still needed
+      if (updateSequenceRef.current.includes("bes") && besFwVersion) {
+        const besStillNeeded = checkBesUpdate(versionJson.bes_firmware, besFwVersion)
+        if (!besStillNeeded) {
+          console.log(
+            `OTA REVALIDATE: BES no longer needs update (current: ${besFwVersion}, server: ${versionJson.bes_firmware?.version})`,
+          )
+          updateSequenceRef.current = updateSequenceRef.current.filter((u) => u !== "bes")
+          sequenceChanged = true
+        }
+      }
+
+      // Check if MTK update is still needed
+      if (updateSequenceRef.current.includes("mtk") && mtkFwVersion) {
+        const mtkPatch = findMatchingMtkPatch(versionJson.mtk_patches, mtkFwVersion)
+        if (!mtkPatch) {
+          console.log(`OTA REVALIDATE: MTK no longer needs update (current: ${mtkFwVersion}, no matching patch)`)
+          updateSequenceRef.current = updateSequenceRef.current.filter((u) => u !== "mtk")
+          sequenceChanged = true
+        }
+      }
+
+      if (sequenceChanged) {
+        console.log(
+          `OTA REVALIDATE: Update sequence changed from [${originalSequence}] to [${updateSequenceRef.current}]`,
+        )
+
+        // Update the store as well
+        if (otaUpdateAvailable) {
+          useGlassesStore.getState().setOtaUpdateAvailable({
+            ...otaUpdateAvailable,
+            updates: updateSequenceRef.current,
+          })
+        }
+
+        // If no updates left, mark as completed
+        if (updateSequenceRef.current.length === 0) {
+          console.log("OTA REVALIDATE: No more updates needed - marking as completed")
+          setProgressState("completed")
+        }
+        // If we're in transitioning or starting state waiting for next update, but that update was removed,
+        // check if we should complete or move to the next one
+        else if (progressState === "transitioning" || progressState === "starting") {
+          // For starting state, check if current index is still valid
+          // For transitioning, check if next index is still valid
+          const checkIndex = progressState === "starting" ? currentUpdateIndex : currentUpdateIndex + 1
+          if (checkIndex >= updateSequenceRef.current.length) {
+            console.log(`OTA REVALIDATE: Was ${progressState} but no more updates - marking as completed`)
+            setProgressState("completed")
+          }
+        }
+      }
+    }
+
+    revalidateUpdateSequence()
+  }, [besFwVersion, mtkFwVersion])
+
+  // Detect successful APK install by watching for build number increase
+  // NOTE: This ONLY applies to APK updates which bump the build number on reboot.
+  // MTK and BES firmware updates do NOT change the build number - they use FINISHED status instead.
+  useEffect(() => {
+    // CRITICAL: Only run for APK updates - check this FIRST
+    const currentUpdateType = otaProgress?.currentUpdate
+    if (currentUpdateType !== "apk") {
+      return
+    }
+
     if (progressState !== "installing") return
     if (!buildNumber || !initialBuildNumber.current) return
+
+    // Ensure we captured the initial build number for APK
+    if (buildNumberCapturedForUpdate.current !== "apk") {
+      console.log("OTA: Build number was not captured for APK update, skipping detection")
+      return
+    }
 
     const currentVersion = parseInt(buildNumber, 10)
     const initialVersion = parseInt(initialBuildNumber.current, 10)
 
     if (!isNaN(currentVersion) && !isNaN(initialVersion) && currentVersion > initialVersion) {
-      console.log(`OTA: Build number increased from ${initialVersion} to ${currentVersion} - install complete!`)
-      // Clear progress timeout since we detected completion via build number
+      console.log(`OTA: Build number increased from ${initialVersion} to ${currentVersion} - APK install complete!`)
+      // Clear timeouts
       if (progressTimeoutRef.current) {
         clearTimeout(progressTimeoutRef.current)
         progressTimeoutRef.current = null
       }
-      // Clear completion timeout since we detected completion via build number
-      if (completionTimeoutRef.current) {
-        clearTimeout(completionTimeoutRef.current)
-        completionTimeoutRef.current = null
-      }
-      // Clear MTK session flag - glasses rebooted, so any pending MTK A/B update is now applied
-      // This also clears stale flags if MTK was never actually updated
-      if (useGlassesStore.getState().mtkUpdatedThisSession) {
-        console.log("OTA: Clearing MTK session flag after APK install reboot")
-        useGlassesStore.getState().setMtkUpdatedThisSession(false)
-      }
-      setProgressState("completed")
+
+      // Mark APK as completed
+      handleUpdateCompleted("apk")
     }
-  }, [buildNumber, progressState])
+  }, [buildNumber, progressState, otaProgress?.currentUpdate])
+
+  // Handle when an update completes - transition to next or show final completion
+  const handleUpdateCompleted = useCallback(
+    (completedUpdate: string) => {
+      console.log(`OTA: Update '${completedUpdate}' completed`)
+
+      // Add to completed list
+      setCompletedUpdates((prev) => {
+        if (prev.includes(completedUpdate)) return prev
+        return [...prev, completedUpdate]
+      })
+
+      const sequence = updateSequenceRef.current
+      const currentIndex = sequence.indexOf(completedUpdate)
+
+      // Check if this was the last update
+      if (currentIndex === sequence.length - 1 || currentIndex === -1) {
+        console.log("OTA: Final update completed - showing completion screen")
+        setProgressState("completed")
+        return
+      }
+
+      // More updates to come - show transition state
+      const nextIndex = currentIndex + 1
+      const nextUpdate = sequence[nextIndex]
+      console.log(`OTA: Transitioning to next update: ${nextUpdate} (${nextIndex + 1}/${sequence.length})`)
+
+      setCurrentUpdateIndex(nextIndex)
+      setProgressState("transitioning")
+
+      // Start transition timeout - if next update doesn't start within 30s, show completed anyway
+      if (transitionTimeoutRef.current) {
+        clearTimeout(transitionTimeoutRef.current)
+      }
+      transitionTimeoutRef.current = setTimeout(() => {
+        console.log("OTA: Transition timeout - next update didn't start, showing completion")
+        setProgressState("completed")
+      }, TRANSITION_TIMEOUT_MS)
+    },
+    [completedUpdates],
+  )
 
   // Send OTA start command with retry logic
   const sendOtaStartCommand = useCallback(async () => {
@@ -160,18 +333,17 @@ export default function OtaProgressScreen() {
 
   // Watch for BLE disconnection
   useEffect(() => {
-    // Don't fail on disconnect during "installing" or "restarting" - glasses will reboot/power off
-    // Only fail if we're in starting/downloading states
+    // Don't fail on disconnect during certain states - glasses will reboot/power off
     if (
       !glassesConnected &&
       progressState !== "completed" &&
       progressState !== "failed" &&
       progressState !== "installing" &&
       progressState !== "restarting" &&
-      progressState !== "disconnected"
+      progressState !== "disconnected" &&
+      progressState !== "transitioning"
     ) {
       console.log("OTA: Glasses disconnected during update")
-      // Clear any pending retry
       if (retryTimeoutRef.current) {
         clearTimeout(retryTimeoutRef.current)
       }
@@ -191,8 +363,6 @@ export default function OtaProgressScreen() {
 
   // Watch for WiFi disconnection during active download/install
   useEffect(() => {
-    // Only trigger on WiFi disconnect during downloading or starting states
-    // (installing state for MTK/BES may not need WiFi - data already on glasses)
     if (
       !wifiConnected &&
       (progressState === "downloading" || progressState === "starting") &&
@@ -201,7 +371,6 @@ export default function OtaProgressScreen() {
       progressState !== "completed"
     ) {
       console.log("OTA: WiFi disconnected during download - showing WiFi disconnected state")
-      // Clear any pending retry
       if (retryTimeoutRef.current) {
         clearTimeout(retryTimeoutRef.current)
       }
@@ -212,9 +381,6 @@ export default function OtaProgressScreen() {
   // Track completion timeout to allow cleanup
   const completionTimeoutRef = useRef<NodeJS.Timeout | null>(null)
 
-  // Track MTK-only timeout (if MTK finishes but no BES follows)
-  const mtkOnlyTimeoutRef = useRef<NodeJS.Timeout | null>(null)
-
   // Track if we're waiting for MTK system install to complete
   const waitingForMtkComplete = useRef(false)
 
@@ -224,10 +390,9 @@ export default function OtaProgressScreen() {
       console.log("OTA: Received mtk_update_complete event:", data.message)
 
       if (waitingForMtkComplete.current) {
-        console.log("OTA: MTK system install complete - transitioning to completed state")
+        console.log("OTA: MTK system install complete - handling completion")
         waitingForMtkComplete.current = false
 
-        // Clear progress timeout since we received completion signal
         if (progressTimeoutRef.current) {
           clearTimeout(progressTimeoutRef.current)
           progressTimeoutRef.current = null
@@ -236,8 +401,7 @@ export default function OtaProgressScreen() {
         // Mark MTK as updated this session
         useGlassesStore.getState().setMtkUpdatedThisSession(true)
 
-        // Transition to completed state
-        setProgressState("completed")
+        handleUpdateCompleted("mtk")
       }
     }
 
@@ -246,7 +410,106 @@ export default function OtaProgressScreen() {
     return () => {
       GlobalEventEmitter.off("mtk_update_complete", handleMtkUpdateComplete)
     }
-  }, [])
+  }, [handleUpdateCompleted])
+
+  // Progress simulation for MTK install stalls
+  // Architecture: This effect ONLY depends on otaProgress (real progress from glasses).
+  // When real progress arrives, we cancel any existing stall timer and restart it.
+  // When the stall timer fires (30s of no real progress in 40-75% zone), we start
+  // incrementing by 5% every 30s (matching display granularity for visible changes).
+  // The simulation interval updates simulatedProgress state (triggers re-render for UI)
+  // but does NOT re-trigger this effect (not in dependency array).
+  useEffect(() => {
+    const currentUpdate = otaProgress?.currentUpdate
+    const realProgress = otaProgress?.progress ?? 0
+    const stage = otaProgress?.stage
+    const status = otaProgress?.status
+
+    const isMtkInstall =
+      currentUpdate === "mtk" && stage === "install" && (status === "STARTED" || status === "PROGRESS")
+
+    // Helper to clear all simulation timers
+    const clearAllSimulation = () => {
+      if (simulationTimerRef.current) {
+        clearInterval(simulationTimerRef.current)
+        simulationTimerRef.current = null
+      }
+      if (stallDetectionRef.current) {
+        clearTimeout(stallDetectionRef.current)
+        stallDetectionRef.current = null
+      }
+    }
+
+    // Not MTK install - tear everything down
+    if (!isMtkInstall) {
+      clearAllSimulation()
+      setSimulatedProgress(null)
+      return
+    }
+
+    // Track real progress
+    if (realProgress > 0 && realProgress !== lastRealProgressRef.current) {
+      lastRealProgressRef.current = realProgress
+      console.log(`🎯 OTA SIMULATION: Real progress updated to ${realProgress}%`)
+
+      // If real progress exceeded simulation, clear simulation
+      setSimulatedProgress((prev) => {
+        if (prev !== null && realProgress > prev) {
+          console.log(`🎯 OTA SIMULATION: Real progress ${realProgress}% exceeded simulated ${prev}%, clearing`)
+          return null
+        }
+        return prev
+      })
+    }
+
+    // Real progress arrived - cancel existing stall detection and simulation interval
+    // (we'll restart stall detection below if still in the zone)
+    clearAllSimulation()
+
+    // Set up stall detection if we're in the stall zone (45-55%)
+    const inStallZone = realProgress >= 45 && realProgress < 55
+
+    if (inStallZone) {
+      // After 20s of no new otaProgress, start/resume simulating
+      stallDetectionRef.current = setTimeout(() => {
+        const stalledAt = lastRealProgressRef.current
+
+        // Use functional update to never go backwards - start at stalledAt+1 or keep higher prev
+        setSimulatedProgress((prev) => {
+          let target = prev !== null ? Math.max(prev, stalledAt + 1) : stalledAt + 1
+          target = Math.max(target, 51)
+          console.log(
+            `🎯 OTA SIMULATION: Stall detected at ${stalledAt}%, ${prev !== null ? `resuming from ${prev}%` : `starting at ${target}% (min 51%)`}`,
+          )
+          return target
+        })
+
+        // Then increment by 1% every 15s (caps at 60%)
+        simulationTimerRef.current = setInterval(() => {
+          setSimulatedProgress((prev) => {
+            const current = prev ?? stalledAt + 1
+            const next = current + 1
+            const capped = Math.min(next, 60)
+            console.log(`🎯 OTA SIMULATION: Incrementing to ${capped}%`)
+
+            if (capped >= 60) {
+              console.log(`🎯 OTA SIMULATION: Hit cap at 60%, stopping timer`)
+              if (simulationTimerRef.current) {
+                clearInterval(simulationTimerRef.current)
+                simulationTimerRef.current = null
+              }
+            }
+
+            return capped
+          })
+        }, 15000) // 15 seconds between 1% increments
+      }, 20000) // 20 seconds before first simulation tick
+    }
+
+    return () => {
+      clearAllSimulation()
+    }
+  }, [otaProgress]) // Only react to real progress changes - NOT simulatedProgress
 
   // Watch for OTA progress updates from glasses
   useEffect(() => {
@@ -256,15 +519,17 @@ export default function OtaProgressScreen() {
       return
     }
 
+    const {stage, status, currentUpdate} = otaProgress
+
     console.log(
       "🔍 OTA EFFECT: Processing - stage:",
-      otaProgress.stage,
+      stage,
       "status:",
-      otaProgress.status,
+      status,
       "progress:",
       otaProgress.progress,
       "currentUpdate:",
-      otaProgress.currentUpdate,
+      currentUpdate,
     )
 
     // Mark that we've received progress - stop retrying
@@ -276,122 +541,84 @@ export default function OtaProgressScreen() {
       }
     }
 
-    // Reset progress timeout on ANY progress update (STARTED, PROGRESS, FINISHED, FAILED)
-    // This ensures we only timeout if we're truly stuck with no updates
+    // Clear transition timeout whenever we receive ANY progress
+    // (not just during "transitioning" state - React batching can cause the state to lag behind)
+    if (transitionTimeoutRef.current) {
+      console.log("OTA: Received progress - clearing transition timeout")
+      clearTimeout(transitionTimeoutRef.current)
+      transitionTimeoutRef.current = null
+    }
+
+    // Update the current update index based on what we're receiving
+    const sequence = updateSequenceRef.current
+    const updateIndex = sequence.indexOf(currentUpdate)
+    if (updateIndex !== -1 && updateIndex !== currentUpdateIndex) {
+      console.log(`OTA: Update index changed from ${currentUpdateIndex} to ${updateIndex}`)
+      setCurrentUpdateIndex(updateIndex)
+    }
+
+    // Reset progress timeout on ANY progress update
     if (progressTimeoutRef.current) {
       clearTimeout(progressTimeoutRef.current)
       progressTimeoutRef.current = null
     }
 
-    if (otaProgress.status === "STARTED" || otaProgress.status === "PROGRESS") {
-      // Clear MTK-only timeout if BES starts
-      if (mtkOnlyTimeoutRef.current && otaProgress.currentUpdate === "bes") {
-        console.log("OTA: BES update started - clearing MTK-only timeout")
-        clearTimeout(mtkOnlyTimeoutRef.current)
-        mtkOnlyTimeoutRef.current = null
-      }
-
-      // If BES starts after MTK, clear the MTK transition timeout
-      if (otaProgress.currentUpdate === "bes" && lastCompletedUpdateRef.current === "mtk") {
-        console.log("OTA: BES started after MTK - clearing MTK transition state")
-        lastCompletedUpdateRef.current = null
-        if (progressTimeoutRef.current) {
-          clearTimeout(progressTimeoutRef.current)
-          progressTimeoutRef.current = null
-        }
-      }
-
+    if (status === "STARTED" || status === "PROGRESS") {
       // Track BES updates for ConnectionOverlay custom message
-      // Only BES causes auto-reboot, MTK requires manual restart
-      if (otaProgress.currentUpdate === "bes") {
+      if (currentUpdate === "bes") {
         wasFirmwareUpdateRef.current = true
       }
 
       // MTK: Always show "Installing..." regardless of stage (no download progress shown)
-      if (otaProgress.currentUpdate === "mtk") {
+      if (currentUpdate === "mtk") {
         console.log("🔍 OTA EFFECT: MTK update - always show installing state")
         setProgressState("installing")
-        // Start MTK timeout - system install takes much longer (up to 10 minutes)
         progressTimeoutRef.current = setTimeout(() => {
           console.log("OTA: No MTK progress update received in 10 minutes - showing failed")
           setErrorMessage("Update may have failed. Ensure glasses have internet access and try again.")
           setProgressState("failed")
         }, MTK_INSTALL_TIMEOUT_MS)
-      } else if (otaProgress.stage === "download") {
+      } else if (stage === "download") {
         console.log("🔍 OTA EFFECT: Setting progressState to 'downloading'")
         setProgressState("downloading")
-        // Start progress timeout - must receive update within 120s
         progressTimeoutRef.current = setTimeout(() => {
           console.log("OTA: No progress update received in 120s - showing failed")
           setErrorMessage("Update may have failed. Ensure glasses have internet access and try again.")
           setProgressState("failed")
         }, PROGRESS_TIMEOUT_MS)
-      } else if (otaProgress.stage === "install") {
+      } else if (stage === "install") {
         console.log("🔍 OTA EFFECT: Setting progressState to 'installing'")
         setProgressState("installing")
-        // Start progress timeout - must receive update within 120s
         progressTimeoutRef.current = setTimeout(() => {
           console.log("OTA: No progress update received in 120s - showing failed")
           setErrorMessage("Update may have failed. Ensure glasses have internet access and try again.")
           setProgressState("failed")
         }, PROGRESS_TIMEOUT_MS)
       }
-    } else if (otaProgress.status === "FINISHED") {
-      const updateType = otaProgress.currentUpdate
-      const stage = otaProgress.stage
-
-      // MTK: Install FINISHED means system install is complete (sent on SUCCESS)
-      // Don't show "restarting" immediately - BES update may follow
-      if (updateType === "mtk") {
+    } else if (status === "FINISHED") {
+      // MTK: Install FINISHED means system install is complete
+      if (currentUpdate === "mtk") {
         if (stage === "install") {
           console.log("OTA: MTK install FINISHED received - install complete")
 
-          // Clear any existing timeouts
-          if (mtkOnlyTimeoutRef.current) {
-            clearTimeout(mtkOnlyTimeoutRef.current)
-            mtkOnlyTimeoutRef.current = null
-          }
           if (progressTimeoutRef.current) {
             clearTimeout(progressTimeoutRef.current)
             progressTimeoutRef.current = null
           }
 
-          // Mark MTK as updated this session so check-for-updates won't suggest it again
-          // (A/B update is staged but version won't change until reboot)
-          console.log("OTA: Setting mtkUpdatedThisSession = true")
+          // Mark MTK as updated this session
           useGlassesStore.getState().setMtkUpdatedThisSession(true)
 
-          // Track that MTK just completed - used for transition handling
-          lastCompletedUpdateRef.current = "mtk"
-
-          // Don't show "restarting" immediately - wait briefly for BES to potentially start
-          // If BES starts, its STARTED/PROGRESS will update the UI
-          // If no BES after 5 seconds, then show restarting
-          progressTimeoutRef.current = setTimeout(() => {
-            // Only show restarting if we're still waiting (no BES started)
-            if (lastCompletedUpdateRef.current === "mtk") {
-              console.log("OTA: No BES update started after MTK - showing restarting state")
-              setProgressState("restarting")
-            }
-          }, 5000)
+          handleUpdateCompleted("mtk")
         }
         // Ignore download FINISHED - only care about install FINISHED
         return
       }
 
-      if (updateType === "bes") {
-        // Clear any pending MTK timeout
-        if (mtkOnlyTimeoutRef.current) {
-          clearTimeout(mtkOnlyTimeoutRef.current)
-          mtkOnlyTimeoutRef.current = null
-        }
-        // BES has two phases: download (server→glasses) and install (glasses→BES chip)
+      if (currentUpdate === "bes") {
         if (stage === "download") {
           // Download finished - now waiting for install phase
-          console.log("🔍 OTA: BES download FINISHED - transitioning to install phase, waiting for install progress")
-          // Stay in downloading state briefly, install progress should start soon
-          // If no install progress comes, the glasses will send install FINISHED when BES reboots
-          // Restart progress timeout since we're still waiting for install progress
+          console.log("🔍 OTA: BES download FINISHED - waiting for install phase")
           progressTimeoutRef.current = setTimeout(() => {
             console.log("OTA: No progress update received in 120s - showing failed")
             setErrorMessage("Update may have failed. Ensure glasses have internet access and try again.")
@@ -399,15 +626,23 @@ export default function OtaProgressScreen() {
           }, PROGRESS_TIMEOUT_MS)
         } else if (stage === "install") {
           // BES install finished - glasses will power off
-          // Clear progress timeout since we received FINISHED
           if (progressTimeoutRef.current) {
             clearTimeout(progressTimeoutRef.current)
             progressTimeoutRef.current = null
           }
           console.log("OTA: BES install FINISHED - glasses will power off")
-          setProgressState("restarting")
+
+          // Check if this is the final update
+          const sequence = updateSequenceRef.current
+          const besIndex = sequence.indexOf("bes")
+          if (besIndex === sequence.length - 1) {
+            // BES is the last update - show restarting, then user can continue
+            setProgressState("restarting")
+          } else {
+            // More updates after BES (unlikely but handle it)
+            handleUpdateCompleted("bes")
+          }
         } else {
-          // Clear progress timeout since we received FINISHED
           if (progressTimeoutRef.current) {
             clearTimeout(progressTimeoutRef.current)
             progressTimeoutRef.current = null
@@ -415,20 +650,18 @@ export default function OtaProgressScreen() {
           console.log("🔍 OTA: BES FINISHED with unknown stage:", stage, "- going to restarting")
           setProgressState("restarting")
         }
-      } else {
-        // APK update - show completed after 10 seconds to allow installation
-        // Clear progress timeout since we received FINISHED
+      } else if (currentUpdate === "apk") {
+        // APK update - show transition after a delay to allow installation
         if (progressTimeoutRef.current) {
           clearTimeout(progressTimeoutRef.current)
           progressTimeoutRef.current = null
         }
-        console.log("OTA: APK install FINISHED - showing completed in 10 seconds")
+        console.log("OTA: APK install FINISHED - will transition after delay")
         completionTimeoutRef.current = setTimeout(() => {
-          setProgressState("completed")
+          handleUpdateCompleted("apk")
         }, 12000)
       }
-    } else if (otaProgress.status === "FAILED") {
-      // Clear progress timeout since we received explicit failure
+    } else if (status === "FAILED") {
       if (progressTimeoutRef.current) {
         clearTimeout(progressTimeoutRef.current)
         progressTimeoutRef.current = null
@@ -436,7 +669,7 @@ export default function OtaProgressScreen() {
       setErrorMessage(otaProgress.errorMessage || null)
       setProgressState("failed")
     }
-  }, [otaProgress])
+  }, [otaProgress, handleUpdateCompleted, currentUpdateIndex, progressState])
 
   // Cleanup timeouts on unmount
   useEffect(() => {
@@ -444,44 +677,61 @@ export default function OtaProgressScreen() {
       if (completionTimeoutRef.current) {
         clearTimeout(completionTimeoutRef.current)
       }
-      if (mtkOnlyTimeoutRef.current) {
-        clearTimeout(mtkOnlyTimeoutRef.current)
-      }
       if (progressTimeoutRef.current) {
         clearTimeout(progressTimeoutRef.current)
+      }
+      if (transitionTimeoutRef.current) {
+        clearTimeout(transitionTimeoutRef.current)
+      }
+      if (simulationTimerRef.current) {
+        clearInterval(simulationTimerRef.current)
+      }
+      if (stallDetectionRef.current) {
+        clearTimeout(stallDetectionRef.current)
       }
     }
   }, [])
 
-  // Disable Continue button for 5s when entering "restarting" state for BES
+  // Disable Continue button for 15s when entering "restarting" state for BES
   // This gives glasses time to reboot before user can proceed
   useEffect(() => {
     if (progressState === "restarting" && wasFirmwareUpdateRef.current) {
-      console.log("OTA: BES restarting - disabling Continue button for 5s")
+      console.log("OTA: BES restarting - disabling Continue button for 15s")
       setContinueButtonDisabled(true)
       const timer = setTimeout(() => {
         console.log("OTA: Re-enabling Continue button")
         setContinueButtonDisabled(false)
-      }, 5000)
+      }, 15000) // Increased from 5s to 15s
       return () => clearTimeout(timer)
     }
   }, [progressState])
 
   const handleContinue = () => {
-    // After OTA complete, go back to previous screen
-    // - Homescreen flow: goes back to home
-    // - Pairing flow: goes back to onboarding (which was pushed under by pairing/success)
-    console.log("OTA: Continue pressed - going back")
-    goBack()
+    const history = getHistory()
+    // Check if there's onboarding underneath (initial pairing flow)
+    const hasOnboardingUnderneath =
+      history.includes("/onboarding/os") || history.includes("/onboarding/live") || history.includes("/onboarding/g1")
+
+    if (hasOnboardingUnderneath) {
+      // Initial pairing flow - use pushPrevious to go to onboarding screen underneath
+      console.log("OTA: Continue pressed - pushPrevious to onboarding")
+      pushPrevious()
+    } else {
+      // Home OTA alert flow - clear stack and go home
+      console.log("OTA: Continue pressed - clearHistoryAndGoHome")
+      clearHistoryAndGoHome()
+    }
   }
 
   const handleRetry = () => {
-    // Reset state and retry the update
     console.log("OTA: Retry pressed - resetting state")
-    // Clear all timeouts
     if (progressTimeoutRef.current) {
       clearTimeout(progressTimeoutRef.current)
       progressTimeoutRef.current = null
+    }
+    if (transitionTimeoutRef.current) {
+      clearTimeout(transitionTimeoutRef.current)
+      transitionTimeoutRef.current = null
     }
     setProgressState("starting")
     setRetryCount(0)
@@ -489,27 +739,45 @@ export default function OtaProgressScreen() {
     hasReceivedProgress.current = false
   }
 
-  const progress = otaProgress?.progress ?? 0
-  // Round progress to nearest 5% for cleaner UI display
-  const displayProgress = Math.round(progress / 5) * 5
-  const currentUpdate = otaProgress?.currentUpdate // "apk", "mtk", or "bes"
+  // Use simulated progress if available and higher than real progress (for MTK only)
+  const realProgress = otaProgress?.progress ?? 0
+  const currentUpdate = otaProgress?.currentUpdate
+  const isSimulating = simulatedProgress !== null && currentUpdate === "mtk" && simulatedProgress > realProgress
+  const progress = isSimulating ? simulatedProgress : realProgress
+  // Round real progress to nearest 5%, but show exact 1% increments during simulation
+  const displayProgress = isSimulating ? progress : Math.round(progress / 5) * 5
+
+  // Get update position string like "Update 1 of 3"
+  const getUpdatePositionString = (): string => {
+    const sequence = updateSequenceRef.current
+    if (sequence.length <= 1) {
+      return "Update"
+    }
+    const index = currentUpdateIndex + 1
+    return `Update ${index} of ${sequence.length}`
+  }
+
+  // Get next update position string like "update 2 of 3"
+  const getNextUpdatePositionString = (): string => {
+    const sequence = updateSequenceRef.current
+    const nextIndex = currentUpdateIndex + 1
+    if (nextIndex >= sequence.length) {
+      return "next update"
+    }
+    return `update ${nextIndex + 1} of ${sequence.length}`
+  }
 
   // DEBUG: Log render values
-  console.log("🔍 OTA RENDER: progressState:", progressState, "progress:", progress, "currentUpdate:", currentUpdate)
-
-  // Get user-friendly name for current component being updated
-  const getComponentName = (component: string | undefined): string => {
-    switch (component) {
-      case "apk":
-        return "Software"
-      case "mtk":
-        return "System Firmware"
-      case "bes":
-        return "Bluetooth Firmware"
-      default:
-        return "Update"
-    }
-  }
+  console.log(
+    "🔍 OTA RENDER: progressState:",
+    progressState,
+    "progress:",
+    progress,
+    "currentUpdate:",
+    currentUpdate,
+    "index:",
+    currentUpdateIndex,
+  )
 
   const renderContent = () => {
     console.log(
@@ -520,6 +788,9 @@ export default function OtaProgressScreen() {
       ", progress =",
       progress,
     )
+
+    const updatePosition = getUpdatePositionString()
+
     // Starting state - waiting for glasses to respond
     if (progressState === "starting") {
       return (
@@ -535,22 +806,33 @@ export default function OtaProgressScreen() {
       )
     }
 
-    // Downloading state
-    if (progressState === "downloading") {
-      const componentName = getComponentName(currentUpdate)
-      console.log(
-        "🔍 OTA DOWNLOADING STATE: componentName =",
-        componentName,
-        ", progress =",
-        progress,
-        ", currentUpdate =",
-        currentUpdate,
-      )
+    // Transitioning state - between updates, waiting for next to start
+    if (progressState === "transitioning") {
+      const nextPosition = getNextUpdatePositionString()
       return (
         <View className="flex-1 items-center justify-center px-6">
           <Icon name="world-download" size={64} color={theme.colors.primary} />
           <View className="h-6" />
-          <Text text={`Downloading ${componentName}...`} className="font-semibold text-xl text-center" />
+          <Text text={`Starting ${nextPosition}...`} className="font-semibold text-xl text-center" />
+          <View className="h-4" />
+          <ActivityIndicator size="large" color={theme.colors.foreground} />
+          <View className="h-4" />
+          <Text
+            text="Please wait while the next update begins."
+            className="text-sm text-center"
+            style={{color: theme.colors.textDim}}
+          />
+        </View>
+      )
+    }
+
+    // Downloading state
+    if (progressState === "downloading") {
+      return (
+        <View className="flex-1 items-center justify-center px-6">
+          <Icon name="world-download" size={64} color={theme.colors.primary} />
+          <View className="h-6" />
+          <Text text={`Downloading ${updatePosition}...`} className="font-semibold text-xl text-center" />
           <View className="h-4" />
           <Text text={`${displayProgress}%`} className="text-3xl font-bold" style={{color: theme.colors.primary}} />
           <View className="h-4" />
@@ -561,28 +843,16 @@ export default function OtaProgressScreen() {
       )
     }
 
-    // Installing state - show percentage for BES firmware updates, spinner-only for APK and MTK
+    // Installing state
     if (progressState === "installing") {
-      const componentName = getComponentName(currentUpdate)
-      // BES and MTK firmware updates report install progress
-      // APK install is handled by Android system with no progress tracking
       const showProgress = currentUpdate === "bes" || currentUpdate === "mtk"
       const isMtk = currentUpdate === "mtk"
-      console.log(
-        "🔍 OTA INSTALLING STATE: componentName =",
-        componentName,
-        ", showProgress =",
-        showProgress,
-        ", progress =",
-        progress,
-        ", currentUpdate =",
-        currentUpdate,
-      )
+
       return (
         <View className="flex-1 items-center justify-center px-6">
           <Icon name="settings" size={64} color={theme.colors.primary} />
           <View className="h-6" />
-          <Text text={`Installing ${componentName}...`} className="font-semibold text-xl text-center" />
+          <Text text={`Installing ${updatePosition}...`} className="font-semibold text-xl text-center" />
           <View className="h-4" />
           {showProgress && (
             <>
@@ -594,7 +864,7 @@ export default function OtaProgressScreen() {
           <View className="h-4" />
           {isMtk ? (
             <Text
-              text="This may take up to 5 minutes. Please keep your glasses connected."
+              text="During the update, please plug the infinity cable into your Mentra Live, or put it in the case to charge. This may take up to 5 minutes."
               className="text-sm text-center"
               style={{color: theme.colors.textDim}}
             />
@@ -605,60 +875,48 @@ export default function OtaProgressScreen() {
       )
     }
 
-    // Restarting state - for MTK/BES updates that require reboot/power cycle
+    // Restarting state - for BES updates that require power cycle
+    // This is shown after BES install finishes and glasses are rebooting/reconnecting
     if (progressState === "restarting") {
-      const updateType = otaProgress?.currentUpdate
-      const componentName = getComponentName(updateType)
-      const isBes = updateType === "bes"
-
-      // Determine the appropriate message based on update type
-      let statusMessage: string
-
-      if (isBes) {
-        // BES update causes automatic power off
-        statusMessage = "Your glasses will power off. Please turn them back on to continue."
-      } else {
-        // MTK-only update (or MTK completed, no BES) - needs manual restart
-        statusMessage = "Please restart your glasses to apply the update."
-      }
+      const allUpdatesCount = updateSequenceRef.current.length
+      const titleText = allUpdatesCount > 1 ? "Updates Installed" : "Update Installed"
 
       return (
         <>
           <View className="flex-1 items-center justify-center px-6">
             <Icon name="check" size={64} color={theme.colors.primary} />
             <View className="h-6" />
-            <Text text={`${componentName} Installed`} className="font-semibold text-xl text-center" />
-            <View className="h-2" />
-            <Text text={statusMessage} className="text-sm text-center" style={{color: theme.colors.textDim}} />
+            <Text text={titleText} className="font-semibold text-xl text-center" />
           </View>
 
           <View className="justify-center items-center">
-            {continueButtonDisabled ? (
-              <ActivityIndicator size="large" color={theme.colors.foreground} />
-            ) : (
-              <Button preset="primary" tx="common:continue" flexContainer onPress={handleContinue} />
-            )}
+            <Button
+              preset="primary"
+              tx="common:continue"
+              flexContainer
+              onPress={handleContinue}
+              disabled={continueButtonDisabled}
+            />
           </View>
         </>
       )
     }
 
-    // Completed state
+    // Completed state - only shown for final update
     if (progressState === "completed") {
-      const componentName = getComponentName(currentUpdate)
-      const isMtk = currentUpdate === "mtk"
-
-      // MTK updates require restart to apply - show appropriate message
-      const completedMessage = isMtk
-        ? "Restart your glasses to apply the update, or continue to check for additional updates."
-        : "Press continue to check for additional updates."
+      const allUpdatesCount = updateSequenceRef.current.length
+      const titleText = allUpdatesCount > 1 ? "Updates Complete" : "Update Complete"
+      const completedMessage =
+        allUpdatesCount > 1
+          ? "All updates have been installed successfully."
+          : "The update has been installed successfully."
 
       return (
         <>
           <View className="flex-1 items-center justify-center px-6">
             <Icon name="check" size={64} color={theme.colors.primary} />
             <View className="h-6" />
-            <Text text={`${componentName} Update Complete`} className="font-semibold text-xl text-center" />
+            <Text text={titleText} className="font-semibold text-xl text-center" />
             <View className="h-2" />
             <Text text={completedMessage} className="text-sm text-center" style={{color: theme.colors.textDim}} />
           </View>
@@ -672,16 +930,12 @@ export default function OtaProgressScreen() {
 
     // Disconnected state (BLE) - retry only
     if (progressState === "disconnected") {
-      const disconnectedComponentName = getComponentName(currentUpdate)
       return (
         <>
           <View className="flex-1 items-center justify-center px-6">
             <Icon name="bluetooth-off" size={64} color={theme.colors.error} />
             <View className="h-6" />
-            <Text
-              text={`${disconnectedComponentName} Update Interrupted`}
-              className="font-semibold text-xl text-center"
-            />
+            <Text text={`${updatePosition} Interrupted`} className="font-semibold text-xl text-center" />
             <View className="h-2" />
             <Text
               text="Glasses disconnected during update. Please reconnect and try again."
@@ -691,7 +945,7 @@ export default function OtaProgressScreen() {
 
           <View className="gap-3 pb-2">
             <Button preset="primary" tx="Retry" flexContainer onPress={handleRetry} />
-            {__DEV__ && <Button preset="secondary" text="Skip (dev only)" onPress={handleContinue} />}
+            {superMode && <Button preset="secondary" text="Skip (super)" onPress={handleContinue} />}
           </View>
         </>
       )
@@ -699,16 +953,12 @@ export default function OtaProgressScreen() {
 
     // WiFi disconnected state - navigate to WiFi setup
     if (progressState === "wifi_disconnected") {
-      const wifiDisconnectedComponentName = getComponentName(currentUpdate)
       return (
         <>
           <View className="flex-1 items-center justify-center px-6">
             <Icon name="wifi-off" size={64} color={theme.colors.error} />
             <View className="h-6" />
-            <Text
-              text={`${wifiDisconnectedComponentName} Update Interrupted`}
-              className="font-semibold text-xl text-center"
-            />
+            <Text text={`${updatePosition} Interrupted`} className="font-semibold text-xl text-center" />
             <View className="h-2" />
             <Text
               text="WiFi disconnected during update. Please reconnect to WiFi to continue."
@@ -724,13 +974,12 @@ export default function OtaProgressScreen() {
     }
 
     // Failed state (WiFi still connected) - retry or change WiFi
-    const failedComponentName = getComponentName(currentUpdate)
     return (
       <>
         <View className="flex-1 items-center justify-center px-6">
           <Icon name="warning" size={64} color={theme.colors.error} />
           <View className="h-6" />
-          <Text text={`${failedComponentName} Update Failed`} className="font-semibold text-xl text-center" />
+          <Text text={`${updatePosition} Failed`} className="font-semibold text-xl text-center" />
           {errorMessage ? (
             <>
               <View className="h-2" />
@@ -753,25 +1002,88 @@ export default function OtaProgressScreen() {
   }
 
   // Determine if we should show firmware-specific reconnection message
-  // Use ref so message persists even after otaProgress is cleared on reconnection
   const isFirmwareCompleting =
     wasFirmwareUpdateRef.current &&
     (progressState === "completed" || progressState === "restarting" || otaProgress?.progress === 100)
 
+  // Update global connection overlay config based on firmware completion state
+  const {setConfig, clearConfig} = useConnectionOverlayConfig()
+  useEffect(() => {
+    if (isFirmwareCompleting) {
+      setConfig({
+        customTitle: "Please wait while Mentra Live restarts and automatically reconnects...",
+        customMessage: "",
+        hideStopButton: true,
+      })
+    } else {
+      clearConfig()
+    }
+
+    // Clear config on unmount
+    return () => {
+      clearConfig()
+    }
+  }, [isFirmwareCompleting, setConfig, clearConfig])
+
+  // DEBUG: Track state for overlay
+  const [debugInfo, setDebugInfo] = useState("")
+  useEffect(() => {
+    const simulationActive = simulatedProgress !== null
+    const simulationStatus = simulationActive
+      ? simulationTimerRef.current
+        ? `active (${simulatedProgress}%)`
+        : `holding (${simulatedProgress}%)`
+      : stallDetectionRef.current
+        ? "detecting stall..."
+        : "none"
+
+    const info = `progressState: ${progressState}
+currentUpdate: ${currentUpdate || "null"}
+stage: ${otaProgress?.stage || "null"}
+status: ${otaProgress?.status || "null"}
+realProgress: ${realProgress}%
+simulated: ${simulationStatus}
+displayProgress: ${displayProgress}%
+index: ${currentUpdateIndex}/${updateSequenceRef.current.length}
+completed: [${completedUpdates.join(", ")}]`
+    setDebugInfo(info)
+  }, [
+    progressState,
+    currentUpdate,
+    otaProgress,
+    progress,
+    currentUpdateIndex,
+    completedUpdates,
+    simulatedProgress,
+    realProgress,
+    displayProgress,
+  ])
+
   return (
     <Screen preset="fixed" safeAreaEdges={["bottom"]}>
       <Header RightActionComponent={<MentraLogoStandalone />} />
-      <ConnectionOverlay
-        customTitle={isFirmwareCompleting ? "Glasses are restarting" : undefined}
-        customMessage={
-          isFirmwareCompleting
-            ? "Your glasses are rebooting to apply the firmware update. This may take a moment..."
-            : undefined
-        }
-        hideStopButton={isFirmwareCompleting}
-      />
+
+      {/* DEBUG OVERLAY - Only shows in super mode */}
+      {superMode && (
+        <View
+          style={{
+            position: "absolute",
+            top: 100,
+            left: 10,
+            right: 10,
+            backgroundColor: "rgba(0,0,0,0.8)",
+            padding: 8,
+            borderRadius: 8,
+            zIndex: 9999,
+          }}>
+          <Text style={{color: "#0f0", fontSize: 12, fontFamily: "monospace"}}>{debugInfo}</Text>
+        </View>
+      )}
 
       {renderContent()}
+
+      {/* Cover video overlay - plays during OTA to reduce perceived wait time */}
+      {showCoverVideo && <LoadingCoverVideo videoUrl={OTA_COVER_VIDEO_URL} onClose={handleCoverVideoClosed} />}
     </Screen>
   )
 }

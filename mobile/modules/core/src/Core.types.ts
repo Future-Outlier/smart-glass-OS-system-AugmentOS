@@ -201,19 +201,6 @@ export type OtaProgressEvent = {
   error_message?: string
 }
 
-export type VersionInfoEvent = {
-  type: "version_info"
-  app_version: string
-  build_number: string
-  device_model: string
-  android_version: string
-  ota_version_url: string
-  firmware_version: string
-  bt_mac_address: string
-  mtk_fw_version?: string
-  bes_fw_version?: string
-}
-
 // Union type of all core events
 export type CoreEvent =
   | ButtonPressEvent
@@ -246,7 +233,6 @@ export type CoreEvent =
   | MtkUpdateCompleteEvent
   | OtaUpdateAvailableEvent
   | OtaProgressEvent
-  | VersionInfoEvent
   | GlassesNotReadyEvent
 
 export type CoreModuleEvents = {
@@ -285,7 +271,6 @@ export type CoreModuleEvents = {
   mtk_update_complete: (event: MtkUpdateCompleteEvent) => void
   ota_update_available: (event: OtaUpdateAvailableEvent) => void
   ota_progress: (event: OtaProgressEvent) => void
-  version_info: (event: VersionInfoEvent) => void
 }
 
 export type GlassesConnectionState = "disconnected" | "connected" | "connecting"
@@ -323,6 +308,8 @@ export interface GlassesStatus {
   deviceModel: string
   androidVersion: string
   fwVersion: string
+  besFwVersion: string
+  mtkFwVersion: string
   btMacAddress: string
   buildNumber: string
   otaVersionUrl: string
@@ -331,8 +318,6 @@ export interface GlassesStatus {
   serialNumber: string
   style: string
   color: string
-  mtkFwVersion: string
-  besFwVersion: string
   // wifi info
   wifiConnected: boolean
   wifiSsid: string
@@ -378,4 +363,5 @@ export interface CoreStatus {
   searchResults: DeviceSearchResult[]
   wifiScanResults: WifiSearchResult[]
   lastLog: string[]
+  otherBtConnected: boolean
 }

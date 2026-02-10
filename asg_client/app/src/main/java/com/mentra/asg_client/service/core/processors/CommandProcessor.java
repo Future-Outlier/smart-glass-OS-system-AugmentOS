@@ -348,6 +348,9 @@ public class CommandProcessor {
             commandHandlerRegistry.registerHandler(new BleConfigCommandHandler());
             Log.d(TAG, "✅ Registered BleConfigCommandHandler");
 
+            commandHandlerRegistry.registerHandler(new com.mentra.asg_client.service.core.handlers.PowerCommandHandler(context));
+            Log.d(TAG, "✅ Registered PowerCommandHandler");
+
             Log.i(TAG, "✅ Successfully registered " + commandHandlerRegistry.getHandlerCount() + " command handlers");
 
         } catch (Exception e) {
