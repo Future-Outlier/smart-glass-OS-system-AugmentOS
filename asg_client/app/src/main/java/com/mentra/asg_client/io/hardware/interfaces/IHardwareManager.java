@@ -108,6 +108,26 @@ public interface IHardwareManager {
     void shutdown();
 
     // ============================================
+    // Battery Status
+    // ============================================
+
+    /**
+     * Get the current battery level.
+     * On K900 devices, this may query BES if cache is stale (>2 min), with 50ms timeout.
+     * On standard Android devices, uses BatteryManager API directly.
+     * @return Battery level percentage (0-100), or -1 if unknown
+     */
+    int getBatteryLevel();
+
+    /**
+     * Get the current charging status.
+     * On K900 devices, this may query BES if cache is stale (>2 min), with 50ms timeout.
+     * On standard Android devices, uses BatteryManager API directly.
+     * @return true if charging, false if not charging or unknown
+     */
+    boolean getChargingStatus();
+
+    // ============================================
     // MTK LED Brightness Control
     // ============================================
 
@@ -147,7 +167,13 @@ public interface IHardwareManager {
     boolean supportsRgbLed();
 
     /**
-     * Turn on a specific RGB LED with custom timing pattern
+     * Set RGB LED brightness level
+     * @param brightness Brightness level (0-255, where 255 is maximum brightness)
+     */
+    void setRgbLedBrightness(int brightness);
+
+    /**
+     * Turn on a specific RGB LED with custom timing pattern (default full brightness)
      * @param ledIndex LED color index (0=red, 1=green, 2=blue, 3=orange, 4=white)
      * @param ontime Duration in milliseconds for LED on state
      * @param offtime Duration in milliseconds for LED off state
@@ -156,19 +182,43 @@ public interface IHardwareManager {
     void setRgbLedOn(int ledIndex, int ontime, int offtime, int count);
 
     /**
+     * Turn on a specific RGB LED with custom timing pattern and brightness
+     * @param ledIndex LED color index (0=red, 1=green, 2=blue, 3=orange, 4=white)
+     * @param ontime Duration in milliseconds for LED on state
+     * @param offtime Duration in milliseconds for LED off state
+     * @param count Number of on/off cycles (0 = infinite)
+     * @param brightness Brightness level (0-255, where 255 is maximum brightness)
+     */
+    void setRgbLedOn(int ledIndex, int ontime, int offtime, int count, int brightness);
+
+    /**
      * Turn off all RGB LEDs
      */
     void setRgbLedOff();
 
     /**
-     * Flash the white RGB LED for photo capture
+     * Flash the white RGB LED for photo capture (default full brightness)
      * @param durationMs Duration in milliseconds for the flash
      */
     void flashRgbLedWhite(int durationMs);
 
     /**
-     * Set the white RGB LED to solid on for video recording
+     * Flash the white RGB LED for photo capture with specified brightness
+     * @param durationMs Duration in milliseconds for the flash
+     * @param brightness Brightness level (0-255, where 255 is maximum brightness)
+     */
+    void flashRgbLedWhite(int durationMs, int brightness);
+
+    /**
+     * Set the white RGB LED to solid on for video recording (default full brightness)
      * @param durationMs Duration in milliseconds to keep LED on
      */
     void setRgbLedSolidWhite(int durationMs);
+
+    /**
+     * Set the white RGB LED to solid on for video recording with specified brightness
+     * @param durationMs Duration in milliseconds to keep LED on
+     * @param brightness Brightness level (0-255, where 255 is maximum brightness)
+     */
+    void setRgbLedSolidWhite(int durationMs, int brightness);
 }

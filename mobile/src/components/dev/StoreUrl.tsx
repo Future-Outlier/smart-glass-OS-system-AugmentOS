@@ -101,8 +101,15 @@ export default function StoreUrl() {
             flexContainer={false}
           />
           <Button
-            tx="developer:dev"
+            tx="developer:beta"
             onPress={() => setCustomUrlInput("https://appsbeta.mentraglass.com")}
+            compact
+            flexContainer={false}
+            flex
+          />
+          <Button
+            tx="developer:dev"
+            onPress={() => setCustomUrlInput("https://appsdev.mentraglass.com")}
             compact
             flexContainer={false}
             flex

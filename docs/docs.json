@@ -16,6 +16,10 @@
           {
             "group": "Welcome",
             "pages": ["index"]
+          },
+          {
+            "group": "Legal",
+            "pages": ["third-party-licenses"]
           }
         ]
       },
@@ -28,6 +32,7 @@
             "pages": [
               "app-devs/getting-started/overview",
               "app-devs/getting-started/quickstart",
+              "app-devs/getting-started/ai-ide-integration",
               "app-devs/getting-started/example-apps",
               {
                 "group": "Deployment",

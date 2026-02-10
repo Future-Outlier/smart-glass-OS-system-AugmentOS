@@ -6,7 +6,7 @@ import {Alert, BackHandler, Platform, Animated} from "react-native"
 import {Icon, IconTypes} from "@/components/ignite"
 import BasicDialog from "@/components/ui/BasicDialog"
 
-import {useAppTheme} from "../contexts/ThemeContext"
+import {useAppTheme} from "@/contexts/ThemeContext"
 
 import {SettingsNavigationUtils} from "./SettingsNavigationUtils"
 
@@ -232,7 +232,8 @@ export function ModalProvider({children}: {children: React.ReactNode}) {
           zIndex: 10,
           justifyContent: "center",
           alignItems: "center",
-          backgroundColor: theme.colors.background + "B3",
+          // backgroundColor: theme.colors.secondary_foreground + "C3",
+          backgroundColor: "#0a0a0ac3",
           paddingHorizontal: 24,
           opacity: fadeAnim,
         }}>
@@ -303,7 +304,7 @@ export interface ConnectivityAlertOptions extends AlertOptions {
 /**
  * Shows a standard alert with custom buttons
  */
-const showAlert = (title: string, message: string, buttons: AlertButton[], options?: AlertOptions) => {
+const showAlert = (title: string, message: string, buttons: AlertButton[] = [], options?: AlertOptions) => {
   if (modalRef) {
     // because a previous modal might be still fading out
     setTimeout(() => {
@@ -433,7 +434,7 @@ const showLocationAlert = (title: string, message: string, options?: Connectivit
  */
 const showLocationServicesAlert = (title: string, message: string, options?: ConnectivityAlertOptions) => {
   // Show the location services dialog directly for better UX
-  SettingsNavigationUtils.showLocationServicesDialog().catch(error => {
+  SettingsNavigationUtils.showLocationServicesDialog().catch((error) => {
     console.error("Error showing location services dialog:", error)
     // Fallback to regular alert if dialog fails
     showConnectivityAlert(title, message, "locationServices", {

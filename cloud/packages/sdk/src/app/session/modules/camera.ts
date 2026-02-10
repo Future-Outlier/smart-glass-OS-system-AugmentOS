@@ -92,7 +92,9 @@ export class CameraModule {
   private logger: Logger
 
   // Photo functionality
-  // Note: pendingPhotoRequests now live on AppServer for reconnection resilience
+  // NOTE: Pending photo requests are now stored at AppServer level, not here.
+  // This allows O(1) lookup when HTTP responses arrive and survives session reconnections.
+  // See: cloud/issues/019-sdk-photo-request-architecture
 
   // Streaming functionality
   private isStreaming: boolean = false
@@ -147,13 +149,19 @@ export class CameraModule {
       const baseUrl = this.session?.getHttpsServerUrl?.() || ""
       cameraWarnLog(baseUrl, this.packageName, "requestPhoto")
       try {
-        // Register photo request at AppServer level so it survives reconnections
-        const requestId = this.session.appServer.registerPhotoRequest({
+        // Generate unique request ID
+        const requestId = `photo_req_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`
+
+        // Register the photo request at AppServer level (single source of truth)
+        // This allows O(1) lookup when HTTP response arrives and survives session reconnections
+        // See: cloud/issues/019-sdk-photo-request-architecture
+        this.session.appServer.registerPhotoRequest(requestId, {
           userId: this.session.userId,
           sessionId: this.sessionId,
           session: this.session,
           resolve,
-          reject,
+          reject: (error: Error) => reject(error.message),
+          timestamp: Date.now(),
         })
 
         // Create photo request message
@@ -187,65 +195,53 @@ export class CameraModule {
         if (options?.customWebhookUrl) {
           this.logger.info(
             {requestId, customWebhookUrl: options.customWebhookUrl},
-            `📸 Using custom webhook URL - resolving promise immediately`,
+            `📸 Using custom webhook URL - resolving promise immediately since photo will be uploaded directly to custom endpoint`,
           )
 
-          // Create a mock PhotoData object for custom webhook URLs
-          const mockPhotoData: PhotoData = {
-            buffer: Buffer.from([]),
-            mimeType: "image/jpeg",
-            filename: "photo.jpg",
-            requestId,
-            size: 0,
-            timestamp: new Date(),
+          // Complete the request at AppServer level and resolve with mock data
+          const pending = this.session.appServer.completePhotoRequest(requestId)
+          if (pending) {
+            const mockPhotoData: PhotoData = {
+              buffer: Buffer.from([]), // Empty buffer since we don't have the actual photo
+              mimeType: "image/jpeg",
+              filename: "photo.jpg",
+              requestId,
+              size: 0,
+              timestamp: new Date(),
+            }
+            pending.resolve(mockPhotoData)
           }
-
-          // Complete request at AppServer level and resolve
-          this.session.appServer.completePhotoRequest(requestId)
-          resolve(mockPhotoData)
           return
         }
+
+        // Timeout is now handled at AppServer level in registerPhotoRequest()
       } catch (error: unknown) {
         const errorMessage = error instanceof Error ? error.message : String(error)
-        reject(new Error(`Failed to request photo: ${errorMessage}`))
+        reject(`Failed to request photo: ${errorMessage}`)
       }
     })
   }
 
-  // handlePhotoReceived and handlePhotoError are removed because resolving/rejecting
-  // is now handled by AppServer.completePhotoRequest and the AppServer registration timeout.
+  // NOTE: handlePhotoReceived() and handlePhotoError() have been removed.
+  // Photo responses are now handled directly by AppServer's /photo-upload endpoint,
+  // which resolves/rejects the promise stored in AppServer.pendingPhotoRequests.
+  // See: cloud/issues/019-sdk-photo-request-architecture
 
   /**
    * 🔍 Check if there's a pending photo request for the given request ID
+   * @deprecated Photo requests are now managed at AppServer level. This method delegates to AppServer.
+   *
    * @param requestId - The request ID to check
    * @returns true if there's a pending request
    */
   hasPhotoPendingRequest(requestId: string): boolean {
-    // This is handled at the AppServer level now, we don't know locally.
-    // However, returning false is safe as the check is only used for O(n) iteration which we are removing.
-    return false
-  }
-
-  /**
-   * 📊 Get the number of pending photo requests
-   * @deprecated Pending photo requests are now managed by AppServer.
-   * @returns Number of pending photo requests (returns 0 as we no longer track locally)
-   */
-  getPhotoPendingRequestCount(): number {
-    return 0
-  }
-
-  /**
-   * 📋 Get all pending photo request IDs
-   * @deprecated Pending photo requests are now managed by AppServer.
-   * @returns Array of pending request IDs (returns [] as we no longer track locally)
-   */
-  getPhotoPendingRequestIds(): string[] {
-    return []
+    return this.session.appServer.getPhotoRequest(requestId) !== undefined
   }
 
   /**
    * ❌ Cancel a pending photo request
+   * @deprecated Photo requests are now managed at AppServer level. This method delegates to AppServer.
+   *
    * @param requestId - The request ID to cancel
    * @returns true if the request was found and cancelled
    */
@@ -261,10 +257,14 @@ export class CameraModule {
 
   /**
    * 🧹 Cancel all pending photo requests for this session
-   * @returns Number of requests that were cancelled (always 0 since we no longer track locally)
+   * @deprecated Photo requests are now managed at AppServer level. Use AppServer.cleanupPhotoRequestsForSession() instead.
+   *
+   * @returns Number of requests that were cancelled (always 0, cleanup happens at AppServer level)
    */
   cancelAllPhotoRequests(): number {
-    this.session.appServer.cleanupPhotoRequestsForSession(this.sessionId)
+    // Photo request cleanup is now handled by AppServer.cleanupPhotoRequestsForSession()
+    // which is called when the session permanently disconnects
+    this.logger.debug(`📸 cancelAllPhotoRequests called - cleanup now happens at AppServer level`)
     return 0
   }
 

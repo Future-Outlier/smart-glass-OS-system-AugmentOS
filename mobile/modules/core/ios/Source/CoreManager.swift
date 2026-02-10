@@ -36,69 +36,244 @@ struct ViewState {
     var sendStateWorkItem: DispatchWorkItem?
     let sendStateQueue = DispatchQueue(label: "sendStateQueue", qos: .userInitiated)
 
+    /**
+     * Setup Bluetooth audio pairing after BLE connection is established
+     * Attempts to automatically activate Mentra Live as the system audio device
+     * If not paired yet, prompts user to pair in Settings
+     */
+    private func setupAudioPairing(deviceName: String) {
+        // Don't configure audio session - PhoneMic.swift handles that
+        // Just check if audio session supports Bluetooth (informational only)
+        if !AudioSessionMonitor.isAudioSessionConfigured() {
+            Bridge.log(
+                "Audio: Audio session not configured for Bluetooth yet - mic system will configure it when recording"
+            )
+        }
+
+        // Extract device ID pattern to match the specific device
+        // BLE name: "MENTRA_LIVE_BLE_ABC123"
+        // BT Classic could be: "MENTRA_LIVE_BLE_ABC123" or "MENTRA_LIVE_BT_ABC123"
+        // We need to match on the unique device ID part (e.g., "ABC123")
+        let audioDevicePattern: String
+        if let idRange = deviceName.range(of: "_BLE_", options: .caseInsensitive) {
+            // Extract the ID after "_BLE_" (e.g., "ABC123")
+            audioDevicePattern = String(deviceName[idRange.upperBound...])
+            Bridge.log("Audio: Extracted device ID: \(audioDevicePattern) from \(deviceName)")
+        } else if let idRange = deviceName.range(of: "_BT_", options: .caseInsensitive) {
+            // Extract the ID after "_BT_"
+            audioDevicePattern = String(deviceName[idRange.upperBound...])
+            Bridge.log("Audio: Extracted device ID: \(audioDevicePattern) from \(deviceName)")
+        } else {
+            // Fallback: use the full device name
+            audioDevicePattern = deviceName
+            Bridge.log("Audio: Using full device name as pattern: \(audioDevicePattern)")
+        }
+
+        // Check if device is paired (don't activate to preserve A2DP music playback)
+        let isPaired = AudioSessionMonitor.isDevicePaired(devicePattern: audioDevicePattern)
+
+        if isPaired {
+            // Device is paired! Don't activate it - let PhoneMic.swift activate when recording starts
+            Bridge.log("Audio: ✅ Mentra Live is paired (preserving A2DP for music)")
+            glassesBtcConnected = true
+        } else {
+            glassesBtcConnected = false
+            // Not found in availableInputs - not paired yet
+
+            // Start monitoring for when user pairs manually
+            AudioSessionMonitor.startMonitoring(devicePattern: audioDevicePattern) {
+                [weak self] (connected: Bool, _: String?) in
+                guard let self = self else { return }
+
+                if connected {
+                    Bridge.log("Audio: ✅ Device paired and connected")
+                    // Don't activate - let PhoneMic.swift handle that when recording starts
+                    self.glassesBtcConnected = true
+                } else {
+                    Bridge.log("Audio: Device disconnected")
+                    self.glassesBtcConnected = false
+                }
+            }
+        }
+    }
+
     // MARK: - End Unique
 
     // MARK: - Properties
 
     var coreToken: String = ""
     var coreTokenOwner: String = ""
+    var userEmail: String = ""
     var sgc: SGCManager?
 
     // state
-    private var shouldSendBootingMessage = true
-    private var lastStatusObj: [String: Any] = [:]
-    private var defaultWearable: String = ""
-    private var pendingWearable: String = ""
-    private var deviceName: String = ""
-    var deviceAddress: String = ""
-    private var screenDisabled: Bool = false
-    private var isSearching: Bool = false
-    private var systemMicUnavailable: Bool = false
-    var micRanking: [String] = MicMap.map["auto"]!
+    // var lastStatusObj: [String: Any] = [:]
 
-    // glasses settings
-    var contextualDashboard = true
-    var headUpAngle = 30
-    var brightness = 50
-    var autoBrightness: Bool = true
-    var dashboardHeight: Int = 4
-    var dashboardDepth: Int = 5
-    var galleryMode: Bool = false
+    // settings:
+    private var defaultWearable: String {
+        get { GlassesStore.shared.get("core", "default_wearable") as? String ?? "" }
+        set { GlassesStore.shared.apply("core", "default_wearable", newValue) }
+    }
 
-    // glasses state:
-    var isHeadUp: Bool = false
+    private var pendingWearable: String {
+        get { GlassesStore.shared.get("core", "pending_wearable") as? String ?? "" }
+        set { GlassesStore.shared.apply("core", "pending_wearable", newValue) }
+    }
 
-    // core settings
-    private var sensingEnabled: Bool = true
-    var powerSavingMode: Bool = false
-    private var alwaysOnStatusBar: Bool = false
-    private var bypassVad: Bool = true
-    private var enforceLocalTranscription: Bool = false
-    private var offlineMode: Bool = false
-    private var metricSystem: Bool = false
+    private var deviceName: String {
+        get { GlassesStore.shared.get("core", "device_name") as? String ?? "" }
+        set { GlassesStore.shared.apply("core", "device_name", newValue) }
+    }
+
+    private var deviceAddress: String {
+        get { GlassesStore.shared.get("core", "deviceAddress") as? String ?? "" }
+        set { GlassesStore.shared.apply("core", "deviceAddress", newValue) }
+    }
+
+    private var screenDisabled: Bool {
+        get { GlassesStore.shared.get("core", "screen_disabled") as? Bool ?? false }
+        set { GlassesStore.shared.apply("core", "screen_disabled", newValue) }
+    }
+
+    private var preferredMic: String {
+        get { GlassesStore.shared.get("core", "preferred_mic") as? String ?? "auto" }
+        set { GlassesStore.shared.apply("core", "preferred_mic", newValue) }
+    }
+
+    private var autoBrightness: Bool {
+        get { GlassesStore.shared.get("core", "auto_brightness") as? Bool ?? true }
+        set { GlassesStore.shared.apply("core", "auto_brightness", newValue) }
+    }
+
+    private var brightness: Int {
+        get { GlassesStore.shared.get("core", "brightness") as? Int ?? 50 }
+        set { GlassesStore.shared.apply("core", "brightness", newValue) }
+    }
+
+    private var headUpAngle: Int {
+        get { GlassesStore.shared.get("core", "head_up_angle") as? Int ?? 30 }
+        set { GlassesStore.shared.apply("core", "head_up_angle", newValue) }
+    }
+
+    private var sensingEnabled: Bool {
+        get { GlassesStore.shared.get("core", "sensing_enabled") as? Bool ?? true }
+        set { GlassesStore.shared.apply("core", "sensing_enabled", newValue) }
+    }
+
+    var powerSavingMode: Bool {
+        get { GlassesStore.shared.get("core", "power_saving_mode") as? Bool ?? false }
+        set { GlassesStore.shared.apply("core", "power_saving_mode", newValue) }
+    }
+
+    private var alwaysOnStatusBar: Bool {
+        get { GlassesStore.shared.get("core", "always_on_status_bar") as? Bool ?? false }
+        set { GlassesStore.shared.apply("core", "always_on_status_bar", newValue) }
+    }
+
+    private var bypassVad: Bool {
+        get { GlassesStore.shared.get("core", "bypass_vad") as? Bool ?? true }
+        set { GlassesStore.shared.apply("core", "bypass_vad", newValue) }
+    }
+
+    private var enforceLocalTranscription: Bool {
+        get {
+            GlassesStore.shared.get("core", "enforce_local_transcription") as? Bool ?? false
+        }
+        set { GlassesStore.shared.apply("core", "enforce_local_transcription", newValue) }
+    }
+
+    private var offlineMode: Bool {
+        get { GlassesStore.shared.get("core", "offline_mode") as? Bool ?? false }
+        set { GlassesStore.shared.apply("core", "offline_mode", newValue) }
+    }
+
+    private var metricSystem: Bool {
+        get { GlassesStore.shared.get("core", "metric_system") as? Bool ?? false }
+        set { GlassesStore.shared.apply("core", "metric_system", newValue) }
+    }
+
+    private var contextualDashboard: Bool {
+        get { GlassesStore.shared.get("core", "contextual_dashboard") as? Bool ?? true }
+        set { GlassesStore.shared.apply("core", "contextual_dashboard", newValue) }
+    }
+
+    // state:
+    private var shouldSendPcmData: Bool {
+        get { GlassesStore.shared.get("core", "shouldSendPcmData") as? Bool ?? false }
+        set { GlassesStore.shared.apply("core", "shouldSendPcmData", newValue) }
+    }
+
+    private var shouldSendTranscript: Bool {
+        get { GlassesStore.shared.get("core", "shouldSendTranscript") as? Bool ?? false }
+        set { GlassesStore.shared.apply("core", "shouldSendTranscript", newValue) }
+    }
+
+    private var searching: Bool {
+        get { GlassesStore.shared.get("core", "searching") as? Bool ?? false }
+        set { GlassesStore.shared.apply("core", "searching", newValue) }
+    }
+
+    private var glassesBtcConnected: Bool {
+        get { GlassesStore.shared.get("glasses", "btcConnected") as? Bool ?? false }
+        set { GlassesStore.shared.apply("glasses", "btcConnected", newValue) }
+    }
+
+    private var micRanking: [String] {
+        get {
+            GlassesStore.shared.get("core", "micRanking") as? [String] ?? MicMap.map["auto"]!
+        }
+        set { GlassesStore.shared.apply("core", "micRanking", newValue) }
+    }
+
+    private var shouldSendBootingMessage: Bool {
+        get { GlassesStore.shared.get("core", "shouldSendBootingMessage") as? Bool ?? true }
+        set { GlassesStore.shared.apply("core", "shouldSendBootingMessage", newValue) }
+    }
+
+    private var systemMicUnavailable: Bool {
+        get { GlassesStore.shared.get("core", "systemMicUnavailable") as? Bool ?? false }
+        set { GlassesStore.shared.apply("core", "systemMicUnavailable", newValue) }
+    }
+
+    private var headUp: Bool {
+        get { GlassesStore.shared.get("glasses", "headUp") as? Bool ?? false }
+        set { GlassesStore.shared.apply("glasses", "headUp", newValue) }
+    }
+
+    private var micEnabled: Bool {
+        get { GlassesStore.shared.get("core", "micEnabled") as? Bool ?? false }
+        set { GlassesStore.shared.apply("core", "micEnabled", newValue) }
+    }
+
+    private var currentMic: String {
+        get { GlassesStore.shared.get("core", "currentMic") as? String ?? "" }
+        set { GlassesStore.shared.apply("core", "currentMic", newValue) }
+    }
+
+    private var searchResults: [[String: Any]] {
+        get { GlassesStore.shared.get("core", "searchResults") as? [[String: Any]] ?? [] }
+        set { GlassesStore.shared.apply("core", "searchResults", newValue) }
+    }
+
+    private var wifiScanResults: [[String: Any]] {
+        get { GlassesStore.shared.get("core", "wifiScanResults") as? [[String: Any]] ?? [] }
+        set { GlassesStore.shared.apply("core", "wifiScanResults", newValue) }
+    }
+
+    private var lastLog: [String] {
+        get { GlassesStore.shared.get("core", "lastLog") as? [String] ?? [] }
+        set { GlassesStore.shared.apply("core", "lastLog", newValue) }
+    }
 
     // LC3 Audio Encoding
     // Audio output format enum
     enum AudioOutputFormat { case lc3, pcm }
+    // Canonical LC3 config: 16kHz sample rate, 10ms frame duration
+    // Frame size is configurable: 20 bytes (16kbps), 40 bytes (32kbps), 60 bytes (48kbps)
     // Persistent LC3 converter for encoding/decoding
-    private var lc3Converter: PcmConverter?
-    private let LC3_FRAME_SIZE = 20 // bytes per LC3 frame (canonical config)
+    var lc3Converter: PcmConverter?
     // Audio output format - defaults to LC3 for bandwidth savings
     private var audioOutputFormat: AudioOutputFormat = .lc3
-
-    // mic:
-    private var useOnboardMic = false
-    private var preferredMic = "auto"
-    private var micEnabled = false
-
-    // button settings:
-    var buttonPressMode = "photo"
-    var buttonPhotoSize = "medium"
-    var buttonVideoWidth = 1280
-    var buttonVideoHeight = 720
-    var buttonVideoFps = 30
-    var buttonMaxRecordingTime = 10
-    var buttonCameraLed = true
 
     // VAD:
     private var vad: SileroVADStrategy?
@@ -107,8 +282,6 @@ struct ViewState {
 
     // STT:
     private var transcriber: SherpaOnnxTranscriber?
-    private var shouldSendPcmData = false
-    private var shouldSendTranscript = false
 
     var viewStates: [ViewState] = [
         ViewState(
@@ -133,6 +306,9 @@ struct ViewState {
         Bridge.log("MAN: init()")
         vad = SileroVADStrategy()
         super.init()
+
+        // Start memory monitoring (logs every 30s to help detect leaks)
+        // MemoryMonitor.start()
 
         // Initialize SherpaOnnx Transcriber
         if let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
@@ -186,7 +362,8 @@ struct ViewState {
                 Bridge.log("MAN: ERROR - LC3 converter not initialized but format is LC3")
                 return
             }
-            let lc3Data = lc3Converter.encode(pcmData) as Data
+            let frameSize = GlassesStore.shared.get("core", "lc3_frame_size") as! Int
+            let lc3Data = lc3Converter.encode(pcmData, frameSize: frameSize) as Data
             guard lc3Data.count > 0 else {
                 Bridge.log("MAN: ERROR - LC3 encoding returned empty data")
                 return
@@ -360,6 +537,8 @@ struct ViewState {
             }
         }
 
+        currentMic = micUsed
+
         // log if no mic was found:
         if micUsed == "" && micEnabled {
             Bridge.log("MAN: No available mic found!")
@@ -390,7 +569,6 @@ struct ViewState {
                 sgc?.setMicEnabled(false)
             }
         }
-        getStatus() // to update the UI
     }
 
     func setOnboardMicEnabled(_ isEnabled: Bool) {
@@ -413,153 +591,6 @@ struct ViewState {
             } else {
                 PhoneMic.shared.stopRecording()
             }
-        }
-    }
-
-    // MARK: - State Management
-
-    func updateHeadUp(_ isHeadUp: Bool) {
-        self.isHeadUp = isHeadUp
-        sendCurrentState()
-        Bridge.sendHeadUp(isHeadUp)
-    }
-
-    func updateContextualDashboard(_ enabled: Bool) {
-        contextualDashboard = enabled
-        getStatus() // to update the UI
-    }
-
-    func updatePreferredMic(_ mic: String) {
-        preferredMic = mic
-        micRanking = MicMap.map[preferredMic] ?? MicMap.map["auto"]!
-        setMicState(shouldSendPcmData, shouldSendTranscript, bypassVad)
-        getStatus() // to update the UI
-    }
-
-    func updateButtonMode(_ mode: String) {
-        buttonPressMode = mode
-        sgc?.sendButtonModeSetting()
-        getStatus() // to update the UI
-    }
-
-    func updateButtonPhotoSize(_ size: String) {
-        buttonPhotoSize = size
-        sgc?.sendButtonPhotoSettings()
-        getStatus() // to update the UI
-    }
-
-    func updateButtonVideoSettings(width: Int, height: Int, fps: Int) {
-        buttonVideoWidth = width
-        buttonVideoHeight = height
-        buttonVideoFps = fps
-        sgc?.sendButtonVideoRecordingSettings()
-        getStatus() // to update the UI
-    }
-
-    func updateButtonCameraLed(_ enabled: Bool) {
-        buttonCameraLed = enabled
-        sgc?.sendButtonCameraLedSetting()
-        getStatus() // to update the UI
-    }
-
-    func updateGalleryMode(_ enabled: Bool) {
-        galleryMode = enabled
-        sgc?.sendGalleryMode()
-        getStatus() // to update the UI
-    }
-
-    func updateButtonMaxRecordingTime(_ value: Int) {
-        buttonMaxRecordingTime = value
-        sgc?.sendButtonMaxRecordingTime()
-        getStatus() // to update the UI
-    }
-
-    func updateGlassesHeadUpAngle(_ value: Int) {
-        headUpAngle = value
-        sgc?.setHeadUpAngle(value)
-        getStatus() // to update the UI
-    }
-
-    func updateGlassesBrightness(_ value: Int, autoBrightness: Bool) {
-        let autoBrightnessChanged = self.autoBrightness != autoBrightness
-        brightness = value
-        self.autoBrightness = autoBrightness
-        Task {
-            sgc?.setBrightness(value, autoMode: autoBrightness)
-            if autoBrightnessChanged {
-                sgc?.sendTextWall(
-                    autoBrightness ? "Enabled auto brightness" : "Disabled auto brightness")
-            } else {
-                sgc?.sendTextWall("Set brightness to \(value)%")
-            }
-            try? await Task.sleep(nanoseconds: 800_000_000) // 0.8 seconds
-            sgc?.clearDisplay() // clear screen
-        }
-        getStatus() // to update the UI
-    }
-
-    func updateGlassesDepth(_ value: Int) {
-        dashboardDepth = value
-        Task {
-            await sgc?.setDashboardPosition(self.dashboardHeight, self.dashboardDepth)
-            Bridge.log("MAN: Set dashboard depth to \(value)")
-        }
-        getStatus() // to update the UI
-    }
-
-    func updateGlassesHeight(_ value: Int) {
-        dashboardHeight = value
-        Task {
-            await sgc?.setDashboardPosition(self.dashboardHeight, self.dashboardDepth)
-            Bridge.log("MAN: Set dashboard height to \(value)")
-        }
-        getStatus() // to update the UI
-    }
-
-    func updatePowerSavingMode(_ enabled: Bool) {
-        powerSavingMode = enabled
-        getStatus() // to update the UI
-    }
-
-    func updateAlwaysOnStatusBar(_ enabled: Bool) {
-        alwaysOnStatusBar = enabled
-        getStatus() // to update the UI
-    }
-
-    func updateBypassVad(_ enabled: Bool) {
-        bypassVad = enabled
-        getStatus() // to update the UI
-    }
-
-    func updateEnforceLocalTranscription(_ enabled: Bool) {
-        enforceLocalTranscription = enabled
-        setMicState(shouldSendPcmData, shouldSendTranscript, bypassVad)
-        getStatus() // to update the UI
-    }
-
-    func updateOfflineMode(_ enabled: Bool) {
-        offlineMode = enabled
-        Bridge.log("MAN: updating offline mode: \(enabled)")
-        setMicState(shouldSendPcmData, shouldSendTranscript, bypassVad)
-    }
-
-    func updateAudioOutputFormat(_ format: AudioOutputFormat) {
-        audioOutputFormat = format
-        Bridge.log("Audio output format set to: \(format)")
-    }
-
-    func updateMetricSystem(_ enabled: Bool) {
-        metricSystem = enabled
-        getStatus()
-    }
-
-    func updateScreenDisabled(_ enabled: Bool) {
-        Bridge.log("MAN: Toggling screen disabled: \(enabled)")
-        screenDisabled = enabled
-        if enabled {
-            sgc?.exit()
-        } else {
-            sgc?.clearDisplay()
         }
     }
 
@@ -655,13 +686,13 @@ struct ViewState {
 
         Task {
             var currentViewState: ViewState!
-            if isHeadUp {
+            if headUp {
                 currentViewState = self.viewStates[1]
             } else {
                 currentViewState = self.viewStates[0]
             }
-            if isHeadUp && !self.contextualDashboard {
-                return
+            if headUp && !self.contextualDashboard {
+                currentViewState = self.viewStates[0]
             }
 
             if sgc?.type.contains(DeviceTypes.SIMULATED) ?? true {
@@ -669,8 +700,8 @@ struct ViewState {
                 return
             }
 
-            var ready = sgc?.ready ?? false
-            if !ready {
+            var fullyBooted = sgc?.fullyBooted ?? false
+            if !fullyBooted {
                 return
             }
 
@@ -749,11 +780,73 @@ struct ViewState {
         return result
     }
 
+    func getAudioDevicePattern() -> String {
+        let audioDevicePattern: String
+        if let idRange = deviceName.range(of: "_BLE_", options: .caseInsensitive) {
+            // Extract the ID after "_BLE_" (e.g., "ABC123")
+            audioDevicePattern = String(deviceName[idRange.upperBound...])
+            Bridge.log("Audio: Extracted device ID: \(audioDevicePattern) from \(deviceName)")
+        } else if let idRange = deviceName.range(of: "_BT_", options: .caseInsensitive) {
+            // Extract the ID after "_BT_"
+            audioDevicePattern = String(deviceName[idRange.upperBound...])
+            Bridge.log("Audio: Extracted device ID: \(audioDevicePattern) from \(deviceName)")
+        } else {
+            // Fallback: use the full device name
+            audioDevicePattern = deviceName
+            Bridge.log("Audio: Using full device name as pattern: \(audioDevicePattern)")
+        }
+        return audioDevicePattern
+    }
+
+    func checkCurrentAudioDevice() {
+        let audioDevicePattern = getAudioDevicePattern()
+
+        if audioDevicePattern.isEmpty || audioDevicePattern == DeviceTypes.SIMULATED {
+            Bridge.log("MAN: Audio device pattern is empty or simulated, returning")
+            return
+        }
+
+        // check if the device disconnected:
+        let isConnected = AudioSessionMonitor.isAudioDeviceConnected(
+            devicePattern: audioDevicePattern)
+        if !isConnected {
+            Bridge.log("MAN: Device '\(deviceName)' disconnected")
+            glassesBtcConnected = false
+            return
+        }
+
+        let isPaired = AudioSessionMonitor.isDevicePaired(devicePattern: audioDevicePattern)
+        if isPaired {
+            let session = AVAudioSession.sharedInstance()
+            let deviceName = session.availableInputs?.first(where: {
+                $0.portName.localizedCaseInsensitiveContains(audioDevicePattern)
+            })?.portName
+            Bridge.log("MAN: ✅ Successfully detected newly paired device '\(deviceName)'")
+            glassesBtcConnected = true
+        } else {
+            glassesBtcConnected = false
+        }
+    }
+
     func onRouteChange(
         reason: AVAudioSession.RouteChangeReason, availableInputs: [AVAudioSessionPortDescription]
     ) {
         Bridge.log("MAN: onRouteChange: reason: \(reason)")
         Bridge.log("MAN: onRouteChange: inputs: \(availableInputs)")
+
+        // check if our deviceName is connected:
+        // (return if deviceName is empty):
+        if deviceName.isEmpty {
+            Bridge.log("MAN: Device name is empty, returning")
+            return
+        }
+
+        // Add small delay to let iOS populate availableInputs
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) { [weak self] in
+            guard let self = self else { return }
+            checkCurrentAudioDevice()
+        }
+
         updateMicState()
     }
 
@@ -770,18 +863,7 @@ struct ViewState {
 
     // MARK: - connection state management
 
-    func handleConnectionStateChanged() {
-        Bridge.log("MAN: Glasses: connection state changed!")
-        if sgc == nil { return }
-        if sgc!.ready {
-            handleDeviceReady()
-        } else {
-            handleDeviceDisconnected()
-            getStatus()
-        }
-    }
-
-    private func handleDeviceReady() {
+    func handleDeviceReady() {
         guard let sgc else {
             Bridge.log("MAN: SGC is nil, returning")
             return
@@ -790,8 +872,7 @@ struct ViewState {
 
         pendingWearable = ""
         defaultWearable = sgc.type
-        isSearching = false
-        getStatus()
+        searching = false
 
         // Show welcome message on first connect for all display glasses
         if shouldSendBootingMessage {
@@ -811,9 +892,6 @@ struct ViewState {
         } else if defaultWearable.contains(DeviceTypes.Z100) {
             handleMach1Ready() // Z100 uses same initialization as Mach1
         }
-
-        // send to the server our battery status:
-        Bridge.sendBatteryStatus(level: sgc.batteryLevel ?? -1, charging: false)
 
         // save the default_wearable now that we're connected:
         Bridge.saveSetting("default_wearable", defaultWearable)
@@ -838,23 +916,15 @@ struct ViewState {
             // self.g1Manager?.RN_setDashboardPosition(self.dashboardHeight, self.dashboardDepth)
             // try? await Task.sleep(nanoseconds: 400_000_000)
             //      playStartupSequence()
-
-            self.getStatus()
         }
     }
 
-    private func handleMach1Ready() {
-        Task {
-            // Mach1-specific setup (if any needed in the future)
-            self.getStatus()
-        }
-    }
+    private func handleMach1Ready() {}
 
-    private func handleDeviceDisconnected() {
+    func handleDeviceDisconnected() {
         Bridge.log("MAN: Device disconnected")
         // setMicState(shouldSendPcmData, shouldSendTranscript, false)
         // shouldSendBootingMessage = true  // Reset for next first connect
-        getStatus()
     }
 
     // MARK: - Network Command handlers
@@ -931,16 +1001,15 @@ struct ViewState {
             return
         }
 
-        Bridge.log(
-            "Updating view state \(stateIndex) with \(layoutType) \(text) \(topText) \(bottomText)")
+        // Bridge.log("MAN: Updating view state \(stateIndex) with \(layoutType) \(text) \(topText) \(bottomText)")
 
         viewStates[stateIndex] = newViewState
 
-        let headUp = isHeadUp
+        let hUp = headUp && contextualDashboard
         // send the state we just received if the user is currently in that state:
-        if stateIndex == 0, !headUp {
+        if stateIndex == 0 && !hUp {
             sendCurrentState()
-        } else if stateIndex == 1, headUp {
+        } else if stateIndex == 1 && hUp {
             sendCurrentState()
         }
     }
@@ -966,12 +1035,18 @@ struct ViewState {
 
     func requestWifiScan() {
         Bridge.log("MAN: Requesting wifi scan")
+        GlassesStore.shared.apply("core", "wifiScanResults", [])
         sgc?.requestWifiScan()
     }
 
     func sendWifiCredentials(_ ssid: String, _ password: String) {
         Bridge.log("MAN: Sending wifi credentials: \(ssid) \(password)")
         sgc?.sendWifiCredentials(ssid, password)
+    }
+
+    func forgetWifiNetwork(_ ssid: String) {
+        Bridge.log("MAN: Forgetting wifi network: \(ssid)")
+        sgc?.forgetWifiNetwork(ssid)
     }
 
     func setHotspotState(_ enabled: Bool) {
@@ -982,6 +1057,14 @@ struct ViewState {
     func queryGalleryStatus() {
         Bridge.log("MAN: 📸 Querying gallery status from glasses")
         sgc?.queryGalleryStatus()
+    }
+
+    /// Send OTA start command to glasses.
+    /// Called when user approves an update (onboarding or background mode).
+    /// Triggers glasses to begin download and installation.
+    func sendOtaStart() {
+        Bridge.log("MAN: 📱 Sending OTA start command to glasses")
+        sgc?.sendOtaStart()
     }
 
     func startBufferRecording() {
@@ -1001,7 +1084,8 @@ struct ViewState {
     }
 
     func startVideoRecording(_ requestId: String, _ save: Bool, _ silent: Bool) {
-        Bridge.log("MAN: onStartVideoRecording: requestId=\(requestId), save=\(save), silent=\(silent)")
+        Bridge.log(
+            "MAN: onStartVideoRecording: requestId=\(requestId), save=\(save), silent=\(silent)")
         sgc?.startVideoRecording(requestId: requestId, save: save, silent: silent)
     }
 
@@ -1073,13 +1157,18 @@ struct ViewState {
             return
         }
         initSGC(defaultWearable)
-        isSearching = true
-        getStatus()
+        searching = true
         sgc?.connectById(deviceName)
     }
 
     func connectByName(_ dName: String) {
         Bridge.log("MAN: Connecting to wearable: \(dName)")
+        var name = dName
+
+        // use stored device name if available:
+        if dName.isEmpty && !deviceName.isEmpty {
+            name = deviceName
+        }
 
         if pendingWearable.isEmpty, defaultWearable.isEmpty {
             Bridge.log("MAN: No pending or default wearable, returning")
@@ -1094,12 +1183,11 @@ struct ViewState {
         Task {
             disconnect()
             try? await Task.sleep(nanoseconds: 100 * 1_000_000) // 100ms
-            self.isSearching = true
-            self.deviceName = dName
+            self.searching = true
+            self.deviceName = name
 
             initSGC(self.pendingWearable)
             sgc?.connectById(self.deviceName)
-            getStatus()
         }
     }
 
@@ -1114,12 +1202,13 @@ struct ViewState {
         sgc?.clearDisplay() // clear the screen
         sgc?.disconnect()
         sgc = nil // Clear the SGC reference after disconnect
-        isSearching = false
+        searching = false
         shouldSendPcmData = false
         shouldSendTranscript = false
         setMicState(shouldSendPcmData, shouldSendTranscript, bypassVad)
         shouldSendBootingMessage = true // Reset for next first connect
-        getStatus()
+        GlassesStore.shared.apply("glasses", "fullyBooted", false)
+        GlassesStore.shared.apply("glasses", "connected", false)
     }
 
     func forget() {
@@ -1135,305 +1224,21 @@ struct ViewState {
         deviceName = ""
         Bridge.saveSetting("default_wearable", "")
         Bridge.saveSetting("device_name", "")
-        getStatus()
     }
 
-    func findCompatibleDevices(_ modelName: String) {
-        Bridge.log("MAN: Searching for compatible device names for: \(modelName)")
+    func findCompatibleDevices(_ deviceModel: String) {
+        Bridge.log("MAN: Searching for compatible device names for: \(deviceModel)")
 
-        if DeviceTypes.ALL.contains(modelName) {
-            pendingWearable = modelName
+        // reset the search results:
+        searchResults = []
+
+        if DeviceTypes.ALL.contains(deviceModel) {
+            pendingWearable = deviceModel
         }
 
         initSGC(pendingWearable)
         sgc?.findCompatibleDevices()
-        getStatus()
     }
-
-    func getStatus() {
-        // ensure this is on the main thread:
-        DispatchQueue.main.async { [weak self] in
-            guard let self else { return }
-            // construct the status object:
-            let simulatedConnected = defaultWearable == DeviceTypes.SIMULATED
-            let glassesConnected = sgc?.ready ?? false
-            if glassesConnected {
-                isSearching = false
-            }
-
-            // also referenced as glasses_info:
-            var glassesSettings: [String: Any] = [:]
-            var glassesInfo: [String: Any] = [:]
-
-            glassesInfo = [
-                "modelName": defaultWearable,
-                "batteryLevel": sgc?.batteryLevel ?? -1,
-                "appVersion": sgc?.glassesAppVersion ?? "",
-                "buildNumber": sgc?.glassesBuildNumber ?? "",
-                "deviceModel": sgc?.glassesDeviceModel ?? "",
-                "androidVersion": sgc?.glassesAndroidVersion ?? "",
-                "otaVersionUrl": sgc?.glassesOtaVersionUrl ?? "",
-                "fwVersion": sgc?.glassesFirmwareVersion ?? "",
-                "btMacAddress": sgc?.glassesBtMacAddress ?? "",
-                // state:
-                "connected": glassesConnected,
-                "micEnabled": sgc?.micEnabled ?? false,
-                "connectionState": sgc?.connectionState ?? "disconnected",
-            ]
-
-            if sgc is G1 {
-                glassesInfo["caseRemoved"] = sgc?.caseRemoved ?? true
-                glassesInfo["caseOpen"] = sgc?.caseOpen ?? true
-                glassesInfo["caseCharging"] = sgc?.caseCharging ?? false
-                glassesInfo["caseBatteryLevel"] = sgc?.caseBatteryLevel ?? -1
-
-                glassesInfo["serialNumber"] = sgc?.glassesSerialNumber ?? ""
-                glassesInfo["style"] = sgc?.glassesStyle ?? ""
-                glassesInfo["color"] = sgc?.glassesColor ?? ""
-            }
-
-            if sgc is MentraLive {
-                glassesInfo["wifiSsid"] = sgc?.wifiSsid ?? ""
-                glassesInfo["wifiConnected"] = sgc?.wifiConnected ?? false
-                glassesInfo["wifiLocalIp"] = sgc?.wifiLocalIp ?? ""
-                glassesInfo["hotspotEnabled"] = sgc?.isHotspotEnabled ?? false
-                glassesInfo["hotspotSsid"] = sgc?.hotspotSsid ?? ""
-                glassesInfo["hotspotPassword"] = sgc?.hotspotPassword ?? ""
-                glassesInfo["hotspotGatewayIp"] = sgc?.hotspotGatewayIp ?? ""
-            }
-
-            // Add Bluetooth device name if available
-            if let bluetoothName = sgc?.getConnectedBluetoothName() {
-                glassesInfo["bluetoothName"] = bluetoothName
-            }
-
-            glassesSettings = [
-                "brightness": brightness,
-                "auto_brightness": autoBrightness,
-                "dashboard_height": dashboardHeight,
-                "dashboard_depth": dashboardDepth,
-                "head_up_angle": headUpAngle,
-                "button_mode": buttonPressMode,
-                "button_photo_size": buttonPhotoSize,
-                "button_video_settings": [
-                    "width": buttonVideoWidth,
-                    "height": buttonVideoHeight,
-                    "fps": buttonVideoFps,
-                ],
-                "button_max_recording_time": buttonMaxRecordingTime,
-                "button_camera_led": buttonCameraLed,
-            ]
-
-            //        let cloudConnectionStatus =
-            //            WebSocketManager.shared.isConnected() ? "CONNECTED" : "DISCONNECTED"
-
-            // TODO: config: remove
-            let coreInfo: [String: Any] = [
-                // "is_searching": self.isSearching && !self.defaultWearable.isEmpty,
-                "is_searching": isSearching,
-                // only on if recording from glasses:
-                "core_token": coreToken,
-            ]
-
-            // hardcoded list of apps:
-            var apps: [[String: Any]] = []
-
-            let authObj: [String: Any] = [
-                "core_token_owner": coreTokenOwner,
-                //      "core_token_status":
-            ]
-
-            let statusObj: [String: Any] = [
-                "glasses_info": glassesInfo,
-                "glasses_settings": glassesSettings,
-                "apps": apps,
-                "core_info": coreInfo,
-                "auth": authObj,
-            ]
-
-            lastStatusObj = statusObj
-
-            Bridge.sendStatus(statusObj)
-        }
-    }
-
-    func updateSettings(_ settings: [String: Any]) {
-        Bridge.log("MAN: Received update settings: \(settings)")
-
-        // update our settings with the new values:
-        if let newPreferredMic = settings["preferred_mic"] as? String,
-           newPreferredMic != preferredMic
-        {
-            updatePreferredMic(newPreferredMic)
-        }
-
-        if let newHeadUpAngle = settings["head_up_angle"] as? Int, newHeadUpAngle != headUpAngle {
-            updateGlassesHeadUpAngle(newHeadUpAngle)
-        }
-
-        if let newBrightness = settings["brightness"] as? Int, newBrightness != brightness {
-            updateGlassesBrightness(newBrightness, autoBrightness: false)
-        }
-
-        if let newDashboardHeight = settings["dashboard_height"] as? Int,
-           newDashboardHeight != dashboardHeight
-        {
-            updateGlassesHeight(newDashboardHeight)
-        }
-
-        if let newDashboardDepth = settings["dashboard_depth"] as? Int,
-           newDashboardDepth != dashboardDepth
-        {
-            updateGlassesDepth(newDashboardDepth)
-        }
-
-        if let newScreenDisabled = settings["screen_disabled"] as? Bool,
-           newScreenDisabled != screenDisabled
-        {
-            updateScreenDisabled(newScreenDisabled)
-        }
-
-        if let newAutoBrightness = settings["auto_brightness"] as? Bool,
-           newAutoBrightness != autoBrightness
-        {
-            updateGlassesBrightness(brightness, autoBrightness: newAutoBrightness)
-        }
-
-        if let powerSavingMode = settings["power_saving_mode"] as? Bool,
-           powerSavingMode != self.powerSavingMode
-        {
-            updatePowerSavingMode(powerSavingMode)
-        }
-
-        if let newAlwaysOnStatusBar = settings["always_on_status_bar"] as? Bool,
-           newAlwaysOnStatusBar != alwaysOnStatusBar
-        {
-            updateAlwaysOnStatusBar(newAlwaysOnStatusBar)
-        }
-
-        if let newBypassVad = settings["bypass_vad_for_debugging"] as? Bool,
-           newBypassVad != bypassVad
-        {
-            updateBypassVad(newBypassVad)
-        }
-
-        if let newEnforceLocalTranscription = settings["enforce_local_transcription"] as? Bool,
-           newEnforceLocalTranscription != enforceLocalTranscription
-        {
-            updateEnforceLocalTranscription(newEnforceLocalTranscription)
-        }
-
-        if let newOfflineMode = settings["offline_captions_running"] as? Bool,
-           newOfflineMode != offlineMode
-        {
-            updateOfflineMode(newOfflineMode)
-        }
-
-        if let newMetricSystem = settings["metric_system"] as? Bool,
-           newMetricSystem != metricSystem
-        {
-            updateMetricSystem(newMetricSystem)
-        }
-
-        if let newContextualDashboard = settings["contextual_dashboard"] as? Bool,
-           newContextualDashboard != contextualDashboard
-        {
-            updateContextualDashboard(newContextualDashboard)
-        }
-
-        if let newButtonMode = settings["button_mode"] as? String, newButtonMode != buttonPressMode {
-            updateButtonMode(newButtonMode)
-        }
-
-        // Button video settings - handle both nested object and flat keys
-        // First check for nested object structure (from AsyncStorage)
-        if let videoSettingsObj = settings["button_video_settings"] as? [String: Any] {
-            let newWidth = videoSettingsObj["width"] as? Int ?? buttonVideoWidth
-            let newHeight = videoSettingsObj["height"] as? Int ?? buttonVideoHeight
-            let newFps = videoSettingsObj["fps"] as? Int ?? buttonVideoFps
-
-            if newWidth != buttonVideoWidth || newHeight != buttonVideoHeight
-                || newFps != buttonVideoFps
-            {
-                Bridge.log(
-                    "MAN: Updating button video settings: \(newWidth) x \(newHeight) @ \(newFps)fps (was: \(buttonVideoWidth) x \(buttonVideoHeight) @ \(buttonVideoFps)fps)"
-                )
-                updateButtonVideoSettings(width: newWidth, height: newHeight, fps: newFps)
-            }
-        } else {
-            // Fallback to flat key structure (backwards compatibility)
-            var newWidth = buttonVideoWidth
-            var newHeight = buttonVideoHeight
-            var newFps = buttonVideoFps
-            var changed = false
-
-            if let width = settings["button_video_width"] as? Int, width != buttonVideoWidth {
-                newWidth = width
-                changed = true
-            }
-
-            if let height = settings["button_video_height"] as? Int, height != buttonVideoHeight {
-                newHeight = height
-                changed = true
-            }
-
-            if let fps = settings["button_video_fps"] as? Int, fps != buttonVideoFps {
-                newFps = fps
-                changed = true
-            }
-
-            if changed {
-                Bridge.log(
-                    "MAN: Updating button video settings: \(newWidth) x \(newHeight) @ \(newFps)fps (was: \(buttonVideoWidth) x \(buttonVideoHeight) @ \(buttonVideoFps)fps)"
-                )
-                updateButtonVideoSettings(width: newWidth, height: newHeight, fps: newFps)
-            }
-        }
-
-        if let newPhotoSize = settings["button_photo_size"] as? String,
-           newPhotoSize != buttonPhotoSize
-        {
-            updateButtonPhotoSize(newPhotoSize)
-        }
-
-        if let newButtonMaxRecordingTime = settings["button_max_recording_time"] as? Int,
-           newButtonMaxRecordingTime != buttonMaxRecordingTime
-        {
-            updateButtonMaxRecordingTime(newButtonMaxRecordingTime)
-        }
-
-        if let newButtonCameraLed = settings["button_camera_led"] as? Bool,
-           newButtonCameraLed != buttonCameraLed
-        {
-            updateButtonCameraLed(newButtonCameraLed)
-        }
-
-        if let newGalleryMode = settings["gallery_mode"] as? Bool, newGalleryMode != galleryMode {
-            updateGalleryMode(newGalleryMode)
-        }
-
-        // get default wearable from core_info:
-        if let newDefaultWearable = settings["default_wearable"] as? String,
-           newDefaultWearable != defaultWearable
-        {
-            defaultWearable = newDefaultWearable
-            Bridge.saveSetting("default_wearable", newDefaultWearable)
-        }
-
-        if let newDeviceName = settings["device_name"] as? String,
-           newDeviceName != deviceName
-        {
-            deviceName = newDeviceName
-        }
-
-        if let newDeviceAddress = settings["device_address"] as? String,
-           newDeviceAddress != deviceAddress
-        {
-            deviceAddress = newDeviceAddress
-        }
-    }
-
-    // MARK: - Cleanup
 
     func cleanup() {
         // Clean up transcriber resources

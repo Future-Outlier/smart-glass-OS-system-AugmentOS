@@ -4,15 +4,16 @@ import com.mentra.core.Bridge
 import com.mentra.core.CoreManager
 import com.mentra.core.utils.ConnTypes
 import com.mentra.core.utils.DeviceTypes
+import com.mentra.core.GlassesStore
 
 class Simulated : SGCManager() {
 
     init {
-        ready = true
         type = DeviceTypes.SIMULATED
-        connectionState = ConnTypes.DISCONNECTED
-        batteryLevel = 100
-        micEnabled = false
+        GlassesStore.apply("glasses", "fullyBooted", true)
+        GlassesStore.apply("glasses", "connected", true)
+        GlassesStore.apply("glasses", "connectionState", ConnTypes.CONNECTED)
+        GlassesStore.apply("glasses", "micEnabled", false)
     }
 
     // Audio Control
@@ -164,11 +165,9 @@ class Simulated : SGCManager() {
     }
 
     override fun connectById(id: String) {
-        CoreManager.getInstance().handleConnectionStateChanged()
     }
 
     override fun getConnectedBluetoothName(): String {
-        Bridge.log("getConnectedBluetoothName")
         return ""
     }
 
@@ -185,8 +184,16 @@ class Simulated : SGCManager() {
         Bridge.log("sendWifiCredentials")
     }
 
+    override fun forgetWifiNetwork(ssid: String) {
+        Bridge.log("forgetWifiNetwork: $ssid")
+    }
+
     override fun sendHotspotState(enabled: Boolean) {
         Bridge.log("sendHotspotState")
+    }
+
+    override fun sendUserEmailToGlasses(email: String) {
+        Bridge.log("sendUserEmailToGlasses: $email")
     }
 
     // Gallery

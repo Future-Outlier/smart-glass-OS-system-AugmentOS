@@ -10,6 +10,8 @@ import showAlert, {showBluetoothAlert, showLocationAlert, showLocationServicesAl
 import {checkAndRequestNotificationAccessSpecialPermission} from "@/utils/NotificationServiceUtils"
 import {storage} from "@/utils/storage/storage"
 
+type UI_PERMISSION = "LOCATION" | "MICROPHONE" | "CALENDAR" | "POST_NOTIFICATIONS" | "READ_NOTIFICATIONS" | "BACKGROUND_LOCATION" | "CAMERA" | "GLASSES_CAMERA" | "BLUETOOTH" | "PHONE_STATE" | "BATTERY_OPTIMIZATION" | "BASIC"
+
 // Define permission features with their required permissions
 export const PermissionFeatures: Record<string, string> = {
   BASIC: "basic", // Basic permissions needed for the app to function
@@ -56,12 +58,9 @@ const PERMISSION_CONFIG: Record<string, PermissionConfig> = {
   },
   [PermissionFeatures.READ_NOTIFICATIONS]: {
     name: "Notification Access",
-    description: "Allow AugmentOS to forward notifications to your glasses",
-    ios: [], // iOS notification permission
-    android:
-      typeof Platform.Version === "number" && Platform.Version >= 33
-        ? [PermissionsAndroid.PERMISSIONS.POST_NOTIFICATIONS]
-        : [],
+    description: "Allow Mentra to forward notifications to your glasses",
+    ios: [], // iOS doesn't need special permission for reading notifications
+    android: [], // Android uses NotificationListener service, handled separately
     critical: false,
   },
   [PermissionFeatures.CAMERA]: {
@@ -185,7 +184,7 @@ export const markPermissionNotRequested = async (featureKey: string): Promise<vo
 export const hasPermissionBeenRequested = async (featureKey: string): Promise<boolean> => {
   const res = storage.load<boolean>(`PERMISSION_REQUESTED_${featureKey}`)
   if (res.is_error()) {
-    console.error("Failed to get permission requested status", res.error)
+    console.log("Failed to get permission requested status, assuming it has not been requested", res.error)
     return false
   }
   return true
@@ -281,7 +280,7 @@ export const requestBackgroundLocationPermission = async (): Promise<boolean> =>
     }
 
     // Need to show dialog first explaining why we need background location
-    return new Promise(resolve => {
+    return new Promise((resolve) => {
       Alert.alert(
         "Background Location Permission",
         "MentraOS needs access to your location when the app is in the background " +
@@ -348,11 +347,14 @@ export const requestFeaturePermissions = async (featureKey: string): Promise<boo
         if (permission === PERMISSIONS.IOS.LOCATION_ALWAYS && currentStatus === RESULTS.BLOCKED) {
           // if we've already requested this permission before, show the dialog to direct user to Settings
           if (await hasPermissionBeenRequested(permission)) {
-            await handlePreviouslyDeniedPermission(config.name)
+            await handlePreviouslyDeniedPermission(config)
             return false
           }
           await markPermissionRequested(permission)
           // ignore the fact that this reports as blocked, since that's just how the flow for this permission works
+          // TODO: there is an edge case here where we can't tell if the user has actually been shown the dialog for the ALWAYS permission since it reports as blocked
+          // in either case
+          // so we have to either be ok with the edge case or NEVER show the dialog :/
           continue
         }
 
@@ -360,7 +362,7 @@ export const requestFeaturePermissions = async (featureKey: string): Promise<boo
         if (currentStatus === RESULTS.BLOCKED) {
           console.log(`Permission ${permission} is BLOCKED by system`)
           // Show dialog to direct user to Settings
-          await handlePreviouslyDeniedPermission(config.name)
+          await handlePreviouslyDeniedPermission(config)
           return false // Just return false since we've handled the alert internally
         }
       } catch (error) {
@@ -386,10 +388,10 @@ export const requestFeaturePermissions = async (featureKey: string): Promise<boo
       console.log(`${featureKey} original permissions:`, config.android)
       console.log(
         `${featureKey} permission values:`,
-        config.android.map(p => `${p} (${typeof p})`),
+        config.android.map((p) => `${p} (${typeof p})`),
       )
 
-      const validPermissions = config.android.filter(permission => permission != null)
+      const validPermissions = config.android.filter((permission) => permission != null)
       console.log(`${featureKey} valid permissions after filtering:`, validPermissions)
 
       if (validPermissions.length === 0) {
@@ -421,7 +423,7 @@ export const requestFeaturePermissions = async (featureKey: string): Promise<boo
       // Handle "Never Ask Again" case similar to iOS previouslyDenied
       if (anyNeverAskAgain) {
         // Handle the previously denied permission by showing the alert
-        await handlePreviouslyDeniedPermission(config.name)
+        await handlePreviouslyDeniedPermission(config)
         // Just return false, since we've handled the alert internally
         return false
       }
@@ -442,7 +444,7 @@ export const requestFeaturePermissions = async (featureKey: string): Promise<boo
         return false
       }
 
-      allGranted = Object.values(results).every(value => value === PermissionsAndroid.RESULTS.GRANTED)
+      allGranted = Object.values(results).every((value) => value === PermissionsAndroid.RESULTS.GRANTED)
     } catch (error) {
       console.error(`Error requesting ${featureKey} permissions:`, error)
       return false
@@ -466,7 +468,7 @@ export const requestFeaturePermissions = async (featureKey: string): Promise<boo
 
           // This shouldn't happen as we checked before, but just in case
           if (config.critical) {
-            await handlePreviouslyDeniedPermission(config.name)
+            await handlePreviouslyDeniedPermission(config)
             return false // Just return false since we've handled the alert internally
           }
         } else {
@@ -498,7 +500,7 @@ export const requestFeaturePermissions = async (featureKey: string): Promise<boo
 
 // Display appropriate warning messages
 export const displayPermissionDeniedWarning = (permissionName: string): Promise<boolean> => {
-  return new Promise(resolve => {
+  return new Promise((resolve) => {
     Alert.alert(
       `${permissionName} Permission Limited`,
       `Some features related to ${permissionName.toLowerCase()} may be limited or unavailable. You can enable full access in your device settings.`,
@@ -521,7 +523,7 @@ export const displayPermissionDeniedWarning = (permissionName: string): Promise<
 }
 
 export const displayCriticalPermissionDeniedWarning = (permissionName: string): Promise<boolean> => {
-  return new Promise(resolve => {
+  return new Promise((resolve) => {
     showAlert(
       `${permissionName} Required`,
       `AugmentOS needs ${permissionName.toLowerCase()} permissions to function properly. Please grant these permissions to continue.`,
@@ -537,19 +539,46 @@ export const displayCriticalPermissionDeniedWarning = (permissionName: string): 
 }
 
 // Helper function to handle permissions that were previously denied at the system level
-export const handlePreviouslyDeniedPermission = (permissionName: string): Promise<boolean> => {
-  return new Promise(resolve => {
+export const handlePreviouslyDeniedPermission = (config: PermissionConfig): Promise<boolean> => {
+  console.log("handlePreviouslyDeniedPermission: config", config)
+  if (Platform.OS === "ios" && config.name === PERMISSION_CONFIG[PermissionFeatures.BACKGROUND_LOCATION].name) {
+    // guide the user on how to enable the background location permission:
+    return new Promise((resolve) => {
+      showAlert(
+        translate("permissions:permissionRequired"),
+        "MentraOS needs access to your location when the app is in the background " +
+          `to provide location-based features\n` +
+          `\n\nOn the next screen, select Location, then select "Always" instead of "While Using the App"`,
+        [
+          {
+            text: translate("common:cancel"),
+            style: "cancel",
+            onPress: () => resolve(false),
+          },
+          {
+            text: "Open Settings",
+            onPress: () => {
+              Linking.openSettings()
+              resolve(false)
+            },
+          },
+        ],
+      )
+    })
+  }
+
+  return new Promise((resolve) => {
     showAlert(
-      "Permission Required",
-      `${permissionName} permission is required but has been denied previously. Please enable it in your device settings.`,
+      translate("permissions:permissionRequired"),
+      translate("permissions:permissionRequiredMessage", {name: config.name}),
       [
         {
-          text: "Cancel",
+          text: translate("common:cancel"),
           style: "cancel",
           onPress: () => resolve(false),
         },
         {
-          text: "Open Settings",
+          text: translate("permissions:openSettings"),
           onPress: () => {
             Linking.openSettings()
             // Return false since we don't know if the user actually changed the setting
@@ -635,7 +664,7 @@ export const checkFeaturePermissions = async (featureKey: string): Promise<boole
   return false
 }
 
-export const askPermissionsUI = async (app: AppletInterface, theme: Theme): Promise<number> => {
+export const askPermissionsUI = async (app: AppletInterface, _theme: Theme): Promise<number> => {
   const neededPermissions = await checkPermissionsUI(app)
 
   if (neededPermissions.length == 0) {
@@ -643,13 +672,13 @@ export const askPermissionsUI = async (app: AppletInterface, theme: Theme): Prom
   }
 
   // Create a promise that resolves based on user action
-  return new Promise<number>(resolve => {
+  return new Promise<number>((resolve) => {
     showAlert(
       neededPermissions.length > 1
         ? translate("home:permissionsRequiredTitle")
         : translate("home:permissionRequiredTitle"),
       translate("home:permissionMessage", {
-        permissions: neededPermissions.map(perm => PERMISSION_CONFIG[perm]?.name || perm).join(", "),
+        permissions: neededPermissions.map((perm) => PERMISSION_CONFIG[perm]?.name || perm).join(", "),
       }),
       [
         {
@@ -684,10 +713,10 @@ export const askPermissionsUI = async (app: AppletInterface, theme: Theme): Prom
           },
         },
       ],
-      {
-        iconName: "information-outline",
-        iconColor: theme.colors.textDim,
-      },
+      // {
+      //   iconName: "info",
+      //   iconColor: theme.colors.textDim,
+      // },
     )
   })
 }
@@ -790,7 +819,7 @@ async function isBluetoothEnabled(): Promise<boolean> {
       }
 
       // Wait 50ms before next check
-      await new Promise(resolve => setTimeout(resolve, 50))
+      await new Promise((resolve) => setTimeout(resolve, 50))
     }
 
     // If still unknown after 10 attempts, assume it's available
@@ -821,11 +850,10 @@ async function isLocationPermissionGranted(): Promise<boolean> {
 async function isLocationServicesEnabled(): Promise<boolean> {
   try {
     if (Platform.OS === "android") {
-      // // Use our native module to check if location services are enabled
-      // const locationServicesEnabled = await checkLocationServices()
-      // console.log("Location services enabled (native check):", locationServicesEnabled)
-      // return locationServicesEnabled
-      return true // TODO: fix this!
+      // Use our native module to check if location services are enabled
+      const locationServicesEnabled = await CoreModule.isLocationServicesEnabled()
+      console.log("Location services enabled (native check):", locationServicesEnabled)
+      return locationServicesEnabled
     } else if (Platform.OS === "ios") {
       // iOS doesn't require location for BLE scanning since iOS 13
       return true
@@ -836,6 +864,9 @@ async function isLocationServicesEnabled(): Promise<boolean> {
     return false
   }
 }
+
+// Export for use in other services (e.g., GallerySyncService)
+export {isLocationServicesEnabled}
 
 async function checkConnectivityRequirements(): Promise<{
   isReady: boolean
@@ -865,8 +896,7 @@ async function checkConnectivityRequirements(): Promise<{
       console.log("Location permission missing, showing error")
       return {
         isReady: false,
-        message:
-          "Location permission is required to scan for glasses on Android. Please grant location permission and try again.",
+        message: translate("connectivity:locationPermissionRequiredMessage"),
         requirement: "location",
       }
     }

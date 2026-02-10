@@ -1,9 +1,11 @@
 import * as Sentry from "@sentry/react-native"
+import CoreModule from "core"
 import {FC, createContext, useEffect, useState, useContext} from "react"
 
 import {LogoutUtils} from "@/utils/LogoutUtils"
 import mentraAuth from "@/utils/auth/authClient"
 import {MentraAuthSession, MentraAuthUser} from "@/utils/auth/authProvider.types"
+import {SETTINGS, useSetting} from "@/stores/settings"
 
 interface AuthContextProps {
   user: MentraAuthUser | null
@@ -23,6 +25,7 @@ export const AuthProvider: FC<{children: React.ReactNode}> = ({children}) => {
   const [session, setSession] = useState<any>(null)
   const [user, setUser] = useState<any>(null)
   const [loading, setLoading] = useState(true)
+  const [_authEmail, setAuthEmail] = useSetting(SETTINGS.auth_email.key)
 
   useEffect(() => {
     let subscription: {unsubscribe: () => void} | undefined
@@ -56,6 +59,10 @@ export const AuthProvider: FC<{children: React.ReactNode}> = ({children}) => {
           id: session?.user?.id,
           email: session?.user?.email,
         })
+        // Send user email to glasses for crash reporting
+        if (session?.user?.email) {
+          setAuthEmail(session.user.email)
+        }
       })
       console.log("AuthContext: setupAuthListener()", res)
       if (res.is_ok()) {

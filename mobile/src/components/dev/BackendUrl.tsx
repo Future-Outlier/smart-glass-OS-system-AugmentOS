@@ -8,6 +8,7 @@ import {translate} from "@/i18n"
 import {SETTINGS, useSetting} from "@/stores/settings"
 import {ThemedStyle} from "@/theme"
 import showAlert from "@/utils/AlertUtils"
+import mantle from "@/services/MantleManager"
 
 export default function BackendUrl() {
   const {theme, themed} = useAppTheme()
@@ -65,7 +66,8 @@ export default function BackendUrl() {
             [
               {
                 text: translate("common:ok"),
-                onPress: () => {
+                onPress: async () => {
+                  await mantle.cleanup()
                   replaceAll("/")
                 },
               },
@@ -120,7 +122,7 @@ export default function BackendUrl() {
     if (timeDiff > 2000) {
       setAsiaButtonTapCount(1)
     } else {
-      setAsiaButtonTapCount(prev => prev + 1)
+      setAsiaButtonTapCount((prev) => prev + 1)
     }
 
     setAsiaButtonLastTapTime(currentTime)

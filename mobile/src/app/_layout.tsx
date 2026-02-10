@@ -1,8 +1,9 @@
+import "react-native-get-random-values" // Must be first - required for tweetnacl crypto (UDP encryption)
 import "@/utils/polyfills/event" // Must be before any livekit imports
 import {registerGlobals} from "@livekit/react-native-webrtc"
 import * as Sentry from "@sentry/react-native"
 import {useFonts} from "expo-font"
-import {Stack, SplashScreen, useNavigationContainerRef} from "expo-router"
+import {SplashScreen, useNavigationContainerRef} from "expo-router"
 import {useEffect, useState} from "react"
 import {LogBox} from "react-native"
 
@@ -10,19 +11,37 @@ import {SentryNavigationIntegration, SentrySetup} from "@/effects/SentrySetup"
 import {initI18n} from "@/i18n"
 import {useSettingsStore} from "@/stores/settings"
 import {customFontsToLoad} from "@/theme"
-import {ConsoleLogger} from "@/utils/debug/console"
 import {loadDateFnsLocale} from "@/utils/formatDate"
-import {AllEffects} from "@/utils/structure/AllEffects"
-import {AllProviders} from "@/utils/structure/AllProviders"
+import {AllEffects} from "@/effects/AllEffects"
+import {AllProviders} from "@/contexts/AllProviders"
 import "@/global.css"
 
 // prevent the annoying warning box at the bottom of the screen from getting in the way:
-LogBox.ignoreLogs([
-  "Failed to open debugger. Please check that the dev server is running and reload the app.",
-  "Require cycle:",
-  "is missing the required default export.",
-  "Attempted to import the module",
-])
+const IGNORED_LOGS = [
+  /Failed to open debugger. Please check that the dev server is running and reload the app./,
+  /Require cycle:/,
+  /is missing the required default export./,
+  /Attempted to import the module/,
+  /The action 'RESET' with payload/,
+  /The action 'POP_TO_TOP' was not handled/,
+]
+
+LogBox.ignoreLogs(IGNORED_LOGS);
+
+if (__DEV__) {
+  const withoutIgnored = (logger: any) => (...args: any[]) => {
+    const output = args.join(' ');
+
+    if (!IGNORED_LOGS.some(log => log.test(output))) {
+      logger(...args);
+    }
+  };
+
+  console.log = withoutIgnored(console.log);
+  console.info = withoutIgnored(console.info);
+  console.warn = withoutIgnored(console.warn);
+  console.error = withoutIgnored(console.error);
+}
 
 SentrySetup()
 
@@ -77,15 +96,6 @@ function Root() {
   return (
     <AllProviders>
       <AllEffects />
-      <Stack
-        screenOptions={{
-          headerShown: false,
-          gestureEnabled: true,
-          gestureDirection: "horizontal",
-          animation: "simple_push",
-        }}
-      />
-      <ConsoleLogger />
     </AllProviders>
   )
 }

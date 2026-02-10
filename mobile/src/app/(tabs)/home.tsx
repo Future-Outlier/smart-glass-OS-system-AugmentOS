@@ -1,5 +1,5 @@
 import {useFocusEffect} from "@react-navigation/native"
-import {useCallback} from "react"
+import {useCallback, useEffect, useRef} from "react"
 import {ScrollView, View} from "react-native"
 
 import {MentraLogoStandalone} from "@/components/brands/MentraLogoStandalone"
@@ -10,52 +10,92 @@ import {ForegroundAppsGrid} from "@/components/home/ForegroundAppsGrid"
 import {IncompatibleApps} from "@/components/home/IncompatibleApps"
 import {PairGlassesCard} from "@/components/home/PairGlassesCard"
 import {Header, Screen} from "@/components/ignite"
-import CloudConnection from "@/components/misc/CloudConnection"
-import NonProdWarning from "@/components/misc/NonProdWarning"
+import NonProdWarning from "@/components/home/NonProdWarning"
 import {Group} from "@/components/ui"
-import {Spacer} from "@/components/ui/Spacer"
-import {useAppTheme} from "@/contexts/ThemeContext"
 import {useRefreshApplets} from "@/stores/applets"
 import {SETTINGS, useSetting} from "@/stores/settings"
+import {useGlassesStore} from "@/stores/glasses"
+import {useCoreStore} from "@/stores/core"
+import WebsocketStatus from "@/components/error/WebsocketStatus"
+import CoreStatusBar from "@/components/dev/CoreStatusBar"
+import {attemptReconnect} from "@/effects/Reconnect"
 
 export default function Homepage() {
-  const {theme} = useAppTheme()
   const refreshApplets = useRefreshApplets()
   const [defaultWearable] = useSetting(SETTINGS.default_wearable.key)
   const [offlineMode] = useSetting(SETTINGS.offline_mode.key)
+  const [debugCoreStatusBarEnabled] = useSetting(SETTINGS.debug_core_status_bar.key)
+  const glassesConnected = useGlassesStore((state) => state.connected)
+  const isSearching = useCoreStore((state) => state.searching)
+  const hasAttemptedInitialConnect = useRef(false)
 
   useFocusEffect(
     useCallback(() => {
-      setTimeout(() => {
-        refreshApplets()
-      }, 1000)
-    }, []),
+      refreshApplets()
+    }, [refreshApplets]),
   )
+
+  // Auto-connect on initial app startup when home screen is reached
+  // This ensures all initialization is complete before attempting connection
+  useEffect(() => {
+    const attemptInitialConnect = async () => {
+      // Only attempt once per app session
+      if (hasAttemptedInitialConnect.current) {
+        return
+      }
+      let attempted = await attemptReconnect()
+      if (attempted) {
+        hasAttemptedInitialConnect.current = true
+      }
+    }
+
+    attemptInitialConnect()
+  }, [glassesConnected, isSearching, defaultWearable])
+
+  const renderContent = () => {
+    if (!defaultWearable) {
+      return (
+        <>
+          {debugCoreStatusBarEnabled && <CoreStatusBar />}
+          <Group>
+            <PairGlassesCard />
+          </Group>
+        </>
+      )
+    }
+
+    return (
+      <>
+        {debugCoreStatusBarEnabled && <CoreStatusBar />}
+        <Group>
+          <CompactDeviceStatus />
+          {!offlineMode && <BackgroundAppsLink />}
+        </Group>
+        <View className="h-2" />
+        <ActiveForegroundApp />
+        <ForegroundAppsGrid />
+      </>
+    )
+  }
 
   return (
     <Screen preset="fixed">
       <Header
         leftTx="home:title"
         RightActionComponent={
-          <View style={{flexDirection: "row", alignItems: "center"}}>
+          <View className="flex-row items-center flex-1 justify-end">
+            <WebsocketStatus />
             <NonProdWarning />
+            <View className="w-2" />
             <MentraLogoStandalone />
           </View>
         }
       />
 
       <ScrollView contentInsetAdjustmentBehavior="automatic" showsVerticalScrollIndicator={false}>
-        <Spacer height={theme.spacing.s4} />
-        <CloudConnection />
-        <Group>
-          {!defaultWearable && <PairGlassesCard />}
-          {defaultWearable && <CompactDeviceStatus />}
-          {!offlineMode && <BackgroundAppsLink />}
-        </Group>
-        <Spacer height={theme.spacing.s2} />
-        <ActiveForegroundApp />
-        <Spacer height={theme.spacing.s2} />
-        <ForegroundAppsGrid />
+        <View className="h-4" />
+        {renderContent()}
+        <View className="h-4" />
         <IncompatibleApps />
       </ScrollView>
     </Screen>

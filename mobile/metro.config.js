@@ -23,8 +23,11 @@ config.transformer.getTransformOptions = async () => ({
 })
 
 // Configure resolver for SVG files
-config.resolver.assetExts = config.resolver.assetExts.filter(ext => ext !== "svg")
+config.resolver.assetExts = config.resolver.assetExts.filter((ext) => ext !== "svg")
 config.resolver.sourceExts = [...config.resolver.sourceExts, "svg"]
+
+// Add HTML to asset extensions
+config.resolver.assetExts = [...config.resolver.assetExts, "html"]
 
 // This helps support certain popular third-party libraries
 // such as Firebase that use the extension cjs.
@@ -34,6 +37,7 @@ config.resolver.sourceExts.push("cjs")
 config.watchFolders = [
   path.resolve(__dirname, "./modules/core"),
   path.resolve(__dirname, "../cloud/packages/types/src"),
+  path.resolve(__dirname, "../cloud/packages/display-utils/src"),
 ]
 
 // Resolve the core module from the parent directory

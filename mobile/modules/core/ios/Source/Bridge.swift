@@ -17,20 +17,27 @@ class Bridge {
         eventCallback = callback
     }
 
+    /// Thread-safe event dispatch - ensures callback is invoked on main thread
+    /// to avoid React Native bridge threading issues that can cause EXC_BREAKPOINT
+    private static func dispatchEvent(_ eventName: String, _ data: [String: Any]) {
+        guard let callback = eventCallback else { return }
+        if Thread.isMainThread {
+            callback(eventName, data)
+        } else {
+            DispatchQueue.main.async {
+                callback(eventName, data)
+            }
+        }
+    }
+
     static func log(_ message: String) {
-        let msg = "CORE:\(message)"
-        let data: [String: Any] = ["body": msg]
-        eventCallback?("CoreMessageEvent", data)
+        let data = ["message": message]
+        Bridge.sendTypedMessage("log", body: data)
     }
 
     static func sendEvent(withName: String, body: String) {
         let data: [String: Any] = ["body": body]
-        eventCallback?(withName, data)
-    }
-
-    static func showBanner(type: String, message: String) {
-        let data = ["type": type, "message": message] as [String: Any]
-        Bridge.sendTypedMessage("show_banner", body: data)
+        dispatchEvent(withName, data)
     }
 
     static func sendHeadUp(_ isUp: Bool) {
@@ -75,7 +82,7 @@ class Bridge {
             "level": level,
             "charging": charging,
             "timestamp": Date().timeIntervalSince1970 * 1000,
-            // TODO: time remaining
+                // TODO: time remaining
         ]
 
         let jsonData = try! JSONSerialization.data(withJSONObject: vadMsg)
@@ -84,12 +91,24 @@ class Bridge {
         }
     }
 
-    static func sendDiscoveredDevice(_ modelName: String, _ deviceName: String) {
-        let eventBody: [String: Any] = [
-            "model_name": modelName,
-            "device_name": deviceName,
-        ]
-        sendTypedMessage("compatible_glasses_search_result", body: eventBody)
+    static func sendDiscoveredDevice(_ deviceModel: String, _ deviceName: String) {
+        Task {
+            await MainActor.run {
+                let searchResults =
+                    GlassesStore.shared.get("core", "searchResults") as? [[String: Any]] ?? []
+                let newResult: [String: Any] = [
+                    "deviceModel": deviceModel,
+                    "deviceName": deviceName,
+                ]
+                let allResults = searchResults + [newResult]
+                var seen = Set<String>()
+                let uniqueResults = allResults.reversed().filter {
+                    guard let name = $0["deviceName"] as? String else { return false }
+                    return seen.insert(name).inserted
+                }.reversed()
+                GlassesStore.shared.set("core", "searchResults", Array(uniqueResults))
+            }
+        }
     }
 
     static func updateAsrConfig(languages: [[String: Any]]) {
@@ -233,13 +252,13 @@ class Bridge {
         Bridge.sendTypedMessage("core_status_update", body: body)
     }
 
-    static func sendGlassesSerialNumber(_ serialNumber: String, style: String, color: String) {
+    static func sendserialNumber(_ serialNumber: String, style: String, color: String) {
         let body = [
             "glasses_serial_number": [
                 "serial_number": serialNumber,
                 "style": style,
                 "color": color,
-            ],
+            ]
         ]
         Bridge.sendTypedMessage("glasses_serial_number", body: body)
     }
@@ -253,11 +272,22 @@ class Bridge {
         Bridge.sendTypedMessage("wifi_status_change", body: event)
     }
 
-    static func sendWifiScanResults(_ networks: [[String: Any]]) {
-        let eventBody: [String: Any] = [
-            "networks": networks,
-        ]
-        Bridge.sendTypedMessage("wifi_scan_results", body: eventBody)
+    static func updateWifiScanResults(_ networks: [[String: Any]]) {
+        Task {
+            await MainActor.run {
+                var storedNetworks: [[String: Any]] =
+                    GlassesStore.shared.get("core", "wifiScanResults") as? [[String: Any]] ?? []
+                // add the networks to the storedNetworks array, removing duplicates by ssid
+                for network in networks {
+                    if !storedNetworks.contains(where: {
+                        $0["ssid"] as? String == network["ssid"] as? String
+                    }) {
+                        storedNetworks.append(network)
+                    }
+                }
+                GlassesStore.shared.apply("core", "wifiScanResults", storedNetworks)
+            }
+        }
     }
 
     static func sendMtkUpdateComplete(message: String, timestamp: Int64) {
@@ -266,6 +296,46 @@ class Bridge {
             "timestamp": timestamp,
         ]
         Bridge.sendTypedMessage("mtk_update_complete", body: eventBody)
+    }
+
+    /// Send OTA update available notification - glasses have detected an available update (background mode)
+    static func sendOtaUpdateAvailable(
+        versionCode: Int64,
+        versionName: String,
+        updates: [String],
+        totalSize: Int64
+    ) {
+        let eventBody: [String: Any] = [
+            "version_code": versionCode,
+            "version_name": versionName,
+            "updates": updates,
+            "total_size": totalSize,
+        ]
+        Bridge.sendTypedMessage("ota_update_available", body: eventBody)
+    }
+
+    /// Send OTA progress update - glasses are downloading/installing an update
+    static func sendOtaProgress(
+        stage: String,
+        status: String,
+        progress: Int,
+        bytesDownloaded: Int64,
+        totalBytes: Int64,
+        currentUpdate: String,
+        errorMessage: String?
+    ) {
+        var eventBody: [String: Any] = [
+            "stage": stage,
+            "status": status,
+            "progress": progress,
+            "bytes_downloaded": bytesDownloaded,
+            "total_bytes": totalBytes,
+            "current_update": currentUpdate,
+        ]
+        if let error = errorMessage {
+            eventBody["error_message"] = error
+        }
+        Bridge.sendTypedMessage("ota_progress", body: eventBody)
     }
 
     // Arbitrary WS Comms (dont use these, make a dedicated function for your use case):
@@ -285,9 +355,7 @@ class Bridge {
     static func sendTypedMessage(_ type: String, body: [String: Any]) {
         var body = body
         body["type"] = type
-        let jsonData = try! JSONSerialization.data(withJSONObject: body)
-        let jsonString = String(data: jsonData, encoding: .utf8)
-        let data: [String: Any] = ["body": jsonString!]
-        eventCallback?("CoreMessageEvent", data)
+        // Send directly using type as event name - no JSON serialization
+        dispatchEvent(type, body)
     }
 }

@@ -19,6 +19,10 @@ export abstract class AuthClient {
     return Res.error_async(new Error("Method not implemented"))
   }
 
+  public resendSignupEmail(_email: string): AsyncResult<void, Error> {
+    return Res.error_async(new Error("Method not implemented"))
+  }
+
   public signInWithPassword(_params: {email: string; password: string}): AsyncResult<MentraSigninResponse, Error> {
     return Res.error_async(new Error("Method not implemented"))
   }
@@ -105,7 +109,7 @@ export default mentraAuth
 // to receive `onAuthStateChange` events with the `TOKEN_REFRESHED` or
 // `SIGNED_OUT` event if the user's session is terminated. This should
 // only be registered once.
-AppState.addEventListener("change", state => {
+AppState.addEventListener("change", (state) => {
   if (state === "active") {
     console.log("MENTRA AUTH: START AUTO REFRESH")
     mentraAuth.startAutoRefresh()

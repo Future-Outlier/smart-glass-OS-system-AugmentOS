@@ -41,7 +41,7 @@ const BasicDialog = ({
         <View style={themed($actions1)}>
           {leftButtonText && (
             <Button
-              style={{minWidth: 48}}
+              style={{minWidth: 96}}
               compact
               flexContainer={false}
               flex={false}
@@ -51,7 +51,7 @@ const BasicDialog = ({
             />
           )}
           <Button
-            style={{minWidth: 48}}
+            style={{minWidth: 96}}
             compact
             flexContainer={false}
             flex={false}
@@ -68,8 +68,6 @@ const BasicDialog = ({
 const $container: ThemedStyle<ViewStyle> = ({colors, spacing}) => ({
   backgroundColor: colors.primary_foreground,
   borderRadius: spacing.s4,
-  borderWidth: 1,
-  borderColor: colors.border,
   overflow: "hidden",
   elevation: 4,
   justifyContent: "center",

@@ -3,7 +3,7 @@ import {useState} from "react"
 import {TouchableOpacity, View, ViewStyle} from "react-native"
 
 import {Text} from "@/components/ignite"
-import {AppPicker} from "@/components/misc/AppPicker"
+import {AppPicker} from "@/components/settings/AppPicker"
 import ToggleSetting from "@/components/settings/ToggleSetting"
 import {useAppTheme} from "@/contexts/ThemeContext"
 import {translate} from "@/i18n"
@@ -57,7 +57,7 @@ export function ButtonSettings({enabled, selectedApp, applets, onEnabledChange, 
                   Default App
                 </Text>
                 <Text style={{color: theme.colors.textDim, fontSize: 13}}>
-                  {applets.find(app => app.packageName === selectedApp)?.name || "Select app"}
+                  {applets.find((app) => app.packageName === selectedApp)?.name || "Select app"}
                 </Text>
               </View>
               <MaterialCommunityIcons name="chevron-right" size={20} color={theme.colors.textDim} />
@@ -69,13 +69,13 @@ export function ButtonSettings({enabled, selectedApp, applets, onEnabledChange, 
       <AppPicker
         visible={showAppPicker}
         onClose={() => setShowAppPicker(false)}
-        onSelect={app => {
+        onSelect={(app) => {
           onAppChange(app.packageName)
         }}
         apps={applets}
         selectedPackageName={selectedApp}
         title={translate("deviceSettings:selectDefaultApp")}
-        filterPredicate={app => app.type === "standard" && app.compatibility?.isCompatible !== false} // Only show compatible foreground apps
+        filterPredicate={(app) => app.type === "standard" && app.compatibility?.isCompatible !== false} // Only show compatible foreground apps
         showCompatibilityWarnings={true}
       />
     </>

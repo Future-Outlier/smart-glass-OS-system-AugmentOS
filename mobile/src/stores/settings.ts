@@ -23,6 +23,7 @@ interface Setting {
 export const SETTINGS: Record<string, Setting> = {
   // feature flags / mantle settings:
   dev_mode: {key: "dev_mode", defaultValue: () => __DEV__, writable: true, saveOnServer: true, persist: true},
+  super_mode: {key: "super_mode", defaultValue: () => false, writable: true, saveOnServer: true, persist: true},
   enable_squircles: {
     key: "enable_squircles",
     defaultValue: () => true,
@@ -32,6 +33,20 @@ export const SETTINGS: Record<string, Setting> = {
   },
   debug_console: {
     key: "debug_console",
+    defaultValue: () => false,
+    writable: true,
+    saveOnServer: true,
+    persist: true,
+  },
+  debug_navigation_history: {
+    key: "debug_navigation_history",
+    defaultValue: () => false,
+    writable: true,
+    saveOnServer: true,
+    persist: true,
+  },
+  debug_core_status_bar: {
+    key: "debug_core_status_bar",
     defaultValue: () => false,
     writable: true,
     saveOnServer: true,
@@ -69,7 +84,7 @@ export const SETTINGS: Record<string, Setting> = {
         return process.env.EXPO_PUBLIC_STORE_URL_OVERRIDE
       }
       if (process.env.EXPO_PUBLIC_DEPLOYMENT_REGION === "china") {
-        return "https://store.mentraglass.cn"
+        return "https://dev-store.mentraglass.cn"
       }
       return "https://apps.mentra.glass"
     },
@@ -81,7 +96,7 @@ export const SETTINGS: Record<string, Setting> = {
   },
   reconnect_on_app_foreground: {
     key: "reconnect_on_app_foreground",
-    defaultValue: () => false,
+    defaultValue: () => true,
     writable: true,
     saveOnServer: true,
     persist: true,
@@ -89,6 +104,22 @@ export const SETTINGS: Record<string, Setting> = {
   location_tier: {key: "location_tier", defaultValue: () => "", writable: true, saveOnServer: true, persist: true},
   // state:
   core_token: {key: "core_token", defaultValue: () => "", writable: true, saveOnServer: true, persist: true},
+  auth_email: {key: "auth_email", defaultValue: () => "", writable: true, saveOnServer: false, persist: true},
+  auth_token: {key: "auth_token", defaultValue: () => "", writable: true, saveOnServer: false, persist: true},
+  pending_wearable: {
+    key: "pending_wearable",
+    defaultValue: () => "",
+    writable: true,
+    saveOnServer: false,
+    persist: false,
+  },
+  pending_device_name: {
+    key: "pending_device_name",
+    defaultValue: () => "",
+    writable: true,
+    saveOnServer: false,
+    persist: false,
+  },
   default_wearable: {
     key: "default_wearable",
     defaultValue: () => "",
@@ -107,8 +138,8 @@ export const SETTINGS: Record<string, Setting> = {
   // ui state:
   theme_preference: {
     key: "theme_preference",
-    defaultValue: () => "light",
-    // Force light mode - dark mode is not complete yet
+    defaultValue: () => (__DEV__ ? "system" : "light"),
+    // Force light mode - i mode is not complete yet
     // override: () => "light",
     writable: true,
     saveOnServer: true,
@@ -214,6 +245,15 @@ export const SETTINGS: Record<string, Setting> = {
     saveOnServer: true,
     persist: true,
   },
+  // LC3 audio quality setting (frame size in bytes)
+  // 20 = 16kbps (low bandwidth), 40 = 32kbps (balanced), 60 = 48kbps (high quality)
+  lc3_frame_size: {
+    key: "lc3_frame_size",
+    defaultValue: () => 60,
+    writable: true,
+    saveOnServer: false,
+    persist: true,
+  },
   preferred_mic: {
     key: "preferred_mic",
     defaultValue: () => "auto",
@@ -289,13 +329,6 @@ export const SETTINGS: Record<string, Setting> = {
     saveOnServer: true,
     persist: true,
   },
-  button_video_settings_width: {
-    key: "button_video_settings_width",
-    defaultValue: () => 1920,
-    writable: true,
-    saveOnServer: true,
-    persist: true,
-  },
   button_max_recording_time: {
     key: "button_max_recording_time",
     defaultValue: () => 10,
@@ -336,6 +369,13 @@ export const SETTINGS: Record<string, Setting> = {
     persist: true,
   },
   gallery_mode: {key: "gallery_mode", defaultValue: () => false, writable: true, saveOnServer: true, persist: true},
+  offline_camera_running: {
+    key: "offline_camera_running",
+    defaultValue: () => false,
+    writable: true,
+    saveOnServer: false,
+    persist: true,
+  },
   // button action settings
   default_button_action_enabled: {
     key: "default_button_action_enabled",
@@ -366,12 +406,21 @@ export const SETTINGS: Record<string, Setting> = {
     saveOnServer: true,
     persist: true,
   },
+  // OTA update dismissal - stores the version code user dismissed (not persisted so resets on app restart)
+  dismissed_ota_version: {
+    key: "dismissed_ota_version",
+    defaultValue: () => "",
+    writable: true,
+    saveOnServer: false,
+    persist: false,
+  },
 } as const
 
 export const OFFLINE_APPLETS: string[] = ["com.mentra.livecaptions", "com.mentra.camera"]
 
 // these settings are automatically synced to the core:
 const CORE_SETTINGS_KEYS: string[] = [
+  // core settings:
   SETTINGS.sensing_enabled.key,
   SETTINGS.power_saving_mode.key,
   SETTINGS.always_on_status_bar.key,
@@ -379,8 +428,11 @@ const CORE_SETTINGS_KEYS: string[] = [
   SETTINGS.bypass_audio_encoding_for_debugging.key,
   SETTINGS.metric_system.key,
   SETTINGS.enforce_local_transcription.key,
+  SETTINGS.lc3_frame_size.key,
   SETTINGS.preferred_mic.key,
   SETTINGS.screen_disabled.key,
+  SETTINGS.auth_email.key,
+  SETTINGS.auth_token.key,
   // glasses settings:
   SETTINGS.contextual_dashboard.key,
   SETTINGS.head_up_angle.key,
@@ -394,13 +446,16 @@ const CORE_SETTINGS_KEYS: string[] = [
   SETTINGS.button_video_settings.key,
   SETTINGS.button_camera_led.key,
   SETTINGS.button_max_recording_time.key,
+  // device / pairing:
+  SETTINGS.pending_wearable.key,
+  SETTINGS.pending_device_name.key,
   SETTINGS.default_wearable.key,
   SETTINGS.device_name.key,
   SETTINGS.device_address.key,
   // offline applets:
+  SETTINGS.offline_mode.key,
   SETTINGS.offline_captions_running.key,
   SETTINGS.gallery_mode.key,
-  // SETTINGS.offline_camera_running.key,
   // notifications:
   SETTINGS.notifications_enabled.key,
   SETTINGS.notifications_blocklist.key,
@@ -434,15 +489,6 @@ const getDefaultSettings = () =>
     {} as Record<string, any>,
   )
 
-const migrateSettings = () => {
-  useSettingsStore.getState().setSetting(SETTINGS.enable_squircles.key, true, true)
-  // Force light mode - dark mode is not complete yet
-  // const devMode = useSettingsStore.getState().getSetting(SETTINGS.dev_mode.key)
-  // if (!devMode) {
-  // useSettingsStore.getState().setSetting(SETTINGS.theme_preference.key, "light", true)
-  // }
-}
-
 export const useSettingsStore = create<SettingsState>()(
   subscribeWithSelector((set, get) => ({
     settings: getDefaultSettings(),
@@ -467,7 +513,7 @@ export const useSettingsStore = create<SettingsState>()(
 
         // Update store immediately for optimistic UI
         console.log(`SETTINGS: SET: ${key} = ${value}`)
-        set(state => ({
+        set((state) => ({
           settings: {...state.settings, [key]: value},
         }))
 
@@ -535,7 +581,7 @@ export const useSettingsStore = create<SettingsState>()(
           settingsToLoad[key.toLowerCase()] = value
         }
 
-        set(state => ({
+        set((state) => ({
           settings: {...state.settings, ...settingsToLoad},
         }))
 
@@ -551,7 +597,6 @@ export const useSettingsStore = create<SettingsState>()(
         let loadedSettings: Record<string, any> = {}
 
         if (state.isInitialized) {
-          migrateSettings()
           return undefined
         }
 
@@ -593,11 +638,10 @@ export const useSettingsStore = create<SettingsState>()(
         // console.log(loadedSettings)
         // console.log("##############################################")
 
-        set(state => ({
+        set((state) => ({
           isInitialized: true,
           settings: {...state.settings, ...loadedSettings},
         }))
-        migrateSettings()
       })
     },
     getRestUrl: () => {
@@ -616,7 +660,7 @@ export const useSettingsStore = create<SettingsState>()(
     getCoreSettings: () => {
       const state = get()
       const coreSettings: Record<string, any> = {}
-      Object.values(SETTINGS).forEach(setting => {
+      Object.values(SETTINGS).forEach((setting) => {
         if (CORE_SETTINGS_KEYS.includes(setting.key)) {
           coreSettings[setting.key] = state.getSetting(setting.key)
         }
@@ -627,7 +671,7 @@ export const useSettingsStore = create<SettingsState>()(
 )
 
 export const useSetting = <T = any>(key: string): [T, (value: T) => AsyncResult<void, Error>] => {
-  const value = useSettingsStore(state => state.getSetting(key))
-  const setSetting = useSettingsStore(state => state.setSetting)
+  const value = useSettingsStore((state) => state.getSetting(key))
+  const setSetting = useSettingsStore((state) => state.setSetting)
   return [value, (newValue: T) => setSetting(key, newValue)]
 }

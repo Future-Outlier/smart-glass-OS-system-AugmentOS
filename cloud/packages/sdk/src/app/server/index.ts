@@ -29,7 +29,26 @@ import {
 import {AppSession} from "../session/index"
 import {createAuthMiddleware} from "../webview"
 
+// Import PhotoData type for pending photo requests
+import type {PhotoData} from "../../types/photo-data"
+
 export const GIVE_APP_CONTROL_OF_TOOL_RESPONSE: string = "GIVE_APP_CONTROL_OF_TOOL_RESPONSE"
+
+/**
+ * Pending photo request stored at AppServer level for reconnection resilience.
+ * This allows O(1) lookup when photo uploads arrive via HTTP,
+ * and survives session reconnections.
+ * See: cloud/issues/019-sdk-photo-request-architecture
+ */
+interface PendingPhotoRequest {
+  userId: string
+  sessionId: string
+  session: AppSession
+  resolve: (photo: PhotoData) => void
+  reject: (error: Error) => void
+  timestamp: number
+  timeoutId?: ReturnType<typeof setTimeout>
+}
 
 /**
  * 🔧 Configuration options for App Server
@@ -78,23 +97,6 @@ export interface AppServerConfig {
 type AppHono = Hono<{Variables: AuthVariables}>
 
 /**
- * Pending photo request stored at AppServer level for reconnection resilience.
- * Photo requests are registered here so they survive WebSocket disconnection/reconnection.
- */
-interface PendingPhotoRequest {
-  userId: string
-  sessionId: string
-  session: AppSession
-  resolve: (photo: PhotoData) => void
-  reject: (error: Error) => void
-  timestamp: number
-  timeoutId?: ReturnType<typeof setTimeout>
-}
-
-// Import PhotoData type for pending photo requests
-import type {PhotoData} from "../../types/photo-data"
-
-/**
  * 🎯 App Server Implementation
  *
  * Base class for creating App servers, now extending Hono for a modern API.
@@ -138,7 +140,15 @@ export class AppServer extends Hono<{Variables: AuthVariables}> {
   private activeSessions = new Map<string, AppSession>()
   /** Map of active user sessions by userId */
   private activeSessionsByUserId = new Map<string, AppSession>()
-  /** Pending photo requests by requestId - owned by AppServer for HTTP endpoint access */
+  /**
+   * Pending photo requests by requestId - owned by AppServer for HTTP endpoint access.
+   * This is the single source of truth for pending photo requests.
+   * Stored here (not on CameraModule) because:
+   * 1. Photo uploads arrive via HTTP to AppServer, not via WebSocket to session
+   * 2. Allows O(1) lookup by requestId instead of iterating all sessions
+   * 3. Survives session reconnections (session may be removed from activeSessions temporarily)
+   * See: cloud/issues/019-sdk-photo-request-architecture
+   */
   private pendingPhotoRequests = new Map<string, PendingPhotoRequest>()
   /** Array of cleanup handlers to run on shutdown */
   private cleanupHandlers: Array<() => void> = []
@@ -371,60 +381,91 @@ export class AppServer extends Hono<{Variables: AuthVariables}> {
     this.cleanupHandlers.push(handler)
   }
 
-  /**
-   * 📸 Register a pending photo request at the AppServer level.
-   * This ensures the request survives WebSocket disconnections during the 30s timeout window.
-   */
-  public registerPhotoRequest(params: Omit<PendingPhotoRequest, "timestamp">): string {
-    const requestId = `photo_req_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`
+  // =====================================
+  // 📸 Photo Request Management APIs
+  // =====================================
 
-    // Create a timeout to automatically clean up the request if no response arrives
+  /**
+   * Register a pending photo request.
+   * Called by CameraModule when a photo is requested.
+   * Stores the request at AppServer level for O(1) lookup when HTTP response arrives.
+   *
+   * @param requestId - Unique identifier for this photo request
+   * @param request - Request details including session, resolve/reject callbacks
+   */
+  registerPhotoRequest(requestId: string, request: Omit<PendingPhotoRequest, "timeoutId">): void {
+    // Set timeout at AppServer level (single source of truth)
+    const timeoutMs = 30000 // 30 seconds
     const timeoutId = setTimeout(() => {
       const pending = this.pendingPhotoRequests.get(requestId)
       if (pending) {
-        this.logger.warn({requestId, userId: pending.userId}, "📸 Photo request timed out at AppServer level")
         pending.reject(new Error("Photo request timed out"))
         this.pendingPhotoRequests.delete(requestId)
+        this.logger.warn({requestId}, "📸 Photo request timed out")
       }
-    }, 30000)
+    }, timeoutMs)
 
     this.pendingPhotoRequests.set(requestId, {
-      ...params,
-      timestamp: Date.now(),
+      ...request,
       timeoutId,
     })
 
-    return requestId
+    this.logger.debug(
+      {requestId, userId: request.userId, sessionId: request.sessionId},
+      "📸 Photo request registered at AppServer level",
+    )
   }
 
   /**
-   * 📸 Complete a photo request and remove it from the pending map.
-   * Called by the /photo-upload HTTP endpoint when a response (success or error) arrives.
+   * Get a pending photo request by ID.
+   *
+   * @param requestId - The request ID to look up
+   * @returns The pending request, or undefined if not found
    */
-  public completePhotoRequest(requestId: string): PendingPhotoRequest | undefined {
+  getPhotoRequest(requestId: string): PendingPhotoRequest | undefined {
+    return this.pendingPhotoRequests.get(requestId)
+  }
+
+  /**
+   * Complete a photo request (success or error).
+   * Clears the timeout and removes from the pending map.
+   *
+   * @param requestId - The request ID to complete
+   * @returns The pending request that was completed, or undefined if not found
+   */
+  completePhotoRequest(requestId: string): PendingPhotoRequest | undefined {
     const pending = this.pendingPhotoRequests.get(requestId)
     if (pending) {
       if (pending.timeoutId) {
         clearTimeout(pending.timeoutId)
       }
       this.pendingPhotoRequests.delete(requestId)
+      this.logger.debug({requestId}, "📸 Photo request completed")
     }
     return pending
   }
 
   /**
-   * 🧹 Clean up all pending photo requests for a specific session.
-   * Called when a session is permanently ended.
+   * Clean up all pending photo requests for a session.
+   * Called when a session permanently disconnects.
+   *
+   * @param sessionId - The session ID to clean up requests for
    */
-  private cleanupPhotoRequestsForSession(sessionId: string): void {
-    for (const [requestId, pending] of this.pendingPhotoRequests.entries()) {
+  cleanupPhotoRequestsForSession(sessionId: string): void {
+    let cleanedCount = 0
+    for (const [requestId, pending] of this.pendingPhotoRequests) {
       if (pending.sessionId === sessionId) {
         if (pending.timeoutId) {
           clearTimeout(pending.timeoutId)
         }
-        pending.reject(new Error("Session ended while photo request was pending"))
+        pending.reject(new Error("Session ended"))
         this.pendingPhotoRequests.delete(requestId)
+        cleanedCount++
+        this.logger.debug({requestId, sessionId}, "📸 Photo request cleaned up (session ended)")
       }
+    }
+    if (cleanedCount > 0) {
+      this.logger.info({sessionId, cleanedCount}, "📸 Cleaned up photo requests for ended session")
     }
   }
 
@@ -522,6 +563,40 @@ export class AppServer extends Hono<{Variables: AuthVariables}> {
     const {sessionId, userId, mentraOSWebsocketUrl, augmentOSWebsocketUrl} = request
     this.logger.info({userId}, `🗣️ Received session request for user ${userId}, session ${sessionId}\n\n`)
 
+    // Check for existing session (user might be switching clouds)
+    // If an existing session exists, we need to clean it up properly to avoid:
+    // 1. Orphaned sessions with open WebSockets
+    // 2. Cleanup handlers that corrupt the new session's map entries
+    // See: cloud/issues/018-app-disconnect-resurrection
+    const existingSession = this.activeSessions.get(sessionId)
+    if (existingSession) {
+      this.logger.info(
+        {sessionId, userId},
+        `🔄 Existing session found for ${sessionId} - sending OWNERSHIP_RELEASE and disconnecting before new connection`,
+      )
+
+      try {
+        // Send OWNERSHIP_RELEASE to tell the old cloud not to resurrect this app
+        // The old cloud will mark the app as DORMANT instead of trying to restart it
+        await existingSession.releaseOwnership("switching_clouds")
+      } catch (error) {
+        this.logger.warn({error, sessionId}, `⚠️ Failed to send OWNERSHIP_RELEASE to old session - continuing anyway`)
+      }
+
+      try {
+        // Disconnect the old session explicitly
+        existingSession.disconnect()
+      } catch (error) {
+        this.logger.warn({error, sessionId}, `⚠️ Failed to disconnect old session - continuing anyway`)
+      }
+
+      // Remove from maps immediately (don't wait for cleanup handler)
+      this.activeSessions.delete(sessionId)
+      this.activeSessionsByUserId.delete(userId)
+
+      this.logger.info({sessionId, userId}, `✅ Old session cleaned up, proceeding with new connection`)
+    }
+
     // Create new App session
     const session = new AppSession({
       packageName: this.config.packageName,
@@ -534,42 +609,96 @@ export class AppServer extends Hono<{Variables: AuthVariables}> {
     // Setup session event handlers
     const cleanupDisconnect = session.events.onDisconnected((info) => {
       // Determine if this is a permanent disconnect
-      const isPermanent = typeof info === "object" && (info.permanent === true || info.sessionEnded === true)
+      // Permanent disconnects happen when:
+      // 1. User session ends (sessionEnded === true)
+      // 2. Reconnection attempts exhausted (permanent === true)
+      // 3. Clean WebSocket closure (1000/1001) - no reconnection will be attempted
+      // Temporary disconnects (abnormal closures like 1006 that trigger reconnection) should NOT remove session from maps
+      // See: cloud/issues/019-sdk-photo-request-architecture
+      let isPermanent = false
+      let reason = "unknown"
 
+      // Handle different disconnect info formats (string or object)
       if (typeof info === "string") {
         this.logger.info(`👋 Session ${sessionId} disconnected: ${info}`)
+        reason = info
+        // String-only disconnects are typically temporary (e.g., "WebSocket closed")
+        isPermanent = false
       } else {
         this.logger.info(
           `👋 Session ${sessionId} disconnected: ${info.message} (code: ${info.code}, reason: ${info.reason})`,
         )
+        reason = info.reason || info.message
 
         if (info.sessionEnded === true) {
           this.logger.info(`🛑 User session ended for session ${sessionId}, calling onStop`)
+          isPermanent = true
+
+          // Call onStop with session end reason
+          // This allows apps to clean up resources when the user's session ends
           this.onStop(sessionId, userId, "User session ended").catch((error) => {
             this.logger.error(error, `❌ Error in onStop handler for session end:`)
           })
-        } else if (info.permanent === true) {
+        }
+        // Check if this is a permanent disconnection after exhausted reconnection attempts
+        else if (info.permanent === true) {
           this.logger.info(`🛑 Permanent disconnection detected for session ${sessionId}, calling onStop`)
+          isPermanent = true
+
+          // Call onStop with a reconnection failure reason
           this.onStop(sessionId, userId, `Connection permanently lost: ${info.reason}`).catch((error) => {
             this.logger.error(error, `❌ Error in onStop handler for permanent disconnection:`)
           })
         }
+        // Check if this is a clean WebSocket closure (1000/1001) that won't trigger reconnection
+        // These are intentional disconnects (app shutdown, manual stop, etc.)
+        // AppSession skips reconnection for these codes, so we must treat them as permanent
+        // to avoid zombie sessions in activeSessions map
+        else if (info.wasClean === true || info.code === 1000 || info.code === 1001) {
+          this.logger.info(
+            `🛑 Clean WebSocket closure for session ${sessionId} (code: ${info.code}), treating as permanent`,
+          )
+          isPermanent = true
+
+          // Call onStop for clean disconnects too
+          this.onStop(sessionId, userId, `Clean disconnect: ${reason}`).catch((error) => {
+            this.logger.error(error, `❌ Error in onStop handler for clean disconnect:`)
+          })
+        }
       }
 
-      // Only remove session and clean up photo requests on permanent disconnect
+      // Only remove session and clean up photo requests on PERMANENT disconnects
+      // Temporary disconnects should leave the session in place so:
+      // 1. Photo uploads can still find the pending request
+      // 2. The session can be reused after reconnection
+      // See: cloud/issues/019-sdk-photo-request-architecture
       if (isPermanent) {
+        // Remove the session from active sessions ONLY if this session is still the active one.
+        // This prevents a bug where an old session's cleanup handler deletes a newer session:
+        // 1. User switches from Cloud A to Cloud B
+        // 2. SDK creates sessionB, overwrites activeSessions[sessionId]
+        // 3. sessionA is orphaned but its cleanup handler still references sessionId
+        // 4. When Cloud A disposes, sessionA's cleanup fires and would delete sessionB
+        // By checking identity (===), we only delete if we're still the current session.
+        // See: cloud/issues/018-app-disconnect-resurrection
         if (this.activeSessions.get(sessionId) === session) {
           this.activeSessions.delete(sessionId)
+        } else {
+          this.logger.debug({sessionId}, `🔄 Session ${sessionId} cleanup skipped - a newer session has taken over`)
         }
         if (this.activeSessionsByUserId.get(userId) === session) {
           this.activeSessionsByUserId.delete(userId)
         }
 
-        // Clean up pending photo requests for this session
+        // Clean up any pending photo requests for this session
         this.cleanupPhotoRequestsForSession(sessionId)
       } else {
         // Temporary disconnect - session stays in maps for reconnection
-        this.logger.debug({sessionId}, "🔄 Temporary disconnect, session stays in maps for reconnection")
+        // Photo requests remain pending and can still be fulfilled
+        this.logger.debug(
+          {sessionId, reason},
+          `🔄 Temporary disconnect for session ${sessionId}, keeping in maps for reconnection`,
+        )
       }
     })
 
@@ -727,19 +856,34 @@ export class AppServer extends Hono<{Variables: AuthVariables}> {
   /**
    * 🧹 Cleanup
    * Closes all active sessions and runs cleanup handlers.
-   * Releases ownership before disconnecting to enable clean handoffs (no resurrection).
+   * Does NOT release ownership - we want the cloud to resurrect when we come back up.
+   *
+   * OWNERSHIP_RELEASE should only be sent for:
+   * - switching_clouds: User moved to another cloud, don't compete
+   * - user_logout: User explicitly logged out
+   *
+   * NOT for clean_shutdown, because:
+   * - Server is restarting/redeploying
+   * - Cloud should resurrect the app (trigger webhook)
+   * - User expects their app to keep running
+   *
+   * See: cloud/issues/023-disposed-appsession-resurrection-bug
    */
   private async cleanup(): Promise<void> {
-    // Close all active sessions with ownership release for clean handoff
+    this.logger.info(`🔧 [LOCAL SDK] cleanup() called - NOT sending OWNERSHIP_RELEASE`)
+    // Close all active sessions WITHOUT releasing ownership
+    // This allows the cloud to resurrect apps when we come back up
     for (const [sessionId, session] of this.activeSessions) {
-      this.logger.info(`👋 Closing session ${sessionId} with ownership release`)
+      this.logger.info(`👋 Closing session ${sessionId} (no ownership release - cloud will resurrect)`)
       try {
+        // Just disconnect, don't release ownership
+        // The cloud will enter grace period and then resurrect via webhook
         await session.disconnect({
-          releaseOwnership: true,
-          reason: "clean_shutdown",
+          releaseOwnership: false,
         })
       } catch (error) {
         this.logger.error(error, `Error during cleanup of session ${sessionId}`)
+        // Still try to disconnect even if release fails
         try {
           await session.disconnect()
         } catch {
@@ -774,7 +918,6 @@ export class AppServer extends Hono<{Variables: AuthVariables}> {
         const hasPhotoFile = !!photoFile
         const successValue = typeof body.success === "string" ? body.success : undefined
         const isExplicitError = type === "photo_error" || successValue === "false"
-        const isSuccess = hasPhotoFile || (!isExplicitError && successValue !== "false")
 
         this.logger.info(
           {requestId, type, hasPhotoFile, isExplicitError, rawSuccess: body.success},
@@ -789,8 +932,14 @@ export class AppServer extends Hono<{Variables: AuthVariables}> {
         // Complete the request (O(1) lookup and cleanup)
         const pending = this.completePhotoRequest(requestId)
         if (!pending) {
-          this.logger.warn({requestId}, "📸 No pending request found for photo (possibly timed out or already handled)")
-          return c.json({success: false, error: "No pending request found"}, 404)
+          this.logger.warn(
+            {requestId, pendingCount: this.pendingPhotoRequests.size},
+            "📸 No pending request found for photo (may have timed out or session ended)",
+          )
+          return c.json(
+            {success: false, error: "No pending request found for this photo (may have timed out or session ended)"},
+            404,
+          )
         }
 
         // Handle error response: only if explicitly marked as error AND no photo file
@@ -818,6 +967,11 @@ export class AppServer extends Hono<{Variables: AuthVariables}> {
 
         // Read file buffer
         const buffer = Buffer.from(await photoFile.arrayBuffer())
+
+        this.logger.info(
+          {requestId, size: photoFile.size, mimeType: photoFile.type},
+          "📸 Photo received successfully, resolving promise",
+        )
 
         // Deliver photo data to the original requester
         pending.resolve({

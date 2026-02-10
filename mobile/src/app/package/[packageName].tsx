@@ -14,7 +14,7 @@ export default function LoadingScreen() {
       <View style={themed($mainContainer)}>
         <View style={themed($infoContainer)}>
           {/* <View style={themed($iconContainer)}>
-            <Icon name="check-circle" size={80} color={theme.colors.palette.primary500} />
+            <Icon name="check-circle" size={80} color={theme.colors.secondary_foreground} />
           </View> */}
 
           {/* <Text style={themed($title)}>{getStatusTitle()}</Text> */}

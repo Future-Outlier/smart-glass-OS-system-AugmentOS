@@ -11,18 +11,16 @@ import BrightnessSetting from "@/components/settings/BrightnessSetting"
 import {Group} from "@/components/ui/Group"
 import {RouteButton} from "@/components/ui/RouteButton"
 import {Spacer} from "@/components/ui/Spacer"
-import {useCoreStatus} from "@/contexts/CoreStatusProvider"
 import {useNavigationHistory} from "@/contexts/NavigationHistoryContext"
 import {useAppTheme} from "@/contexts/ThemeContext"
 import {translate} from "@/i18n/translate"
-import {useApplets} from "@/stores/applets"
+import {useApplets, useAppletStatusStore} from "@/stores/applets"
 import {useGlassesStore} from "@/stores/glasses"
 import {SETTINGS, useSetting} from "@/stores/settings"
 import showAlert from "@/utils/AlertUtils"
 
 export default function DeviceSettings() {
   const {theme} = useAppTheme()
-  const {status} = useCoreStatus()
   const [defaultWearable] = useSetting(SETTINGS.default_wearable.key)
   const [autoBrightness, setAutoBrightness] = useSetting(SETTINGS.auto_brightness.key)
   const [brightness, setBrightness] = useSetting(SETTINGS.brightness.key)
@@ -30,7 +28,7 @@ export default function DeviceSettings() {
     SETTINGS.default_button_action_enabled.key,
   )
   const [defaultButtonActionApp, setDefaultButtonActionApp] = useSetting(SETTINGS.default_button_action_app.key)
-  const glassesConnected = useGlassesStore(state => state.connected)
+  const glassesConnected = useGlassesStore((state) => state.connected)
 
   const {push, goBack} = useNavigationHistory()
   const applets = useApplets()
@@ -39,9 +37,10 @@ export default function DeviceSettings() {
   // Check if we have any advanced settings to show
   const hasMicrophoneSelector = glassesConnected && defaultWearable && features?.hasMicrophone
 
-  const wifiLocalIp = useGlassesStore(state => state.wifiSsid)
-  const bluetoothName = useGlassesStore(state => state.bluetoothName)
-  const buildNumber = useGlassesStore(state => state.buildNumber)
+  const wifiLocalIp = useGlassesStore((state) => state.wifiSsid)
+  const bluetoothName = useGlassesStore((state) => state.bluetoothName)
+  const buildNumber = useGlassesStore((state) => state.buildNumber)
+  const otaProgress = useGlassesStore((state) => state.otaProgress)
 
   const hasDeviceInfo = Boolean(bluetoothName || buildNumber || wifiLocalIp)
 
@@ -54,6 +53,7 @@ export default function DeviceSettings() {
         {
           text: "Unpair",
           onPress: () => {
+            useAppletStatusStore.getState().stopAllApplets()
             CoreModule.forget()
             goBack()
           },
@@ -99,9 +99,9 @@ export default function DeviceSettings() {
         {defaultWearable && (features?.display?.count ?? 0 > 1) && (
           <RouteButton
             icon={<Icon name="locate" size={24} color={theme.colors.secondary_foreground} />}
-            label={translate("settings:screenSettings")}
+            label={translate("settings:positionSettings")}
             // subtitle={translate("settings:screenDescription")}
-            onPress={() => push("/settings/screen")}
+            onPress={() => push("/settings/position")}
           />
         )}
         {/* Only show dashboard settings if glasses have display capability */}
@@ -160,7 +160,7 @@ export default function DeviceSettings() {
           icon={<Icon name="wifi" size={24} color={theme.colors.secondary_foreground} />}
           label={translate("settings:glassesWifiSettings")}
           onPress={() => {
-            push("/pairing/glasseswifisetup", {deviceModel: defaultWearable || "Glasses"})
+            push("/wifi/scan")
           }}
         />
       )}
@@ -169,7 +169,7 @@ export default function DeviceSettings() {
 
       {/* OTA Progress Section - Only show for Mentra Live glasses */}
       {glassesConnected && defaultWearable.includes(DeviceTypes.LIVE) && (
-        <OtaProgressSection otaProgress={status.ota_progress} />
+        <OtaProgressSection otaProgress={otaProgress} />
       )}
 
       <Group title={translate("deviceSettings:general")}>

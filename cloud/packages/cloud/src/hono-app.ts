@@ -40,6 +40,12 @@ import {
   consoleOrgsApi,
   consoleAppsApi,
   cliKeysApi,
+  // Store APIs (MentraOS Store website)
+  storeAppsApi,
+  storeAuthApi,
+  storeUserApi,
+  // System App APIs (app management with API key auth)
+  systemAppApi,
 } from "./api/hono";
 
 // Hono Legacy routes (migrated from Express)
@@ -51,7 +57,7 @@ import onboardingRoutes from "./api/hono/routes/onboarding.routes";
 import permissionsRoutes from "./api/hono/routes/permissions.routes";
 import photosRoutes from "./api/hono/routes/photos.routes";
 import galleryRoutes from "./api/hono/routes/gallery.routes";
-import userDataRoutes from "./api/hono/routes/user-data.routes";
+
 import streamsRoutes from "./api/hono/routes/streams.routes";
 import hardwareRoutes from "./api/hono/routes/hardware.routes";
 import toolsRoutes from "./api/hono/routes/tools.routes";
@@ -131,6 +137,10 @@ app.use(async (c, next) => {
   const status = c.res.status;
   const responseContentType = c.res.headers.get("content-type");
 
+  // Capture userId from auth middleware (populated during next())
+  // This enables filtering by user in Better Stack
+  const userId = c.get("email") || c.get("console")?.email || undefined;
+
   // Build comprehensive log data for Better Stack
   const logData = {
     // Request identification
@@ -154,9 +164,10 @@ app.use(async (c, next) => {
     referer,
     origin,
 
-    // Auth info (safe)
+    // Auth info (safe) - userId enables user-centric debugging in Better Stack
     hasAuth,
     authType,
+    userId,
 
     // Categorization for Better Stack filtering
     service: "hono-http",
@@ -263,6 +274,21 @@ cliRouter.route("/orgs", consoleOrgsApi);
 app.route("/api/cli", cliRouter);
 
 // ============================================================================
+// Store API Routes (MentraOS Store website)
+// ============================================================================
+
+// Store routes handle their own auth internally (mixed public/authenticated)
+app.route("/api/store", storeAppsApi);
+app.route("/api/store/auth", storeAuthApi);
+app.route("/api/store/user", storeUserApi);
+
+// ============================================================================
+// System App API Routes (app management with API key auth)
+// ============================================================================
+
+app.route("/api/sdk/system-app", systemAppApi);
+
+// ============================================================================
 // Legacy Routes (migrated from Express)
 // ============================================================================
 
@@ -292,9 +318,6 @@ app.route("/api/photos", photosRoutes);
 
 // Gallery routes
 app.route("/api/gallery", galleryRoutes);
-
-// User data routes
-app.route("/api/user-data", userDataRoutes);
 
 // Streams routes
 app.route("/api/streams", streamsRoutes);
@@ -348,7 +371,7 @@ app.get("/uploads/*", async (c) => {
       return new Response(file);
     }
     return c.json({ error: "File not found" }, 404);
-  } catch (error) {
+  } catch (_error) {
     return c.json({ error: "Error serving file" }, 500);
   }
 });

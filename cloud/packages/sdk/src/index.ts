@@ -215,6 +215,8 @@ export type {
   ToolSchema,
   ToolParameterSchema,
   HardwareRequirement,
+  PreviewImage,
+  PhotoOrientation,
 } from "./types/models"
 
 // Export RTMP streaming types

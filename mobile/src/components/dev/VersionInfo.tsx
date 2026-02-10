@@ -6,8 +6,7 @@ import Toast from "react-native-toast-message"
 import {Text} from "@/components/ignite"
 import {useAppTheme} from "@/contexts/ThemeContext"
 import {translate} from "@/i18n"
-import socketComms from "@/services/SocketComms"
-import udpAudioService from "@/services/UdpAudioService"
+import udp from "@/services/UdpManager"
 import {SETTINGS, useSetting} from "@/stores/settings"
 import {ThemedStyle} from "@/theme"
 import showAlert from "@/utils/AlertUtils"
@@ -25,8 +24,8 @@ export const VersionInfo = () => {
     if (!devMode) return
 
     const updateAudioTransport = () => {
-      if (socketComms.isUdpAudioEnabled()) {
-        const endpoint = udpAudioService.getEndpoint()
+      if (udp.enabledAndReady()) {
+        const endpoint = udp.getEndpoint()
         setAudioTransport(endpoint ? `udp @ ${endpoint}` : "udp")
       } else {
         setAudioTransport("websocket")

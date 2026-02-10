@@ -6,7 +6,7 @@ import {WebView} from "react-native-webview"
 
 import {MentraLogoStandalone} from "@/components/brands/MentraLogoStandalone"
 import {Text, Screen, Header} from "@/components/ignite"
-import InternetConnectionFallbackComponent from "@/components/misc/InternetConnectionFallbackComponent"
+import InternetConnectionFallbackComponent from "@/components/ui/InternetConnectionFallbackComponent"
 import {useAppStoreWebviewPrefetch} from "@/contexts/AppStoreContext"
 import {useNavigationHistory} from "@/contexts/NavigationHistoryContext"
 import {useAppTheme} from "@/contexts/ThemeContext"
@@ -148,7 +148,7 @@ export default function AppStoreWeb() {
       <Screen preset="fixed">
         <Header leftTx="store:title" RightActionComponent={<MentraLogoStandalone />} />
         <View style={[themed($loadingContainer), {marginHorizontal: -theme.spacing.s4}]}>
-          <ActivityIndicator size="large" color={theme.colors.primary} />
+          <ActivityIndicator size="large" color={theme.colors.foreground} />
           <Text text="Preparing App Store..." style={themed($loadingText)} />
         </View>
       </Screen>
@@ -183,7 +183,7 @@ export default function AppStoreWeb() {
             setIsAuthReady(true)
           }}
           onError={handleError}
-          onNavigationStateChange={navState => setCanGoBack(navState.canGoBack)}
+          onNavigationStateChange={(navState) => setCanGoBack(navState.canGoBack)}
           onMessage={handleWebViewMessage}
           javaScriptEnabled={true}
           domStorageEnabled={true}
@@ -213,7 +213,7 @@ export default function AppStoreWeb() {
         {/* Loading overlay - stays visible until store confirms auth ready */}
         {!isAuthReady && (
           <View style={themed($loadingOverlay)}>
-            <ActivityIndicator size="large" color={theme.colors.primary} />
+            <ActivityIndicator size="large" color={theme.colors.foreground} />
             <Text text="Loading App Store..." style={themed($loadingText)} />
           </View>
         )}

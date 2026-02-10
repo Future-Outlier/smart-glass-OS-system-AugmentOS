@@ -7,6 +7,7 @@ import {Platform} from "react-native"
 // import {useAuth} from "@/contexts/AuthContext"
 import {NavObject, useNavigationHistory} from "@/contexts/NavigationHistoryContext"
 import mentraAuth from "@/utils/auth/authClient"
+import {BackgroundTimer} from "@/utils/timers"
 
 export interface DeepLinkRoute {
   pattern: string
@@ -31,7 +32,7 @@ const deepLinkRoutes: DeepLinkRoute[] = [
   {
     pattern: "/home",
     handler: (url: string, params: Record<string, string>, navObject: NavObject) => {
-      navObject.replace("/(tabs)/home")
+      navObject.replaceAll("/home")
     },
     requiresAuth: true, // Require auth for explicit /home navigation
   },
@@ -40,7 +41,7 @@ const deepLinkRoutes: DeepLinkRoute[] = [
   {
     pattern: "/settings",
     handler: (url: string, params: Record<string, string>, navObject: NavObject) => {
-      navObject.push("/(tabs)/settings")
+      navObject.push("/settings")
     },
     requiresAuth: true,
   },
@@ -64,7 +65,7 @@ const deepLinkRoutes: DeepLinkRoute[] = [
       if (route) {
         navObject.push(route as any)
       } else {
-        navObject.push("/(tabs)/settings")
+        navObject.push("/settings")
       }
     },
     requiresAuth: true,
@@ -74,7 +75,7 @@ const deepLinkRoutes: DeepLinkRoute[] = [
   {
     pattern: "/glasses",
     handler: async (url: string, params: Record<string, string>, navObject: NavObject) => {
-      navObject.push("/(tabs)/glasses")
+      navObject.push("/glasses")
     },
     requiresAuth: true,
   },
@@ -104,7 +105,7 @@ const deepLinkRoutes: DeepLinkRoute[] = [
         "prep": "/pairing/prep",
         "bluetooth": "/pairing/bluetooth",
         "select-glasses": "/pairing/select-glasses-model",
-        "wifi-setup": "/pairing/glasseswifisetup",
+        "wifi-setup": "/wifi/scan",
       }
 
       const route = pairingRoutes[step]
@@ -144,16 +145,16 @@ const deepLinkRoutes: DeepLinkRoute[] = [
 
   // Authentication routes
   {
-    pattern: "/auth/login",
+    pattern: "/auth/start",
     handler: (url: string, params: Record<string, string>, navObject: NavObject) => {
-      navObject.replace("/auth/login")
+      navObject.replaceAll("/auth/start")
     },
   },
   {
     pattern: "/auth/callback",
     handler: async (url: string, params: Record<string, string>, navObject: NavObject) => {
-      console.log("[LOGIN DEBUG] params:", params)
-      console.log("[LOGIN DEBUG] url:", url)
+      // console.log("[LOGIN DEBUG] params:", params)
+      // console.log("[LOGIN DEBUG] url:", url)
 
       const parseAuthParams = (url: string) => {
         const parts = url.split("#")
@@ -166,11 +167,22 @@ const deepLinkRoutes: DeepLinkRoute[] = [
           token_type: params.get("token_type"),
           expires_in: params.get("expires_in"),
           type: params.get("type"), // signup, email_change, recovery, etc.
-          // Add any other parameters you might need
+          // Error params (when link is expired/invalid)
+          error: params.get("error"),
+          error_code: params.get("error_code"),
+          error_description: params.get("error_description"),
         }
       }
 
       const authParams = parseAuthParams(url)
+
+      // Check if there's an error in the URL (e.g., expired verification link)
+      if (authParams?.error || authParams?.error_code) {
+        console.log("[LOGIN DEBUG] Error in auth callback:", authParams.error_code, authParams.error_description)
+        // Navigate to login with the error code so login screen can show the message
+        navObject.replace(`/auth/start?authError=${authParams.error_code || authParams.error}`)
+        return
+      }
 
       if (authParams && authParams.access_token && authParams.refresh_token) {
         // Update the Supabase session manually
@@ -201,11 +213,14 @@ const deepLinkRoutes: DeepLinkRoute[] = [
         }
 
         // Small delay to ensure auth state propagates
+        // Use replace() instead of replaceAll() to avoid POP_TO_TOP errors
+        // when the navigation stack is empty (coming back from browser)
         console.log("[LOGIN DEBUG] About to set timeout for navigation")
-        setTimeout(() => {
-          console.log("[LOGIN DEBUG] Inside setTimeout, about to call router.replace('/')")
+        BackgroundTimer.setTimeout(() => {
+          console.log("[LOGIN DEBUG] Inside setTimeout, navigating to index")
           try {
-            navObject.replace("/")
+            navObject.setAnimation("none")
+            navObject.replaceAll("/")
             console.log("[LOGIN DEBUG] router.replace called successfully")
           } catch (navError) {
             console.error("[LOGIN DEBUG] Error calling router.replace:", navError)
@@ -258,7 +273,7 @@ const deepLinkRoutes: DeepLinkRoute[] = [
       if (authParams?.error || authParams?.error_code) {
         console.log("[RESET PASSWORD DEBUG] Error in reset link:", authParams.error_code, authParams.error_description)
         // Navigate to login with the error code so login screen can show the message
-        navObject.replace(`/auth/login?authError=${authParams.error_code || authParams.error}`)
+        navObject.replace(`/auth/start?authError=${authParams.error_code || authParams.error}`)
         return
       }
 
@@ -270,7 +285,7 @@ const deepLinkRoutes: DeepLinkRoute[] = [
         })
         if (res.is_error()) {
           console.error("[RESET PASSWORD DEBUG] Error setting recovery session:", res.error)
-          navObject.replace("/auth/login?authError=invalid_reset_link")
+          navObject.replace("/auth/start?authError=invalid_reset_link")
           return
         }
 
@@ -279,7 +294,7 @@ const deepLinkRoutes: DeepLinkRoute[] = [
         navObject.replace("/auth/reset-password")
       } else {
         console.log("[RESET PASSWORD DEBUG] Missing required auth parameters for password reset")
-        navObject.replace("/auth/login?authError=invalid_reset_link")
+        navObject.replace("/auth/start?authError=invalid_reset_link")
       }
     },
   },
@@ -331,7 +346,7 @@ const deepLinkRoutes: DeepLinkRoute[] = [
     pattern: "/package/:packageName",
     handler: async (url: string, params: Record<string, string>, navObject: NavObject) => {
       const {packageName} = params
-      navObject.push(`/(tabs)/store?packageName=${packageName}`)
+      navObject.push(`/store?packageName=${packageName}`)
     },
     requiresAuth: true,
   },
@@ -362,7 +377,8 @@ const DeeplinkContext = createContext<DeeplinkContextType>({} as DeeplinkContext
 export const useDeeplink = () => useContext(DeeplinkContext)
 
 export const DeeplinkProvider: FC<{children: ReactNode}> = ({children}) => {
-  const {push, replace, goBack, setPendingRoute, getPendingRoute, navigate} = useNavigationHistory()
+  const {push, replace, goBack, setPendingRoute, getPendingRoute, navigate, replaceAll, preventBack, setAnimation} =
+    useNavigationHistory()
   const config = {
     scheme: "com.mentra",
     host: "apps.mentra.glass",
@@ -382,10 +398,10 @@ export const DeeplinkProvider: FC<{children: ReactNode}> = ({children}) => {
     fallbackHandler: (url: string) => {
       console.warn("Fallback handler called for URL:", url)
       setTimeout(() => {
-        push("/auth/login")
+        replaceAll("/auth/start")
       }, 100)
     },
-    navObject: {push, replace, goBack, setPendingRoute, getPendingRoute},
+    navObject: {push, replace, goBack, setPendingRoute, getPendingRoute, navigate, replaceAll, preventBack},
   }
 
   const handleUrlRaw = async ({url}: {url: string}) => {
@@ -394,7 +410,7 @@ export const DeeplinkProvider: FC<{children: ReactNode}> = ({children}) => {
 
   useEffect(() => {
     Linking.addEventListener("url", handleUrlRaw)
-    Linking.getInitialURL().then(url => {
+    Linking.getInitialURL().then((url) => {
       console.log("@@@@@@@@@@@@@ INITIAL URL @@@@@@@@@@@@@@@", url)
       if (url) {
         processUrl(url, true)
@@ -462,7 +478,7 @@ export const DeeplinkProvider: FC<{children: ReactNode}> = ({children}) => {
     try {
       // Add delay to ensure Root Layout is mounted
       if (initial) {
-        await new Promise(resolve => setTimeout(resolve, 1000))
+        await new Promise((resolve) => setTimeout(resolve, 1000))
       }
 
       console.log("[LOGIN DEBUG] Deep link received:", url)
@@ -490,7 +506,7 @@ export const DeeplinkProvider: FC<{children: ReactNode}> = ({children}) => {
         setPendingRoute(url)
         setTimeout(() => {
           try {
-            replace("/auth/login")
+            replace("/auth/start")
           } catch (error) {
             console.warn("Navigation failed, router may not be ready:", error)
           }
@@ -510,7 +526,18 @@ export const DeeplinkProvider: FC<{children: ReactNode}> = ({children}) => {
         console.log("@@@@@@@@@@@@@ MATCHED ROUTE @@@@@@@@@@@@@@@", matchedRoute)
         console.log("@@@@@@@@@@@@@ PARAMS @@@@@@@@@@@@@@@", params)
         console.log("@@@@@@@@@@@@@ URL @@@@@@@@@@@@@@@", url)
-        await matchedRoute.handler(url, params, {push, replace, goBack, setPendingRoute, getPendingRoute, navigate})
+        const navObject: NavObject = {
+          push,
+          replace,
+          goBack,
+          setPendingRoute,
+          getPendingRoute,
+          navigate,
+          replaceAll,
+          preventBack,
+          setAnimation,
+        }
+        await matchedRoute.handler(url, params, navObject)
       } catch (error) {
         console.warn("Route handler failed, router may not be ready:", error)
       }

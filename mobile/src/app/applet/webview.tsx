@@ -4,8 +4,8 @@ import {View, BackHandler} from "react-native"
 import {WebView} from "react-native-webview"
 
 import {Header, Screen, Text} from "@/components/ignite"
-import InternetConnectionFallbackComponent from "@/components/misc/InternetConnectionFallbackComponent"
-import LoadingOverlay from "@/components/misc/LoadingOverlay"
+import InternetConnectionFallbackComponent from "@/components/ui/InternetConnectionFallbackComponent"
+import LoadingOverlay from "@/components/ui/LoadingOverlay"
 import {useNavigationHistory} from "@/contexts/NavigationHistoryContext"
 import {useAppTheme} from "@/contexts/ThemeContext"
 import restComms from "@/services/RestComms"
@@ -205,7 +205,7 @@ export default function AppWebView() {
           retry={() => {
             // Reset state and retry token generation
             setTokenError(null)
-            setRetryTrigger(prev => prev + 1) // Trigger useEffect to retry
+            setRetryTrigger((prev) => prev + 1) // Trigger useEffect to retry
           }}
           message={tokenError}
         />
@@ -233,7 +233,7 @@ export default function AppWebView() {
 
   // Render WebView only when finalUrl is ready
   return (
-    <Screen preset="fixed" safeAreaEdges={["bottom"]}>
+    <Screen preset="fixed" KeyboardAvoidingViewProps={{enabled: false}}>
       <Header
         title={appName}
         titleMode="center"
@@ -267,6 +267,9 @@ export default function AppWebView() {
               // Show loading overlay while WebView itself loads
               <LoadingOverlay message={`Loading ${appName}...`} />
             )}
+            // allow inline media playback:
+            allowsInlineMediaPlayback={true}
+            mediaPlaybackRequiresUserAction={false}
             // Disable zooming and scaling
             scalesPageToFit={false}
             scrollEnabled={true}

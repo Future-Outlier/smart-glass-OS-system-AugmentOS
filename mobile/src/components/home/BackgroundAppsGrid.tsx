@@ -2,7 +2,7 @@ import {useCallback, useMemo} from "react"
 import {FlatList, TextStyle, TouchableOpacity, View, ViewStyle} from "react-native"
 
 import {Text} from "@/components/ignite"
-import AppIcon from "@/components/misc/AppIcon"
+import AppIcon from "@/components/home/AppIcon"
 import {useNavigationHistory} from "@/contexts/NavigationHistoryContext"
 import {useAppTheme} from "@/contexts/ThemeContext"
 import {
@@ -25,7 +25,7 @@ export const BackgroundAppsGrid = () => {
 
   const gridData = useMemo(() => {
     // Filter out incompatible apps and running apps
-    let inactiveApps = inactive.filter(app => {
+    let inactiveApps = inactive.filter((app) => {
       if (!app.compatibility?.isCompatible) {
         return false
       }
@@ -103,7 +103,7 @@ export const BackgroundAppsGrid = () => {
       <FlatList
         data={gridData}
         renderItem={renderItem}
-        keyExtractor={item => item.packageName}
+        keyExtractor={(item) => item.packageName}
         numColumns={GRID_COLUMNS}
         scrollEnabled={false}
         showsVerticalScrollIndicator={false}

@@ -22,6 +22,16 @@ export interface ConnectionAck extends BaseMessage {
     roomName: string;
     token: string;
   };
+  /**
+   * UDP encryption info - only present if client requested encryption via ?udpEncryption=true
+   * Client uses this symmetric key to encrypt UDP audio packets with secretbox
+   */
+  udpEncryption?: {
+    /** Symmetric key for XSalsa20-Poly1305 encryption (base64 encoded, 32 bytes) */
+    key: string;
+    /** Encryption algorithm being used */
+    algorithm: "xsalsa20-poly1305";
+  };
 }
 
 /**
@@ -89,6 +99,8 @@ export interface PhotoRequestToGlasses extends BaseMessage {
   size?: "small" | "medium" | "large" | "full";
   /** Image compression level: none, medium, or heavy */
   compress?: "none" | "medium" | "heavy";
+  /** Silent mode: disables LED flash and shutter sound when true. Cloud-controlled based on packageName. */
+  silent?: boolean;
 }
 
 /**

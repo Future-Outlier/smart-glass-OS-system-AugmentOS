@@ -22,7 +22,7 @@ export default function ResetPasswordScreen() {
   const [isValidToken, setIsValidToken] = useState(false)
 
   const {theme, themed} = useAppTheme()
-  const {goBack, replace} = useNavigationHistory()
+  const {goBack, replaceAll} = useNavigationHistory()
 
   const passwordsMatch = newPassword === confirmPassword && newPassword.length > 0
   const isFormValid = passwordsMatch && newPassword.length >= 6
@@ -37,7 +37,7 @@ export default function ResetPasswordScreen() {
     if (res.is_error()) {
       // No valid session, redirect back to login
       showAlert(translate("common:error"), translate("login:invalidResetLink"))
-      replace("/auth/login")
+      replaceAll("/auth/start")
       return
     }
     const session = res.value
@@ -75,7 +75,7 @@ export default function ResetPasswordScreen() {
       setIsLoading(false)
       await mentraAuth.signOut()
       showAlert(translate("login:passwordResetSuccess"), translate("login:redirectingToLogin"), [
-        {text: translate("common:ok"), onPress: () => replace("/auth/login")},
+        {text: translate("common:ok"), onPress: () => replaceAll("/auth/start")},
       ])
       return
     }
@@ -89,14 +89,14 @@ export default function ResetPasswordScreen() {
       console.error("Error auto-logging in after password reset:", res2.error)
       await mentraAuth.signOut()
       showAlert(translate("login:passwordResetSuccess"), translate("login:redirectingToLogin"), [
-        {text: translate("common:ok"), onPress: () => replace("/auth/login")},
+        {text: translate("common:ok"), onPress: () => replaceAll("/auth/start")},
       ])
       return
     }
 
     // Auto-login succeeded
     showAlert(translate("login:passwordResetSuccess"), translate("login:loggingYouIn"), [
-      {text: translate("common:ok"), onPress: () => replace("/")},
+      {text: translate("common:ok"), onPress: () => replaceAll("/")},
     ])
   }
 
@@ -104,7 +104,7 @@ export default function ResetPasswordScreen() {
     return (
       <Screen preset="fixed">
         <View style={{flex: 1, justifyContent: "center", alignItems: "center"}}>
-          <ActivityIndicator size="large" color={theme.colors.tint} />
+          <ActivityIndicator size="large" color={theme.colors.foreground} />
           <Spacer height={spacing.s4} />
           <Text tx="login:verifyingResetLink" />
         </View>
@@ -203,7 +203,7 @@ export default function ResetPasswordScreen() {
               disabled={!isFormValid || isLoading}
               {...(isLoading && {
                 LeftAccessory: () => (
-                  <ActivityIndicator size="small" color={theme.colors.textAlt} style={{marginRight: 8}} />
+                  <ActivityIndicator size="small" color={theme.colors.foreground} style={{marginRight: 8}} />
                 ),
               })}
             />

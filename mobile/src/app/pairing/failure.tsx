@@ -16,7 +16,7 @@ export default function PairingFailureScreen() {
   const {themed, theme} = useAppTheme()
   const {clearHistory, replace, clearHistoryAndGoHome} = useNavigationHistory()
 
-  const {error, glassesModelName}: {error: string; glassesModelName?: string} = useLocalSearchParams()
+  const {error, deviceModel}: {error: string; deviceModel?: string} = useLocalSearchParams()
 
   const fadeInOpacity = useSharedValue(0)
   const slideUpTranslate = useSharedValue(50)
@@ -53,13 +53,13 @@ export default function PairingFailureScreen() {
         <Text tx="pairing:pairingFailed" preset="heading" style={themed($title)} />
 
         <Text
-          text={translate(error as TxKeyPath, {glassesModel: glassesModelName || "glasses"})}
+          text={translate(error as TxKeyPath, {glassesModel: deviceModel || "glasses"})}
           preset="default"
           style={themed($description)}
         />
 
         <View style={themed($buttonContainer)}>
-          <Button tx="pairing:tryAgain" preset="primary" onPress={handleRetry} style={themed($button)} />
+          <Button tx="common:tryAgain" preset="primary" onPress={handleRetry} style={themed($button)} />
 
           <Button tx="pairing:goHome" preset="alternate" onPress={handleGoHome} style={themed($button)} />
         </View>
