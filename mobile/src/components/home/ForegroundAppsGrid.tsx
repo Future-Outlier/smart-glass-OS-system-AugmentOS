@@ -3,7 +3,6 @@ import {FlatList, TextStyle, TouchableOpacity, View, ViewStyle} from "react-nati
 
 import {Text} from "@/components/ignite"
 import AppIcon from "@/components/home/AppIcon"
-import {useNavigationHistory} from "@/contexts/NavigationHistoryContext"
 import {useAppTheme} from "@/contexts/ThemeContext"
 import {
   ClientAppletInterface,
@@ -20,7 +19,6 @@ export const ForegroundAppsGrid: React.FC = () => {
   const {themed, theme} = useAppTheme()
   const foregroundApps = useInactiveForegroundApps()
   const startApplet = useStartApplet()
-  const {push} = useNavigationHistory()
 
   const gridData = useMemo(() => {
     // Filter out incompatible apps and running apps
@@ -65,8 +63,6 @@ export const ForegroundAppsGrid: React.FC = () => {
     if (result !== 1) {
       return
     }
-
-    push("/store")
 
     startApplet(app.packageName)
   }
