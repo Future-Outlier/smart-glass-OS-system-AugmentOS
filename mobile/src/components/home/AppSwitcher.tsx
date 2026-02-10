@@ -394,10 +394,9 @@ export default function AppSwitcher({visible, onClose}: AppSwitcherProps) {
 
       {/* Main Container */}
       <Animated.View className="flex-1 justify-center" style={containerStyle}>
-        {/* Header hint */}
-        <View className="absolute top-[60px] left-0 right-0 items-center">
+        {/* <View className="absolute top-[60px] left-0 right-0 items-center">
           <Text className="text-white/50 text-sm font-medium" tx="appSwitcher:swipeUpToClose" />
-        </View>
+        </View> */}
 
         {/* Cards Carousel */}
         {apps.length > 0 ? (
