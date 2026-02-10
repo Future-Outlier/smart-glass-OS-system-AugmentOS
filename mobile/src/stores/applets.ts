@@ -157,7 +157,7 @@ const getOfflineApplets = async (): Promise<ClientAppletInterface[]> => {
     {
       packageName: galleryPackageName,
       name: translate("miniApps:gallery"),
-      type: "standard", // Foreground app (only one at a time)
+      type: "background", // Foreground app (only one at a time)
       offline: true, // Works without internet connection
       logoUrl: require("@assets/applet-icons/gallery.png"),
       local: false,
@@ -174,7 +174,7 @@ const getOfflineApplets = async (): Promise<ClientAppletInterface[]> => {
     {
       packageName: settingsPackageName,
       name: translate("miniApps:settings"),
-      type: "standard", // Foreground app (only one at a time)
+      type: "background", // Foreground app (only one at a time)
       offline: true, // Works without internet connection
       logoUrl: require("@assets/applet-icons/settings.png"),
       local: false,
@@ -199,7 +199,7 @@ const getOfflineApplets = async (): Promise<ClientAppletInterface[]> => {
       running: false,
       loading: false,
       hardwareRequirements: [],
-      type: "standard",
+      type: "background",
       logoUrl: require("@assets/applet-icons/store.png"),
       local: false,
       onStart: () => saveLocalAppRunningState(storePackageName, true),
@@ -233,7 +233,7 @@ export const getMoreAppsApplet = (): ClientAppletInterface => {
     running: false,
     loading: false,
     hardwareRequirements: [],
-    type: "standard",
+    type: "background",
     logoUrl: require("@assets/applet-icons/store.png"),
     local: false,
   }
@@ -275,7 +275,7 @@ const startStopOfflineApplet = (applet: ClientAppletInterface, status: boolean):
   })
 }
 
-let refreshTimeout: ReturnType<typeof setTimeout> | null = null
+let refreshTimeout: ReturnType<typeof BackgroundTimer.setTimeout> | null = null
 // actually turn on or off an applet:
 const startStopApplet = (applet: ClientAppletInterface, status: boolean): AsyncResult<void, Error> => {
   // Offline apps don't need to wait for server confirmation

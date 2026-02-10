@@ -55,53 +55,6 @@ export default function AppWebView() {
     handleExit()
   })
 
-  // // Handle Android back button
-  // useFocusEffect(
-  //   useCallback(() => {
-  //     const onBackPress = () => {
-  //       // Go back to previous screen
-  //       handleExit().then(() => {
-  //         goBack()
-  //       })
-  //       return true
-  //     }
-
-  //     const subscription = BackHandler.addEventListener("hardwareBackPress", onBackPress)
-
-  //     return () => {
-  //       handleExit().then(() => subscription.remove())
-  //     }
-  //   }, [goBack]),
-  // )
-
-  // Set up the header with settings button if we came from app settings
-  //   useEffect(() => {
-  //     if (fromSettings && packageName) {
-  //       navigation.setOptions({
-  //         headerRight: () => (
-  //           <View style={{ marginRight: 8 }}>
-  //             <FontAwesome.Button
-  //               name="cog"
-  //               size={22}
-  //               color={isDarkTheme ? '#FFFFFF' : '#000000'}
-  //               backgroundColor="transparent"
-  //               underlayColor="transparent"
-  //               onPress={() => {
-  //                 navigation.replace('AppSettings', {
-  //                   packageName,
-  //                   appName,
-  //                   fromWebView: true
-  //                 });
-  //               }}
-  //               style={{ padding: 0, margin: 0 }}
-  //               iconStyle={{ marginRight: 0 }}
-  //             />
-  //           </View>
-  //         )
-  //       });
-  //     }
-  //   }, [fromSettings, packageName, appName]);
-
   // Theme colors
   const theme2 = {
     backgroundColor: theme.isDark ? "#1c1c1c" : "#f9f9f9",
@@ -263,47 +216,9 @@ export default function AppWebView() {
   }
 
   // Render WebView only when finalUrl is ready
-  const insets = useSafeAreaInsets()
   return (
-    <Screen preset="fixed" KeyboardAvoidingViewProps={{enabled: false}}>
-      {/* <Header
-        // style={{position: "absolute", top: 0, flex: 1}}
-        // backgroundColor="transparent"
-        // backgroundColor={"red"}
-        leftText={appName}
-        // title={appName}
-        titleMode="center"
-        // leftIcon="chevron-left"
-        // onLeftPress={handleExit}
-        // rightIcon="settings"
-        // rightIconColor={theme.colors.icon}
-        // onRightPress={() => {
-        //   push("/applet/settings", {
-        //     packageName: packageName as string,
-        //     appName: appName as string,
-        //     fromWebView: "true",
-        //   })
-        // }}
-        // rightActionComponent={<MentraLogoStandalone />}
-        RightActionComponent={
-          <>
-            <DualButton
-              onMinusPress={handleExit}
-              onEllipsisPress={() => {
-                push("/applet/settings", {
-                  packageName: packageName as string,
-                  appName: appName as string,
-                  fromWebView: "true",
-                })
-              }}
-            />
-          </>
-        }
-        // style={{height: 44}}
-        // containerStyle={{paddingTop: 0}}
-      /> */}
-      <View style={{height: insets.top}} />
-      <View className="z-10 absolute h-13 w-full items-center justify-end flex-row" style={{top: insets.top}}>
+    <Screen preset="fixed" safeAreaEdges={["top"]} KeyboardAvoidingViewProps={{enabled: false}}>
+      <View className="z-2 absolute top-7.5 w-full items-center justify-end flex-row">
         <>
           <DualButton
             onMinusPress={handleExit}

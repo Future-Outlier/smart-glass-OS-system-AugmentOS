@@ -15,6 +15,7 @@ import {Gesture, GestureDetector} from "react-native-gesture-handler"
 import {ClientAppletInterface, useActiveApps, useAppletStatusStore} from "@/stores/applets"
 import AppIcon from "@/components/home/AppIcon"
 import {useNavigationHistory} from "@/contexts/NavigationHistoryContext"
+import {useSafeAreaInsets} from "react-native-safe-area-context"
 
 const {width: SCREEN_WIDTH, height: SCREEN_HEIGHT} = Dimensions.get("window")
 const CARD_WIDTH = SCREEN_WIDTH * 0.6
@@ -182,6 +183,7 @@ export default function AppSwitcher({visible, onClose}: AppSwitcherProps) {
   const prevTranslationX = useSharedValue(0)
   const {push} = useNavigationHistory()
   const apps = useActiveApps()
+  const insets = useSafeAreaInsets()
 
   useEffect(() => {
     if (visible) {
@@ -356,7 +358,6 @@ export default function AppSwitcher({visible, onClose}: AppSwitcherProps) {
       return
     }
 
-
     // Handle offline apps - navigate directly to React Native route
     if (applet.offline && applet.offlineRoute) {
       push(applet.offlineRoute)
@@ -380,8 +381,12 @@ export default function AppSwitcher({visible, onClose}: AppSwitcherProps) {
     return null
   }
 
+
   return (
-    <View className="absolute -mx-6 inset-0 z-[1000]" pointerEvents={visible ? "auto" : "none"}>
+    <View
+      className="absolute -mx-6 inset-0 z-[1000]"
+      pointerEvents={visible ? "auto" : "none"}
+      style={{paddingBottom: insets.bottom}}>
       {/* Blurred Backdrop */}
       <Animated.View className="absolute inset-0 bg-black/30" style={backdropStyle}>
         <Pressable className="flex-1" onPress={onClose} />

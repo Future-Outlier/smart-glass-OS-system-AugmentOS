@@ -1,6 +1,6 @@
 import {useFocusEffect} from "@react-navigation/native"
 import {useLocalSearchParams} from "expo-router"
-import {useState, useCallback, useMemo, useEffect} from "react"
+import {useState, useCallback, useMemo, useEffect, useRef} from "react"
 import {View, ViewStyle, ActivityIndicator, BackHandler, TextStyle} from "react-native"
 import {WebView} from "react-native-webview"
 
@@ -8,11 +8,13 @@ import {MentraLogoStandalone} from "@/components/brands/MentraLogoStandalone"
 import {Text, Screen, Header} from "@/components/ignite"
 import InternetConnectionFallbackComponent from "@/components/ui/InternetConnectionFallbackComponent"
 import {useAppStoreWebviewPrefetch} from "@/contexts/AppStoreContext"
-import {useNavigationHistory} from "@/contexts/NavigationHistoryContext"
+import {focusEffectPreventBack, useNavigationHistory} from "@/contexts/NavigationHistoryContext"
 import {useAppTheme} from "@/contexts/ThemeContext"
-import {useRefreshApplets} from "@/stores/applets"
+import {useAppletStatusStore, useRefreshApplets} from "@/stores/applets"
 import {ThemedStyle} from "@/theme"
-import { useSafeAreaInsets } from "react-native-safe-area-context"
+import {useSafeAreaInsets} from "react-native-safe-area-context"
+import {DualButton} from "@/components/miniapps/DualButton"
+import {captureRef} from "react-native-view-shot"
 
 export default function AppStoreWeb() {
   const [_webviewLoading, setWebviewLoading] = useState(true)
@@ -25,6 +27,27 @@ export default function AppStoreWeb() {
   const {appStoreUrl, webViewRef: prefetchedWebviewRef} = useAppStoreWebviewPrefetch()
   const refreshApplets = useRefreshApplets()
   const {theme, themed} = useAppTheme()
+  const {goBack} = useNavigationHistory()
+  const viewShotRef = useRef(null)
+  
+  const handleExit = async () => {
+    // take a screenshot of the webview and save it to the applet zustand store:
+    try {
+      const uri = await captureRef(viewShotRef, {
+        format: "jpg",
+        quality: 0.5,
+      })
+      // save uri to zustand stoare
+      await useAppletStatusStore.getState().saveScreenshot("com.mentra.store", uri)
+    } catch (e) {
+      console.warn("screenshot failed:", e)
+    }
+    goBack()
+  }
+
+  focusEffectPreventBack(() => {
+    handleExit()
+  })
 
   // Construct the final URL with packageName if provided
   const finalUrl = useMemo(() => {
@@ -168,14 +191,13 @@ export default function AppStoreWeb() {
     )
   }
 
-  const insets = useSafeAreaInsets()
-
   // If the prefetched WebView is ready, show it in the correct style
   return (
-    <Screen preset="fixed" safeAreaEdges={["top"]}>
-      {/* <Header leftTx="store:title" RightActionComponent={<MentraLogoStandalone />} /> */}
-      {/* <View style={{height: insets.top}} /> */}
-      <View style={[themed($webViewContainer), {marginHorizontal: -theme.spacing.s6}]}>
+    <Screen preset="fixed" safeAreaEdges={["top"]}> 
+      <View className="absolute top-7.5 z-2 w-full justify-end items-center flex-row">
+        <DualButton onMinusPress={() => {handleExit()}} onEllipsisPress={() => {}} />
+      </View>
+      <View style={[themed($webViewContainer), {marginHorizontal: -theme.spacing.s6}]} ref={viewShotRef}>
         {/* Show the prefetched WebView, but now visible and full size */}
         <WebView
           ref={prefetchedWebviewRef}
