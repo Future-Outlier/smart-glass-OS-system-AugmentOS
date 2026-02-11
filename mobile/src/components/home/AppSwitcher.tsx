@@ -8,7 +8,6 @@ import Animated, {
   withTiming,
   interpolate,
   Extrapolation,
-  runOnJS,
   useDerivedValue,
 } from "react-native-reanimated"
 import {Gesture, GestureDetector} from "react-native-gesture-handler"
@@ -16,6 +15,7 @@ import {ClientAppletInterface, useActiveAppPackageNames, useActiveApps, useApple
 import AppIcon from "@/components/home/AppIcon"
 import {useNavigationHistory} from "@/contexts/NavigationHistoryContext"
 import {useSafeAreaInsets} from "react-native-safe-area-context"
+import {scheduleOnRN} from "react-native-worklets"
 
 const {width: SCREEN_WIDTH, height: SCREEN_HEIGHT} = Dimensions.get("window")
 const CARD_WIDTH = SCREEN_WIDTH * 0.67
@@ -85,7 +85,7 @@ function AppCardItem({
       if (shouldDismiss) {
         translateY.value = withTiming(-SCREEN_HEIGHT, {duration: 250})
         cardOpacity.value = withTiming(0, {duration: 200}, () => {
-          runOnJS(dismissCard)()
+          scheduleOnRN(dismissCard)
         })
       } else {
         translateY.value = withSpring(0, {damping: 200, stiffness: 1000, velocity: 2})
@@ -95,7 +95,7 @@ function AppCardItem({
     })
 
   const tapGesture = Gesture.Tap().onEnd(() => {
-    runOnJS(selectCard)()
+    scheduleOnRN(selectCard)
   })
 
   const composedGesture = Gesture.Exclusive(panGesture, tapGesture)
@@ -114,7 +114,7 @@ function AppCardItem({
     }
     let power = Math.pow(lin, 1.7) * howFar
     let res = stat + power
-    
+
     let howFarPercent = (1 / (howFar / SCREEN_WIDTH)) * howFar
     let linearProgress = power / howFarPercent
     let scale = interpolate(linearProgress, [0, 0.8], [0.96, 1], Extrapolation.CLAMP)
