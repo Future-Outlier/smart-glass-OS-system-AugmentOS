@@ -1,5 +1,6 @@
 import {Icon} from "@/components/ignite"
 import {focusEffectPreventBack, useNavigationHistory} from "@/contexts/NavigationHistoryContext"
+import { useAppTheme } from "@/contexts/ThemeContext"
 import {useAppletStatusStore} from "@/stores/applets"
 import {SETTINGS, useSetting} from "@/stores/settings"
 import {useRef} from "react"
@@ -14,15 +15,16 @@ interface DualButtonProps {
 
 export function DualButton({onMinusPress, onEllipsisPress}: DualButtonProps) {
   const [isChina] = useSetting(SETTINGS.china_deployment.key)
+  const {theme} = useAppTheme()
   return (
-    <View className="flex-row gap-2 rounded-full bg-gray-100 px-2 py-1 items-center">
+    <View className="flex-row gap-2 rounded-full bg-primary-foreground px-2 py-1 items-center">
       <Pressable hitSlop={10} onPress={onEllipsisPress}>
-        <Icon name="ellipsis" />
+        <Icon name="ellipsis" color={theme.colors.foreground}/>
       </Pressable>
       <View className="h-4 w-px bg-gray-300" />
       <Pressable hitSlop={10} onPress={onMinusPress}>
         {/* outside of china, a minus likely makes more sense */}
-        <Icon name={isChina ? "x" : "minus"} />
+        <Icon name={isChina ? "x" : "minus"} color={theme.colors.foreground}/>
       </Pressable>
     </View>
   )
