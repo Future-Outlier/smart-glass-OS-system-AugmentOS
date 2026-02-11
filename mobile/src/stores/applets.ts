@@ -68,6 +68,8 @@ export const captionsPackageName = "com.mentra.captions"
 export const galleryPackageName = "com.mentra.gallery"
 export const settingsPackageName = "com.mentra.settings"
 export const storePackageName = "com.mentra.store"
+export const simulatedPackageName = "com.mentra.simulated"
+export const mirrorPackageName = "com.mentra.mirror"
 
 const saveLocalAppRunningState = (packageName: string, status: boolean): AsyncResult<void, Error> => {
   return Res.try_async(async () => {
@@ -206,12 +208,52 @@ const getOfflineApplets = async (): Promise<ClientAppletInterface[]> => {
       onStart: () => saveLocalAppRunningState(storePackageName, true),
       onStop: () => saveLocalAppRunningState(storePackageName, false),
     },
+    {
+      packageName: mirrorPackageName,
+      name: translate("miniApps:mirror"),
+      offlineRoute: "/miniapps/mirror",
+      webviewUrl: "",
+      healthy: true,
+      permissions: [],
+      offline: true,
+      running: false,
+      loading: false,
+      hardwareRequirements: [],
+      type: "background",
+      logoUrl: require("@assets/applet-icons/mirror.png"),
+      local: false,
+      onStart: () => saveLocalAppRunningState(mirrorPackageName, true),
+      onStop: () => saveLocalAppRunningState(mirrorPackageName, false),
+    },
+    // {
+    //   packageName: simulatedPackageName,
+    //   name: translate("miniApps:simulated"),
+    //   offlineRoute: "/miniapps/simulated",
+    //   webviewUrl: "",
+    //   healthy: true,
+    //   permissions: [],
+    //   offline: true,
+    //   running: false,
+    //   loading: false,
+    //   hardwareRequirements: [],
+    //   type: "background",
+    //   logoUrl: require("@assets/applet-icons/simulated.png"),
+    //   local: false,
+    //   onStart: () => saveLocalAppRunningState(simulatedPackageName, true),
+    //   onStop: () => saveLocalAppRunningState(simulatedPackageName, false),
+    // },
   ]
 
   let appSwitcherUi = useSettingsStore.getState().getSetting(SETTINGS.app_switcher_ui.key)
   if (!appSwitcherUi) {
-    // remove the settings and gallery apps:
-    miniApps = miniApps.filter((app) => app.packageName !== settingsPackageName && app.packageName !== galleryPackageName)
+    // remove the settings, gallery, and simulator apps:
+    miniApps = miniApps.filter(
+      (app) =>
+        app.packageName !== settingsPackageName &&
+        app.packageName !== galleryPackageName &&
+        app.packageName !== simulatedPackageName &&
+        app.packageName !== mirrorPackageName,
+    )
   }
 
   // check the storage for the running state of the applets and update them:

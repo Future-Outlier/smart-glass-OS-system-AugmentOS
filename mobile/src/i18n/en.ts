@@ -821,6 +821,8 @@ const en = {
     camera: "Camera",
     settings: "Settings",
     liveCaptions: "Live Captions",
+    mirror: "Glasses Mirror",
+    simulated: "Simulated Glasses",
   },
 }
 

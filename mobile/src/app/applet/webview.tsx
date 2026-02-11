@@ -13,7 +13,7 @@ import {useSettingsStore} from "@/stores/settings"
 import showAlert from "@/utils/AlertUtils"
 import {captureRef} from "react-native-view-shot"
 import {useAppletStatusStore} from "@/stores/applets"
-import {DualButton} from "@/components/miniapps/DualButton"
+import {DualButton, MiniAppDualButtonHeader} from "@/components/miniapps/DualButton"
 import {Image} from "expo-image"
 
 export default function AppWebView() {
@@ -44,23 +44,6 @@ export default function AppWebView() {
   if (typeof webviewURL !== "string" || typeof appName !== "string" || typeof packageName !== "string") {
     return <Text>Missing required parameters</Text>
   }
-
-  const handleExit = async () => {
-    try {
-      const uri = await captureRef(viewShotRef, {
-        format: "jpg",
-        quality: 0.5,
-      })
-      await useAppletStatusStore.getState().saveScreenshot(packageName, uri)
-    } catch (e) {
-      console.warn("screenshot failed:", e)
-    }
-    goBack()
-  }
-
-  focusEffectPreventBack(() => {
-    handleExit()
-  }, true)
 
   useEffect(() => {
     const generateTokenAndSetUrl = async () => {
@@ -228,18 +211,17 @@ export default function AppWebView() {
 
   return (
     <Screen preset="fixed" safeAreaEdges={["top"]} KeyboardAvoidingViewProps={{enabled: true}} ref={viewShotRef}>
-      <View className="z-2 absolute top-7.5 w-full items-center justify-end flex-row">
-        <DualButton
-          onMinusPress={handleExit}
-          onEllipsisPress={() => {
-            push("/applet/settings", {
-              packageName: packageName as string,
-              appName: appName as string,
-              fromWebView: "true",
-            })
-          }}
-        />
-      </View>
+      <MiniAppDualButtonHeader
+        packageName={packageName}
+        viewShotRef={viewShotRef}
+        onEllipsisPress={() => {
+          push("/applet/settings", {
+            packageName: packageName as string,
+            appName: appName as string,
+            fromWebView: "true",
+          })
+        }}
+      />
       <View className="flex-1 -mx-6">
         {renderLoadingOverlay()}
         {finalUrl && (

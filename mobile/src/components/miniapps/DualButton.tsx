@@ -1,11 +1,15 @@
 import {Icon} from "@/components/ignite"
+import {focusEffectPreventBack, useNavigationHistory} from "@/contexts/NavigationHistoryContext"
+import {useAppletStatusStore} from "@/stores/applets"
 import {SETTINGS, useSetting} from "@/stores/settings"
+import {useRef} from "react"
 import {View} from "react-native"
 import {Pressable} from "react-native-gesture-handler"
+import {captureRef} from "react-native-view-shot"
 
 interface DualButtonProps {
-  onMinusPress: () => void
-  onEllipsisPress: () => void
+  onMinusPress?: () => void
+  onEllipsisPress?: () => void
 }
 
 export function DualButton({onMinusPress, onEllipsisPress}: DualButtonProps) {
@@ -20,6 +24,41 @@ export function DualButton({onMinusPress, onEllipsisPress}: DualButtonProps) {
         {/* outside of china, a minus likely makes more sense */}
         <Icon name={isChina ? "x" : "minus"} />
       </Pressable>
+    </View>
+  )
+}
+
+export function MiniAppDualButtonHeader({
+  packageName,
+  viewShotRef,
+  onEllipsisPress,
+}: {
+  packageName: string
+  viewShotRef: React.RefObject<View | null>
+  onEllipsisPress?: () => void
+}) {
+  const {goBack} = useNavigationHistory()
+
+  const handleExit = async () => {
+    // take a screenshot of the webview and save it to the applet zustand store:
+    try {
+      const uri = await captureRef(viewShotRef, {
+        format: "jpg",
+        quality: 0.5,
+      })
+      // save uri to zustand stoare
+      await useAppletStatusStore.getState().saveScreenshot(packageName, uri)
+    } catch (e) {
+      console.warn("screenshot failed:", e)
+    }
+    goBack()
+  }
+  focusEffectPreventBack(() => {
+    handleExit()
+  }, true)
+  return (
+    <View className="z-2 absolute top-7.5 w-full items-center justify-end flex-row">
+      <DualButton onMinusPress={handleExit} onEllipsisPress={onEllipsisPress} />
     </View>
   )
 }

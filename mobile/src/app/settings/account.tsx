@@ -16,7 +16,7 @@ import {focusEffectPreventBack} from "@/contexts/NavigationHistoryContext"
 import {useAppletStatusStore} from "@/stores/applets"
 import {captureRef} from "react-native-view-shot"
 import {useRef} from "react"
-import {DualButton} from "@/components/miniapps/DualButton"
+import {DualButton, MiniAppDualButtonHeader} from "@/components/miniapps/DualButton"
 
 export default function AccountPage() {
   const {theme, themed} = useAppTheme()
@@ -24,33 +24,11 @@ export default function AccountPage() {
   const [devMode] = useSetting(SETTINGS.dev_mode.key)
   const [superMode] = useSetting(SETTINGS.super_mode.key)
   const [defaultWearable] = useSetting(SETTINGS.default_wearable.key)
-
-  const {goBack} = useNavigationHistory()
-  const viewShotRef = useRef(null)
-
-  const handleExit = async () => {
-    // take a screenshot of the webview and save it to the applet zustand store:
-    try {
-      const uri = await captureRef(viewShotRef, {
-        format: "jpg",
-        quality: 0.5,
-      })
-      // save uri to zustand stoare
-      await useAppletStatusStore.getState().saveScreenshot("com.mentra.settings", uri)
-    } catch (e) {
-      console.warn("screenshot failed:", e)
-    }
-    goBack()
-  }
-  focusEffectPreventBack(() => {
-    handleExit()
-  }, true)
+  const viewShotRef = useRef<View>(null)
 
   return (
     <Screen preset="fixed" safeAreaEdges={["top"]} ref={viewShotRef}>
-      <View className="z-2 absolute top-7.5 w-full items-center justify-end flex-row">
-        <DualButton onMinusPress={handleExit} onEllipsisPress={() => {}} />
-      </View>
+      <MiniAppDualButtonHeader packageName="com.mentra.settings" viewShotRef={viewShotRef} />
 
       <ScrollView style={themed($styles.scrollView)} className="pt-6" contentInsetAdjustmentBehavior="automatic">
         <ProfileCard />
