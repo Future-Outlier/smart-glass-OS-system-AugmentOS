@@ -177,7 +177,7 @@ export default function MentraLiveOnboarding() {
       poster: require("@assets/onboarding/live/thumbnails/ONB10_cord.jpg"),
       name: "Cord",
       playCount: 1,
-      transition: false,
+      transition: true,
       fadeOut: true,
       title: translate("onboarding:liveConnectCable"),
       subtitle: translate("onboarding:liveCableDescription"),

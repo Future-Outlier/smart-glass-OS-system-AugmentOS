@@ -1130,10 +1130,6 @@ struct ViewState {
         shouldSendTranscript = sendTranscript
         bypassVad = bypassVadForPCM
 
-        if offlineMode && (!shouldSendPcmData && !shouldSendTranscript) {
-            shouldSendTranscript = true
-        }
-
         micEnabled = shouldSendPcmData || shouldSendTranscript
         updateMicState()
     }
