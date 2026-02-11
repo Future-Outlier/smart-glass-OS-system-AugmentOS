@@ -77,7 +77,7 @@ export const ActiveForegroundApp: React.FC = () => {
   if (!applet) {
     // Show placeholder when no active app
     return (
-      <View style={themed($container)}>
+      <View className="min-h-22 my-2 rounded-2xl bg-primary-foreground">
         <View className="flex-row items-center justify-center flex-1">
           <Text className="text-muted-foreground text-lg" tx="home:appletPlaceholder" />
         </View>
@@ -87,7 +87,7 @@ export const ActiveForegroundApp: React.FC = () => {
 
   return (
     <TouchableOpacity
-      style={themed($container)}
+      className="bg-primary-foreground px-2 rounded-2xl flex-row justify-between items-center min-h-22 my-2 mb-2"
       onPress={handlePress}
       onLongPress={handleLongPress}
       activeOpacity={0.7}>

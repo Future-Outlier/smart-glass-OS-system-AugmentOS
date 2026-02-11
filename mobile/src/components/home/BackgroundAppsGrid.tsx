@@ -9,6 +9,7 @@ import {
   ClientAppletInterface,
   DUMMY_APPLET,
   getMoreAppsApplet,
+  storePackageName,
   useBackgroundApps,
   useStartApplet,
 } from "@/stores/applets"
@@ -51,9 +52,8 @@ export const BackgroundAppsGrid = () => {
   }, [inactive])
 
   const handlePress = async (app: ClientAppletInterface) => {
-    const getMoreApplet = getMoreAppsApplet()
-    if (app.packageName === getMoreApplet.packageName) {
-      push(getMoreApplet.offlineRoute)
+    if (app.packageName === storePackageName) {
+      push("/store")
       return
     }
 

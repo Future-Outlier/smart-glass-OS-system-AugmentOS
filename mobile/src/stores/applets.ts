@@ -209,6 +209,12 @@ const getOfflineApplets = async (): Promise<ClientAppletInterface[]> => {
     },
   ]
 
+  let appSwitcherUi = useSettingsStore.getState().getSetting(SETTINGS.app_switcher_ui.key)
+  if (!appSwitcherUi) {
+    // remove the settings and gallery apps:
+    miniApps = miniApps.filter((app) => app.packageName !== settingsPackageName && app.packageName !== galleryPackageName)
+  }
+
   // check the storage for the running state of the applets and update them:
   for (const mapp of miniApps) {
     let runningRes = await storage.load(`${mapp.packageName}_running`)
@@ -223,28 +229,16 @@ const getOfflineApplets = async (): Promise<ClientAppletInterface[]> => {
   return miniApps as ClientAppletInterface[]
 }
 
-export const getMoreAppsApplet = (): ClientAppletInterface => {
-  return {
-    packageName: "com.mentra.store",
-    name: "Get more apps",
-    offlineRoute: "/store",
-    webviewUrl: "",
-    healthy: true,
-    permissions: [],
-    offline: true,
-    running: false,
-    loading: false,
-    hardwareRequirements: [],
-    type: "background",
-    logoUrl: require("@assets/applet-icons/store.png"),
-    local: false,
-  }
-}
-
 const startStopOfflineApplet = (applet: ClientAppletInterface, status: boolean): AsyncResult<void, Error> => {
   // await useSettingsStore.getState().setSetting(packageName, status)
   return Res.try_async(async () => {
     let packageName = applet.packageName
+
+    let appSwitcherUi = useSettingsStore.getState().getSetting(SETTINGS.app_switcher_ui.key)
+    if (packageName === storePackageName && !appSwitcherUi) {
+      push("/store")
+      return
+    }
 
     if (!status && applet.onStop) {
       const result = await applet.onStop()
