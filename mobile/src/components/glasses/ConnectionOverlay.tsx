@@ -11,13 +11,20 @@ const CANCEL_BUTTON_DELAY_MS = 10000 // 10 seconds before enabling cancel button
 interface ConnectionOverlayProps {
   /** Custom title to display instead of default "Glasses are reconnecting" */
   customTitle?: string
-  /** Custom message to display instead of default reconnecting message */
+  /** Custom message to display instead of default reconnecting message. Set to empty string to hide. */
   customMessage?: string
   /** Hide the "Stop trying" button entirely */
   hideStopButton?: boolean
+  /** Use smaller title text */
+  smallTitle?: boolean
 }
 
-export function ConnectionOverlay({customTitle, customMessage, hideStopButton}: ConnectionOverlayProps = {}) {
+export function ConnectionOverlay({
+  customTitle,
+  customMessage,
+  hideStopButton,
+  smallTitle,
+}: ConnectionOverlayProps = {}) {
   const {theme} = useAppTheme()
   const {clearHistoryAndGoHome} = useNavigationHistory()
   const glassesConnected = useGlassesStore((state) => state.connected)
@@ -66,15 +73,20 @@ export function ConnectionOverlay({customTitle, customMessage, hideStopButton}: 
         <View className="rounded-2xl p-8 mx-6 items-center" style={{backgroundColor: theme.colors.background}}>
           <ActivityIndicator size="large" color={theme.colors.foreground} />
           {customTitle ? (
-            <Text className="text-xl font-semibold text-text text-center mt-6 mb-2" text={customTitle} />
+            <Text
+              className={`${smallTitle ? "text-base" : "text-xl"} font-semibold text-text text-center mt-6 mb-2`}
+              text={customTitle}
+            />
           ) : (
             <Text
               className="text-xl font-semibold text-text text-center mt-6 mb-2"
               tx="glasses:glassesAreReconnecting"
             />
           )}
-          {customMessage ? (
-            <Text className="text-base text-text-dim text-center mb-6" text={customMessage} />
+          {customMessage !== undefined ? (
+            customMessage ? (
+              <Text className="text-base text-text-dim text-center mb-6" text={customMessage} />
+            ) : null
           ) : (
             <Text className="text-base text-text-dim text-center mb-6" tx="glasses:glassesAreReconnectingMessage" />
           )}

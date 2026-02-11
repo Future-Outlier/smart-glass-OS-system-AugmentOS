@@ -36,6 +36,7 @@ interface VideoStep extends BaseStep {
   containerClassName?: string
   replayable?: boolean
   showButtonImmediately?: boolean // Show the continue/end button immediately without waiting for video to finish
+  buttonTimeoutMs?: number // Fallback timeout to show button if video doesn't finish (ms)
 }
 
 interface ImageStep extends BaseStep {
@@ -109,6 +110,7 @@ export function OnboardingGuide({
   const [exitRequested, setExitRequested] = useState(false)
   const [showStepSkipButton, setShowStepSkipButton] = useState(false)
   const stepSkipTimeoutRef = useRef<number | null>(null)
+  const buttonFallbackTimeoutRef = useRef<number | null>(null)
 
   // Fade animation state
   const fadeOpacity = useRef(new Animated.Value(1)).current
@@ -792,6 +794,33 @@ export function OnboardingGuide({
       }
     }
   }, [step.waitFn])
+
+  // Fallback timeout to show button if video doesn't finish
+  useEffect(() => {
+    if (buttonFallbackTimeoutRef.current) {
+      BackgroundTimer.clearTimeout(buttonFallbackTimeoutRef.current)
+      buttonFallbackTimeoutRef.current = null
+    }
+
+    if (!hasStarted || step.transition || step.waitFn || showNextButton) {
+      return
+    }
+
+    const timeoutMs = step.type === "video" ? step.buttonTimeoutMs : undefined
+    if (timeoutMs) {
+      buttonFallbackTimeoutRef.current = BackgroundTimer.setTimeout(() => {
+        console.log("ONBOARD: button fallback timeout triggered")
+        setShowNextButton(true)
+      }, timeoutMs)
+    }
+
+    return () => {
+      if (buttonFallbackTimeoutRef.current) {
+        BackgroundTimer.clearTimeout(buttonFallbackTimeoutRef.current)
+        buttonFallbackTimeoutRef.current = null
+      }
+    }
+  }, [currentIndex, hasStarted, step, showNextButton])
 
   const renderContinueButton = () => {
     // let showLoader = (waitState && step.waitFn) || !showNextButton

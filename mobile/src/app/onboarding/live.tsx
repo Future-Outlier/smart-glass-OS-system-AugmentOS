@@ -183,6 +183,7 @@ export default function MentraLiveOnboarding() {
       subtitle: translate("onboarding:liveCableDescription"),
       info: translate("onboarding:liveCableInfo"),
       replayable: false,
+      buttonTimeoutMs: 5000,
       // waitFn: (): Promise<void> => {
       //   return new Promise<void>((resolve) => {
       //     // Check if already charging
