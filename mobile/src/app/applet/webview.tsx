@@ -4,21 +4,17 @@ import {View} from "react-native"
 import {WebView} from "react-native-webview"
 import Animated, {useSharedValue, useAnimatedStyle, withTiming} from "react-native-reanimated"
 
-import {Header, Screen, Text} from "@/components/ignite"
+import {Screen, Text} from "@/components/ignite"
 import InternetConnectionFallbackComponent from "@/components/ui/InternetConnectionFallbackComponent"
 import LoadingOverlay from "@/components/ui/LoadingOverlay"
 import {focusEffectPreventBack, useNavigationHistory} from "@/contexts/NavigationHistoryContext"
-import {useAppTheme} from "@/contexts/ThemeContext"
 import restComms from "@/services/RestComms"
 import {useSettingsStore} from "@/stores/settings"
 import showAlert from "@/utils/AlertUtils"
 import {captureRef} from "react-native-view-shot"
 import {useAppletStatusStore} from "@/stores/applets"
 import {DualButton} from "@/components/miniapps/DualButton"
-import {useSafeAreaInsets} from "react-native-safe-area-context"
 import {Image} from "expo-image"
-
-const AnimatedWebView = Animated.createAnimatedComponent(WebView)
 
 export default function AppWebView() {
   const {webviewURL, appName, packageName} = useLocalSearchParams()
@@ -64,7 +60,7 @@ export default function AppWebView() {
 
   focusEffectPreventBack(() => {
     handleExit()
-  })
+  }, true)
 
   useEffect(() => {
     const generateTokenAndSetUrl = async () => {

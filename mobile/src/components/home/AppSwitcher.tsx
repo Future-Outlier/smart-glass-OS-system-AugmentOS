@@ -122,6 +122,7 @@ function AppCardItem({
     // account for scaling of the card:
     let offset = (1 - scale) * cardWidth
     res = res - offset * animIndex
+    // scale = 1
 
     return {
       transform: [{translateY: translateY.value}, {scale: scale}, {translateX: res}],

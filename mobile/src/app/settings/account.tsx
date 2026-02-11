@@ -2,9 +2,8 @@ import {Platform, View} from "react-native"
 import {ScrollView} from "react-native-gesture-handler"
 
 import {ProfileCard} from "@/components/account/ProfileCard"
-import {MentraLogoStandalone} from "@/components/brands/MentraLogoStandalone"
 import {VersionInfo} from "@/components/dev/VersionInfo"
-import {Header, Icon, Screen} from "@/components/ignite"
+import {Icon, Screen} from "@/components/ignite"
 import {Group} from "@/components/ui/Group"
 import {RouteButton} from "@/components/ui/RouteButton"
 import {Spacer} from "@/components/ui/Spacer"
@@ -43,10 +42,9 @@ export default function AccountPage() {
     }
     goBack()
   }
-
   focusEffectPreventBack(() => {
     handleExit()
-  })
+  }, true)
 
   return (
     <Screen preset="fixed" safeAreaEdges={["top"]} ref={viewShotRef}>

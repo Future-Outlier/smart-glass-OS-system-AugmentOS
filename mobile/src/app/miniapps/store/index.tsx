@@ -47,7 +47,7 @@ export default function AppStoreWeb() {
 
   focusEffectPreventBack(() => {
     handleExit()
-  })
+  }, true)
 
   // Construct the final URL with packageName if provided
   const finalUrl = useMemo(() => {

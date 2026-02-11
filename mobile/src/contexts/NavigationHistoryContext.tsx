@@ -1,6 +1,6 @@
 import {router, useFocusEffect, usePathname, useSegments, useNavigation} from "expo-router"
 import {createContext, useContext, useEffect, useRef, useCallback, useState} from "react"
-import {BackHandler} from "react-native"
+import {BackHandler, Platform} from "react-native"
 import {CommonActions} from "@react-navigation/native"
 
 import {navigationRef} from "@/contexts/NavigationRef"
@@ -503,18 +503,41 @@ export function useNavigationHistory() {
 }
 
 // screens that call this function will prevent the back button from being pressed:
-export const focusEffectPreventBack = (androidBackFn?: () => void) => {
+export const focusEffectPreventBack = (backFn?: () => void, iosDontPreventBack?: boolean) => {
   const {incPreventBack, decPreventBack, setAndroidBackFn} = useNavigationHistory()
+  const navigation = useNavigation()
+
+
+  // hook into the back button on ios:
+  if (Platform.OS === "ios") {
+    useFocusEffect(
+      useCallback(() => {
+        const unsubscribe = navigation.addListener("beforeRemove", (e) => {
+          // Fires when back gesture starts or back button is pressed
+          console.log("navigating back")
+          backFn?.()
+        })
+        return () => {
+          unsubscribe()
+        }
+      }, [backFn]),
+    )
+  }
+
+  // don't prevent back on ios if iosDontPreventBack is true:
+  if (iosDontPreventBack && Platform.OS === "ios") {
+    return
+  }
 
   useFocusEffect(
     useCallback(() => {
       incPreventBack()
-      if (androidBackFn) {
-        setAndroidBackFn(androidBackFn)
+      if (backFn) {
+        setAndroidBackFn(backFn)
       }
       return () => {
         decPreventBack()
       }
-    }, [incPreventBack, decPreventBack]),
+    }, [incPreventBack, decPreventBack, backFn]),
   )
 }
