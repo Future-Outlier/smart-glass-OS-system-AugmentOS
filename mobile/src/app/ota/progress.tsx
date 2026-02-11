@@ -1014,6 +1014,7 @@ export default function OtaProgressScreen() {
         customTitle: "Please wait while Mentra Live restarts and automatically reconnects...",
         customMessage: "",
         hideStopButton: true,
+        smallTitle: true,
       })
     } else {
       clearConfig()

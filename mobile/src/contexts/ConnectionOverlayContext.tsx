@@ -25,7 +25,13 @@ interface OverlayConfigState {
   customTitle: string | null
   customMessage: string | null
   hideStopButton: boolean
-  setConfig: (config: {customTitle?: string | null; customMessage?: string | null; hideStopButton?: boolean}) => void
+  smallTitle: boolean
+  setConfig: (config: {
+    customTitle?: string | null
+    customMessage?: string | null
+    hideStopButton?: boolean
+    smallTitle?: boolean
+  }) => void
   clearConfig: () => void
 }
 
@@ -33,13 +39,15 @@ export const useConnectionOverlayConfig = create<OverlayConfigState>((set) => ({
   customTitle: null,
   customMessage: null,
   hideStopButton: false,
+  smallTitle: false,
   setConfig: (config) =>
     set((state) => ({
       customTitle: config.customTitle !== undefined ? config.customTitle : state.customTitle,
       customMessage: config.customMessage !== undefined ? config.customMessage : state.customMessage,
       hideStopButton: config.hideStopButton !== undefined ? config.hideStopButton : state.hideStopButton,
+      smallTitle: config.smallTitle !== undefined ? config.smallTitle : state.smallTitle,
     })),
-  clearConfig: () => set({customTitle: null, customMessage: null, hideStopButton: false}),
+  clearConfig: () => set({customTitle: null, customMessage: null, hideStopButton: false, smallTitle: false}),
 }))
 
 function GlobalConnectionOverlay() {
@@ -47,7 +55,7 @@ function GlobalConnectionOverlay() {
   const {clearHistoryAndGoHome} = useNavigationHistory()
   const pathname = usePathname()
   const glassesConnected = useGlassesStore((state) => state.connected)
-  const {customTitle, customMessage, hideStopButton} = useConnectionOverlayConfig()
+  const {customTitle, customMessage, hideStopButton, smallTitle} = useConnectionOverlayConfig()
 
   const [showOverlay, setShowOverlay] = useState(false)
   const [cancelButtonEnabled, setCancelButtonEnabled] = useState(false)
@@ -97,15 +105,20 @@ function GlobalConnectionOverlay() {
         <View className="rounded-2xl p-8 mx-6 items-center" style={{backgroundColor: theme.colors.background}}>
           <ActivityIndicator size="large" color={theme.colors.foreground} />
           {customTitle ? (
-            <Text className="text-xl font-semibold text-text text-center mt-6 mb-2" text={customTitle} />
+            <Text
+              className={`${smallTitle ? "text-base" : "text-xl"} font-semibold text-text text-center mt-6 mb-2`}
+              text={customTitle}
+            />
           ) : (
             <Text
               className="text-xl font-semibold text-text text-center mt-6 mb-2"
               tx="glasses:glassesAreReconnecting"
             />
           )}
-          {customMessage ? (
-            <Text className="text-base text-text-dim text-center mb-6" text={customMessage} />
+          {customMessage !== undefined && customMessage !== null ? (
+            customMessage ? (
+              <Text className="text-base text-text-dim text-center mb-6" text={customMessage} />
+            ) : null
           ) : (
             <Text className="text-base text-text-dim text-center mb-6" tx="glasses:glassesAreReconnectingMessage" />
           )}
