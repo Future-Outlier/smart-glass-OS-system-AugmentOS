@@ -21,7 +21,6 @@ import {Image} from "expo-image"
 const AnimatedWebView = Animated.createAnimatedComponent(WebView)
 
 export default function AppWebView() {
-  const {theme} = useAppTheme()
   const {webviewURL, appName, packageName} = useLocalSearchParams()
   const [hasError, setHasError] = useState(false)
   const webViewRef = useRef<WebView>(null)
@@ -132,15 +131,19 @@ export default function AppWebView() {
   }, [packageName, webviewURL, appName, retryTrigger])
 
   const handleLoadStart = () => {
+    // android tries to load the webview twice for some reason, and this does nothning so it's safe to disable:
+    console.log("WEBVIEW: handleLoadStart()")
     // Reset states when starting to load
-    setIsWebViewReady(false)
-    webViewOpacity.value = 0
-    loadingOpacity.value = 1
+    // setIsWebViewReady(false)
+    // webViewOpacity.value = 0
+    // loadingOpacity.value = 1
   }
 
   const handleLoadEnd = () => {
+    console.log("WEBVIEW: handleLoadEnd()")
     setHasError(false)
     setIsWebViewReady(true)
+    setIsLoadingToken(false)
 
     // Fade in WebView, fade out loading
     webViewOpacity.value = withTiming(1, {duration: 200})
@@ -148,6 +151,7 @@ export default function AppWebView() {
   }
 
   const handleError = (syntheticEvent: any) => {
+    console.log("WEBVIEW: handleError()")
     const {nativeEvent} = syntheticEvent
     console.warn("WebView error: ", nativeEvent)
     setHasError(true)
@@ -192,22 +196,6 @@ export default function AppWebView() {
         pointerEvents={isWebViewReady ? "none" : "auto"}>
         {screenshot || <LoadingOverlay message={`Loading ${appName}...`} />}
       </Animated.View>
-    )
-  }
-
-  if (isLoadingToken) {
-    let screenshot = screenshotComponent()
-    if (screenshot) {
-      return (
-        <Screen preset="fixed" safeAreaEdges={["top"]} KeyboardAvoidingViewProps={{enabled: true}} ref={viewShotRef}>
-          <View className="flex-1 -mx-6 bg-background">{screenshot}</View>
-        </Screen>
-      )
-    }
-    return (
-      <View className="flex-1 bg-background">
-        <LoadingOverlay message={`Preparing secure access to ${appName}...`} />
-      </View>
     )
   }
 
@@ -257,39 +245,35 @@ export default function AppWebView() {
         />
       </View>
       <View className="flex-1 -mx-6">
-        {finalUrl ? (
-          <>
-            <Animated.View className="flex-1" style={[webViewAnimatedStyle]}>
-              <WebView
-                ref={webViewRef}
-                source={{uri: finalUrl}}
-                style={{flex: 1}}
-                onLoadStart={handleLoadStart}
-                onLoadEnd={handleLoadEnd}
-                onError={handleError}
-                javaScriptEnabled={true}
-                domStorageEnabled={true}
-                startInLoadingState={false}
-                allowsInlineMediaPlayback={true}
-                mediaPlaybackRequiresUserAction={false}
-                scalesPageToFit={false}
-                scrollEnabled={true}
-                bounces={false}
-                automaticallyAdjustContentInsets={false}
-                contentInsetAdjustmentBehavior="never"
-                injectedJavaScript={`
+        {renderLoadingOverlay()}
+        {finalUrl && (
+          <Animated.View className="flex-1" style={[webViewAnimatedStyle]}>
+            <WebView
+              ref={webViewRef}
+              source={{uri: finalUrl}}
+              style={{flex: 1}}
+              onLoadStart={handleLoadStart}
+              onLoadEnd={handleLoadEnd}
+              onError={handleError}
+              javaScriptEnabled={true}
+              domStorageEnabled={true}
+              startInLoadingState={false}
+              allowsInlineMediaPlayback={true}
+              mediaPlaybackRequiresUserAction={false}
+              scalesPageToFit={false}
+              scrollEnabled={true}
+              bounces={false}
+              automaticallyAdjustContentInsets={false}
+              contentInsetAdjustmentBehavior="never"
+              injectedJavaScript={`
                   const meta = document.createElement('meta');
                   meta.setAttribute('name', 'viewport');
                   meta.setAttribute('content', 'width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no');
                   document.getElementsByTagName('head')[0].appendChild(meta);
                   true;
                 `}
-              />
-            </Animated.View>
-            {renderLoadingOverlay()}
-          </>
-        ) : (
-          <LoadingOverlay message="Preparing..." />
+            />
+          </Animated.View>
         )}
       </View>
     </Screen>

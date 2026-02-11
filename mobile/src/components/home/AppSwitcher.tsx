@@ -105,7 +105,8 @@ function AppCardItem({
 
     let cardWidth = CARD_WIDTH + CARD_SPACING
     // let stat = -animIndex * cardWidth
-    let stat = -index * cardWidth // use real index for stat!!
+    // let stat = -index * cardWidth // use real index for stat!!
+    let stat = 0
 
     let howFar = SCREEN_WIDTH / 4
     let lin = translateX.value / cardWidth + animIndex
@@ -137,6 +138,8 @@ function AppCardItem({
             width: CARD_WIDTH,
             height: CARD_HEIGHT, // - 16,
             // zIndex: -index,// to reverse stack order
+            position: "absolute",
+            left: 0,
           },
           cardAnimatedStyle,
         ]}>
