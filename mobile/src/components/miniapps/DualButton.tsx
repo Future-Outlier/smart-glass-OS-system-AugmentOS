@@ -3,7 +3,6 @@ import {focusEffectPreventBack, useNavigationHistory} from "@/contexts/Navigatio
 import { useAppTheme } from "@/contexts/ThemeContext"
 import {useAppletStatusStore} from "@/stores/applets"
 import {SETTINGS, useSetting} from "@/stores/settings"
-import {useRef} from "react"
 import {View} from "react-native"
 import {Pressable} from "react-native-gesture-handler"
 import {captureRef} from "react-native-view-shot"
