@@ -55,7 +55,7 @@ export default function PairingSuccessScreen() {
       }
       newStack.push("/ota/check-for-updates")
       if (!onboardingOsCompleted) {
-        newStack.push("/onboarding/os")
+        // newStack.push("/onboarding/os")
       }
       newStack.push("/onboarding/live")
 
@@ -64,7 +64,7 @@ export default function PairingSuccessScreen() {
     }
     if (deviceModel === DeviceTypes.G1) {
       if (!onboardingOsCompleted) {
-        newStack.push("/onboarding/os")
+        // newStack.push("/onboarding/os")
       }
     }
     setStack(newStack)
