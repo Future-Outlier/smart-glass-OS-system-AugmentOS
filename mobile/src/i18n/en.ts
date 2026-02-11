@@ -177,7 +177,7 @@ const en = {
     liveTakeAPhoto: "Take a photo",
     livePressActionButton: "Press the action button once",
     liveStopRecording: "Stop recording",
-    livePressAndHoldAgain: "Press and hold the action button again",
+    livePressAndHoldAgain: "Press the action button again",
     liveLedFlashWarning: "The LED flash turns on when the camera turns on",
     liveStartRecording: "Start recording",
     livePressAndHold: "Press and hold the action button for 3 seconds",
