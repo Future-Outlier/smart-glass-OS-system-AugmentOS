@@ -26,21 +26,23 @@ const IGNORED_LOGS = [
   /The action 'POP_TO_TOP' was not handled/,
 ]
 
-LogBox.ignoreLogs(IGNORED_LOGS);
+LogBox.ignoreLogs(IGNORED_LOGS)
 
 if (__DEV__) {
-  const withoutIgnored = (logger: any) => (...args: any[]) => {
-    const output = args.join(' ');
+  const withoutIgnored =
+    (logger: any) =>
+    (...args: any[]) => {
+      const output = args.join(" ")
 
-    if (!IGNORED_LOGS.some(log => log.test(output))) {
-      logger(...args);
+      if (!IGNORED_LOGS.some((log) => log.test(output))) {
+        logger(...args)
+      }
     }
-  };
 
-  console.log = withoutIgnored(console.log);
-  console.info = withoutIgnored(console.info);
-  console.warn = withoutIgnored(console.warn);
-  console.error = withoutIgnored(console.error);
+  console.log = withoutIgnored(console.log)
+  console.info = withoutIgnored(console.info)
+  console.warn = withoutIgnored(console.warn)
+  console.error = withoutIgnored(console.error)
 }
 
 SentrySetup()

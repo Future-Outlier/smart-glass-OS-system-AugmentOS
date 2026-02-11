@@ -7,7 +7,6 @@ import {useNavigationHistory} from "@/contexts/NavigationHistoryContext"
 import {useAppTheme} from "@/contexts/ThemeContext"
 import {useGlassesStore} from "@/stores/glasses"
 import WifiCredentialsService from "@/utils/wifi/WifiCredentialsService"
-import {ConnectionOverlay} from "@/components/glasses/ConnectionOverlay"
 import {MentraLogoStandalone} from "@/components/brands/MentraLogoStandalone"
 import {translate} from "@/i18n"
 
@@ -18,7 +17,7 @@ export default function WifiConnectingScreen() {
   const password = (params.password as string) || ""
   const rememberPassword = (params.rememberPassword as string) === "true"
   const returnTo = params.returnTo as string | undefined
-  const nextRoute = params.nextRoute as string | undefined
+  const _nextRoute = params.nextRoute as string | undefined
 
   const {theme} = useAppTheme()
   const [connectionStatus, setConnectionStatus] = useState<"connecting" | "success" | "failed">("connecting")
@@ -26,7 +25,7 @@ export default function WifiConnectingScreen() {
   const connectionTimeoutRef = useRef<number | null>(null)
   const failureGracePeriodRef = useRef<number | null>(null)
 
-  const {goBack, navigate, pushPrevious} = useNavigationHistory()
+  const {goBack, getHistory, pushPrevious, push} = useNavigationHistory()
   const wifiConnected = useGlassesStore((state) => state.wifiConnected)
   const wifiSsid = useGlassesStore((state) => state.wifiSsid)
 
@@ -108,8 +107,25 @@ export default function WifiConnectingScreen() {
   }
 
   const handleSuccess = useCallback(() => {
-    pushPrevious(2) // pop the entire stack
-  }, [nextRoute, returnTo, navigate])
+    const history = getHistory()
+    // Check if OTA check-for-updates is already in the stack (initial pairing flow)
+    const otaIndex = history.indexOf("/ota/check-for-updates")
+
+    if (otaIndex !== -1) {
+      // OTA is in the stack - calculate how many screens to pop to get there
+      // pushPrevious(n) removes (n+2) screens from top and goes to that position
+      const currentIndex = history.length - 1
+      const screensToSkip = currentIndex - otaIndex - 1
+      console.log(
+        `WiFi success: OTA found at index ${otaIndex}, current at ${currentIndex}, skipping ${screensToSkip} screens`,
+      )
+      pushPrevious(screensToSkip)
+    } else {
+      // OTA not in stack (home OTA alert flow) - push it
+      console.log("WiFi success: OTA not in stack, pushing /ota/check-for-updates")
+      push("/ota/check-for-updates")
+    }
+  }, [getHistory, pushPrevious, push])
 
   const handleHeaderBack = useCallback(() => {
     goBack()
@@ -172,7 +188,6 @@ export default function WifiConnectingScreen() {
       ) : (
         <Header />
       )}
-      <ConnectionOverlay />
       {renderContent()}
     </Screen>
   )

@@ -76,6 +76,10 @@ class MentraNexSGC: NSObject, CBCentralManagerDelegate, CBPeripheralDelegate, SG
 
     func exit() {}
 
+    func sendShutdown() {}
+
+    func sendReboot() {}
+
     func sendRgbLedControl(
         requestId _: String, packageName _: String?, action _: String, color _: String?, ontime _: Int,
         offtime _: Int, count _: Int
@@ -108,6 +112,10 @@ class MentraNexSGC: NSObject, CBCentralManagerDelegate, CBPeripheralDelegate, SG
     @objc static func requiresMainQueueSetup() -> Bool { true }
 
     func sendGalleryMode() {}
+
+    func requestVersionInfo() {
+        Bridge.log("MentraNex: requestVersionInfo - not supported on MentraNex")
+    }
 
     // MARK: - Properties
 

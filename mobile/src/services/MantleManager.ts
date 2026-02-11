@@ -1,4 +1,4 @@
-import CoreModule, {CoreStatus, GlassesStatus} from "core"
+import CoreModule, {ButtonPressEvent, CoreStatus, GlassesStatus} from "core"
 import * as Calendar from "expo-calendar"
 import * as Location from "expo-location"
 import * as TaskManager from "expo-task-manager"
@@ -139,9 +139,12 @@ class MantleManager {
   private async setupPeriodicTasks() {
     this.sendCalendarEvents()
     // Calendar sync every hour
-    this.calendarSyncTimer = setInterval(() => {
-      this.sendCalendarEvents()
-    }, 60 * 60 * 1000) // 1 hour
+    this.calendarSyncTimer = setInterval(
+      () => {
+        this.sendCalendarEvents()
+      },
+      60 * 60 * 1000,
+    ) // 1 hour
 
     try {
       // only start location updates if we have the location permission:
@@ -294,7 +297,7 @@ class MantleManager {
       this.subs.push(
         CoreModule.addListener("button_press", (event) => {
           console.log("MANTLE: BUTTON_PRESS event received:", event)
-          this.handle_button_press(event.buttonId, event.pressType, event.timestamp)
+          this.handle_button_press(event)
         }),
       )
 
@@ -323,8 +326,8 @@ class MantleManager {
 
       this.subs.push(
         CoreModule.addListener("switch_status", (event) => {
-          const switchType = typeof event.switch_type === "number" ? event.switch_type : event.switchType ?? -1
-          const switchValue = typeof event.switch_value === "number" ? event.switch_value : event.switchValue ?? -1
+          const switchType = typeof event.switch_type === "number" ? event.switch_type : (event.switchType ?? -1)
+          const switchValue = typeof event.switch_value === "number" ? event.switch_value : (event.switchValue ?? -1)
           const timestamp = typeof event.timestamp === "number" ? event.timestamp : Date.now()
           socketComms.sendSwitchStatus(switchType, switchValue, timestamp)
           // TODO: remove
@@ -482,17 +485,11 @@ class MantleManager {
       )
 
       this.subs.push(
-        CoreModule.addListener("mtk_update_complete", (event) => {
-          console.log("MANTLE: MTK firmware update complete:", event.message)
-          GlobalEventEmitter.emit("mtk_update_complete", {
-            message: event.message,
-            timestamp: event.timestamp,
-          })
-        }),
-      )
-
-      this.subs.push(
         CoreModule.addListener("ota_update_available", (event) => {
+          if (!useGlassesStore.getState().connected) {
+            console.log("📱 MANTLE: Ignoring ota_update_available - glasses not connected")
+            return
+          }
           console.log("📱 MANTLE: OTA update available from glasses:", event)
           useGlassesStore.getState().setOtaUpdateAvailable({
             available: true,
@@ -506,6 +503,16 @@ class MantleManager {
             versionName: event.version_name,
             updates: event.updates,
             totalSize: event.total_size,
+          })
+        }),
+      )
+
+      this.subs.push(
+        CoreModule.addListener("mtk_update_complete", (event) => {
+          console.log("MANTLE: MTK firmware update complete:", event.message)
+          GlobalEventEmitter.emit("mtk_update_complete", {
+            message: event.message,
+            timestamp: event.timestamp,
           })
         }),
       )
@@ -535,21 +542,6 @@ class MantleManager {
           if (event.status === "FINISHED" || event.status === "FAILED") {
             useGlassesStore.getState().setOtaUpdateAvailable(null)
           }
-        }),
-      )
-
-      this.subs.push(
-        CoreModule.addListener("version_info", (event) => {
-          console.log("MANTLE: Received version_info:", event)
-          useGlassesStore.getState().setGlassesInfo({
-            appVersion: event.app_version,
-            buildNumber: event.build_number,
-            deviceModel: event.device_model,
-            androidVersion: event.android_version,
-            otaVersionUrl: event.ota_version_url,
-            fwVersion: event.firmware_version,
-            btMacAddress: event.bt_mac_address,
-          })
         }),
       )
     }
@@ -696,14 +688,8 @@ class MantleManager {
     socketComms.sendLocalTranscription(data)
   }
 
-  public async handle_button_press(id: string, type: string, timestamp: string) {
-    // Emit event to React Native layer for handling
-    GlobalEventEmitter.emit("BUTTON_PRESS", {
-      buttonId: id,
-      pressType: type,
-      timestamp: timestamp,
-    })
-    socketComms.sendButtonPress(id, type)
+  public async handle_button_press(event: ButtonPressEvent) {
+    socketComms.sendButtonPress(event.buttonId, event.pressType)
   }
 }
 
