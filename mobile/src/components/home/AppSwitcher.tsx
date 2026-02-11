@@ -183,7 +183,6 @@ interface AppSwitcherProps {
 export default function AppSwitcher({visible, onClose}: AppSwitcherProps) {
   const translateX = useSharedValue(0)
   const offsetX = useSharedValue(0)
-  const activeIndex = useSharedValue(0)
   const backdropOpacity = useSharedValue(0)
   const containerTranslateY = useSharedValue(100)
   const containerOpacity = useSharedValue(0)
@@ -198,6 +197,10 @@ export default function AppSwitcher({visible, onClose}: AppSwitcherProps) {
   //   return useAppletStatusStore.getState().apps.filter((a) => activePackageNames.includes(a.packageName))
   // }, [activePackageNames])
 
+  const activeIndex = useDerivedValue(() => {
+    return -translateX.value / (CARD_WIDTH + CARD_SPACING) + 2
+  })
+
   useEffect(() => {
     if (visible) {
       backdropOpacity.value = withTiming(1, {duration: 250})
@@ -205,7 +208,6 @@ export default function AppSwitcher({visible, onClose}: AppSwitcherProps) {
       containerOpacity.value = withTiming(1, {duration: 200})
       // start at the end of the cards:
       translateX.value = -((apps.length - 2) * CARD_WIDTH)
-      activeIndex.value = apps.length
     } else {
       backdropOpacity.value = withTiming(0, {duration: 200})
       containerTranslateY.value = withTiming(100, {duration: 200})
@@ -213,9 +215,7 @@ export default function AppSwitcher({visible, onClose}: AppSwitcherProps) {
     }
   }, [visible])
 
-  useDerivedValue(() => {
-    activeIndex.value = -translateX.value / (CARD_WIDTH + CARD_SPACING) + 2
-  })
+
 
   const backdropStyle = useAnimatedStyle(() => ({
     opacity: backdropOpacity.value,
