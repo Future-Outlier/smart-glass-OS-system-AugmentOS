@@ -2817,6 +2817,8 @@ public class MentraLive extends SGCManager {
                 // }
                 // Notify the system that glasses are intentionally disconnected
                 updateConnectionState(ConnTypes.DISCONNECTED);
+                glassesReady = false;
+                glassesReadyReceived = false;
                 break;
 
             case "sr_adota":
