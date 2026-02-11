@@ -181,7 +181,6 @@ export default function PairingSuccessScreen() {
         showSkipButton={false}
         startButtonText={buttonText}
         endButtonText={buttonText}
-        exitFn={handleContinue}
         endButtonFn={handleContinue}
       />
     </Screen>

@@ -1,4 +1,4 @@
-import CoreModule, {CoreStatus, GlassesStatus} from "core"
+import CoreModule, {ButtonPressEvent, CoreStatus, GlassesStatus} from "core"
 import * as Calendar from "expo-calendar"
 import * as Location from "expo-location"
 import * as TaskManager from "expo-task-manager"
@@ -297,7 +297,7 @@ class MantleManager {
       this.subs.push(
         CoreModule.addListener("button_press", (event) => {
           console.log("MANTLE: BUTTON_PRESS event received:", event)
-          this.handle_button_press(event.buttonId, event.pressType, event.timestamp)
+          this.handle_button_press(event)
         }),
       )
 
@@ -544,25 +544,6 @@ class MantleManager {
           }
         }),
       )
-
-      this.subs.push(
-        CoreModule.addListener("version_info", (event) => {
-          console.log("MANTLE: Received version_info:", event)
-          // Build info object, filtering out undefined values to prevent overwriting
-          // existing values when version_info arrives in chunks (version_info_1, _2, _3)
-          const info: Record<string, any> = {}
-          if (event.app_version !== undefined) info.appVersion = event.app_version
-          if (event.build_number !== undefined) info.buildNumber = event.build_number
-          if (event.device_model !== undefined) info.deviceModel = event.device_model
-          if (event.android_version !== undefined) info.androidVersion = event.android_version
-          if (event.ota_version_url !== undefined) info.otaVersionUrl = event.ota_version_url
-          if (event.firmware_version !== undefined) info.fwVersion = event.firmware_version
-          if (event.bt_mac_address !== undefined) info.btMacAddress = event.bt_mac_address
-          if (event.mtk_fw_version !== undefined) info.mtkFwVersion = event.mtk_fw_version
-          if (event.bes_fw_version !== undefined) info.besFwVersion = event.bes_fw_version
-          useGlassesStore.getState().setGlassesInfo(info)
-        }),
-      )
     }
 
     // one time get all:
@@ -707,14 +688,8 @@ class MantleManager {
     socketComms.sendLocalTranscription(data)
   }
 
-  public async handle_button_press(id: string, type: string, timestamp: string) {
-    // Emit event to React Native layer for handling
-    GlobalEventEmitter.emit("BUTTON_PRESS", {
-      buttonId: id,
-      pressType: type,
-      timestamp: timestamp,
-    })
-    socketComms.sendButtonPress(id, type)
+  public async handle_button_press(event: ButtonPressEvent) {
+    socketComms.sendButtonPress(event.buttonId, event.pressType)
   }
 }
 

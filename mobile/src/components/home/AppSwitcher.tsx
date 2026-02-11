@@ -428,7 +428,7 @@ export default function AppSwitcher({visible, onClose, apps, onAppSelect, onAppD
 
 function PageDot({index, activeIndex}: {index: number; activeIndex: Animated.SharedValue<number>}) {
   const dotStyle = useAnimatedStyle(() => {
-    const isActive = Math.abs((activeIndex.value - 1) - index) < 0.5
+    const isActive = Math.abs(activeIndex.value - 1 - index) < 0.5
     return {
       width: withSpring(isActive ? 24 : 8),
       opacity: withTiming(isActive ? 1 : 0.4),

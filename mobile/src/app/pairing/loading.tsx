@@ -1,5 +1,5 @@
 import {useRoute} from "@react-navigation/native"
-import CoreModule, {PairFailureEvent} from "core"
+import CoreModule, {PairFailureEvent, GlassesNotReadyEvent} from "core"
 import {useEffect, useRef, useState} from "react"
 import {View} from "react-native"
 
@@ -10,7 +10,6 @@ import GlassesPairingLoader from "@/components/glasses/GlassesPairingLoader"
 import GlassesTroubleshootingModal from "@/components/glasses/GlassesTroubleshootingModal"
 import {focusEffectPreventBack, useNavigationHistory} from "@/contexts/NavigationHistoryContext"
 import {useGlassesStore} from "@/stores/glasses"
-import {GlassesNotReadyEvent} from "core"
 
 export default function GlassesPairingLoadingScreen() {
   const {replace, goBack} = useNavigationHistory()
