@@ -21,6 +21,7 @@ export type NavObject = {
   navigate: (path: string, params?: any) => void
   preventBack: boolean
   setAnimation: (animation: StackAnimationTypes) => void
+  getCurrentRoute: () => string | null
 }
 
 type PushParams = {
@@ -238,6 +239,10 @@ export function NavigationHistoryProvider({children}: {children: React.ReactNode
     return history
   }
 
+  const getCurrentRoute = () => {
+    return historyRef.current[historyRef.current.length - 1]
+  }
+
   const getPreviousRoute = (index: number = 0) => {
     if (historyRef.current.length < 2 + index) {
       return null
@@ -451,6 +456,7 @@ export function NavigationHistoryProvider({children}: {children: React.ReactNode
     navigate,
     preventBack,
     setAnimation,
+    getCurrentRoute,
   }
 
   // Set the ref so we can use it from outside the context:

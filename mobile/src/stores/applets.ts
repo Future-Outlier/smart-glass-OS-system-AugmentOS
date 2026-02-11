@@ -9,7 +9,7 @@ import {AsyncResult, result as Res} from "typesafe-ts"
 import {create} from "zustand"
 import * as Sentry from "@sentry/react-native"
 
-import {push} from "@/contexts/NavigationRef"
+import {getCurrentRoute, push} from "@/contexts/NavigationRef"
 import {translate} from "@/i18n"
 import restComms from "@/services/RestComms"
 import STTModelManager from "@/services/STTModelManager"
@@ -419,21 +419,25 @@ export const useAppletStatusStore = create<AppStatusState>((set, get) => ({
     // open the app webview if it has one:
     let appSwitcherUi = useSettingsStore.getState().getSetting(SETTINGS.app_switcher_ui.key)
     if (appSwitcherUi) {
-      if (applet.offline) {
-        const offlineRoute = applet.offlineRoute
-        if (offlineRoute) {
-          push(offlineRoute, {transition: "fade"})
+      // only open if the current route is home:
+      const currentRoute = getCurrentRoute()
+      if (currentRoute === "/home") {
+        if (applet.offline) {
+          const offlineRoute = applet.offlineRoute
+          if (offlineRoute) {
+            push(offlineRoute, {transition: "fade"})
+          }
         }
-      }
 
-      // Check if app has webviewURL and navigate directly to it
-      if (applet.webviewUrl && applet.healthy) {
-        push("/applet/webview", {
-          webviewURL: applet.webviewUrl,
-          appName: applet.name,
-          packageName: applet.packageName,
-          transition: "fade",
-        })
+        // Check if app has webviewURL and navigate directly to it
+        if (applet.webviewUrl && applet.healthy) {
+          push("/applet/webview", {
+            webviewURL: applet.webviewUrl,
+            appName: applet.name,
+            packageName: applet.packageName,
+            transition: "fade",
+          })
+        }
       }
     }
 
