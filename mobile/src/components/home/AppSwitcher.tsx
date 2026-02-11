@@ -16,6 +16,7 @@ import AppIcon from "@/components/home/AppIcon"
 import {useNavigationHistory} from "@/contexts/NavigationHistoryContext"
 import {useSafeAreaInsets} from "react-native-safe-area-context"
 import {scheduleOnRN} from "react-native-worklets"
+import { SETTINGS, useSetting } from "@/stores/settings"
 
 const {width: SCREEN_WIDTH, height: SCREEN_HEIGHT} = Dimensions.get("window")
 const CARD_WIDTH = SCREEN_WIDTH * 0.67
@@ -121,7 +122,7 @@ function AppCardItem({
     let scale = interpolate(linearProgress, [0, 0.8], [0.96, 1], Extrapolation.CLAMP)
     // account for scaling of the card:
     let offset = (1 - scale) * cardWidth
-    res = res - offset * animIndex
+    // res = res - offset * animIndex
     // scale = 1
 
     return {
@@ -184,6 +185,27 @@ interface AppSwitcherProps {
   onClose: () => void
 }
 
+// for testing:
+// let DUMMY_APPS: ClientAppletInterface[] = []
+// for (let i = 0; i < 30; i++) {
+//   DUMMY_APPS.push({
+//     packageName: `com.mentra.dummy.${i}`,
+//     name: `Dummy ${i}`,
+//     logoUrl: "https://www.mentra.com/icon.png",
+//     // screenshot: "https://www.mentra.com/screenshot.png",
+//     offline: false,
+//     offlineRoute: "",
+//     loading: false,
+//     local: false,
+//     healthy: true,
+//     hardwareRequirements: [],
+//     webviewUrl: "",
+//     type: "standard",
+//     permissions: [],
+//     running: true,
+//   })
+// }
+
 export default function AppSwitcher({visible, onClose}: AppSwitcherProps) {
   const translateX = useSharedValue(0)
   const offsetX = useSharedValue(0)
@@ -194,7 +216,11 @@ export default function AppSwitcher({visible, onClose}: AppSwitcherProps) {
   const prevTranslationX = useSharedValue(0)
   const {push} = useNavigationHistory()
   const insets = useSafeAreaInsets()
-  const apps = useActiveApps()
+  let apps = useActiveApps()
+
+
+  // for testing:
+  //   apps = [...DUMMY_APPS, ...apps]
 
   // const activePackageNames = useActiveAppPackageNames()
   // const apps = useMemo(() => {
@@ -218,8 +244,6 @@ export default function AppSwitcher({visible, onClose}: AppSwitcherProps) {
       containerOpacity.value = withTiming(0, {duration: 150})
     }
   }, [visible])
-
-
 
   const backdropStyle = useAnimatedStyle(() => ({
     opacity: backdropOpacity.value,
