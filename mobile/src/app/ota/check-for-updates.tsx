@@ -11,6 +11,7 @@ import {checkForOtaUpdate, OTA_VERSION_URL_PROD} from "@/effects/OtaUpdateChecke
 import {translate} from "@/i18n/translate"
 import {useGlassesStore} from "@/stores/glasses"
 import {SETTINGS, useSetting} from "@/stores/settings"
+import { BackgroundTimer } from "@/utils/timers"
 
 type CheckState = "checking" | "update_available" | "no_update" | "error"
 
@@ -45,7 +46,7 @@ export default function OtaCheckForUpdatesScreen() {
       setAvailableUpdates([])
       // Reset timeout tracking for fresh check
       if (versionInfoTimeoutRef.current) {
-        clearTimeout(versionInfoTimeoutRef.current)
+        BackgroundTimer.clearTimeout(versionInfoTimeoutRef.current)
         versionInfoTimeoutRef.current = null
       }
       waitStartTimeRef.current = null
@@ -68,7 +69,7 @@ export default function OtaCheckForUpdatesScreen() {
         if (!glassesConnected) {
           console.log("OTA: Glasses not connected - proceeding to next step")
           if (versionInfoTimeoutRef.current) {
-            clearTimeout(versionInfoTimeoutRef.current)
+            BackgroundTimer.clearTimeout(versionInfoTimeoutRef.current)
             versionInfoTimeoutRef.current = null
           }
           hasInitiatedCheckRef.current = true
@@ -78,7 +79,7 @@ export default function OtaCheckForUpdatesScreen() {
         if (!wifiConnected) {
           console.log("OTA: WiFi not connected - proceeding to next step")
           if (versionInfoTimeoutRef.current) {
-            clearTimeout(versionInfoTimeoutRef.current)
+            BackgroundTimer.clearTimeout(versionInfoTimeoutRef.current)
             versionInfoTimeoutRef.current = null
           }
           hasInitiatedCheckRef.current = true
@@ -101,7 +102,7 @@ export default function OtaCheckForUpdatesScreen() {
           console.log("OTA: Requesting version_info from glasses")
           CoreModule.requestVersionInfo()
 
-          versionInfoTimeoutRef.current = setTimeout(() => {
+          versionInfoTimeoutRef.current = BackgroundTimer.setTimeout(() => {
             console.log("OTA: Timeout waiting for version_info - proceeding to next step")
             waitStartTimeRef.current = null
             versionInfoTimeoutRef.current = null
@@ -116,7 +117,7 @@ export default function OtaCheckForUpdatesScreen() {
       // Clear timeout since we got the data
       if (versionInfoTimeoutRef.current) {
         console.log("OTA: Got version_info - clearing wait timeout")
-        clearTimeout(versionInfoTimeoutRef.current)
+        BackgroundTimer.clearTimeout(versionInfoTimeoutRef.current)
         versionInfoTimeoutRef.current = null
       }
       waitStartTimeRef.current = null
@@ -187,7 +188,7 @@ export default function OtaCheckForUpdatesScreen() {
     // Cleanup timeout on unmount or when dependencies change
     return () => {
       if (versionInfoTimeoutRef.current) {
-        clearTimeout(versionInfoTimeoutRef.current)
+        BackgroundTimer.clearTimeout(versionInfoTimeoutRef.current)
         versionInfoTimeoutRef.current = null
       }
     }
@@ -264,7 +265,7 @@ export default function OtaCheckForUpdatesScreen() {
             <Text tx="ota:updateDescription" className="text-sm text-center" style={{color: theme.colors.textDim}} />
           </View>
 
-          <View className="gap-3 mb-6">
+          <View className="gap-3">
             <Button preset="primary" tx="ota:updateNow" onPress={handleUpdateNow} />
             {!isUpdateRequired && <Button preset="secondary" tx="ota:updateLater" onPress={handleContinue} />}
             {__DEV__ && isUpdateRequired && (
@@ -305,7 +306,7 @@ export default function OtaCheckForUpdatesScreen() {
           <Text tx="ota:checkFailedMessage" className="text-sm text-center" style={{color: theme.colors.textDim}} />
         </View>
 
-        <View className="gap-3 pb-2 mb-6">
+        <View className="gap-3">
           <Button preset="primary" text="Retry" flexContainer onPress={handleRetry} />
           {__DEV__ && <Button preset="secondary" text="Skip (dev only)" onPress={handleContinue} />}
         </View>

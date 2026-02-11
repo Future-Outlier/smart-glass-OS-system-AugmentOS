@@ -101,6 +101,8 @@ export default function PairingSuccessScreen() {
           transition: false,
           title: translate("common:success"),
           subtitle: translate("onboarding:liveConnected"),
+          titleCentered: true,
+          subtitleCentered: true,
         },
       ]
       break

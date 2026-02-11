@@ -17,7 +17,7 @@ const OVERLAY_ROUTES = [
   "/wifi/scan",
   "/ota/progress",
   "/ota/check-for-updates",
-  "/onboarding/live",
+  // "/onboarding/live",
 ]
 
 // Store for custom overlay configuration (used by OTA progress screen)
