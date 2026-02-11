@@ -18,7 +18,6 @@ import showAlert from "@/utils/AlertUtils"
 import {CompatibilityResult, HardwareCompatibility} from "@/utils/hardware"
 import {BackgroundTimer} from "@/utils/timers"
 import {storage} from "@/utils/storage"
-import {shallow} from "zustand/shallow"
 import {useShallow} from "zustand/react/shallow"
 
 export interface ClientAppletInterface extends AppletInterface {
