@@ -16,6 +16,7 @@ services:
     env:
       HOST: "0.0.0.0"
       SERVICE_NAME: "cloud"
+      REGION: "us-west"
       RTMP_RELAY_URLS: "rtmp-relay-uscentral.mentra.glass:1935"
       LOG_LEVEL: "info"
       # Doppler injects all other env vars at runtime via `doppler run --`
