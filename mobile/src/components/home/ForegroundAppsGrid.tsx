@@ -1,5 +1,5 @@
 import {useCallback, useMemo} from "react"
-import {FlatList, TextStyle, TouchableOpacity, View, ViewStyle} from "react-native"
+import {FlatList, TextStyle, TouchableOpacity, View} from "react-native"
 
 import {Text} from "@/components/ignite"
 import AppIcon from "@/components/home/AppIcon"
@@ -8,7 +8,6 @@ import {
   ClientAppletInterface,
   DUMMY_APPLET,
   useForegroundApps,
-  useInactiveForegroundApps,
   useStartApplet,
 } from "@/stores/applets"
 import {ThemedStyle} from "@/theme"

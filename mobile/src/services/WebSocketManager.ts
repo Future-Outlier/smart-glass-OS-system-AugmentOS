@@ -113,9 +113,10 @@ class WebSocketManager extends EventEmitter {
   }
 
   private actuallyReconnect() {
-    console.log("WSM: Attempting reconnect")
-    // mantle.displayTextMain(`WSM: Attempting reconnect`)
     const store = useConnectionStore.getState()
+    console.log("WSM: Attempting reconnect")
+    console.log("WSM: current status: ", store.status)
+    // mantle.displayTextMain(`WSM: Attempting reconnect`)
     if (store.status === WebSocketStatus.DISCONNECTED || store.status === WebSocketStatus.ERROR) {
       this.connect(this.url!, this.coreToken!)
     }
@@ -215,7 +216,6 @@ class WebSocketManager extends EventEmitter {
   public cleanup() {
     console.log("WSM: cleanup()")
     this.disconnect()
-    this.removeAllListeners()
     this.webSocket = null
     const store = useConnectionStore.getState()
     store.reset()

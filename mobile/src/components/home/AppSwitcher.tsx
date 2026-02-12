@@ -449,9 +449,9 @@ export default function AppSwitcher({visible, onClose}: AppSwitcherProps) {
     onClose()
   }
 
-  if (!visible && containerOpacity.value === 0) {
-    return null
-  }
+  // if (!visible && containerOpacity.value === 0) {
+  //   return null
+  // }
 
   // console.log("apps", apps.map((app) => app.packageName))
 
