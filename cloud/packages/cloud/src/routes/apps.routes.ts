@@ -948,37 +948,9 @@ async function stopApp(req: Request, res: Response) {
       `AppManager.stopApp completed in ${stopDuration}ms`,
     );
 
-    // DEBUG: Broadcast call
-    routeLogger.debug("Calling userSession.appManager.broadcastAppState()");
-    const broadcastStartTime = Date.now();
-
-    const appStateChange = userSession.appManager.broadcastAppState();
-    const broadcastDuration = Date.now() - broadcastStartTime;
-
-    // DEBUG: Broadcast result
-    routeLogger.debug(
-      {
-        broadcastDuration,
-        appStateChangeGenerated: !!appStateChange,
-      },
-      `App state broadcast completed in ${broadcastDuration}ms`,
-    );
-
-    // ERROR: Broadcast failed (shouldn't happen)
-    if (!appStateChange) {
-      const totalDuration = Date.now() - startTime;
-      routeLogger.error(
-        {
-          totalDuration,
-        },
-        "Failed to generate app state change - this should not happen",
-      );
-
-      return res.status(500).json({
-        success: false,
-        message: "Error generating app state change",
-      });
-    }
+    // NOTE: broadcastAppState() is already called inside stopApp(),
+    // so we do NOT call it again here to avoid sending duplicate
+    // APP_STATE_CHANGE messages to the client over WebSocket.
 
     const totalDuration = Date.now() - startTime;
 
@@ -995,7 +967,6 @@ async function stopApp(req: Request, res: Response) {
       {
         appLookupDuration,
         stopDuration,
-        broadcastDuration,
       },
       "Route timing breakdown",
     );
@@ -1010,7 +981,6 @@ async function stopApp(req: Request, res: Response) {
       data: {
         status: "stopped",
         packageName,
-        appState: appStateChange,
       },
     });
   } catch (error) {
@@ -1186,9 +1156,9 @@ async function uninstallApp(req: Request, res: Response) {
     // Attempt to stop the app session before uninstalling.
     try {
       if (userSession) {
-        // TODO(isaiah): Ensure this automatically triggers appstate change sent to client.
+        // NOTE: stopApp() already calls broadcastAppState() internally,
+        // so we do NOT call it again here to avoid duplicate APP_STATE_CHANGE messages.
         await userSession.appManager.stopApp(packageName);
-        await userSession.appManager.broadcastAppState();
       } else {
         logger.warn({ email, packageName }, "Unable to ensure app is stopped before uninstalling, no active session");
       }
