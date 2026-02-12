@@ -785,10 +785,10 @@ async function startApp(req: Request, res: Response) {
       },
     });
 
-    // Send app started notification to WebSocket
-    if (userSession.websocket) {
-      webSocketService.sendAppStarted(userSession, packageName);
-    }
+    // NOTE: We do NOT send a separate sendAppStarted() here because
+    // broadcastAppState() already sends APP_STATE_CHANGE via WebSocket,
+    // which triggers the same refreshApplets() on the client.
+    // Sending both causes duplicate HTTP fetches and UI flickering.
   } catch (error) {
     const totalDuration = Date.now() - startTime;
 
@@ -971,10 +971,10 @@ async function stopApp(req: Request, res: Response) {
       "Route timing breakdown",
     );
 
-    // Send app stopped notification to WebSocket
-    if (userSession.websocket) {
-      webSocketService.sendAppStopped(userSession, packageName);
-    }
+    // NOTE: We do NOT send a separate sendAppStopped() here because
+    // stopApp() already broadcasts APP_STATE_CHANGE via WebSocket,
+    // which triggers the same refreshApplets() on the client.
+    // Sending both causes duplicate HTTP fetches and UI flickering.
 
     res.json({
       success: true,
