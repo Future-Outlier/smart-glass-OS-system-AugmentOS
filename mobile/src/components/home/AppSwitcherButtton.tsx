@@ -1,5 +1,5 @@
 import {View} from "react-native"
-import Animated, {useSharedValue, withSpring} from "react-native-reanimated"
+import Animated, {SharedValue, useSharedValue, withSpring} from "react-native-reanimated"
 import {Gesture, GestureDetector} from "react-native-gesture-handler"
 import {scheduleOnRN} from "react-native-worklets"
 
@@ -16,7 +16,7 @@ import {
 } from "@/stores/applets"
 
 interface AppSwitcherButtonProps {
-  swipeProgress: Animated.SharedValue<number>
+  swipeProgress: SharedValue<number>
 }
 
 const SWIPE_DISTANCE_THRESHOLD = 100 // Distance needed to trigger open
@@ -36,9 +36,8 @@ export default function AppSwitcherButton({swipeProgress}: AppSwitcherButtonProp
     .onUpdate((event) => {
       // Only track upward swipes (negative Y)
       if (event.translationY < 0) {
-        translateY.value = event.translationY
-        // Update shared value directly - no runOnJS needed!
-        swipeProgress.value = Math.min(1, Math.abs(event.translationY) / (SWIPE_DISTANCE_THRESHOLD * 1.5))
+        translateY.value = event.translationY * 1
+        swipeProgress.value = Math.min(1, Math.abs(translateY.value) / (SWIPE_DISTANCE_THRESHOLD * 1.5))
       }
     })
     .onEnd((event) => {
@@ -52,10 +51,10 @@ export default function AppSwitcherButton({swipeProgress}: AppSwitcherButtonProp
 
       if (shouldOpen) {
         // Spring to fully open
-        swipeProgress.value = withSpring(1, {damping: 20, stiffness: 300})
+        swipeProgress.value = withSpring(1, {damping: 20, stiffness: 300, overshootClamping: true})
       } else {
         // Spring back to closed
-        swipeProgress.value = withSpring(0, {damping: 20, stiffness: 300})
+        swipeProgress.value = withSpring(0, {damping: 20, stiffness: 300, overshootClamping: true})
       }
 
       // Reset

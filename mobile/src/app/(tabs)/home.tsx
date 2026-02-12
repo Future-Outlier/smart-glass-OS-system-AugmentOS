@@ -1,7 +1,7 @@
 import {useFocusEffect} from "@react-navigation/native"
 import {useCallback, useEffect, useRef, useState} from "react"
 import {ScrollView, View} from "react-native"
-import {useSharedValue} from "react-native-reanimated"
+import {useSharedValue, withSpring} from "react-native-reanimated"
 
 import {MentraLogoStandalone} from "@/components/brands/MentraLogoStandalone"
 import {ActiveForegroundApp} from "@/components/home/ActiveForegroundApp"
@@ -54,10 +54,6 @@ export default function Homepage() {
 
     attemptInitialConnect()
   }, [glassesConnected, isSearching, defaultWearable])
-
-  const handleCloseSwitcher = useCallback(() => {
-    swipeProgress.value = 0
-  }, [swipeProgress])
 
   const renderContent = () => {
     if (!defaultWearable) {
@@ -113,17 +109,8 @@ export default function Homepage() {
         <View className="h-4" />
         {!appSwitcherUi && <IncompatibleApps />}
       </ScrollView>
-      {appSwitcherUi && (
-        <AppSwitcherButton
-          swipeProgress={swipeProgress}
-        />
-      )}
-      {appSwitcherUi && (
-        <AppSwitcher
-          onClose={handleCloseSwitcher}
-          swipeProgress={swipeProgress}
-        />
-      )}
+      {appSwitcherUi && <AppSwitcherButton swipeProgress={swipeProgress} />}
+      {appSwitcherUi && <AppSwitcher swipeProgress={swipeProgress} />}
     </Screen>
   )
 }

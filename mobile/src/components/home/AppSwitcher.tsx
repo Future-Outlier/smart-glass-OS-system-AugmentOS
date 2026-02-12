@@ -9,6 +9,7 @@ import Animated, {
   interpolate,
   Extrapolation,
   useDerivedValue,
+  SharedValue,
 } from "react-native-reanimated"
 import {Gesture, GestureDetector} from "react-native-gesture-handler"
 import {scheduleOnRN} from "react-native-worklets"
@@ -41,28 +42,18 @@ interface AppCard {
 interface AppCardItemProps {
   app: ClientAppletInterface
   index: number
-  // activeIndex: Animated.SharedValue<number>
   onDismiss: (packageName: string) => void
   onSelect: (packageName: string) => void
-  translateX: Animated.SharedValue<number>
+  translateX: SharedValue<number>
   count: number
 }
 
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable)
 
-function AppCardItem({
-  app,
-  index,
-  // activeIndex,
-  count,
-  translateX,
-  onDismiss,
-  onSelect,
-}: AppCardItemProps) {
+function AppCardItem({app, index, count, translateX, onDismiss, onSelect}: AppCardItemProps) {
   const translateY = useSharedValue(0)
   const cardOpacity = useSharedValue(1)
   const animatedIndex = useSharedValue(index)
-  // const cardScale = useSharedValue(1)
 
   useEffect(() => {
     animatedIndex.value = withSpring(index, {damping: 20, stiffness: 90})
@@ -148,6 +139,7 @@ function AppCardItem({
             // zIndex: -index,// to reverse stack order
             position: "absolute",
             left: 0,
+            zIndex: index*2,// ensure the cards are on top of each other
           },
           cardAnimatedStyle,
         ]}>
@@ -187,8 +179,7 @@ function AppCardItem({
 }
 
 interface AppSwitcherProps {
-  onClose: () => void
-  swipeProgress: Animated.SharedValue<number>
+  swipeProgress: SharedValue<number>
 }
 
 // for testing:
@@ -212,7 +203,7 @@ interface AppSwitcherProps {
 //   })
 // }
 
-export default function AppSwitcher({onClose, swipeProgress}: AppSwitcherProps) {
+export default function AppSwitcher({swipeProgress}: AppSwitcherProps) {
   const translateX = useSharedValue(0)
   const offsetX = useSharedValue(0)
   const targetIndex = useSharedValue(0)
@@ -265,10 +256,12 @@ export default function AppSwitcher({onClose, swipeProgress}: AppSwitcherProps) 
     opacity: swipeProgress.value,
   }))
 
-  const containerStyle = useAnimatedStyle(() => ({
-    transform: [{translateY: 100 * (1 - swipeProgress.value)}],
-    opacity: swipeProgress.value,
-  }))
+  const containerStyle = useAnimatedStyle(() => {
+    return {
+      transform: [{translateY: 100 * (1 - swipeProgress.value)}],
+      opacity: swipeProgress.value,
+    }
+  })
 
   const panGesture = Gesture.Pan()
     .activeOffsetX([-10, 10])
@@ -436,17 +429,23 @@ export default function AppSwitcher({onClose, swipeProgress}: AppSwitcherProps) 
       })
     }
 
-    onClose()
+    handleClose()
   }
 
+  const handleClose = useCallback(() => {
+    // reset the translateX:
+    swipeProgress.value = withSpring(0, {damping: 20, stiffness: 300, overshootClamping: true})
+    // do after we have closed the swipe progress:
+    setTimeout(() => {
+      translateX.value = -((apps.length - 2) * CARD_WIDTH)
+    }, 250)
+  }, [])
+
   return (
-    <View
-      className="absolute -mx-6 inset-0 z-[1000]"
-      pointerEvents="box-none"
-      style={{paddingBottom: insets.bottom}}>
+    <View className="absolute -mx-6 inset-0 z-[1000]" pointerEvents="box-none" style={{paddingBottom: insets.bottom}}>
       {/* Blurred Backdrop */}
       <Animated.View className="absolute inset-0 bg-black/70" style={backdropStyle}>
-        <Pressable className="flex-1" onPress={onClose} />
+        <Pressable className="flex-1" onPress={handleClose} />
       </Animated.View>
 
       {/* Main Container */}
@@ -465,7 +464,7 @@ export default function AppSwitcher({onClose, swipeProgress}: AppSwitcherProps) 
         {/* Cards Carousel */}
         <GestureDetector gesture={panGesture}>
           <Animated.View className="flex-1 justify-center" pointerEvents="box-none">
-            <Pressable className="absolute inset-0" onPress={onClose} />
+            <Pressable className="absolute inset-0" onPress={handleClose} />
             <Animated.View className="flex-row items-center" pointerEvents="box-none">
               {apps.map((app, index) => (
                 <AppCardItem
@@ -522,7 +521,7 @@ export default function AppSwitcher({onClose, swipeProgress}: AppSwitcherProps) 
   )
 }
 
-function PageDot({index, activeIndex}: {index: number; activeIndex: Animated.SharedValue<number>}) {
+function PageDot({index, activeIndex}: {index: number; activeIndex: SharedValue<number>}) {
   const dotStyle = useAnimatedStyle(() => {
     const isActive = Math.abs(activeIndex.value - 1 - index) < 0.5
     return {
