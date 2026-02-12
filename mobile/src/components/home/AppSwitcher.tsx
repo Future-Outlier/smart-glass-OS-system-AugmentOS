@@ -1,4 +1,4 @@
-import React, {useCallback, useEffect, useMemo} from "react"
+import React, {useCallback, useEffect, useMemo, useState} from "react"
 import {View, Dimensions, Pressable, Image, TouchableOpacity} from "react-native"
 import {Text} from "@/components/ignite/"
 import Animated, {
@@ -11,12 +11,19 @@ import Animated, {
   useDerivedValue,
 } from "react-native-reanimated"
 import {Gesture, GestureDetector} from "react-native-gesture-handler"
-import {ClientAppletInterface, useActiveAppPackageNames, useActiveApps, useAppletStatusStore} from "@/stores/applets"
+import {
+  ClientAppletInterface,
+  getLastOpenTime,
+  setLastOpenTime,
+  useActiveAppPackageNames,
+  useActiveApps,
+  useAppletStatusStore,
+} from "@/stores/applets"
 import AppIcon from "@/components/home/AppIcon"
 import {useNavigationHistory} from "@/contexts/NavigationHistoryContext"
 import {useSafeAreaInsets} from "react-native-safe-area-context"
 import {scheduleOnRN} from "react-native-worklets"
-import { SETTINGS, useSetting } from "@/stores/settings"
+import {SETTINGS, useSetting} from "@/stores/settings"
 
 const {width: SCREEN_WIDTH, height: SCREEN_HEIGHT} = Dimensions.get("window")
 const CARD_WIDTH = SCREEN_WIDTH * 0.67
@@ -216,8 +223,8 @@ export default function AppSwitcher({visible, onClose}: AppSwitcherProps) {
   const prevTranslationX = useSharedValue(0)
   const {push} = useNavigationHistory()
   const insets = useSafeAreaInsets()
-  let apps = useActiveApps()
-
+  let directApps = useActiveApps()
+  let [apps, setApps] = useState<ClientAppletInterface[]>([])
 
   // for testing:
   //   apps = [...DUMMY_APPS, ...apps]
@@ -226,6 +233,25 @@ export default function AppSwitcher({visible, onClose}: AppSwitcherProps) {
   // const apps = useMemo(() => {
   //   return useAppletStatusStore.getState().apps.filter((a) => activePackageNames.includes(a.packageName))
   // }, [activePackageNames])
+
+  useEffect(() => {
+    const sortApps = async () => {
+      const timestamps = await Promise.all(
+        directApps.map(async (app) => ({
+          app,
+          time: await getLastOpenTime(app.packageName),
+        }))
+      )
+      let sortedApps = timestamps
+        .sort((a, b) => {
+          if (a.time.is_error() || b.time.is_error()) return 0
+          return a.time.value - b.time.value
+        })
+        .map((entry) => entry.app)
+      setApps(sortedApps)
+    }
+    sortApps()
+  }, [directApps])
 
   const activeIndex = useDerivedValue(() => {
     return -translateX.value / (CARD_WIDTH + CARD_SPACING) + 2
@@ -401,8 +427,10 @@ export default function AppSwitcher({visible, onClose}: AppSwitcherProps) {
 
     // Handle offline apps - navigate directly to React Native route
     if (applet.offline && applet.offlineRoute) {
+      setLastOpenTime(applet.packageName)
       push(applet.offlineRoute, {transition: "fade"})
     } else if (applet.webviewUrl && applet.healthy) {
+      setLastOpenTime(applet.packageName)
       push("/applet/webview", {
         webviewURL: applet.webviewUrl,
         appName: applet.name,
@@ -410,6 +438,7 @@ export default function AppSwitcher({visible, onClose}: AppSwitcherProps) {
         transition: "fade",
       })
     } else {
+      setLastOpenTime(applet.packageName)
       push("/applet/settings", {
         packageName: applet.packageName,
         appName: applet.name,

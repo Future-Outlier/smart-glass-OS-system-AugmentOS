@@ -103,7 +103,6 @@ export default function Homepage() {
         </Group>
         <View className="h-2" />
         {!appSwitcherUi && <ActiveForegroundApp />}
-        {appSwitcherUi && <AppSwitcherButton onPress={() => setShowSwitcher(true)} />}
         <ForegroundAppsGrid />
       </>
     )
@@ -132,7 +131,8 @@ export default function Homepage() {
         <View className="h-4" />
         {renderContent()}
         <View className="h-4" />
-        <IncompatibleApps />
+        {appSwitcherUi && <AppSwitcherButton onPress={() => setShowSwitcher(true)} />}
+        {!appSwitcherUi && <IncompatibleApps />}
       </ScrollView>
       {appSwitcherUi && <AppSwitcher visible={showSwitcher} onClose={handleCloseSwitcher} />}
     </Screen>

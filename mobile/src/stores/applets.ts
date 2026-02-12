@@ -78,6 +78,23 @@ const saveLocalAppRunningState = (packageName: string, status: boolean): AsyncRe
   })
 }
 
+export const setLastOpenTime = (packageName: string): AsyncResult<void, Error> => {
+  return Res.try_async(async () => {
+    await storage.save(`${packageName}_last_open_time`, Date.now())
+    return undefined
+  })
+}
+
+export const getLastOpenTime = (packageName: string): AsyncResult<number, Error> => {
+  return Res.try_async(async () => {
+    const lastOpenTime = await storage.load<number>(`${packageName}_last_open_time`)
+    if (lastOpenTime.is_ok()) {
+      return lastOpenTime.value
+    }
+    return 0
+  })
+}
+
 // get offline applets:
 const getOfflineApplets = async (): Promise<ClientAppletInterface[]> => {
   // const offlineCameraRunning = await useSettingsStore.getState().getSetting(SETTINGS.offline_camera_running.key)
@@ -460,12 +477,14 @@ export const useAppletStatusStore = create<AppStatusState>((set, get) => ({
         if (applet.offline) {
           const offlineRoute = applet.offlineRoute
           if (offlineRoute) {
+            setLastOpenTime(applet.packageName)
             push(offlineRoute, {transition: "fade"})
           }
         }
 
         // Check if app has webviewURL and navigate directly to it
         if (applet.webviewUrl && applet.healthy) {
+          setLastOpenTime(applet.packageName)
           push("/applet/webview", {
             webviewURL: applet.webviewUrl,
             appName: applet.name,
