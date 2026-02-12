@@ -109,14 +109,7 @@ object GlassesStore {
                     } else {
                         CoreManager.getInstance().handleDeviceDisconnected()
                     }
-                    // // if ready is true, set connected to true
-                    // if (value) {
-                    //     store.set("glasses", "connected", true)
-                    // }
-                    // // if ready is false, set connected to false
-                    // if (!value) {
-                    //     store.set("glasses", "connected", false)
-                    // }
+                    // we shouldn't call store.set in this function as this is only intended for side-effects, not driving state updates
                 }
             }
             "glasses" to "headUp" -> {
@@ -228,12 +221,13 @@ object GlassesStore {
             }
             "core" to "offline_mode" -> {
                 (value as? Boolean)?.let { offline ->
+                    // set should_send_transcript to true if offline_mode is true && running is true, otherwise false
+                    val shouldSendTranscript = offline && (store.get("core", "offline_captions_running") as? Boolean) ?: false
                     CoreManager.getInstance()
                             .setMicState(
                                     (store.get("core", "should_send_pcm_data") as? Boolean)
                                             ?: false,
-                                    (store.get("core", "should_send_transcript") as? Boolean)
-                                            ?: false,
+                                    shouldSendTranscript,
                                     (store.get("core", "bypass_vad") as? Boolean) ?: true
                             )
                 }
@@ -243,12 +237,13 @@ object GlassesStore {
                     Bridge.log("GlassesStore: offline_captions_running changed to $running")
                     // When offline captions are enabled, start the microphone for local transcription
                     // When disabled, stop the microphone
-                    CoreManager.getInstance()
-                            .setMicState(
-                                    running, // send PCM data
-                                    running, // send transcript
-                                    (store.get("core", "bypass_vad") as? Boolean) ?: true
-                            )
+                    // set should_send_transcript to true if offline_mode is true && running is true, otherwise false
+                    val shouldSendTranscript = (store.get("core", "offline_mode") as? Boolean) ?: false && running
+                    CoreManager.getInstance().setMicState(
+                        (store.get("core", "should_send_pcm_data") as? Boolean) ?: false,
+                        shouldSendTranscript,
+                        (store.get("core", "bypass_vad") as? Boolean) ?: true
+                    )
                 }
             }
             "core" to "enforce_local_transcription" -> {

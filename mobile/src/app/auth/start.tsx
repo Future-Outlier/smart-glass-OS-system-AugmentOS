@@ -1,11 +1,9 @@
-// eslint-disable-next-line import/no-unresolved
 import {useLocalSearchParams} from "expo-router"
 import {useEffect} from "react"
 import {Platform, TouchableOpacity, View} from "react-native"
-import {focusEffectPreventBack} from "@/contexts/NavigationHistoryContext"
+import {focusEffectPreventBack, useNavigationHistory} from "@/contexts/NavigationHistoryContext"
 
 import {Button, Icon, Text, Screen} from "@/components/ignite"
-import {useNavigationHistory} from "@/contexts/NavigationHistoryContext"
 import {useAppTheme} from "@/contexts/ThemeContext"
 import {translate} from "@/i18n"
 import {SETTINGS, useSetting} from "@/stores/settings"

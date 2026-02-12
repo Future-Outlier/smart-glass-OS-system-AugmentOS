@@ -41,7 +41,7 @@ struct ViewState {
      * Attempts to automatically activate Mentra Live as the system audio device
      * If not paired yet, prompts user to pair in Settings
      */
-    private func setupAudioPairing(deviceName: String) {
+    func setupAudioPairing(deviceName _: String) {
         // Don't configure audio session - PhoneMic.swift handles that
         // Just check if audio session supports Bluetooth (informational only)
         if !AudioSessionMonitor.isAudioSessionConfigured() {
@@ -54,19 +54,11 @@ struct ViewState {
         // BLE name: "MENTRA_LIVE_BLE_ABC123"
         // BT Classic could be: "MENTRA_LIVE_BLE_ABC123" or "MENTRA_LIVE_BT_ABC123"
         // We need to match on the unique device ID part (e.g., "ABC123")
-        let audioDevicePattern: String
-        if let idRange = deviceName.range(of: "_BLE_", options: .caseInsensitive) {
-            // Extract the ID after "_BLE_" (e.g., "ABC123")
-            audioDevicePattern = String(deviceName[idRange.upperBound...])
-            Bridge.log("Audio: Extracted device ID: \(audioDevicePattern) from \(deviceName)")
-        } else if let idRange = deviceName.range(of: "_BT_", options: .caseInsensitive) {
-            // Extract the ID after "_BT_"
-            audioDevicePattern = String(deviceName[idRange.upperBound...])
-            Bridge.log("Audio: Extracted device ID: \(audioDevicePattern) from \(deviceName)")
-        } else {
-            // Fallback: use the full device name
-            audioDevicePattern = deviceName
-            Bridge.log("Audio: Using full device name as pattern: \(audioDevicePattern)")
+        let audioDevicePattern = getAudioDevicePattern()
+
+        if audioDevicePattern.isEmpty || audioDevicePattern == DeviceTypes.SIMULATED {
+            Bridge.log("Audio: Device pattern is empty or simulated, returning")
+            return
         }
 
         // Check if device is paired (don't activate to preserve A2DP music playback)
@@ -263,6 +255,11 @@ struct ViewState {
     private var lastLog: [String] {
         get { GlassesStore.shared.get("core", "lastLog") as? [String] ?? [] }
         set { GlassesStore.shared.apply("core", "lastLog", newValue) }
+    }
+
+    private var otherBtConnected: Bool {
+        get { GlassesStore.shared.get("core", "otherBtConnected") as? Bool ?? false }
+        set { GlassesStore.shared.apply("core", "otherBtConnected", newValue) }
     }
 
     // LC3 Audio Encoding
@@ -785,23 +782,22 @@ struct ViewState {
         if let idRange = deviceName.range(of: "_BLE_", options: .caseInsensitive) {
             // Extract the ID after "_BLE_" (e.g., "ABC123")
             audioDevicePattern = String(deviceName[idRange.upperBound...])
-            Bridge.log("Audio: Extracted device ID: \(audioDevicePattern) from \(deviceName)")
         } else if let idRange = deviceName.range(of: "_BT_", options: .caseInsensitive) {
             // Extract the ID after "_BT_"
             audioDevicePattern = String(deviceName[idRange.upperBound...])
-            Bridge.log("Audio: Extracted device ID: \(audioDevicePattern) from \(deviceName)")
         } else {
             // Fallback: use the full device name
             audioDevicePattern = deviceName
-            Bridge.log("Audio: Using full device name as pattern: \(audioDevicePattern)")
         }
         return audioDevicePattern
     }
 
     func checkCurrentAudioDevice() {
         let audioDevicePattern = getAudioDevicePattern()
+        Bridge.log("MAN: checkCurrentAudioDevice: audioDevicePattern: \(audioDevicePattern)")
 
         if audioDevicePattern.isEmpty || audioDevicePattern == DeviceTypes.SIMULATED {
+            glassesBtcConnected = false
             Bridge.log("MAN: Audio device pattern is empty or simulated, returning")
             return
         }
@@ -809,9 +805,16 @@ struct ViewState {
         // check if the device disconnected:
         let isConnected = AudioSessionMonitor.isAudioDeviceConnected(
             devicePattern: audioDevicePattern)
+
         if !isConnected {
             Bridge.log("MAN: Device '\(deviceName)' disconnected")
             glassesBtcConnected = false
+
+            let isOtherDeviceConnected = AudioSessionMonitor.isOtherAudioDeviceConnected(devicePattern: audioDevicePattern)
+            if isOtherDeviceConnected {
+                Bridge.log("MAN: Other device connected, returning")
+                otherBtConnected = true
+            }
             return
         }
 
@@ -892,6 +895,9 @@ struct ViewState {
         } else if defaultWearable.contains(DeviceTypes.Z100) {
             handleMach1Ready() // Z100 uses same initialization as Mach1
         }
+
+        // check current audio device:
+        checkCurrentAudioDevice()
 
         // save the default_wearable now that we're connected:
         Bridge.saveSetting("default_wearable", defaultWearable)
@@ -1067,6 +1073,27 @@ struct ViewState {
         sgc?.sendOtaStart()
     }
 
+    /// Request version info from glasses.
+    /// Glasses will respond with version_info message containing build number, firmware version, etc.
+    func requestVersionInfo() {
+        Bridge.log("MAN: 📱 Requesting version info from glasses")
+        sgc?.requestVersionInfo()
+    }
+
+    /// Send shutdown command to glasses.
+    /// This will initiate a graceful shutdown of the device.
+    func sendShutdown() {
+        Bridge.log("MAN: 🔌 Sending shutdown command to glasses")
+        sgc?.sendShutdown()
+    }
+
+    /// Send reboot command to glasses.
+    /// This will initiate a reboot of the device.
+    func sendReboot() {
+        Bridge.log("MAN: 🔄 Sending reboot command to glasses")
+        sgc?.sendReboot()
+    }
+
     func startBufferRecording() {
         Bridge.log("MAN: onStartBufferRecording")
         sgc?.startBufferRecording()
@@ -1100,10 +1127,6 @@ struct ViewState {
         shouldSendPcmData = sendPcm
         shouldSendTranscript = sendTranscript
         bypassVad = bypassVadForPCM
-
-        if offlineMode && (!shouldSendPcmData && !shouldSendTranscript) {
-            shouldSendTranscript = true
-        }
 
         micEnabled = shouldSendPcmData || shouldSendTranscript
         updateMicState()

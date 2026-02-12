@@ -172,7 +172,7 @@ class MentraNex : SGCManager() {
             Bridge.log("Device Class: ${device.bluetoothClass}")
             Bridge.log("Bond State: ${device.bondState}")
 
-            if (name == null || !name.contains("Nex1-")) {
+            if (name == null || (!name.contains("Nex1-") && !name.contains("MENTRA_DISPLAY_"))) {
                 return
             }
 
@@ -284,6 +284,9 @@ class MentraNex : SGCManager() {
     override fun queryGalleryStatus() { Bridge.log("Nex: queryGalleryStatus operation not supported") }
     override fun sendGalleryMode() { Bridge.log("Nex: sendGalleryMode operation not supported") }
 
+    // Version info: Not supported on Nex (uses protobuf for version info)
+    override fun requestVersionInfo() { Bridge.log("Nex: requestVersionInfo operation not supported") }
+
     // Camera & Media: Not supported on Nex (No camera)
     override fun requestPhoto(requestId: String, appId: String, size: String, webhookUrl: String?, authToken: String?, compress: String?, silent: Boolean) { Bridge.log("Nex: requestPhoto operation not supported") }
     override fun startRtmpStream(message: MutableMap<String, Any>) { Bridge.log("Nex: startRtmpStream operation not supported") }
@@ -337,7 +340,7 @@ class MentraNex : SGCManager() {
                 val address = device.address
                 
                 name?.let {
-                    if (it.startsWith("Nex1-")) {
+                    if (it.startsWith("Nex1-") || it.startsWith("MENTRA_DISPLAY_")) {
                         Bridge.log("bleScanCallback onScanResult: $name address $address")
                         synchronized(foundDeviceNames) {
                             if (!foundDeviceNames.contains(it)) {
@@ -416,6 +419,14 @@ class MentraNex : SGCManager() {
         sendDataSequentially(byteArrayOf(0x18.toByte()), 100)
     }
 
+    override fun sendShutdown() {
+        Bridge.log("sendShutdown - not supported on Nex")
+    }
+
+    override fun sendReboot() {
+        Bridge.log("sendReboot - not supported on Nex")
+    }
+
     override fun sendRgbLedControl( requestId: String, packageName: String?, action: String, color: String?, ontime: Int, offtime: Int, count: Int) {
         Bridge.log("sendRgbLedControl - not supported on Nex");
         Bridge.sendRgbLedControlResponse(requestId, false, "device_not_supported");
@@ -439,6 +450,7 @@ class MentraNex : SGCManager() {
         Bridge.log("Nex: clearDisplay() - sending clear display request command bytes");
         val clearDisplayPackets = NexProtobufUtils.generateClearDisplayRequestCommandBytes()
         sendDataSequentially(clearDisplayPackets, 10)
+        // sendTextWall(" ")
         Bridge.log("Nex: clearDisplay() - sent clear display request command bytes");
     }
 
@@ -577,15 +589,17 @@ class MentraNex : SGCManager() {
                 Bridge.log("Stopped heartbeat monitoring and mic beat; cleared sendQueue")
                 updateConnectionState()
                 Bridge.log("Updated connection state after disconnection")
-                
-                gatt.device?.let {
-                    Bridge.log("Closing GATT connection for device: ${it.address}")
-                    gatt.disconnect()
-                    gatt.close()
-                    Bridge.log("GATT connection closed")
-                } ?: run {
-                    Bridge.log("No GATT device available to disconnect")
-                }
+
+                // gatt.device?.let {
+                //     Bridge.log("Closing GATT connection for device: ${it.address}")
+                //     gatt.disconnect()
+                //     gatt.close()
+                //     Bridge.log("GATT connection closed")
+                // } ?: run {
+                //     Bridge.log("No GATT device available to disconnect")
+                // }
+
+                mainTaskHandler?.sendEmptyMessageDelayed(MAIN_TASK_HANDLER_CODE_RECONNECT_DEVICE, 0)
             }
 
             private fun handleConnectionFailure(gatt: BluetoothGatt, status: Int) {

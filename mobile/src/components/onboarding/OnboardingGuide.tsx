@@ -4,7 +4,6 @@ import {useState, useCallback, useEffect, useMemo, useRef} from "react"
 import {View, ViewStyle, ActivityIndicator, Platform, Animated} from "react-native"
 
 import {MentraLogoStandalone} from "@/components/brands/MentraLogoStandalone"
-import {ConnectionOverlay} from "@/components/glasses/ConnectionOverlay"
 import {Text, Button, Header, Icon} from "@/components/ignite"
 import {focusEffectPreventBack, useNavigationHistory} from "@/contexts/NavigationHistoryContext"
 import {useAppTheme} from "@/contexts/ThemeContext"
@@ -36,6 +35,8 @@ interface VideoStep extends BaseStep {
   containerStyle?: ViewStyle
   containerClassName?: string
   replayable?: boolean
+  showButtonImmediately?: boolean // Show the continue/end button immediately without waiting for video to finish
+  buttonTimeoutMs?: number // Fallback timeout to show button if video doesn't finish (ms)
 }
 
 interface ImageStep extends BaseStep {
@@ -84,7 +85,7 @@ export function OnboardingGuide({
   endButtonFn,
   skipFn,
   preventBack = false,
-  requiresGlassesConnection = false,
+  requiresGlassesConnection: _requiresGlassesConnection = false,
 }: OnboardingGuideProps) {
   const {clearHistoryAndGoHome} = useNavigationHistory()
   const {theme} = useAppTheme()
@@ -109,6 +110,7 @@ export function OnboardingGuide({
   const [exitRequested, setExitRequested] = useState(false)
   const [showStepSkipButton, setShowStepSkipButton] = useState(false)
   const stepSkipTimeoutRef = useRef<number | null>(null)
+  const buttonFallbackTimeoutRef = useRef<number | null>(null)
 
   // Fade animation state
   const fadeOpacity = useRef(new Animated.Value(1)).current
@@ -459,6 +461,10 @@ export function OnboardingGuide({
 
       if (status.status === "readyToPlay") {
         currentPlayer.play()
+        // Show button immediately if the step has showButtonImmediately flag
+        if (step.type === "video" && step.showButtonImmediately) {
+          setShowNextButton(true)
+        }
       }
       if (status.error) {
         setShowNextButton(true)
@@ -466,7 +472,7 @@ export function OnboardingGuide({
     })
 
     return () => subscription.remove()
-  }, [currentPlayer, currentIndex, autoStart, isCurrentStepImage])
+  }, [currentPlayer, currentIndex, autoStart, isCurrentStepImage, step])
 
   useEffect(() => {
     const sub1 = player1.addListener("sourceLoad", (_status: any) => {
@@ -789,6 +795,33 @@ export function OnboardingGuide({
     }
   }, [step.waitFn])
 
+  // Fallback timeout to show button if video doesn't finish
+  useEffect(() => {
+    if (buttonFallbackTimeoutRef.current) {
+      BackgroundTimer.clearTimeout(buttonFallbackTimeoutRef.current)
+      buttonFallbackTimeoutRef.current = null
+    }
+
+    if (!hasStarted || step.transition || step.waitFn || showNextButton) {
+      return
+    }
+
+    const timeoutMs = step.type === "video" ? step.buttonTimeoutMs : undefined
+    if (timeoutMs) {
+      buttonFallbackTimeoutRef.current = BackgroundTimer.setTimeout(() => {
+        console.log("ONBOARD: button fallback timeout triggered")
+        setShowNextButton(true)
+      }, timeoutMs)
+    }
+
+    return () => {
+      if (buttonFallbackTimeoutRef.current) {
+        BackgroundTimer.clearTimeout(buttonFallbackTimeoutRef.current)
+        buttonFallbackTimeoutRef.current = null
+      }
+    }
+  }, [currentIndex, hasStarted, step, showNextButton])
+
   const renderContinueButton = () => {
     // let showLoader = (waitState && step.waitFn) || !showNextButton
     // the wait state should take precedence over the show next flag:
@@ -858,14 +891,14 @@ export function OnboardingGuide({
         {step.title && (
           <Text
             className={`${
-              step.titleCentered ?? false ? "text-center" : "text-start"
+              (step.titleCentered ?? false) ? "text-center" : "text-start"
             } text-2xl font-semibold text-foreground`}
             text={step.title}
           />
         )}
         {step.subtitle && (
           <Text
-            className={`${step.subtitleCentered ?? false ? "text-center" : "text-start"} text-[18px] text-foreground`}
+            className={`${(step.subtitleCentered ?? false) ? "text-center" : "text-start"} text-[18px] text-foreground`}
             text={step.subtitle}
           />
         )}
@@ -929,7 +962,6 @@ export function OnboardingGuide({
 
   return (
     <>
-      {requiresGlassesConnection && <ConnectionOverlay />}
       <View id="main" className="flex-1 justify-between">
         {showHeader && (
           <Header

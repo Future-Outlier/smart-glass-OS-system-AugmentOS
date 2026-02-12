@@ -34,7 +34,10 @@ export default function Layout() {
     const backgroundColor = isFocused ? theme.colors.primary : bottomBarColor
     const displayIcon = isFocused ? iconNameFilled : iconName
     return (
-      <Pressable {...props} className="flex-col flex-1 gap-1 justify-between items-center" style={{marginBottom: bottom}}>
+      <Pressable
+        {...props}
+        className="flex-col flex-1 gap-1 justify-between items-center"
+        style={{marginBottom: bottom}}>
         <View className="px-3 py-1 rounded-2xl" style={{backgroundColor: backgroundColor}}>
           <Icon name={displayIcon} size={24} color={iconColor} backgroundColor={iconBgColor} />
         </View>

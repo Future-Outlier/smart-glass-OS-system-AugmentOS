@@ -41,6 +41,14 @@ class Mach1: UltraliteBaseViewController, SGCManager {
 
     func exit() {}
 
+    func sendShutdown() {
+        Bridge.log("sendShutdown - not supported on Mach1")
+    }
+
+    func sendReboot() {
+        Bridge.log("sendReboot - not supported on Mach1")
+    }
+
     func sendRgbLedControl(
         requestId: String, packageName _: String?, action _: String, color _: String?,
         ontime _: Int, offtime _: Int, count _: Int
@@ -61,6 +69,10 @@ class Mach1: UltraliteBaseViewController, SGCManager {
     func sendUserEmailToGlasses(_: String) {}
 
     func queryGalleryStatus() {}
+
+    func requestVersionInfo() {
+        Bridge.log("Mach1: requestVersionInfo - not supported on Mach1")
+    }
 
     func showDashboard() {}
 
@@ -116,6 +128,7 @@ class Mach1: UltraliteBaseViewController, SGCManager {
             GlassesStore.shared.apply("glasses", "fullyBooted", newValue)
         }
     }
+
     private var connected: Bool {
         get { GlassesStore.shared.get("glasses", "connected") as? Bool ?? false }
         set { GlassesStore.shared.apply("glasses", "connected", newValue) }

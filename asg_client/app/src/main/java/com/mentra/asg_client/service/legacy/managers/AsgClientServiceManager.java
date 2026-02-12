@@ -207,8 +207,8 @@ public class AsgClientServiceManager {
             Log.d(TAG, "MFNR enabled: " + asgSettings.isMfnrEnabled());
 
             // Explicitly enable ZSL and MFNR for enhanced photo quality
-            asgSettings.setZslEnabled(true);
-            asgSettings.setMfnrEnabled(true);
+            asgSettings.setZslEnabled(false);
+            asgSettings.setMfnrEnabled(false);
             Log.d(TAG, "✅ Settings initialized successfully");
         } catch (Exception e) {
             Log.e(TAG, "💥 Error initializing settings", e);
@@ -285,6 +285,35 @@ public class AsgClientServiceManager {
                 rgbLedCommandHandler.initializeBluetoothManager();
             } else {
                 Log.w(TAG, "⚠️ RGB LED Command Handler not set - cannot initialize Bluetooth Manager");
+            }
+
+            // Request BES system version now that BluetoothManager is ready
+            // This queries sh_syvr to get firmware version and MAC addresses
+            Log.d(TAG, "🔍 Checking conditions for BES system version request - isK900Device: " + isK900Device + 
+                      ", service: " + (service != null ? service.getClass().getSimpleName() : "null"));
+            
+            if (isK900Device && service != null && service instanceof com.mentra.asg_client.service.core.AsgClientService) {
+                Log.d(TAG, "✅ Conditions met - scheduling BES system version request");
+                // Delay slightly to ensure CommandProcessor is initialized
+                new android.os.Handler(android.os.Looper.getMainLooper()).postDelayed(() -> {
+                    try {
+                        Log.d(TAG, "🔧 Attempting to get CommandProcessor for BES system version request");
+                        com.mentra.asg_client.service.core.processors.CommandProcessor commandProcessor = 
+                            ((com.mentra.asg_client.service.core.AsgClientService) service).getCommandProcessor();
+                        if (commandProcessor != null) {
+                            Log.d(TAG, "🔧 Requesting BES system version via CommandProcessor");
+                            commandProcessor.requestSystemVersion();
+                        } else {
+                            Log.w(TAG, "⚠️ CommandProcessor not available yet - BES version will be requested when available");
+                        }
+                    } catch (Exception e) {
+                        Log.w(TAG, "⚠️ Could not request BES system version", e);
+                    }
+                }, 1000); // 1 second delay to ensure CommandProcessor is initialized
+            } else {
+                Log.d(TAG, "⚠️ Conditions not met for BES system version request - isK900Device: " + isK900Device + 
+                          ", service null: " + (service == null) + 
+                          ", is AsgClientService: " + (service != null && service instanceof com.mentra.asg_client.service.core.AsgClientService));
             }
         } catch (Exception e) {
             Log.e(TAG, "💥 Error initializing bluetooth manager", e);

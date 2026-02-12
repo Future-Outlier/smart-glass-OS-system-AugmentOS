@@ -1040,6 +1040,33 @@ class CoreManager {
         (sgc as? MentraLive)?.sendOtaStart()
     }
 
+    /**
+     * Request version info from glasses.
+     * Glasses will respond with version_info message containing build number, firmware version, etc.
+     */
+    fun requestVersionInfo() {
+        Bridge.log("MAN: 📱 Requesting version info from glasses")
+        sgc?.requestVersionInfo()
+    }
+
+    /**
+     * Send shutdown command to glasses.
+     * This will initiate a graceful shutdown of the device.
+     */
+    fun sendShutdown() {
+        Bridge.log("MAN: 🔌 Sending shutdown command to glasses")
+        sgc?.sendShutdown()
+    }
+
+    /**
+     * Send reboot command to glasses.
+     * This will initiate a reboot of the device.
+     */
+    fun sendReboot() {
+        Bridge.log("MAN: 🔄 Sending reboot command to glasses")
+        sgc?.sendReboot()
+    }
+
     fun startBufferRecording() {
         Bridge.log("MAN: onStartBufferRecording")
         sgc?.startBufferRecording()
@@ -1071,11 +1098,6 @@ class CoreManager {
         shouldSendPcmData = sendPcm
         shouldSendTranscript = sendTranscript
         bypassVad = bypassVadForPCM
-
-        // if offline mode is enabled and no PCM or transcription is requested, force transcription
-        if (offlineMode && (!shouldSendPcmData && !shouldSendTranscript)) {
-            shouldSendTranscript = true
-        }
 
         vadBuffer.clear()
         micEnabled = shouldSendPcmData || shouldSendTranscript
