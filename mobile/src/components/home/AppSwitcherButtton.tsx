@@ -21,6 +21,8 @@ interface AppSwitcherButtonProps {
 
 const SWIPE_DISTANCE_THRESHOLD = 100 // Distance needed to trigger open
 const SWIPE_VELOCITY_THRESHOLD = 800 // Velocity threshold for quick swipes
+const SWIPE_DISTANCE_MULTIPLIER = 0.5
+const SWIPE_PERCENT_THRESHOLD = 0.5
 
 export default function AppSwitcherButton({swipeProgress}: AppSwitcherButtonProps) {
   const {theme} = useAppTheme()
@@ -37,27 +39,38 @@ export default function AppSwitcherButton({swipeProgress}: AppSwitcherButtonProp
       // Only track upward swipes (negative Y)
       if (event.translationY < 0) {
         translateY.value = event.translationY * 1
-        swipeProgress.value = Math.min(1, Math.abs(translateY.value) / (SWIPE_DISTANCE_THRESHOLD * 1.5))
+        swipeProgress.value = Math.min(
+          1,
+          Math.abs(translateY.value) / (SWIPE_DISTANCE_THRESHOLD * SWIPE_DISTANCE_MULTIPLIER),
+        )
       }
     })
     .onEnd((event) => {
       const swipeDistance = Math.abs(translateY.value)
       const swipeVelocity = Math.abs(event.velocityY)
+      const normalizedVelocity = event.velocityY / (SWIPE_DISTANCE_THRESHOLD * SWIPE_DISTANCE_MULTIPLIER)
 
-      // Open if distance OR velocity threshold met
       const shouldOpen =
+        swipeProgress.value > SWIPE_PERCENT_THRESHOLD ||
         swipeDistance > SWIPE_DISTANCE_THRESHOLD ||
         swipeVelocity > SWIPE_VELOCITY_THRESHOLD
 
       if (shouldOpen) {
-        // Spring to fully open
-        swipeProgress.value = withSpring(1, {damping: 20, stiffness: 300, overshootClamping: true})
+        swipeProgress.value = withSpring(1, {
+          damping: 20,
+          stiffness: 300,
+          overshootClamping: true,
+          velocity: normalizedVelocity,
+        })
       } else {
-        // Spring back to closed
-        swipeProgress.value = withSpring(0, {damping: 20, stiffness: 300, overshootClamping: true})
+        swipeProgress.value = withSpring(0, {
+          damping: 20,
+          stiffness: 300,
+          overshootClamping: true,
+          velocity: normalizedVelocity,
+        })
       }
 
-      // Reset
       translateY.value = 0
     })
 
@@ -103,14 +116,20 @@ export default function AppSwitcherButton({swipeProgress}: AppSwitcherButtonProp
               <View
                 key={app.packageName}
                 style={{
-                  zIndex: 3 - index,
+                  zIndex: index,
                   marginLeft: index > 0 ? -theme.spacing.s8 : 0,
                 }}>
                 <AppIcon app={app} className="w-12 h-12" />
               </View>
             ))}
           </View>
-          {foregroundApp && <AppIcon app={foregroundApp} className="w-12 h-12" />}
+          {
+            foregroundApp && (
+              // <View className="border-2 border-primary rounded-2xl p-0.5">
+              <AppIcon app={foregroundApp} className="w-12 h-12" />
+            )
+            // </View>
+          }
         </View>
       </Animated.View>
     </GestureDetector>
