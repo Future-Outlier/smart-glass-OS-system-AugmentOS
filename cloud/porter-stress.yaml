@@ -20,8 +20,7 @@ services:
       RTMP_RELAY_URLS: "rtmp-relay-uscentral.mentra.glass:1935"
       LOG_LEVEL: "info"
       # Doppler injects all other env vars at runtime via `doppler run --`
-      # DOPPLER_TOKEN is passed from GitHub secret → Porter env → container
-      DOPPLER_TOKEN: "${DOPPLER_TOKEN}"
+      # DOPPLER_TOKEN is set once in Porter UI — not in git
       DOPPLER_PROJECT: "mentraos-cloud"
       DOPPLER_CONFIG: "staging_stress"
     # UDP audio listener on port 8000
