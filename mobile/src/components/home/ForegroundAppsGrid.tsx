@@ -4,14 +4,10 @@ import {FlatList, TextStyle, TouchableOpacity, View, ViewStyle} from "react-nati
 import {Text} from "@/components/ignite"
 import AppIcon from "@/components/home/AppIcon"
 import {useAppTheme} from "@/contexts/ThemeContext"
-import {
-  ClientAppletInterface,
-  DUMMY_APPLET,
-  useInactiveForegroundApps,
-  useStartApplet,
-} from "@/stores/applets"
+import {ClientAppletInterface, DUMMY_APPLET, useInactiveForegroundApps, useStartApplet} from "@/stores/applets"
 import {ThemedStyle} from "@/theme"
 import {askPermissionsUI} from "@/utils/PermissionsUtils"
+import {SETTINGS, useSetting} from "@/stores/settings"
 
 const GRID_COLUMNS = 4
 
@@ -19,6 +15,7 @@ export const ForegroundAppsGrid: React.FC = () => {
   const {themed, theme} = useAppTheme()
   const foregroundApps = useInactiveForegroundApps()
   const startApplet = useStartApplet()
+  const [appSwitcherUi] = useSetting(SETTINGS.app_switcher_ui.key)
 
   const gridData = useMemo(() => {
     // Filter out incompatible apps and running apps
@@ -58,7 +55,6 @@ export const ForegroundAppsGrid: React.FC = () => {
   }, [foregroundApps])
 
   const handlePress = async (app: ClientAppletInterface) => {
-
     const result = await askPermissionsUI(app, theme)
     if (result !== 1) {
       return
@@ -98,9 +94,11 @@ export const ForegroundAppsGrid: React.FC = () => {
 
   return (
     <View style={themed($container)}>
-      <View style={themed($header)}>
-        <Text tx="home:inactiveApps" style={themed($headerText)} />
-      </View>
+      {!appSwitcherUi && (
+        <View style={themed($header)}>
+          <Text tx="home:inactiveApps" style={themed($headerText)} />
+        </View>
+      )}
       <FlatList
         data={gridData}
         renderItem={renderItem}
