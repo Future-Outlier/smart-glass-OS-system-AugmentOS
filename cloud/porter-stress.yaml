@@ -9,7 +9,7 @@ build:
 services:
   - name: cloud
     type: web
-    run: doppler run -- bash -c "cd packages/cloud && PORT=80 bun run start"
+    run: doppler run -- bun run start
     port: 80 # Main Cloud API port
     cpuCores: 5
     ramMegabytes: 4096
@@ -20,7 +20,8 @@ services:
       RTMP_RELAY_URLS: "rtmp-relay-uscentral.mentra.glass:1935"
       LOG_LEVEL: "info"
       # Doppler injects all other env vars at runtime via `doppler run --`
-      # DOPPLER_TOKEN is set once in Porter UI — no need to pass through GitHub
+      # DOPPLER_TOKEN is passed from GitHub secret → Porter env → container
+      DOPPLER_TOKEN: "${DOPPLER_TOKEN}"
       DOPPLER_PROJECT: "mentraos-cloud"
       DOPPLER_CONFIG: "staging_stress"
     # UDP audio listener on port 8000

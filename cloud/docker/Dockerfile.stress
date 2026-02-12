@@ -40,6 +40,9 @@ RUN echo "🚀 Starting build process..." && \
     echo "✅ Built packages/cloud..." && \
     echo "🎉 All packages built successfully! 🎉"
 
+# Set working directory to cloud package so `bun run start` works directly
+WORKDIR /app/packages/cloud
+
 # Expose HTTP port and UDP audio port
 EXPOSE 80 8000/udp
 
