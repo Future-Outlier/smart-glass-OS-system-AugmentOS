@@ -474,17 +474,16 @@ export const useAppletStatusStore = create<AppStatusState>((set, get) => ({
       // only open if the current route is home:
       const currentRoute = getCurrentRoute()
       if (currentRoute === "/home") {
+        setLastOpenTime(applet.packageName)
         if (applet.offline) {
           const offlineRoute = applet.offlineRoute
           if (offlineRoute) {
-            setLastOpenTime(applet.packageName)
             push(offlineRoute, {transition: "fade"})
           }
         }
 
         // Check if app has webviewURL and navigate directly to it
         if (applet.webviewUrl && applet.healthy) {
-          setLastOpenTime(applet.packageName)
           push("/applet/webview", {
             webviewURL: applet.webviewUrl,
             appName: applet.name,

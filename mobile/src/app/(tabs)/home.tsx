@@ -21,7 +21,7 @@ import CoreStatusBar from "@/components/dev/CoreStatusBar"
 import {attemptReconnect} from "@/effects/Reconnect"
 import AppSwitcherButton from "@/components/home/AppSwitcherButtton"
 import AppSwitcher from "@/components/home/AppSwitcher"
-
+import {DeviceStatus} from "@/components/home/DeviceStatus"
 
 export default function Homepage() {
   const refreshApplets = useRefreshApplets()
@@ -34,7 +34,7 @@ export default function Homepage() {
   const [appSwitcherUi] = useSetting(SETTINGS.app_switcher_ui.key)
   const [showSwitcher, setShowSwitcher] = useState(false)
   const hasTriggered = useRef(false)
-  const PULL_THRESHOLD = 80 // How far to pull down to trigger
+  const PULL_THRESHOLD = 180 // How far to pull down to trigger
 
   useFocusEffect(
     useCallback(() => {
@@ -59,10 +59,10 @@ export default function Homepage() {
   const handleScroll = useCallback(
     (event: NativeSyntheticEvent<NativeScrollEvent>) => {
       const {contentOffset, contentSize, layoutMeasurement} = event.nativeEvent
-      
+
       // How far past the bottom the user has scrolled
       const overscroll = contentOffset.y - (contentSize.height - layoutMeasurement.height)
-  
+
       // Trigger when pulling past the bottom
       if (overscroll > PULL_THRESHOLD && !hasTriggered.current && !showSwitcher) {
         hasTriggered.current = true
@@ -98,7 +98,8 @@ export default function Homepage() {
       <>
         {debugCoreStatusBarEnabled && <CoreStatusBar />}
         <Group>
-          <CompactDeviceStatus />
+          {!appSwitcherUi && <CompactDeviceStatus />}
+          {appSwitcherUi && <DeviceStatus />}
           {!offlineMode && !appSwitcherUi && <BackgroundAppsLink />}
         </Group>
         <View className="h-2" />
@@ -131,9 +132,9 @@ export default function Homepage() {
         <View className="h-4" />
         {renderContent()}
         <View className="h-4" />
-        {appSwitcherUi && <AppSwitcherButton onPress={() => setShowSwitcher(true)} />}
         {!appSwitcherUi && <IncompatibleApps />}
       </ScrollView>
+      {appSwitcherUi && <AppSwitcherButton onPress={() => setShowSwitcher(true)} />}
       {appSwitcherUi && <AppSwitcher visible={showSwitcher} onClose={handleCloseSwitcher} />}
     </Screen>
   )
