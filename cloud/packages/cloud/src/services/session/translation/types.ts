@@ -300,7 +300,7 @@ export interface TranslationProviderSelectionOptions {
 export const DEFAULT_TRANSLATION_CONFIG: TranslationConfig = {
   providers: {
     defaultProvider: TranslationProviderType.SONIOX,
-    fallbackProvider: TranslationProviderType.AZURE,
+    fallbackProvider: TranslationProviderType.SONIOX,
   },
 
   azure: {

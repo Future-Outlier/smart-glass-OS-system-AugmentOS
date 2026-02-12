@@ -6,7 +6,6 @@ import { ExtendedStreamType, TranscriptionData } from "@mentra/sdk";
 import dotenv from "dotenv";
 import { Logger } from "pino";
 
- 
 import UserSession from "../UserSession";
 dotenv.config();
 
@@ -20,14 +19,11 @@ export const ALIBABA_ENDPOINT = process.env.ALIBABA_ENDPOINT || "wss://dashscope
 export const ALIBABA_WORKSPACE = process.env.ALIBABA_WORKSPACE || "";
 export const ALIBABA_DASHSCOPE_API_KEY = process.env.ALIBABA_DASHSCOPE_API_KEY || "";
 
-// Ensure required environment variables are set (warn if missing in development)
+// Azure is deprecated — warn if keys are present (they shouldn't be needed)
 if (!AZURE_SPEECH_KEY || !AZURE_SPEECH_REGION) {
-  const message = "Missing required Azure Speech environment variables: AZURE_SPEECH_KEY and AZURE_SPEECH_REGION";
-  if (process.env.NODE_ENV === "production") {
-    throw new Error(message);
-  } else {
-    console.warn(`⚠️  ${message}. Transcription features may not work.`);
-  }
+  console.warn(
+    "⚠️  Azure Speech env vars not set (AZURE_SPEECH_KEY, AZURE_SPEECH_REGION). Azure provider will be unavailable — this is expected, Soniox is the primary provider.",
+  );
 }
 if (!SONIOX_API_KEY || !SONIOX_ENDPOINT) {
   const message = "Missing required Soniox environment variables: SONIOX_API_KEY and SONIOX_ENDPOINT";
@@ -385,9 +381,7 @@ export interface ValidationResult {
 export const DEFAULT_TRANSCRIPTION_CONFIG: TranscriptionConfig = {
   providers: {
     defaultProvider: ProviderType.SONIOX,
-    fallbackProvider: ProviderType.AZURE,
-    // defaultProvider: ProviderType.AZURE,
-    // fallbackProvider: ProviderType.SONIOX
+    fallbackProvider: ProviderType.SONIOX,
   },
 
   azure: {
