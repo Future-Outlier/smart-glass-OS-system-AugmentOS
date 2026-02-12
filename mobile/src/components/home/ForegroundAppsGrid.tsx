@@ -4,7 +4,13 @@ import {FlatList, TextStyle, TouchableOpacity, View, ViewStyle} from "react-nati
 import {Text} from "@/components/ignite"
 import AppIcon from "@/components/home/AppIcon"
 import {useAppTheme} from "@/contexts/ThemeContext"
-import {ClientAppletInterface, DUMMY_APPLET, useInactiveForegroundApps, useStartApplet} from "@/stores/applets"
+import {
+  ClientAppletInterface,
+  DUMMY_APPLET,
+  useForegroundApps,
+  useInactiveForegroundApps,
+  useStartApplet,
+} from "@/stores/applets"
 import {ThemedStyle} from "@/theme"
 import {askPermissionsUI} from "@/utils/PermissionsUtils"
 import {SETTINGS, useSetting} from "@/stores/settings"
@@ -13,21 +19,22 @@ const GRID_COLUMNS = 4
 
 export const ForegroundAppsGrid: React.FC = () => {
   const {themed, theme} = useAppTheme()
-  const foregroundApps = useInactiveForegroundApps()
+
   const startApplet = useStartApplet()
   const [appSwitcherUi] = useSetting(SETTINGS.app_switcher_ui.key)
+  const apps = useForegroundApps()
 
   const gridData = useMemo(() => {
     // Filter out incompatible apps and running apps
-    let inactiveApps = foregroundApps.filter((app) => {
+    let filteredApps = apps.filter((app) => {
       // Exclude running apps
-      if (app.running) return false
+      if (app.running && !appSwitcherUi) return false
       if (!app.compatibility?.isCompatible) return false
       return true
     })
 
     // Sort to put Camera app first, then alphabetical
-    inactiveApps.sort((a, b) => {
+    filteredApps.sort((a, b) => {
       const priority = (pkg: string) => {
         if (pkg === "com.mentra.camera") return 0
         if (pkg === "com.mentra.gallery") return 2
@@ -42,17 +49,17 @@ export const ForegroundAppsGrid: React.FC = () => {
     })
 
     // Calculate how many empty placeholders we need to fill the last row
-    const totalItems = inactiveApps.length
+    const totalItems = filteredApps.length
     const remainder = totalItems % GRID_COLUMNS
     const emptySlots = remainder === 0 ? 0 : GRID_COLUMNS - remainder
 
     // Add empty placeholders to align items to the left
     for (let i = 0; i < emptySlots; i++) {
-      inactiveApps.push(DUMMY_APPLET)
+      filteredApps.push(DUMMY_APPLET)
     }
 
-    return inactiveApps
-  }, [foregroundApps])
+    return filteredApps
+  }, [apps, appSwitcherUi])
 
   const handlePress = async (app: ClientAppletInterface) => {
     const result = await askPermissionsUI(app, theme)
@@ -67,7 +74,7 @@ export const ForegroundAppsGrid: React.FC = () => {
     ({item}: {item: ClientAppletInterface}) => {
       // Don't render empty placeholders
       if (!item.name) {
-        return <View style={themed($gridItem)} />
+        return <View className="flex-1 items-center my-3" />
       }
 
       // small hack to help with some long app names:
@@ -78,8 +85,8 @@ export const ForegroundAppsGrid: React.FC = () => {
       }
 
       return (
-        <TouchableOpacity style={themed($gridItem)} onPress={() => handlePress(item)} activeOpacity={0.7}>
-          <AppIcon app={item} style={themed($appIcon)} />
+        <TouchableOpacity className="flex-1 items-center my-3" onPress={() => handlePress(item)} activeOpacity={0.7}>
+          <AppIcon app={item} className="w-16 h-16" />
           <Text
             text={item.name}
             style={[themed(!item.healthy ? $appNameOffline : $appName), {fontSize: size}]}
@@ -93,10 +100,10 @@ export const ForegroundAppsGrid: React.FC = () => {
   )
 
   return (
-    <View style={themed($container)}>
+    <View className="flex-1 mt-3">
       {!appSwitcherUi && (
-        <View style={themed($header)}>
-          <Text tx="home:inactiveApps" style={themed($headerText)} />
+        <View className="flex-row justify-between items-center pb-3">
+          <Text tx="home:inactiveApps" className="font-semibold text-xl text-secondary-foreground" />
         </View>
       )}
       <FlatList
@@ -106,44 +113,11 @@ export const ForegroundAppsGrid: React.FC = () => {
         numColumns={GRID_COLUMNS}
         scrollEnabled={false}
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={themed($gridContent)}
+        contentContainerClassName="pb-4"
       />
     </View>
   )
 }
-
-const $container: ThemedStyle<ViewStyle> = ({spacing}) => ({
-  flex: 1,
-  marginTop: spacing.s3,
-})
-
-const $gridContent: ThemedStyle<ViewStyle> = ({spacing}) => ({
-  paddingBottom: spacing.s4,
-})
-
-const $gridItem: ThemedStyle<ViewStyle> = ({spacing}) => ({
-  flex: 1,
-  alignItems: "center",
-  marginVertical: spacing.s3,
-})
-
-const $header: ThemedStyle<ViewStyle> = ({spacing}) => ({
-  flexDirection: "row",
-  justifyContent: "space-between",
-  alignItems: "center",
-  paddingBottom: spacing.s3,
-})
-
-const $headerText: ThemedStyle<TextStyle> = ({colors}) => ({
-  fontSize: 20,
-  fontWeight: 600,
-  color: colors.secondary_foreground,
-})
-
-const $appIcon: ThemedStyle<ViewStyle> = () => ({
-  width: 64,
-  height: 64,
-})
 
 const $appName: ThemedStyle<TextStyle> = ({colors, spacing}) => ({
   color: colors.secondary_foreground,
@@ -153,7 +127,7 @@ const $appName: ThemedStyle<TextStyle> = ({colors, spacing}) => ({
 })
 
 const $appNameOffline: ThemedStyle<TextStyle> = ({colors, spacing}) => ({
-  color: colors.textDim,
+  color: colors.muted_foreground,
   textAlign: "center",
   marginTop: spacing.s2,
   textDecorationLine: "line-through",

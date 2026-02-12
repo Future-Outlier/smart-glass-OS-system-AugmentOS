@@ -1,5 +1,6 @@
 import {
   AppletInterface,
+  DeviceTypes,
   getModelCapabilities,
   HardwareRequirementLevel,
   HardwareType,
@@ -210,8 +211,8 @@ const getOfflineApplets = async (): Promise<ClientAppletInterface[]> => {
     },
     {
       packageName: storePackageName,
-      name: "Get more apps",
-      offlineRoute: "/miniapps/store",
+      name: translate("miniApps:store"),
+      offlineRoute: "/miniapps/store/store",
       webviewUrl: "",
       healthy: true,
       permissions: [],
@@ -228,14 +229,14 @@ const getOfflineApplets = async (): Promise<ClientAppletInterface[]> => {
     {
       packageName: mirrorPackageName,
       name: translate("miniApps:mirror"),
-      offlineRoute: "/miniapps/mirror",
+      offlineRoute: "/miniapps/mirror/mirror",
       webviewUrl: "",
       healthy: true,
       permissions: [],
       offline: true,
       running: false,
       loading: false,
-      hardwareRequirements: [],
+      hardwareRequirements: [{type: HardwareType.DISPLAY, level: HardwareRequirementLevel.REQUIRED}],
       type: "background",
       logoUrl: require("@assets/applet-icons/mirror.png"),
       local: false,
@@ -411,9 +412,10 @@ export const useAppletStatusStore = create<AppStatusState>((set, get) => ({
 
     // add in the compatibility info:
     let defaultWearable = useSettingsStore.getState().getSetting(SETTINGS.default_wearable.key)
-    let capabilities = getModelCapabilities(defaultWearable)
+    let capabilities = getModelCapabilities(defaultWearable || DeviceTypes.NONE)
 
     for (const applet of applets) {
+      // console.log(`APPLETS: ${applet.packageName} ${JSON.stringify(applet.hardwareRequirements)}`)
       let result = HardwareCompatibility.checkCompatibility(applet.hardwareRequirements, capabilities)
       applet.compatibility = result
     }
@@ -546,6 +548,10 @@ export const useInactiveForegroundApps = () => {
     }
     return apps.filter((app) => (app.type === "standard" || app.type === "background" || !app.type) && !app.running)
   }, [apps, isOffline])
+}
+export const useForegroundApps = () => {
+  const apps = useApplets()
+  return useMemo(() => apps.filter((app) => (app.type === "standard" || app.type === "background" || !app.type)), [apps])
 }
 
 export const useActiveApps = () => {

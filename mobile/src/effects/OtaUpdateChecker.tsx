@@ -7,6 +7,7 @@ import {SETTINGS, useSetting} from "@/stores/settings"
 import showAlert from "@/utils/AlertUtils"
 import {translate} from "@/i18n/translate"
 import {usePathname} from "expo-router"
+import { BackgroundTimer } from "@/utils/timers"
 
 export interface VersionInfo {
   versionCode: number
@@ -368,7 +369,7 @@ export function OtaUpdateChecker() {
       }
       // Clear any pending OTA check timeout
       if (otaCheckTimeoutRef.current) {
-        clearTimeout(otaCheckTimeoutRef.current)
+        BackgroundTimer.clearTimeout(otaCheckTimeoutRef.current)
         otaCheckTimeoutRef.current = null
       }
       // Clear MTK session flag on disconnect (glasses rebooted, new version now active)
@@ -479,31 +480,32 @@ export function OtaUpdateChecker() {
 
     // OTA check (only for WiFi-capable glasses)
     if (hasCheckedOta.current) {
-      console.log("OTA: check skipped - already checked this session")
+      // console.log("OTA: check skipped - already checked this session")
       return
     }
     if (!glassesConnected || !buildNumber) {
-      console.log(`OTA: check skipped - missing data (connected: ${glassesConnected}, build: ${buildNumber})`)
+      // console.log(`OTA: check skipped - missing data (connected: ${glassesConnected}, build: ${buildNumber})`)
       return
     }
 
     const features: Capabilities = getModelCapabilities(defaultWearable)
     if (!features?.hasWifi) {
-      console.log("OTA: check skipped - device doesn't have WiFi capability")
+      // console.log("OTA: check skipped - device doesn't have WiFi capability")
       return
     }
 
     // Clear any existing timeout
     if (otaCheckTimeoutRef.current) {
-      clearTimeout(otaCheckTimeoutRef.current)
+      BackgroundTimer.clearTimeout(otaCheckTimeoutRef.current)
     }
 
     // Delay OTA check by 500ms to allow all version_info chunks to arrive
     // (version_info_1, version_info_2, version_info_3 arrive sequentially with ~100ms gaps)
     console.log("OTA: check scheduled - waiting 500ms for firmware version info...")
-    otaCheckTimeoutRef.current = setTimeout(async () => {
+    otaCheckTimeoutRef.current = BackgroundTimer.setTimeout(async () => {
+      let connected = useGlassesStore.getState().connected
       // Re-check conditions after delay (glasses might have disconnected)
-      if (!useGlassesStore.getState().connected) {
+      if (!connected) {
         console.log("OTA: check cancelled - glasses disconnected during delay")
         return
       }
@@ -529,7 +531,7 @@ export function OtaUpdateChecker() {
           console.log("OTA: BES version still unknown after extended wait - proceeding without it")
         }
         // Re-check connection after waiting
-        if (!useGlassesStore.getState().connected) {
+        if (!connected) {
           console.log("OTA: check cancelled - glasses disconnected while waiting for BES version")
           return
         }
@@ -624,7 +626,7 @@ export function OtaUpdateChecker() {
     // Cleanup timeout on effect re-run or unmount
     return () => {
       if (otaCheckTimeoutRef.current) {
-        clearTimeout(otaCheckTimeoutRef.current)
+        BackgroundTimer.clearTimeout(otaCheckTimeoutRef.current)
         otaCheckTimeoutRef.current = null
       }
     }

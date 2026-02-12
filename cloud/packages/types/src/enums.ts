@@ -26,6 +26,7 @@ export enum HardwareRequirementLevel {
 }
 
 export enum DeviceTypes {
+  NONE = "None",
   SIMULATED = "Simulated Glasses",
   G1 = "Even Realities G1",
   LIVE = "Mentra Live",

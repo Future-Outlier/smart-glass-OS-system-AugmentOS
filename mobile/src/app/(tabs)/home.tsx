@@ -89,6 +89,7 @@ export default function Homepage() {
           {debugCoreStatusBarEnabled && <CoreStatusBar />}
           <Group>
             <PairGlassesCard />
+            <ForegroundAppsGrid />
           </Group>
         </>
       )
@@ -98,9 +99,9 @@ export default function Homepage() {
       <>
         {debugCoreStatusBarEnabled && <CoreStatusBar />}
         <Group>
-          <CompactDeviceStatus />
-          {/* {!appSwitcherUi && <CompactDeviceStatus />} */}
-          {/* {appSwitcherUi && <DeviceStatus />} */}
+          {/* <CompactDeviceStatus /> */}
+          {!appSwitcherUi && <CompactDeviceStatus />}
+          {appSwitcherUi && <DeviceStatus />}
           {!offlineMode && !appSwitcherUi && <BackgroundAppsLink />}
         </Group>
         <View className="h-2" />

@@ -826,6 +826,7 @@ const en = {
     liveCaptions: "Live Captions",
     mirror: "Glasses Mirror",
     simulated: "Simulated Glasses",
+    store: "Get more apps",
   },
 }
 
