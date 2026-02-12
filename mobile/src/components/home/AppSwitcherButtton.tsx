@@ -1,17 +1,14 @@
 import {View} from "react-native"
 import Animated, {SharedValue, useSharedValue, withSpring} from "react-native-reanimated"
 import {Gesture, GestureDetector} from "react-native-gesture-handler"
-import {scheduleOnRN} from "react-native-worklets"
 
 import {Text} from "@/components/ignite"
 import AppIcon from "@/components/home/AppIcon"
-import {Badge} from "@/components/ui"
 import {useAppTheme} from "@/contexts/ThemeContext"
 import {translate} from "@/i18n"
 import {
   useActiveApps,
   useActiveBackgroundApps,
-  useActiveBackgroundAppsCount,
   useActiveForegroundApp,
 } from "@/stores/applets"
 
