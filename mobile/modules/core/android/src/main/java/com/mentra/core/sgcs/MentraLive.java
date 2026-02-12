@@ -159,7 +159,7 @@ public class MentraLive extends SGCManager {
 
     // Keep-alive parameters
     private static final int KEEP_ALIVE_INTERVAL_MS = 5000; // 5 seconds
-    private static final int CONNECTION_TIMEOUT_MS = 10000; // 10 seconds
+    private static final int CONNECTION_TIMEOUT_MS = 30000; // 30 seconds
 
     // Heartbeat parameters
     private static final int HEARTBEAT_INTERVAL_MS = 30000; // 30 seconds
@@ -997,9 +997,11 @@ public class MentraLive extends SGCManager {
                         bluetoothGatt = null;
                     }
 
-                    // Attempt reconnection
-                    Log.i(TAG, "🔌 🔄 Starting automatic reconnection procedure...");
-                    handleReconnection();
+                    // Attempt reconnection if not killed
+                    if (!isKilled) {
+                        Log.i(TAG, "🔌 🔄 Starting automatic reconnection procedure...");
+                        handleReconnection();
+                    }
 
                     // Close LC3 audio logging
                     closeLc3Logging();
@@ -1034,9 +1036,11 @@ public class MentraLive extends SGCManager {
                     bluetoothGatt = null;
                 }
 
-                // Attempt reconnection
-                Log.i(TAG, "🔌 🔄 Retrying after GATT error...");
-                handleReconnection();
+                // Attempt reconnection if not killed
+                if (!isKilled) {
+                    Log.i(TAG, "🔌 🔄 Retrying after GATT error...");
+                    handleReconnection();
+                }
             }
         }
 
