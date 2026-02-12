@@ -1,0 +1,33 @@
+version: v2
+namespace: ${PORTER_NAMESPACE}
+
+build:
+  method: docker
+  context: ./cloud/.
+  dockerfile: ./cloud/docker/Dockerfile.livekit
+
+services:
+  - name: cloud
+    type: web
+    run: doppler run -- ./start.sh
+    port: 80 # Main Cloud API port
+    cpuCores: 5
+    ramMegabytes: 4096
+    env:
+      HOST: "0.0.0.0"
+      SERVICE_NAME: "cloud"
+      RTMP_RELAY_URLS: "rtmp-relay-uscentral.mentra.glass:1935"
+      LIVEKIT_GRPC_SOCKET: "/tmp/livekit-bridge.sock"
+      LIVEKIT_PCM_ENDIAN: "off"
+      LOG_LEVEL: "info"
+      # Better Stack logging for Go bridge
+      BETTERSTACK_SOURCE_TOKEN: "${BETTERSTACK_SOURCE_TOKEN}"
+      BETTERSTACK_INGESTING_HOST: "s1311181.eu-nbg-2.betterstackdata.com"
+      # Doppler service token — the only secret needed in Porter.
+      # All other env vars are injected at runtime by `doppler run --`
+      DOPPLER_TOKEN: "${DOPPLER_TOKEN}"
+    # UDP audio listener on port 8000
+    additionalPorts:
+      - port: 8000
+        protocol: UDP
+        name: udp-audio

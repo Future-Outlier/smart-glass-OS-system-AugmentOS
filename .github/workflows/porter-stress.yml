@@ -21,11 +21,12 @@ jobs:
         uses: porter-dev/setup-porter@v0.1.0
       - name: Deploy cloud-stress to US West
         timeout-minutes: 30
-        run: exec porter apply -f ./cloud/porter-livekit.yaml
+        run: exec porter apply -f ./cloud/porter-stress.yaml
         env:
           PORTER_APP_NAME: cloud-stress
           PORTER_NAMESPACE: stress
           NODE_ENV: stress
+          DOPPLER_TOKEN: ${{ secrets.DOPPLER_STAGING_STRESS_TOKEN }}
           PORTER_CLUSTER: "4965"
           PORTER_DEPLOYMENT_TARGET_ID: 540690ee-b1d7-4a5e-80e9-683d11001c75
           PORTER_HOST: https://dashboard.porter.run
