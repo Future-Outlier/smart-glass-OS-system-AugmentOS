@@ -34,7 +34,7 @@ export default function Homepage() {
   const [appSwitcherUi] = useSetting(SETTINGS.app_switcher_ui.key)
   const [showSwitcher, setShowSwitcher] = useState(false)
   const hasTriggered = useRef(false)
-  const PULL_THRESHOLD = 180 // How far to pull down to trigger
+  const PULL_THRESHOLD = 140 // How far to pull down to trigger
 
   useFocusEffect(
     useCallback(() => {
