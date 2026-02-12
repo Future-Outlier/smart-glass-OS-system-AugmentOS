@@ -284,6 +284,9 @@ class MentraNex : SGCManager() {
     override fun queryGalleryStatus() { Bridge.log("Nex: queryGalleryStatus operation not supported") }
     override fun sendGalleryMode() { Bridge.log("Nex: sendGalleryMode operation not supported") }
 
+    // Version info: Not supported on Nex (uses protobuf for version info)
+    override fun requestVersionInfo() { Bridge.log("Nex: requestVersionInfo operation not supported") }
+
     // Camera & Media: Not supported on Nex (No camera)
     override fun requestPhoto(requestId: String, appId: String, size: String, webhookUrl: String?, authToken: String?, compress: String?, silent: Boolean) { Bridge.log("Nex: requestPhoto operation not supported") }
     override fun startRtmpStream(message: MutableMap<String, Any>) { Bridge.log("Nex: startRtmpStream operation not supported") }
@@ -414,6 +417,14 @@ class MentraNex : SGCManager() {
 
     override fun exit() {
         sendDataSequentially(byteArrayOf(0x18.toByte()), 100)
+    }
+
+    override fun sendShutdown() {
+        Bridge.log("sendShutdown - not supported on Nex")
+    }
+
+    override fun sendReboot() {
+        Bridge.log("sendReboot - not supported on Nex")
     }
 
     override fun sendRgbLedControl( requestId: String, packageName: String?, action: String, color: String?, ontime: Int, offtime: Int, count: Int) {

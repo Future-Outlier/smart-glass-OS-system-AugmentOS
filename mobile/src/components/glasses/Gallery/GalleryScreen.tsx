@@ -466,6 +466,13 @@ export function GalleryScreen() {
       console.log("[GalleryScreen] Already syncing, ignoring press")
       return
     }
+
+    // Check if glasses are connected before starting sync
+    if (!glassesConnected) {
+      showAlert("Glasses Disconnected", "Please connect your glasses before syncing the gallery.", [{text: "OK"}])
+      return
+    }
+
     gallerySyncService.startSync()
   }
 

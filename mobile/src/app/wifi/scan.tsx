@@ -16,7 +16,6 @@ import {useGlassesStore} from "@/stores/glasses"
 import showAlert from "@/utils/AlertUtils"
 import WifiCredentialsService from "@/utils/wifi/WifiCredentialsService"
 import {translate} from "@/i18n"
-import {ConnectionOverlay} from "@/components/glasses/ConnectionOverlay"
 import {BackgroundTimer} from "@/utils/timers"
 import {useCoreStore} from "@/stores/core"
 
@@ -41,7 +40,7 @@ export default function WifiScanScreen() {
 
   const secondLastRoute = getPreviousRoute(1)
   const showBack = backableRoutes.includes(getPreviousRoute() || "") || backableRoutes.includes(secondLastRoute || "")
-  const showSkip = !showBack
+  const showSkip = wifiConnected
 
   const handleBack = () => {
     if (showBack) {
@@ -252,8 +251,6 @@ export default function WifiScanScreen() {
         <Header title="Wi-Fi" rightIcon="repeat" onRightPress={startScan} />
       )}
 
-      <ConnectionOverlay />
-
       <View className="flex-1">
         {/* Header */}
         <View className="pt-4 pb-6 items-center">
@@ -286,11 +283,8 @@ export default function WifiScanScreen() {
           )}
         </View>
 
-        <Button
-          tx="wifi:enterNetworkManually"
-          preset={showSkip ? "primary" : "secondary"}
-          onPress={handleManualEntry}
-        />
+        <Button tx="wifi:enterNetworkManually" preset="primary" onPress={handleManualEntry} />
+        {/* show skip button if we are already connected to a network */}
         {showSkip && <Button tx="common:skip" preset="secondary" onPress={handleBack} className="mt-3" />}
       </View>
     </Screen>

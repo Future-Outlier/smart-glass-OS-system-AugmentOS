@@ -115,8 +115,7 @@ const en = {
     btClassicDisconnectedMessage:
       "Your glasses are connected to the app, but the bluetooth audio device is not connected.",
     powerOn: "Power on",
-    poweredOn: "Powered on",
-    glassesBooting: "Glasses are booting...",
+    poweredOn: "Continue",
   },
   pairingGuide: {
     mentraLivePreorder: "Get Mentra Live and experience computer vision on your smart glasses.",
@@ -178,7 +177,7 @@ const en = {
     liveTakeAPhoto: "Take a photo",
     livePressActionButton: "Press the action button once",
     liveStopRecording: "Stop recording",
-    livePressAndHoldAgain: "Press and hold the action button again",
+    livePressAndHoldAgain: "Press the action button again",
     liveLedFlashWarning: "The LED flash turns on when the camera turns on",
     liveStartRecording: "Start recording",
     livePressAndHold: "Press and hold the action button for 3 seconds",
@@ -192,7 +191,7 @@ const en = {
     liveCableDescription: "Take off your glasses, connect the cable, then put them back on",
     liveCableInfo: "The cable allows you to use Mentra Live while it charges",
     liveEndTitle: "Great job!",
-    liveEndMessage: "That's the basics. Now let's set up some advanced features",
+    liveEndMessage: "You're all set. Time to start using Mentra Live.",
     liveWelcomeTitle: "Welcome to Mentra Live",
     liveWelcomeSubtitle: "Learn the basics",
     livePowerOnTutorial: "Press and hold the power button for 5 seconds",
@@ -233,9 +232,10 @@ const en = {
     btClassicStep4: 'Return to the app once it says "Connected"',
     btClassicTitle: "Pair Audio",
     btClassicSubtitle: "Connect {{name}} as a Bluetooth audio device",
+    showDevicePicker: "Show device picker",
     openSettings: "Open settings",
     stepCounter: "Step {{index}} / {{total}}",
-    confirmSkip: "Yes, skip"
+    confirmSkip: "Yes, skip",
   },
   wifi: {
     networks: "Networks",
@@ -244,10 +244,9 @@ const en = {
     enterNetworkManually: "Enter network manually",
     enterNetworkDetails: "Enter network details",
     addNetwork: "Add your Wi-Fi network",
-    addNetworkDescription:
-      "Add a network to import media and install device updates automatically while your device is charging.",
+    addNetworkDescription: "Add your network here to sync the media and software on your Mentra Live.",
     rememberPassword: "Remember password",
-    rememberPasswordDescription: "Save this password for future connections.",
+    rememberPasswordDescription: "",
     wifiPassword: "Wi-Fi password",
     enterNetworkName: "Enter network name",
     networkName: "Network name (SSID)",
@@ -257,7 +256,7 @@ const en = {
     connectionFailed: "Connection failed",
     networkAdded: "Network added",
     networkAddedDescription:
-      "Connected devices will perform automatic updates and media imports while charging through the Mentra app. Automatic updates can be disabled in Device settings at any time.",
+      "Connected devices can sync photos and videos, update firmware, and use Wi-Fi enabled apps like Livestreamer.",
     failedDescription: "Make sure the password was entered correctly",
     connectingDescription: "This may take up to 20 seconds",
     connectingToNetwork: "Connecting to {{network}}...",

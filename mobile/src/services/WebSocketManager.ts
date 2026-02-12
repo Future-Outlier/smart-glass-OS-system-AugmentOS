@@ -116,7 +116,7 @@ class WebSocketManager extends EventEmitter {
     console.log("WSM: Attempting reconnect")
     // mantle.displayTextMain(`WSM: Attempting reconnect`)
     const store = useConnectionStore.getState()
-    if (store.status === WebSocketStatus.DISCONNECTED) {
+    if (store.status === WebSocketStatus.DISCONNECTED || store.status === WebSocketStatus.ERROR) {
       this.connect(this.url!, this.coreToken!)
     }
     if (store.status === WebSocketStatus.CONNECTED) {

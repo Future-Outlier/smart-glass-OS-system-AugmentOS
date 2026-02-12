@@ -13,15 +13,12 @@ import {Header, Screen} from "@/components/ignite"
 import NonProdWarning from "@/components/home/NonProdWarning"
 import {Group} from "@/components/ui"
 import {useRefreshApplets} from "@/stores/applets"
-import {SETTINGS, useSetting, useSettingsStore} from "@/stores/settings"
+import {SETTINGS, useSetting} from "@/stores/settings"
 import {useGlassesStore} from "@/stores/glasses"
 import {useCoreStore} from "@/stores/core"
-import {checkConnectivityRequirementsUI} from "@/utils/PermissionsUtils"
 import WebsocketStatus from "@/components/error/WebsocketStatus"
 import CoreStatusBar from "@/components/dev/CoreStatusBar"
-import CoreModule from "core"
-import {DeviceTypes} from "@/../../cloud/packages/types/src"
-import {attemptReconnect} from "@/effects/Reconnect"
+import {attemptReconnectToDefaultWearable} from "@/effects/Reconnect"
 
 export default function Homepage() {
   const refreshApplets = useRefreshApplets()
@@ -46,7 +43,7 @@ export default function Homepage() {
       if (hasAttemptedInitialConnect.current) {
         return
       }
-      let attempted = await attemptReconnect()
+      let attempted = await attemptReconnectToDefaultWearable()
       if (attempted) {
         hasAttemptedInitialConnect.current = true
       }

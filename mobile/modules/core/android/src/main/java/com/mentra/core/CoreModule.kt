@@ -48,7 +48,6 @@ class CoreModule : Module() {
             "mtk_update_complete",
             "ota_update_available",
             "ota_progress",
-            "version_info",
         )
 
         OnCreate {
@@ -157,6 +156,16 @@ class CoreModule : Module() {
         // MARK: - OTA Commands
 
         AsyncFunction("sendOtaStart") { coreManager?.sendOtaStart() }
+
+        // MARK: - Version Info Commands
+
+        AsyncFunction("requestVersionInfo") { coreManager?.requestVersionInfo() }
+
+        // MARK: - Power Control Commands
+
+        AsyncFunction("sendShutdown") { coreManager?.sendShutdown() }
+
+        AsyncFunction("sendReboot") { coreManager?.sendReboot() }
 
         // MARK: - Video Recording Commands
 

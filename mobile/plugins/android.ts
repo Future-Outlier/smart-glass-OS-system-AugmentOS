@@ -168,6 +168,25 @@ function withAndroidManifestModifications(config: any) {
   return withAndroidManifest(config, (config) => {
     const manifest: any = config.modResults.manifest
 
+    // Remove permissions that Google Play doesn't allow for our use case
+    // We only SAVE photos from glasses - we don't need to READ the user's photo library
+    // expo-media-library adds these automatically, but we must remove them for Play Store compliance
+    // Google's Photo and Video Permissions policy requires apps to use Photo Picker for one-time access
+    // Android 10+ (API 29+) doesn't need any permission to save to MediaStore via ContentResolver
+    const permissionsToRemove = [
+      "android.permission.READ_MEDIA_IMAGES",
+      "android.permission.READ_MEDIA_VIDEO",
+      "android.permission.WRITE_MEDIA_VIDEO", // Not needed - MediaStore API works without it on API 29+
+      "android.permission.ACCESS_MEDIA_LOCATION", // Not needed - we save photos, don't read EXIF from user's library
+    ]
+
+    // Filter out permissions we want to remove
+    if (manifest["uses-permission"]) {
+      manifest["uses-permission"] = manifest["uses-permission"].filter(
+        (p: any) => !permissionsToRemove.includes(p.$["android:name"]),
+      )
+    }
+
     // Add permissions that need to be added
     const permissionsToAdd = [
       {name: "android.permission.BIND_NOTIFICATION_LISTENER_SERVICE"},
@@ -186,7 +205,6 @@ function withAndroidManifestModifications(config: any) {
       {name: "android.permission.QUERY_ALL_PACKAGES"},
       {name: "android.permission.READ_PHONE_STATE"},
       {name: "android.permission.RECEIVE_BOOT_COMPLETED"},
-      {name: "android.permission.WRITE_MEDIA_VIDEO"},
       {name: "com.mentra.mentra.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION"},
     ]
 
