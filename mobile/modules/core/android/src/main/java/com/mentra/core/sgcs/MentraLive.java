@@ -159,7 +159,7 @@ public class MentraLive extends SGCManager {
 
     // Keep-alive parameters
     private static final int KEEP_ALIVE_INTERVAL_MS = 5000; // 5 seconds
-    private static final int CONNECTION_TIMEOUT_MS = 10000; // 10 seconds
+    private static final int CONNECTION_TIMEOUT_MS = 30000; // 30 seconds
 
     // Heartbeat parameters
     private static final int HEARTBEAT_INTERVAL_MS = 30000; // 30 seconds
@@ -576,6 +576,9 @@ public class MentraLive extends SGCManager {
 
         if (state.equals(ConnTypes.CONNECTED)) {
             GlassesStore.INSTANCE.apply("glasses", "connected", true);
+            if (glassesReadyReceived) {
+                GlassesStore.INSTANCE.apply("glasses", "fullyBooted", true);
+            }
         }
         
         if (state.equals(ConnTypes.DISCONNECTED)) {
@@ -994,9 +997,11 @@ public class MentraLive extends SGCManager {
                         bluetoothGatt = null;
                     }
 
-                    // Attempt reconnection
-                    Log.i(TAG, "🔌 🔄 Starting automatic reconnection procedure...");
-                    handleReconnection();
+                    // Attempt reconnection if not killed
+                    if (!isKilled) {
+                        Log.i(TAG, "🔌 🔄 Starting automatic reconnection procedure...");
+                        handleReconnection();
+                    }
 
                     // Close LC3 audio logging
                     closeLc3Logging();
@@ -1031,9 +1036,11 @@ public class MentraLive extends SGCManager {
                     bluetoothGatt = null;
                 }
 
-                // Attempt reconnection
-                Log.i(TAG, "🔌 🔄 Retrying after GATT error...");
-                handleReconnection();
+                // Attempt reconnection if not killed
+                if (!isKilled) {
+                    Log.i(TAG, "🔌 🔄 Retrying after GATT error...");
+                    handleReconnection();
+                }
             }
         }
 
@@ -2814,6 +2821,8 @@ public class MentraLive extends SGCManager {
                 // }
                 // Notify the system that glasses are intentionally disconnected
                 updateConnectionState(ConnTypes.DISCONNECTED);
+                glassesReady = false;
+                glassesReadyReceived = false;
                 break;
 
             case "sr_adota":

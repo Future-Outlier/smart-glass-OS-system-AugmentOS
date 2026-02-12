@@ -1099,11 +1099,6 @@ class CoreManager {
         shouldSendTranscript = sendTranscript
         bypassVad = bypassVadForPCM
 
-        // if offline mode is enabled and no PCM or transcription is requested, force transcription
-        if (offlineMode && (!shouldSendPcmData && !shouldSendTranscript)) {
-            shouldSendTranscript = true
-        }
-
         vadBuffer.clear()
         micEnabled = shouldSendPcmData || shouldSendTranscript
         updateMicState()
