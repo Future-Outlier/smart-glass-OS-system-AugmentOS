@@ -23,9 +23,10 @@ services:
       # Better Stack logging for Go bridge
       BETTERSTACK_SOURCE_TOKEN: "${BETTERSTACK_SOURCE_TOKEN}"
       BETTERSTACK_INGESTING_HOST: "s1311181.eu-nbg-2.betterstackdata.com"
-      # Doppler service token — the only secret needed in Porter.
-      # All other env vars are injected at runtime by `doppler run --`
-      DOPPLER_TOKEN: "${DOPPLER_TOKEN}"
+      # Doppler injects all other env vars at runtime via `doppler run --`
+      # DOPPLER_TOKEN is set once in Porter UI — no need to pass through GitHub
+      DOPPLER_PROJECT: "mentraos-cloud"
+      DOPPLER_CONFIG: "staging_stress"
     # UDP audio listener on port 8000
     additionalPorts:
       - port: 8000
