@@ -1,6 +1,7 @@
 import {useFocusEffect} from "@react-navigation/native"
 import {useCallback, useEffect, useRef, useState} from "react"
-import {ScrollView, View, NativeScrollEvent, NativeSyntheticEvent} from "react-native"
+import {ScrollView, View} from "react-native"
+import {useSharedValue} from "react-native-reanimated"
 
 import {MentraLogoStandalone} from "@/components/brands/MentraLogoStandalone"
 import {ActiveForegroundApp} from "@/components/home/ActiveForegroundApp"
@@ -32,9 +33,7 @@ export default function Homepage() {
   const isSearching = useCoreStore((state) => state.searching)
   const hasAttemptedInitialConnect = useRef(false)
   const [appSwitcherUi] = useSetting(SETTINGS.app_switcher_ui.key)
-  const [showSwitcher, setShowSwitcher] = useState(false)
-  const hasTriggered = useRef(false)
-  const PULL_THRESHOLD = 140 // How far to pull down to trigger
+  const swipeProgress = useSharedValue(0)
 
   useFocusEffect(
     useCallback(() => {
@@ -56,31 +55,9 @@ export default function Homepage() {
     attemptInitialConnect()
   }, [glassesConnected, isSearching, defaultWearable])
 
-  const handleScroll = useCallback(
-    (event: NativeSyntheticEvent<NativeScrollEvent>) => {
-      const {contentOffset, contentSize, layoutMeasurement} = event.nativeEvent
-
-      // How far past the bottom the user has scrolled
-      const overscroll = contentOffset.y - (contentSize.height - layoutMeasurement.height)
-
-      // Trigger when pulling past the bottom
-      if (overscroll > PULL_THRESHOLD && !hasTriggered.current && !showSwitcher) {
-        hasTriggered.current = true
-        setShowSwitcher(true)
-      }
-    },
-    [showSwitcher],
-  )
-
-  const handleScrollEndDrag = useCallback(() => {
-    // Reset trigger when user releases
-    hasTriggered.current = false
-  }, [])
-
   const handleCloseSwitcher = useCallback(() => {
-    setShowSwitcher(false)
-    hasTriggered.current = false
-  }, [])
+    swipeProgress.value = 0
+  }, [swipeProgress])
 
   const renderContent = () => {
     if (!defaultWearable) {
@@ -130,16 +107,23 @@ export default function Homepage() {
         showsVerticalScrollIndicator={false}
         style={{flex: 1}}
         contentContainerStyle={{flexGrow: 1}}
-        onScroll={appSwitcherUi ? handleScroll : undefined}
-        onScrollEndDrag={appSwitcherUi ? handleScrollEndDrag : undefined}
         scrollEventThrottle={16}>
         <View className="h-4" />
         {renderContent()}
         <View className="h-4" />
         {!appSwitcherUi && <IncompatibleApps />}
       </ScrollView>
-      {appSwitcherUi && <AppSwitcherButton onPress={() => setShowSwitcher(true)} />}
-      {appSwitcherUi && <AppSwitcher visible={showSwitcher} onClose={handleCloseSwitcher} />}
+      {appSwitcherUi && (
+        <AppSwitcherButton
+          swipeProgress={swipeProgress}
+        />
+      )}
+      {appSwitcherUi && (
+        <AppSwitcher
+          onClose={handleCloseSwitcher}
+          swipeProgress={swipeProgress}
+        />
+      )}
     </Screen>
   )
 }

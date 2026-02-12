@@ -11,18 +11,17 @@ import Animated, {
   useDerivedValue,
 } from "react-native-reanimated"
 import {Gesture, GestureDetector} from "react-native-gesture-handler"
+import {scheduleOnRN} from "react-native-worklets"
 import {
   ClientAppletInterface,
   getLastOpenTime,
   setLastOpenTime,
-  useActiveAppPackageNames,
   useActiveApps,
   useAppletStatusStore,
 } from "@/stores/applets"
 import AppIcon from "@/components/home/AppIcon"
 import {useNavigationHistory} from "@/contexts/NavigationHistoryContext"
 import {useSafeAreaInsets} from "react-native-safe-area-context"
-import {scheduleOnRN} from "react-native-worklets"
 import {SETTINGS, useSetting} from "@/stores/settings"
 
 const {width: SCREEN_WIDTH, height: SCREEN_HEIGHT} = Dimensions.get("window")
@@ -188,8 +187,8 @@ function AppCardItem({
 }
 
 interface AppSwitcherProps {
-  visible: boolean
   onClose: () => void
+  swipeProgress: Animated.SharedValue<number>
 }
 
 // for testing:
@@ -213,12 +212,9 @@ interface AppSwitcherProps {
 //   })
 // }
 
-export default function AppSwitcher({visible, onClose}: AppSwitcherProps) {
+export default function AppSwitcher({onClose, swipeProgress}: AppSwitcherProps) {
   const translateX = useSharedValue(0)
   const offsetX = useSharedValue(0)
-  const backdropOpacity = useSharedValue(0)
-  const containerTranslateY = useSharedValue(100)
-  const containerOpacity = useSharedValue(0)
   const targetIndex = useSharedValue(0)
   const prevTranslationX = useSharedValue(0)
   const {push} = useNavigationHistory()
@@ -257,27 +253,21 @@ export default function AppSwitcher({visible, onClose}: AppSwitcherProps) {
     return -translateX.value / (CARD_WIDTH + CARD_SPACING) + 2
   })
 
+  // Initialize card position when apps load
   useEffect(() => {
-    if (visible) {
-      backdropOpacity.value = withTiming(1, {duration: 250})
-      containerTranslateY.value = withSpring(0, {damping: 20, stiffness: 2000, velocity: 100, overshootClamping: true})
-      containerOpacity.value = withTiming(1, {duration: 200})
-      // start at the end of the cards:
+    if (apps.length > 0) {
       translateX.value = -((apps.length - 2) * CARD_WIDTH)
-    } else {
-      backdropOpacity.value = withTiming(0, {duration: 200})
-      containerTranslateY.value = withTiming(100, {duration: 200})
-      containerOpacity.value = withTiming(0, {duration: 150})
     }
-  }, [visible])
+  }, [apps.length])
 
+  // Derive animations from swipeProgress
   const backdropStyle = useAnimatedStyle(() => ({
-    opacity: backdropOpacity.value,
+    opacity: swipeProgress.value,
   }))
 
   const containerStyle = useAnimatedStyle(() => ({
-    transform: [{translateY: containerTranslateY.value}],
-    opacity: containerOpacity.value,
+    transform: [{translateY: 100 * (1 - swipeProgress.value)}],
+    opacity: swipeProgress.value,
   }))
 
   const panGesture = Gesture.Pan()
@@ -449,16 +439,10 @@ export default function AppSwitcher({visible, onClose}: AppSwitcherProps) {
     onClose()
   }
 
-  // if (!visible && containerOpacity.value === 0) {
-  //   return null
-  // }
-
-  // console.log("apps", apps.map((app) => app.packageName))
-
   return (
     <View
       className="absolute -mx-6 inset-0 z-[1000]"
-      pointerEvents={visible ? "auto" : "none"}
+      pointerEvents="box-none"
       style={{paddingBottom: insets.bottom}}>
       {/* Blurred Backdrop */}
       <Animated.View className="absolute inset-0 bg-black/70" style={backdropStyle}>
