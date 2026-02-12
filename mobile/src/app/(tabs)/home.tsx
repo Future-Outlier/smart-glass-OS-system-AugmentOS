@@ -98,8 +98,9 @@ export default function Homepage() {
       <>
         {debugCoreStatusBarEnabled && <CoreStatusBar />}
         <Group>
-          {!appSwitcherUi && <CompactDeviceStatus />}
-          {appSwitcherUi && <DeviceStatus />}
+          <CompactDeviceStatus />
+          {/* {!appSwitcherUi && <CompactDeviceStatus />} */}
+          {/* {appSwitcherUi && <DeviceStatus />} */}
           {!offlineMode && !appSwitcherUi && <BackgroundAppsLink />}
         </Group>
         <View className="h-2" />
@@ -126,6 +127,8 @@ export default function Homepage() {
       <ScrollView
         contentInsetAdjustmentBehavior="automatic"
         showsVerticalScrollIndicator={false}
+        style={{flex: 1}}
+        contentContainerStyle={{flexGrow: 1}}
         onScroll={appSwitcherUi ? handleScroll : undefined}
         onScrollEndDrag={appSwitcherUi ? handleScrollEndDrag : undefined}
         scrollEventThrottle={16}>
