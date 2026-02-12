@@ -35,6 +35,8 @@ FROM oven/bun:latest
 # Install runtime dependencies for Go binary and SSL
 RUN apt-get update && apt-get install -y \
     ca-certificates \
+    curl \
+    gnupg \
     libopus0 \
     libopusfile0 \
     libsoxr0 \
