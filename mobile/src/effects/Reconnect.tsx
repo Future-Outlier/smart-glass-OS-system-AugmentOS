@@ -8,7 +8,7 @@ import {useGlassesStore} from "@/stores/glasses"
 import {useCoreStore} from "@/stores/core"
 import {DeviceTypes} from "@/../../cloud/packages/types/src"
 
-export async function attemptReconnect(): Promise<boolean> {
+export async function attemptReconnectToDefaultWearable(): Promise<boolean> {
   const reconnectOnAppForeground = await useSettingsStore
     .getState()
     .getSetting(SETTINGS.reconnect_on_app_foreground.key)
@@ -49,7 +49,7 @@ export function Reconnect() {
       console.log("RECONNECT: App state changed to:", nextAppState)
       // If app comes back to foreground, attempt to reconnect
       if (nextAppState === "active") {
-        await attemptReconnect()
+        await attemptReconnectToDefaultWearable()
       }
     }
 
