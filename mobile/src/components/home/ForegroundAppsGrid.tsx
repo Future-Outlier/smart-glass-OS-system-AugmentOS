@@ -113,18 +113,3 @@ export const ForegroundAppsGrid: React.FC = () => {
     </View>
   )
 }
-
-const $appName: ThemedStyle<TextStyle> = ({colors, spacing}) => ({
-  color: colors.secondary_foreground,
-  textAlign: "center",
-  marginTop: spacing.s2,
-  lineHeight: 14,
-})
-
-const $appNameOffline: ThemedStyle<TextStyle> = ({colors, spacing}) => ({
-  color: colors.muted_foreground,
-  textAlign: "center",
-  marginTop: spacing.s2,
-  textDecorationLine: "line-through",
-  lineHeight: 14,
-})

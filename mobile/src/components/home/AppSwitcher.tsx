@@ -462,7 +462,7 @@ export default function AppSwitcher({swipeProgress}: AppSwitcherProps) {
     setTimeout(() => {
       goToIndex(apps.length - 1, true)
     }, 250)
-  }, [])
+  }, [apps.length])
 
   return (
     <View className="absolute -mx-6 inset-0 z-[1000]" pointerEvents="box-none" style={{paddingBottom: insets.bottom}}>
