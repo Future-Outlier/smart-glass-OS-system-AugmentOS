@@ -99,7 +99,14 @@ const Header: React.FC<HeaderProps> = ({ onSearch, onSearchClear, onSearchChange
   useEffect(() => {
     if (isAuthenticated && !user?.avatarUrl && !hasAttemptedRefresh.current) {
       hasAttemptedRefresh.current = true;
-      refreshUser();
+      (async () => {
+        try {
+          await refreshUser();
+        } catch {
+          // Reset flag on failure to allow retry on next mount
+          hasAttemptedRefresh.current = false;
+        }
+      })();
     }
   }, [isAuthenticated, user?.avatarUrl, refreshUser]);
 
