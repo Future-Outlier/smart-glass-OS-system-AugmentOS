@@ -1,8 +1,14 @@
-interface InstalledLma {
+export interface LmaPermission {
+  type: string
+  description: string
+}
+export interface InstalledLma {
   packageName: string
   url: string
   running: boolean
   version: string
+  runtimePermissions: []
+  declaredPermissions: []
 }
 
 class LmaManager {
@@ -30,3 +36,6 @@ class LmaManager {
   // download the mini app from the url and unzip it to the app's cache directory/lma/<packageName>
   public async installMiniApp(url: string) {}
 }
+
+const lmaManager = LmaManager.getInstance()
+export default lmaManager

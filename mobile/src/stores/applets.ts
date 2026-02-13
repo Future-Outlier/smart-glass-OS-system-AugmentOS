@@ -606,6 +606,10 @@ export const useLocalMiniApps = () => {
 export const useActiveAppPackageNames = () =>
   useAppletStatusStore(useShallow((state) => state.apps.filter((app) => app.running).map((a) => a.packageName)))
 
+export const useInstalledLmas = () => {
+  return useAppletStatusStore(useShallow((state) => state.apps.filter((app) => app.local)))
+}
+
 // export const useIncompatibleApps = async () => {
 //   const apps = useApplets()
 //   const defaultWearable = await useSettingsStore.getState().getSetting(SETTINGS.default_wearable.key)
