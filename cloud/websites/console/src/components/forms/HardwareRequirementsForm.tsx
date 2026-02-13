@@ -132,7 +132,7 @@ const HardwareRequirementItem: React.FC<HardwareRequirementItemProps> = ({
             {/* Hardware Type */}
             <div>
               <Label className="text-sm font-medium">Hardware Type</Label>
-              <Select value={requirement.type} onValueChange={(value) => updateRequirement(index, "type", value)}>
+              <Select value={requirement.type} onValueChange={(value: string) => updateRequirement(index, "type", value)}>
                 <SelectTrigger className="mt-1">
                   <SelectValue placeholder="Select hardware type" />
                 </SelectTrigger>
@@ -163,7 +163,7 @@ const HardwareRequirementItem: React.FC<HardwareRequirementItemProps> = ({
             {/* Requirement Level */}
             <div>
               <Label className="text-sm font-medium">Requirement Level</Label>
-              <Select value={requirement.level} onValueChange={(value) => updateRequirement(index, "level", value)}>
+              <Select value={requirement.level} onValueChange={(value: string) => updateRequirement(index, "level", value)}>
                 <SelectTrigger className="mt-1">
                   <SelectValue placeholder="Select requirement level" />
                 </SelectTrigger>

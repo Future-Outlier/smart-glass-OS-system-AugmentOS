@@ -346,7 +346,7 @@ const ToolItem: React.FC<ToolItemProps> = ({
                             <Label className="text-xs">Type</Label>
                             <Select
                               value={param.type || "string"}
-                              onValueChange={(value) =>
+                              onValueChange={(value: string) =>
                                 updateParameter(index, param.id, {
                                   type: value,
                                 })
@@ -385,9 +385,9 @@ const ToolItem: React.FC<ToolItemProps> = ({
                           <div className="flex items-center space-x-2">
                             <Checkbox
                               checked={param.required || false}
-                              onCheckedChange={(checked) =>
+                              onCheckedChange={(checked: boolean) =>
                                 updateParameter(index, param.id, {
-                                  required: checked as boolean,
+                                  required: checked,
                                 })
                               }
                             />

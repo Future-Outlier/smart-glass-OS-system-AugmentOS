@@ -274,7 +274,7 @@ const SortableSettingItem: React.FC<SortableSettingItemProps> = ({
               <Label className="text-sm font-medium">Type</Label>
               <Select
                 value={setting.type}
-                onValueChange={(value) => handleTypeChange(index, value)}
+                onValueChange={(value: string) => handleTypeChange(index, value)}
               >
                 <SelectTrigger className="mt-1">
                   <SelectValue />
@@ -365,7 +365,7 @@ const SortableSettingItem: React.FC<SortableSettingItemProps> = ({
                     <div className="flex items-center space-x-2 mt-1">
                       <Checkbox
                         checked={setting.defaultValue}
-                        onCheckedChange={(checked) =>
+                        onCheckedChange={(checked: boolean) =>
                           updateSetting(index, { defaultValue: checked })
                         }
                       />
@@ -584,7 +584,7 @@ const SortableSettingItem: React.FC<SortableSettingItemProps> = ({
                         <div className="flex items-center space-x-2 mt-1">
                           <Checkbox
                             checked={setting.showSeconds !== false}
-                            onCheckedChange={(checked) =>
+                            onCheckedChange={(checked: boolean) =>
                               updateSetting(index, { showSeconds: checked })
                             }
                           />
@@ -701,7 +701,7 @@ const SortableSettingItem: React.FC<SortableSettingItemProps> = ({
                         </Label>
                         <Select
                           value={setting.defaultValue || ""}
-                          onValueChange={(value) =>
+                          onValueChange={(value: string) =>
                             updateSetting(index, { defaultValue: value })
                           }
                         >
@@ -750,7 +750,7 @@ const SortableSettingItem: React.FC<SortableSettingItemProps> = ({
                                 >
                                   <Checkbox
                                     checked={isSelected}
-                                    onCheckedChange={(checked) => {
+                                    onCheckedChange={(checked: boolean) => {
                                       const currentDefaults = Array.isArray(
                                         setting.defaultValue,
                                       )

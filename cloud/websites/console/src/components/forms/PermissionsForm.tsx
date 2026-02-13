@@ -247,7 +247,7 @@ const PermissionItem: React.FC<PermissionItemProps> = ({
               <Label className="text-sm font-medium">Permission Type</Label>
               <Select
                 value={permission.type}
-                onValueChange={(value) =>
+                onValueChange={(value: string) =>
                   updatePermission(index, "type", value)
                 }
               >

@@ -963,7 +963,7 @@ const AdminPanel: React.FC = () => {
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
                   />
-                  <Select onValueChange={(value) => console.log(value)}>
+                  <Select onValueChange={(value: string) => console.log(value)}>
                     <SelectTrigger className="w-[180px]">
                       <SelectValue placeholder="Submitted" />
                     </SelectTrigger>
