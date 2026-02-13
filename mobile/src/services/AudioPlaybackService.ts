@@ -1,4 +1,5 @@
 import {createAudioPlayer, AudioPlayer, AudioStatus, setAudioModeAsync} from "expo-audio"
+import CoreModule from "modules/core"
 
 interface AudioPlayRequest {
   requestId: string
@@ -23,6 +24,10 @@ class AudioPlaybackService {
   private player: AudioPlayer | null = null
   private currentPlayback: PlaybackState | null = null
   private audioModeConfigured: boolean = false
+  // Debounce timer for notifying native that audio stopped
+  // Prevents mic toggle flicker when playing back-to-back audio
+  private audioStopDebounceTimer: ReturnType<typeof setTimeout> | null = null
+  private static readonly AUDIO_STOP_DEBOUNCE_MS = 500
 
   private constructor() {}
 
@@ -111,6 +116,17 @@ class AudioPlaybackService {
       player.replace({uri: audioUrl})
       player.play()
 
+      // Notify native that our app is playing audio
+      // Used to suspend LC3 mic during audio playback to avoid MCU overload
+      // Cancel any pending "stop" notification first (handles back-to-back audio)
+      if (this.audioStopDebounceTimer) {
+        clearTimeout(this.audioStopDebounceTimer)
+        this.audioStopDebounceTimer = null
+      }
+      CoreModule.setOwnAppAudioPlaying(true).catch((e) => {
+        console.warn("AUDIO: Failed to notify native of audio start:", e)
+      })
+
       console.log(`AUDIO: Started playback for ${requestId}`)
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : "Unknown error loading audio"
@@ -138,6 +154,9 @@ class AudioPlaybackService {
       }
     }
 
+    // Notify native that our app stopped playing audio (debounced)
+    this.notifyAudioStopDebounced()
+
     // Notify that playback was interrupted
     const elapsedMs = Date.now() - playback.startTime
     playback.onComplete(playback.requestId, true, null, elapsedMs)
@@ -162,7 +181,29 @@ class AudioPlaybackService {
       playback.completed = true
       playback.onComplete(playback.requestId, true, null, durationMs)
       this.currentPlayback = null
+
+      // Notify native that our app stopped playing audio (debounced)
+      this.notifyAudioStopDebounced()
     }
+  }
+
+  /**
+   * Notify native that audio stopped, with debouncing to prevent mic toggle flicker
+   * when playing back-to-back audio files
+   */
+  private notifyAudioStopDebounced(): void {
+    // Clear any existing timer
+    if (this.audioStopDebounceTimer) {
+      clearTimeout(this.audioStopDebounceTimer)
+    }
+
+    // Set a new timer - if new audio starts within this window, the timer gets cancelled
+    this.audioStopDebounceTimer = setTimeout(() => {
+      this.audioStopDebounceTimer = null
+      CoreModule.setOwnAppAudioPlaying(false).catch((e) => {
+        console.warn("AUDIO: Failed to notify native of audio stop:", e)
+      })
+    }, AudioPlaybackService.AUDIO_STOP_DEBOUNCE_MS)
   }
 
   /**
