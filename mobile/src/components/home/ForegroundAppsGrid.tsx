@@ -1,15 +1,11 @@
 import {useCallback, useMemo} from "react"
 import {FlatList, TextStyle, TouchableOpacity, View} from "react-native"
+import {AutoSizeText, ResizeTextMode} from "react-native-auto-size-text"
 
 import {Text} from "@/components/ignite"
 import AppIcon from "@/components/home/AppIcon"
 import {useAppTheme} from "@/contexts/ThemeContext"
-import {
-  ClientAppletInterface,
-  DUMMY_APPLET,
-  useForegroundApps,
-  useStartApplet,
-} from "@/stores/applets"
+import {ClientAppletInterface, DUMMY_APPLET, useForegroundApps, useStartApplet} from "@/stores/applets"
 import {ThemedStyle} from "@/theme"
 import {askPermissionsUI} from "@/utils/PermissionsUtils"
 import {SETTINGS, useSetting} from "@/stores/settings"
@@ -27,8 +23,8 @@ export const ForegroundAppsGrid: React.FC = () => {
     // Filter out incompatible apps and running apps
     let filteredApps = apps.filter((app) => {
       // Exclude running apps
-      if (app.running && !appSwitcherUi) return false
-      if (!app.compatibility?.isCompatible) return false
+      // if (app.running && !appSwitcherUi) return false
+      // if (!app.compatibility?.isCompatible) return false
       return true
     })
 
@@ -78,20 +74,20 @@ export const ForegroundAppsGrid: React.FC = () => {
 
       // small hack to help with some long app names:
       const numberOfLines = item.name.split(" ").length > 1 ? 2 : 1
-      let size = 14
-      if (numberOfLines == 1 && item.name.length > 10) {
-        size = 14
-      }
 
       return (
-        <TouchableOpacity className="flex-1 items-center my-3" onPress={() => handlePress(item)} activeOpacity={0.7}>
+        <TouchableOpacity className="flex-1 items-center" onPress={() => handlePress(item)} activeOpacity={0.7}>
           <AppIcon app={item} className="w-16 h-16" />
-          <Text
-            text={item.name}
-            style={[themed(!item.healthy ? $appNameOffline : $appName), {fontSize: size}]}
-            numberOfLines={numberOfLines}
-            ellipsizeMode="tail"
-          />
+          <View className="w-full h-7 my-1 items-center justify-start">
+            <AutoSizeText
+              className="text-secondary-foreground text-center mt-1"
+              numberOfLines={numberOfLines}
+              ellipsizeMode="tail"
+              fontSize={14}
+              mode={ResizeTextMode.max_lines}>
+              {item.name}
+            </AutoSizeText>
+          </View>
         </TouchableOpacity>
       )
     },

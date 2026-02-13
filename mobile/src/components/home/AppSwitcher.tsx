@@ -1,4 +1,4 @@
-import React, {useCallback, useEffect, useMemo, useState} from "react"
+import React, {useCallback, useEffect, useMemo, useRef, useState} from "react"
 import {View, Dimensions, Pressable, Image, TouchableOpacity} from "react-native"
 import {Text} from "@/components/ignite/"
 import Animated, {
@@ -56,8 +56,16 @@ function AppCardItem({app, index, count, translateX, onDismiss, onSelect}: AppCa
   const animatedIndex = useSharedValue(index)
 
   useEffect(() => {
-    animatedIndex.value = withSpring(index, {damping: 20, stiffness: 90})
-  }, [count])
+    if (animatedIndex.value < index && index == count - 1) {
+      // teleport to the end of the list if we're updating the order:
+      animatedIndex.value = withTiming(index, {duration: 0})
+      return
+    }
+    // otherwise, animate as normal:
+    if (index != animatedIndex.value) {
+      animatedIndex.value = withSpring(index, {damping: 20, stiffness: 90})
+    }
+  }, [index])
 
   const dismissCard = useCallback(() => {
     onDismiss(app.packageName)
@@ -128,6 +136,8 @@ function AppCardItem({app, index, count, translateX, onDismiss, onSelect}: AppCa
     }
   })
 
+  console.log("packageName", app.packageName, "index", index)
+
   return (
     <GestureDetector gesture={composedGesture}>
       <AnimatedPressable
@@ -139,7 +149,7 @@ function AppCardItem({app, index, count, translateX, onDismiss, onSelect}: AppCa
             // zIndex: -index,// to reverse stack order
             position: "absolute",
             left: 0,
-            zIndex: index*2,// ensure the cards are on top of each other
+            // zIndex: index,// ensure the cards are on top of each other
           },
           cardAnimatedStyle,
         ]}>
@@ -212,6 +222,7 @@ export default function AppSwitcher({swipeProgress}: AppSwitcherProps) {
   const insets = useSafeAreaInsets()
   let directApps = useActiveApps()
   let [apps, setApps] = useState<ClientAppletInterface[]>([])
+  const prevAppsLength = useRef(0)
 
   // for testing:
   //   apps = [...DUMMY_APPS, ...apps]
@@ -227,7 +238,7 @@ export default function AppSwitcher({swipeProgress}: AppSwitcherProps) {
         directApps.map(async (app) => ({
           app,
           time: await getLastOpenTime(app.packageName),
-        }))
+        })),
       )
       let sortedApps = timestamps
         .sort((a, b) => {
@@ -236,6 +247,7 @@ export default function AppSwitcher({swipeProgress}: AppSwitcherProps) {
         })
         .map((entry) => entry.app)
       setApps(sortedApps)
+      // setApps(directApps)
     }
     sortApps()
   }, [directApps])
@@ -245,10 +257,16 @@ export default function AppSwitcher({swipeProgress}: AppSwitcherProps) {
   })
 
   // Initialize card position when apps load
+  // useEffect(() => {
+  //   if (apps.length > 0) {
+  //     translateX.value = -((apps.length - 2) * CARD_WIDTH)
+  //   }
+  // }, [apps.length])
   useEffect(() => {
-    if (apps.length > 0) {
+    if (prevAppsLength.current === 0 && apps.length > 0) {
       translateX.value = -((apps.length - 2) * CARD_WIDTH)
     }
+    prevAppsLength.current = apps.length
   }, [apps.length])
 
   // Derive animations from swipeProgress
@@ -386,15 +404,20 @@ export default function AppSwitcher({swipeProgress}: AppSwitcherProps) {
   )
 
   const goToIndex = useCallback(
-    (index: number) => {
+    (index: number, instant: boolean = false) => {
       index = index - 1
       const cardWidth = CARD_WIDTH + CARD_SPACING
       const clamped = Math.max(-1, Math.min(index, apps.length - 2))
       targetIndex.value = clamped
-      translateX.value = withSpring(-clamped * cardWidth, {
-        damping: 20,
-        stiffness: 90,
-      })
+      let target = -clamped * cardWidth
+      if (instant) {
+        translateX.value = withTiming(target, {duration: 100})
+      } else {
+        translateX.value = withSpring(target, {
+          damping: 20,
+          stiffness: 90,
+        })
+      }
     },
     [apps.length],
   )
@@ -437,7 +460,7 @@ export default function AppSwitcher({swipeProgress}: AppSwitcherProps) {
     swipeProgress.value = withSpring(0, {damping: 20, stiffness: 300, overshootClamping: true})
     // do after we have closed the swipe progress:
     setTimeout(() => {
-      translateX.value = -((apps.length - 2) * CARD_WIDTH)
+      goToIndex(apps.length - 1, true)
     }, 250)
   }, [])
 

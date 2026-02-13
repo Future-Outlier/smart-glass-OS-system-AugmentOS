@@ -469,9 +469,9 @@ export function OtaUpdateChecker() {
   // Main OTA check effect
   useEffect(() => {
     // Log every effect run with full state for debugging
-    console.log(
-      `OTA: effect triggered - pathname: ${pathname}, hasChecked: ${hasCheckedOta.current}, connected: ${glassesConnected}, build: ${buildNumber}`,
-    )
+    // console.log(
+    //   `OTA: effect triggered - pathname: ${pathname}, hasChecked: ${hasCheckedOta.current}, connected: ${glassesConnected}, build: ${buildNumber}`,
+    // )
 
     // only check if we're on the home screen:
     if (pathname !== "/home") {
