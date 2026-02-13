@@ -137,7 +137,7 @@ class SocketComms {
   }
 
   public sendText(text: string) {
-    ws.sendText(JSON.stringify({type: "pong"}))
+    ws.sendText(text)
   }
 
   public sendBinary(data: ArrayBuffer | Uint8Array) {
@@ -667,7 +667,7 @@ class SocketComms {
   }
 
   private handle_ping(msg: any) {
-    ws.sendText("pong")
+    ws.sendText(JSON.stringify({type: "pong"}))
   }
 
   // Message Handling
