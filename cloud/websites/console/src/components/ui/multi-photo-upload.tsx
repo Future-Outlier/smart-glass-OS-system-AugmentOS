@@ -373,7 +373,7 @@ export function MultiPhotoUpload({
           {photos.length} / {maxPhotos} photos
         </p>
         {canAddMore && (
-          <Button type="button" variant="outline" size="sm" onClick={openOrientationDialog} disabled={disabled}>
+          <Button type="button" size="sm" onClick={openOrientationDialog} disabled={disabled}>
             <Upload className="w-4 h-4" />
             Upload Photos
           </Button>

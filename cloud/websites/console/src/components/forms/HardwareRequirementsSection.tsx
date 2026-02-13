@@ -11,7 +11,7 @@ interface HardwareRequirementsSectionProps {
 export function HardwareRequirementsSection({ requirements, onChange }: HardwareRequirementsSectionProps) {
   return (
     <div className="border rounded-lg p-5">
-      <div className="flex items-center justify-between mb-4">
+      <div className="flex items-center justify-between mb-2">
         <h4 className="text-base font-medium flex items-center gap-2">
           <Cpu className="h-4 w-4" />
           Minimum Hardware Requirements
@@ -26,6 +26,9 @@ export function HardwareRequirementsSection({ requirements, onChange }: Hardware
           <ExternalLinkIcon />
         </a>
       </div>
+      <p className="text-sm text-muted-foreground mb-4">
+        Specify the minimum hardware capabilities of smart glasses your app requires to run.
+      </p>
       <HardwareRequirementsForm requirements={requirements} onChange={onChange} />
     </div>
   );

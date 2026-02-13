@@ -129,17 +129,15 @@ const CLIKeys: FC = () => {
 
   return (
     <DashboardLayout>
-      <div className="container mx-auto py-8 max-w-6xl">
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold mb-2">CLI API Keys</h1>
-          <p className="text-muted-foreground">
-            Manage API keys for the Mentra CLI tool. Use these keys to authenticate and manage your apps from the
-            command line.
-          </p>
+      <div className="max-w-7xl mx-auto">
+        <div className="flex items-center justify-between mb-6 min-h-10">
+          <h1 className="text-2xl font-semibold text-foreground">CLI API Keys</h1>
         </div>
 
+        <div className="space-y-6">
+
         {/* Installation Instructions */}
-        <Card className="mb-6">
+        <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Terminal className="w-5 h-5" />
@@ -175,7 +173,7 @@ const CLIKeys: FC = () => {
 
         {/* Error Alert */}
         {error && (
-          <Alert variant="destructive" className="mb-6">
+          <Alert variant="destructive">
             <AlertCircle className="h-4 w-4" />
             <AlertDescription>{error}</AlertDescription>
           </Alert>
@@ -233,12 +231,10 @@ const CLIKeys: FC = () => {
                     </div>
                     {key.isActive && (
                       <Button
-                        variant="ghost"
+                        variant="outline"
                         size="sm"
-                        onClick={() => setKeyToRevoke(key)}
-                        className="text-destructive hover:text-destructive hover:bg-destructive/10">
-                        <Trash2 className="w-4 h-4 mr-1" />
-                        Revoke
+                        onClick={() => setKeyToRevoke(key)}>
+                        <Trash2 className="w-4 h-4" />
                       </Button>
                     )}
                   </div>
@@ -394,6 +390,7 @@ const CLIKeys: FC = () => {
             </AlertDialogFooter>
           </AlertDialogContent>
         </AlertDialog>
+        </div>
       </div>
     </DashboardLayout>
   )

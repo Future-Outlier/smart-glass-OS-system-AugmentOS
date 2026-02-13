@@ -132,6 +132,9 @@ export default function EditMiniApp() {
   // Track if the app originally had settings configured (for showing/hiding legacy settings UI)
   const [hasExistingSettings, setHasExistingSettings] = useState(false);
 
+  // Track if the app originally had tools configured (for showing/hiding tools UI)
+  const [hasExistingTools, setHasExistingTools] = useState(false);
+
   // File input ref for import
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -185,6 +188,11 @@ export default function EditMiniApp() {
         // Track if the app originally had settings configured (to show/hide legacy settings UI)
         setHasExistingSettings(
           Array.isArray(appData.settings) && appData.settings.length > 0
+        );
+
+        // Track if the app originally had tools configured (to show/hide tools UI)
+        setHasExistingTools(
+          Array.isArray(appData.tools) && appData.tools.length > 0
         );
 
         // Load preview images if they exist
@@ -1292,11 +1300,13 @@ export default function EditMiniApp() {
                     </div>
                   )}
 
-                  {/* Mentra AI Tools */}
-                  <ToolsSection
-                    tools={formData.tools || []}
-                    onChange={handleToolsChange}
-                  />
+                  {/* Mentra AI Tools - only show if app already has tools or user is from Mentra */}
+                  {(hasExistingTools || accountEmail?.toLowerCase().includes('mentra')) && (
+                    <ToolsSection
+                      tools={formData.tools || []}
+                      onChange={handleToolsChange}
+                    />
+                  )}
                 </FormSection>
 
                 {/* MiniApp Development Section */}
@@ -1319,7 +1329,6 @@ export default function EditMiniApp() {
                         onClick={handleGetShareLink}
                         className="gap-2"
                         type="button"
-                        variant="outline"
                         disabled={isLoadingShareLink}>
                         {isLoadingShareLink ? (
                           <>
@@ -1353,25 +1362,8 @@ export default function EditMiniApp() {
                       share it publicly.
                     </p>
                     <div className="flex items-center justify-end">
-                      <Button onClick={handleViewApiKey} className="mr-2" variant="outline">
+                      <Button onClick={handleViewApiKey}>
                         View Key
-                      </Button>
-                      <Button
-                        onClick={handleRegenerateApiKey}
-                        disabled={isRegeneratingKey}
-                        variant="secondary"
-                        type="button">
-                        {isRegeneratingKey ? (
-                          <>
-                            <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
-                            Regenerating...
-                          </>
-                        ) : (
-                          <>
-                            <RefreshCw className="mr-2 h-4 w-4" />
-                            Regenerate Key
-                          </>
-                        )}
                       </Button>
                     </div>
                   </div>

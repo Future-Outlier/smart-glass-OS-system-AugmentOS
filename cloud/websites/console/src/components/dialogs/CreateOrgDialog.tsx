@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { AlertCircle, Loader2, Plus } from "lucide-react";
+import { AlertCircle, Loader2 } from "lucide-react";
 import api from '@/services/api.service';
 import { toast } from 'sonner';
 
@@ -111,11 +111,17 @@ const CreateOrgDialog: React.FC<CreateOrgDialogProps> = ({
       // Create organization via API
       const newOrg = await api.orgs.create(formData.name);
 
+      // Auto-prepend https:// to website if needed
+      let website = formData.profile.website.trim();
+      if (website && !website.startsWith('http://') && !website.startsWith('https://')) {
+        website = 'https://' + website;
+      }
+
       // Update organization with profile data
       const profileUpdate = {
         profile: {
           contactEmail: formData.profile.contactEmail,
-          ...(formData.profile.website && { website: formData.profile.website }),
+          ...(website && { website }),
           ...(formData.profile.description && { description: formData.profile.description })
         }
       };
@@ -171,11 +177,10 @@ const CreateOrgDialog: React.FC<CreateOrgDialogProps> = ({
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogContent className="sm:max-w-lg">
+      <DialogContent className="sm:max-w-lg max-h-[85vh] overflow-y-auto">
         <form onSubmit={handleSubmit}>
           <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <Plus className="h-5 w-5" />
+            <DialogTitle>
               Create New Organization
             </DialogTitle>
             <DialogDescription>

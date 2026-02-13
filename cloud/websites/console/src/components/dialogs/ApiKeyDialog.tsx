@@ -204,9 +204,9 @@ const ApiKeyDialog: FC<ApiKeyDialogProps> = ({
 
           {/* Success Alert */}
           {success && (
-            <Alert className="mb-4 bg-success-light text-success border-success">
+            <Alert className="mb-4 bg-success-light border-success">
               <CheckCircle className="h-4 w-4 text-success" />
-              <AlertDescription className="text-success">
+              <AlertDescription className="text-foreground">
                 {success}
               </AlertDescription>
             </Alert>
@@ -214,44 +214,15 @@ const ApiKeyDialog: FC<ApiKeyDialogProps> = ({
 
           {/* Regeneration Confirmation */}
           {showConfirmation ? (
-            <div className="space-y-4">
-              <Alert
-                variant="destructive"
-                className="bg-warning-light border-warning text-warning"
-              >
-                <AlertCircle className="h-4 w-4 text-warning" />
-                <AlertDescription className="text-warning">
-                  Warning: Regenerating this API key will invalidate the
-                  previous key. Any applications using the old key will stop
-                  working.
-                </AlertDescription>
-              </Alert>
+            <div className="space-y-2">
+              <p className="text-sm text-muted-foreground">
+                Warning: Regenerating this API key will invalidate the
+                previous key. Any applications using the old key will stop
+                working.
+              </p>
               <p className="text-sm text-muted-foreground">
                 Are you sure you want to continue?
               </p>
-              <div className="flex gap-2 justify-end">
-                <Button
-                  variant="outline"
-                  onClick={handleCancelRegeneration}
-                  disabled={isRegenerating}
-                >
-                  Cancel
-                </Button>
-                <Button
-                  variant="destructive"
-                  onClick={handleConfirmRegenerate}
-                  disabled={isRegenerating}
-                >
-                  {isRegenerating ? (
-                    <>
-                      <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
-                      Regenerating...
-                    </>
-                  ) : (
-                    "Regenerate Key"
-                  )}
-                </Button>
-              </div>
             </div>
           ) : (
             <>
@@ -285,16 +256,10 @@ const ApiKeyDialog: FC<ApiKeyDialogProps> = ({
                     </p>
                   </>
                 ) : (
-                  <div className="p-4 bg-warning-light border border-warning rounded-md">
-                    <p className="text-sm text-warning">
-                      No API key is available to view. API keys are only shown
-                      once when generated and are securely stored.
-                    </p>
-                    <p className="text-sm text-warning mt-1">
-                      Click &quot;Regenerate Key&quot; to create a new API key.
-                      This will invalidate any previous keys.
-                    </p>
-                  </div>
+                  <p className="text-sm text-muted-foreground">
+                    Click &quot;Regenerate Key&quot; to create a new API key.
+                    This will invalidate any previous keys.
+                  </p>
                 )}
               </div>
 
@@ -314,21 +279,46 @@ const ApiKeyDialog: FC<ApiKeyDialogProps> = ({
           )}
         </div>
 
-        {!showConfirmation && (
-          <DialogFooter className="flex flex-col sm:flex-row items-start sm:items-center sm:justify-between gap-4 sm:gap-2 ">
-            <p className="text-xs text-muted-foreground">
-              Last regenerated: {lastRegenerated.toLocaleDateString()}
-            </p>
-            <div className="flex gap-2 w-full sm:w-auto justify-end">
-              <Button variant="outline" onClick={() => onOpenChange(false)}>
-                Close
-              </Button>
-              <Button variant="destructive" onClick={handleStartRegenerate}>
-                Regenerate Key
-              </Button>
-            </div>
-          </DialogFooter>
-        )}
+        <DialogFooter className="flex flex-col sm:flex-row items-start sm:items-center sm:justify-between gap-4 sm:gap-2">
+          <p className="text-xs text-muted-foreground">
+            Last regenerated: {lastRegenerated.toLocaleDateString()}
+          </p>
+          <div className="flex gap-2 w-full sm:w-auto justify-end">
+            {showConfirmation ? (
+              <>
+                <Button
+                  variant="secondary"
+                  onClick={handleCancelRegeneration}
+                  disabled={isRegenerating}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  onClick={handleConfirmRegenerate}
+                  disabled={isRegenerating}
+                >
+                  {isRegenerating ? (
+                    <>
+                      <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                      Regenerating...
+                    </>
+                  ) : (
+                    "Confirm"
+                  )}
+                </Button>
+              </>
+            ) : (
+              <>
+                <Button variant="secondary" onClick={() => onOpenChange(false)}>
+                  Cancel
+                </Button>
+                <Button onClick={handleStartRegenerate}>
+                  Regenerate Key
+                </Button>
+              </>
+            )}
+          </div>
+        </DialogFooter>
       </DialogContent>
     </Dialog>
   );

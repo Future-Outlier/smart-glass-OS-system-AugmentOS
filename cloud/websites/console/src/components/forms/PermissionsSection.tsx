@@ -11,7 +11,7 @@ interface PermissionsSectionProps {
 export function PermissionsSection({ permissions, onChange }: PermissionsSectionProps) {
   return (
     <div className="border rounded-lg p-5">
-      <div className="flex items-center justify-between mb-4">
+      <div className="flex items-center justify-between mb-2">
         <h4 className="text-base font-medium flex items-center gap-2">
           <Shield className="h-4 w-4" />
           Required Permissions
@@ -26,6 +26,9 @@ export function PermissionsSection({ permissions, onChange }: PermissionsSection
           <ExternalLinkIcon />
         </a>
       </div>
+      <p className="text-sm text-muted-foreground mb-4">
+        These are the permissions users will need to grant to your app.
+      </p>
       <PermissionsForm permissions={permissions} onChange={onChange} />
     </div>
   );

@@ -424,10 +424,7 @@ export function PermissionsForm({
         </Button>
       </div>
 
-      {permissions.length === 0 ? (
-        <div className="text-center py-4 text-muted-foreground">
-          <p>No permissions added yet.</p>
-        </div>
+      {permissions.length === 0 ? (<div></div>
       ) : (
         <div className="space-y-2">
           {permissions.map((permission, index) => (

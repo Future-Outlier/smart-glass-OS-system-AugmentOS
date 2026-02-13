@@ -7,6 +7,14 @@ import { Textarea } from "@/components/ui/textarea";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { CheckCircle2, AlertCircle, Loader2, Building, Globe, Mail, FileText, Image, AlertTriangle, LockIcon, Trash, Plus } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import DashboardLayout from "../components/DashboardLayout";
 import api from '@/services/api.service';
 import { toast } from 'sonner';
@@ -52,6 +60,8 @@ const OrganizationSettings: React.FC = () => {
 
   // State for create org dialog
   const [showCreateOrgDialog, setShowCreateOrgDialog] = useState(false);
+  // State for delete confirmation dialog
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
 
   // Handle missing organization by creating a personal one
   useEffect(() => {
@@ -208,20 +218,13 @@ const OrganizationSettings: React.FC = () => {
   const handleDeleteOrg = async () => {
     if (!currentOrg) return;
 
-    const confirmed = typeof globalThis !== 'undefined' && typeof (globalThis as any).confirm === 'function'
-      ? (globalThis as any).confirm(
-          `Are you sure you want to permanently delete the organization "${currentOrg.name}"? This action cannot be undone.`
-        )
-      : false;
-
-    if (!confirmed) return;
-
     try {
       setIsDeleting(true);
       setDeleteError(null);
 
       await api.orgs.delete(currentOrg.id);
 
+      setShowDeleteDialog(false);
       toast.success('Organization deleted successfully');
 
       // Refresh organizations list; OrganizationContext will handle currentOrg selection
@@ -295,10 +298,15 @@ const OrganizationSettings: React.FC = () => {
 
   return (
     <DashboardLayout>
-      <div className="max-w-3xl mx-auto">
+      <div className="max-w-7xl mx-auto">
+        <div className="flex items-center justify-between mb-6 min-h-10">
+          <h1 className="text-2xl font-semibold text-foreground">Organization Settings</h1>
+        </div>
+
+        <div className="space-y-6">
         {/* Welcome message for new members */}
         {(isNewMember || isExistingMember) && (
-          <Card className="shadow-sm mb-6 border-success bg-success-light">
+          <Card className="shadow-sm border-success bg-success-light">
             <CardHeader className="pb-4">
               <div className="flex items-start gap-3">
                 <CheckCircle2 className="h-8 w-8 text-success mt-1" />
@@ -346,7 +354,7 @@ const OrganizationSettings: React.FC = () => {
         )}
 
         {/* Organization Selector Section */}
-        <Card className="shadow-sm mb-6">
+        <Card className="shadow-sm">
           <CardHeader>
             <CardTitle className="text-xl">Current Organization</CardTitle>
             <CardDescription>
@@ -540,40 +548,30 @@ const OrganizationSettings: React.FC = () => {
                       </Alert>
                     )}
               </CardContent>
-              <CardFooter className="flex justify-end p-6">
-                                  {isAdmin ? (
-                                    <div className="flex gap-4">
-                                      <Button
-                                        type="button"
-                                        variant="destructive"
-                                        onClick={handleDeleteOrg}
-                                        disabled={isDeleting}
-                                        className="gap-2"
-                                      >
-                                        {isDeleting ? (
-                                          <>
-                                            <Loader2 className="h-4 w-4 animate-spin" />
-                                            Deleting...
-                                          </>
-                                        ) : (
-                                          <>
-                                            <Trash className="h-4 w-4" />
-                                            Delete Organization
-                                          </>
-                                        )}
-                                      </Button>
-                                      <Button type="submit" disabled={isSaving}>
-                                        {isSaving ? (
-                                          <>
-                                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                                            Saving...
-                                          </>
-                                        ) : (
-                                          'Save Changes'
-                                        )}
-                                      </Button>
-                                    </div>
-                                  ) : (
+              <CardFooter className="flex justify-between p-6">
+                {isAdmin ? (
+                  <>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={() => setShowDeleteDialog(true)}
+                      className="gap-2"
+                    >
+                      <Trash className="h-4 w-4" />
+                      Delete Organization
+                    </Button>
+                    <Button type="submit" disabled={isSaving}>
+                      {isSaving ? (
+                        <>
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                          Saving...
+                        </>
+                      ) : (
+                        'Save Changes'
+                      )}
+                    </Button>
+                  </>
+                ) : (
                   <p className="text-sm text-muted-foreground">
                     Contact an administrator to make changes
                   </p>
@@ -589,6 +587,48 @@ const OrganizationSettings: React.FC = () => {
           onOpenChange={setShowCreateOrgDialog}
           onOrgCreated={handleOrgCreated}
         />
+
+        {/* Delete Organization Dialog */}
+        <Dialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Delete Organization</DialogTitle>
+              <DialogDescription>
+                Are you sure you want to permanently delete "{currentOrg?.name}"? This action cannot be undone and all associated data will be lost.
+              </DialogDescription>
+            </DialogHeader>
+            {deleteError && (
+              <Alert variant="destructive">
+                <AlertCircle className="h-4 w-4" />
+                <AlertDescription>{deleteError}</AlertDescription>
+              </Alert>
+            )}
+            <DialogFooter>
+              <Button
+                variant="secondary"
+                onClick={() => setShowDeleteDialog(false)}
+                disabled={isDeleting}
+              >
+                Cancel
+              </Button>
+              <Button
+                variant="destructive"
+                onClick={handleDeleteOrg}
+                disabled={isDeleting}
+              >
+                {isDeleting ? (
+                  <>
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    Deleting...
+                  </>
+                ) : (
+                  'Delete Organization'
+                )}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+        </div>
       </div>
     </DashboardLayout>
   );

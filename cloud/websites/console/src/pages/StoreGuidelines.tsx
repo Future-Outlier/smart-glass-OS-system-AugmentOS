@@ -11,27 +11,9 @@ import DashboardLayout from "../components/DashboardLayout";
 const StoreGuidelines: React.FC = () => {
   return (
     <DashboardLayout>
-      <div className="max-w-4xl mx-auto">
-        <div className="flex items-center justify-between mb-6">
-          <div>
-            <h1 className="text-2xl font-semibold text-foreground">
-              Mentra MiniApp Store Guidelines
-            </h1>
-            <p className="text-muted-foreground mt-1">
-              Requirements and best practices for publishing MiniApps
-            </p>
-          </div>
-          <Button variant="outline" asChild>
-            <a
-              href="https://docs.mentraglass.com/publishing/guidelines"
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              <FileText className="h-4 w-4 mr-2" />
-              Full Documentation
-              <ExternalLink className="h-3 w-3 ml-1" />
-            </a>
-          </Button>
+      <div className="max-w-7xl mx-auto">
+        <div className="flex items-center justify-between mb-6 min-h-10">
+          <h1 className="text-2xl font-semibold text-foreground">Store Guidelines</h1>
         </div>
 
         <div className="space-y-6">
@@ -52,10 +34,6 @@ const StoreGuidelines: React.FC = () => {
                 it must go through our review process. This ensures all MiniApps
                 meet our quality standards and provide a great experience for
                 MentraOS users.
-              </p>
-              <p className="text-muted-foreground">
-                The review process typically takes 1-3 business days. You&apos;ll
-                receive email notifications about your submission status.
               </p>
             </CardContent>
           </Card>
@@ -174,7 +152,7 @@ const StoreGuidelines: React.FC = () => {
                   </p>
                   <Button variant="outline" size="sm" asChild>
                     <a
-                      href="https://docs.mentraglass.com/publishing"
+                      href="https://docs.mentraglass.com/app-devs/getting-started/deployment/overview"
                       target="_blank"
                       rel="noopener noreferrer"
                       className="text-link border-border hover:bg-secondary"

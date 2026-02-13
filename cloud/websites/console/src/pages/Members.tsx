@@ -19,7 +19,7 @@ import {
   TableHeader,
   TableRow
 } from "@/components/ui/table";
-import { Mail, UserPlus, AlertCircle, CheckCircle2, Loader2, Shield, User, UserCog, AlertTriangle, LogOut } from "lucide-react";
+import { Mail, UserPlus, AlertCircle, CheckCircle2, Loader2, Shield, LogOut } from "lucide-react";
 import DashboardLayout from "../components/DashboardLayout";
 import api, { OrgMember, OrgRole, PendingInvite } from '@/services/api.service';
 import { useOrganization } from '@/context/OrganizationContext';
@@ -236,16 +236,6 @@ const Members: React.FC = () => {
     }
   };
 
-  // Render role icon based on role
-  const RoleIcon = ({ role }: { role: OrgRole }) => {
-    switch (role) {
-      case 'admin':
-        return <UserCog className="h-4 w-4 text-link" />;
-      default:
-        return <User className="h-4 w-4 text-muted-foreground" />;
-    }
-  };
-
   // If no organization is selected
   if (!currentOrg) {
     return (
@@ -272,11 +262,16 @@ const Members: React.FC = () => {
 
   return (
     <DashboardLayout>
-      <div className="max-w-5xl mx-auto space-y-6">
+      <div className="max-w-7xl mx-auto">
+        <div className="flex items-center justify-between mb-6 min-h-10">
+          <h1 className="text-2xl font-semibold text-foreground">Members</h1>
+        </div>
+
+        <div className="space-y-6">
         {/* Member list */}
         <Card className="shadow-sm">
           <CardHeader>
-            <CardTitle className="text-2xl">Organization Members</CardTitle>
+            <CardTitle>Organization Members</CardTitle>
             <CardDescription>
               {isAdmin
                 ? `Manage members of ${currentOrg?.name}`
@@ -312,8 +307,7 @@ const Members: React.FC = () => {
                         {members.map((member) => (
                           <TableRow key={member.user.id}>
                             <TableCell>{member.user.email}</TableCell>
-                            <TableCell className="flex items-center gap-1">
-                              <RoleIcon role={member.role} />
+                            <TableCell>
                               {isAdmin ? (
                                 // Prevent modifying your own role
                                 user?.email?.toLowerCase() === member.user.email.toLowerCase() ? (
@@ -378,9 +372,8 @@ const Members: React.FC = () => {
                                 <span className="text-xs text-muted-foreground">(pending)</span>
                               </div>
                             </TableCell>
-                            <TableCell className="flex items-center gap-1">
-                              <RoleIcon role={invite.role} />
-                              <span className="ml-2 capitalize text-sm">{invite.role}</span>
+                            <TableCell>
+                              <span className="capitalize text-sm">{invite.role}</span>
                             </TableCell>
                             <TableCell>
                               <div>
@@ -507,6 +500,7 @@ const Members: React.FC = () => {
             </CardContent>
           </Card>
         )}
+        </div>
       </div>
     </DashboardLayout>
   );

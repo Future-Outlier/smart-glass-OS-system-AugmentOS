@@ -2,7 +2,7 @@
 import {useState, useEffect} from "react"
 import {Link, useLocation, useNavigate} from "react-router-dom"
 import {Button} from "@/components/ui/button"
-import {useAuth} from "@mentra/shared"
+import {useAuth, IMAGES} from "@mentra/shared"
 import api from "@/services/api.service"
 import OrgSwitcher from "./OrgSwitcher"
 import ContactEmailBanner from "./ui/ContactEmailBanner"
@@ -93,8 +93,9 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({children}) => {
           <div className="select-none">
             <div className="flex items-end gap-0">
               <img
-                src="https://imagedelivery.net/nrc8B2Lk8UIoyW7fY8uHVg/757b23a3-9ec0-457d-2634-29e28f03fe00/verysmall"
+                src={IMAGES.logoLight}
                 alt="Mentra Logo"
+                className="h-6"
               />
             </div>
             <h2 className="text-xs text-muted-foreground pb-1">Developer Portal</h2>
@@ -223,7 +224,7 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({children}) => {
                 <div className="px-2 py-1.5 text-sm text-muted-foreground truncate">{email ?? "unknown@user"}</div>
                 <DropdownMenuSeparator />
 
-                <DropdownMenuItem className="text-destructive focus:text-destructive" onClick={() => signOut()}>
+                <DropdownMenuItem onClick={() => signOut()}>
                   Sign out
                 </DropdownMenuItem>
               </DropdownMenuContent>

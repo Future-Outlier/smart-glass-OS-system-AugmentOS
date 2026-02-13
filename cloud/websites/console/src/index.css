@@ -1,15 +1,14 @@
 @import url("https://fonts.googleapis.com/css2?family=Cuprum:wght@400;500;600;700&display=swap");
 @import "tailwindcss";
+@import "../../shared/src/styles/theme.css";
 
 @source "../../shared/src";
 
-/*
-  ---break--- */
 @plugin "tailwindcss-animate";
-/*
-  ---break--- */
+
 @custom-variant dark (&:is(.dark *));
 
+/* Console-specific styles */
 .font-cuprum {
   font-family: "Cuprum", sans-serif;
 }
@@ -18,183 +17,13 @@
   font-family: system-ui, Avenir, Helvetica, Arial, sans-serif;
   line-height: 1.5;
   font-weight: 400;
-  /*
-  color-scheme: light dark;
-  color: rgba(255, 255, 255, 0.87);
-  background-color: #242424; */
-
   font-synthesis: none;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-
-  /* Mentra Brand Colors - Green palette from mobile app */
-  --mentra-green-1: #fbfefb;
-  --mentra-green-2: #f5fbf7;
-  --mentra-green-3: #eaf9ef;
-  --mentra-green-4: #dafde6;
-  --mentra-green-5: #bff5d4;
-  --mentra-green-6: #a2efc3;
-  --mentra-green-7: #7ee8ad;
-  --mentra-green-8: #5ae096;
-  --mentra-green-9: #36dd88;
-  --mentra-green-10: #00b869;
-  --mentra-green-11: #009258;
-  --mentra-green-12: #006a3f;
-
-  --background: oklch(0.995 0.002 145);
-  --foreground: oklch(0.145 0 0);
-  --card: oklch(1 0 0);
-  --card-foreground: oklch(0.145 0 0);
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.145 0 0);
-  /* Primary: Dark/Black for buttons (following mobile app pattern) */
-  --primary: oklch(0.205 0 0);
-  --primary-foreground: oklch(0.985 0 0);
-  /* Secondary: Light background with border */
-  --secondary: oklch(0.97 0 0);
-  --secondary-foreground: oklch(0.205 0 0);
-  --muted: oklch(0.97 0 0);
-  --muted-foreground: oklch(0.45 0 0);
-  /* Accent: Mentra Green */
-  --accent: #00b869;
-  --accent-foreground: oklch(0.985 0 0);
-  /* Link color: Mentra Green (same as mobile) */
-  --link: #00b869;
-  --link-hover: #009258;
-
-  /* Status colors - matching mobile app */
-  --success: #22C55E;
-  --success-foreground: #ffffff;
-  --success-light: #dcfce7;
-  --warning: #f59e0b;
-  --warning-foreground: #ffffff;
-  --warning-light: #fef3c7;
-  --warning-border: #f59e0b;
-
-  /* Text hierarchy - semantic text colors */
-  --text-primary: oklch(0.145 0 0);
-  --text-secondary: oklch(0.40 0 0);
-  --text-muted: oklch(0.55 0 0);
-  --text-disabled: oklch(0.65 0 0);
-
-  /* Surface colors for cards, inputs, etc */
-  --surface: oklch(0.985 0 0);
-  --surface-hover: oklch(0.97 0 0);
-  --surface-disabled: oklch(0.96 0 0);
-
-  --destructive: oklch(0.577 0.245 27.325);
-  --destructive-foreground: oklch(0.577 0.245 27.325);
-  --border: oklch(0.88 0.01 145);
-  --input: oklch(0.88 0.01 145);
-  --ring: oklch(0.70 0.15 155);
-  --chart-1: oklch(0.646 0.222 41.116);
-  --chart-2: oklch(0.6 0.118 184.704);
-  --chart-3: oklch(0.398 0.07 227.392);
-  --chart-4: oklch(0.828 0.189 84.429);
-  --chart-5: oklch(0.769 0.188 70.08);
-  --radius: 0.625rem;
-  --sidebar: oklch(0.985 0 0);
-  --sidebar-foreground: oklch(0.145 0 0);
-  --sidebar-primary: oklch(0.45 0.22 275);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.97 0.005 90);
-  --sidebar-accent-foreground: oklch(0.205 0 0);
-  --sidebar-border: oklch(0.90 0.01 90);
-  --sidebar-ring: oklch(0.45 0.22 275);
-}
-/*
-a {
-  font-weight: 500;
-  color: #646cff;
-  text-decoration: inherit;
-}
-a:hover {
-  color: #535bf2;
 }
 
-body {
-  margin: 0;
-  display: flex;
-  place-items: center;
-  min-width: 320px;
-  min-height: 100vh;
-}
-
-h1 {
-  font-size: 3.2em;
-  line-height: 1.1;
-}
-
-button {
-  border-radius: 8px;
-  border: 1px solid transparent;
-  padding: 0.6em 1.2em;
-  font-size: 1em;
-  font-weight: 500;
-  font-family: inherit;
-  background-color: #1a1a1a;
-  cursor: pointer;
-  transition: border-color 0.25s;
-}
-button:hover {
-  border-color: #646cff;
-}
-button:focus,
-button:focus-visible {
-  outline: 4px auto -webkit-focus-ring-color;
-}
-
-@media (prefers-color-scheme: light) {
-  :root {
-    color: #213547;
-    background-color: #ffffff;
-  }
-  a:hover {
-    color: #747bff;
-  }
-  button {
-    background-color: #f9f9f9;
-  }
-} */
-/*
-  ---break--- */
-.dark {
-  --background: oklch(0.145 0 0);
-  --foreground: oklch(0.985 0 0);
-  --card: oklch(0.145 0 0);
-  --card-foreground: oklch(0.985 0 0);
-  --popover: oklch(0.145 0 0);
-  --popover-foreground: oklch(0.985 0 0);
-  --primary: oklch(0.985 0 0);
-  --primary-foreground: oklch(0.205 0 0);
-  --secondary: oklch(0.269 0 0);
-  --secondary-foreground: oklch(0.985 0 0);
-  --muted: oklch(0.269 0 0);
-  --muted-foreground: oklch(0.708 0 0);
-  --accent: oklch(0.269 0 0);
-  --accent-foreground: oklch(0.985 0 0);
-  --destructive: oklch(0.396 0.141 25.723);
-  --destructive-foreground: oklch(0.637 0.237 25.331);
-  --border: oklch(0.269 0 0);
-  --input: oklch(0.269 0 0);
-  --ring: oklch(0.439 0 0);
-  --chart-1: oklch(0.488 0.243 264.376);
-  --chart-2: oklch(0.696 0.17 162.48);
-  --chart-3: oklch(0.769 0.188 70.08);
-  --chart-4: oklch(0.627 0.265 303.9);
-  --chart-5: oklch(0.645 0.246 16.439);
-  --sidebar: oklch(0.205 0 0);
-  --sidebar-foreground: oklch(0.985 0 0);
-  --sidebar-primary: oklch(0.488 0.243 264.376);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.269 0 0);
-  --sidebar-accent-foreground: oklch(0.985 0 0);
-  --sidebar-border: oklch(0.269 0 0);
-  --sidebar-ring: oklch(0.439 0 0);
-}
-/*
-  ---break--- */
+/* Tailwind theme mapping */
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
@@ -253,8 +82,7 @@ button:focus-visible {
   --color-sidebar-ring: var(--sidebar-ring);
   --animate-accordion-down: accordion-down 0.2s ease-out;
   --animate-accordion-up: accordion-up 0.2s ease-out;
-  /*
-  ---break--- */
+
   @keyframes accordion-down {
     from {
       height: 0;
@@ -263,8 +91,7 @@ button:focus-visible {
       height: var(--radix-accordion-content-height);
     }
   }
-  /*
-  ---break--- */
+
   @keyframes accordion-up {
     from {
       height: var(--radix-accordion-content-height);
@@ -274,8 +101,7 @@ button:focus-visible {
     }
   }
 }
-/*
-  ---break--- */
+
 @layer base {
   * {
     @apply border-border outline-ring/50;
@@ -285,21 +111,7 @@ button:focus-visible {
   }
 }
 
-/* Mentra Brand Utilities */
-.text-mentra-green {
-  color: var(--mentra-green-10);
-}
-.bg-mentra-green {
-  background-color: var(--mentra-green-10);
-}
-.border-mentra-green {
-  border-color: var(--mentra-green-10);
-}
-.bg-mentra-green-light {
-  background-color: var(--mentra-green-5);
-}
-
-/* Improved spacing and readability */
+/* Console-specific form utilities */
 .form-section {
   @apply space-y-6;
 }
@@ -327,13 +139,5 @@ a.help-link {
   color: var(--link);
 }
 a.help-link:hover {
-  color: var(--link-hover);
-}
-
-/* Text link utilities */
-.text-link {
-  color: var(--link);
-}
-.text-link:hover, .hover\:text-link-hover:hover {
   color: var(--link-hover);
 }

@@ -218,9 +218,9 @@ const MiniAppTable: FC<MiniAppTableProps> = ({
                                 title={isAppInstalled(app.packageName) ? "Click to uninstall" : "Click to install"}
                                 className="cursor-pointer">
                                 {isAppInstalled(app.packageName) ? (
-                                  <BadgeCheck className="h-4 w-4 text-success" />
+                                  <BadgeCheck className="h-4 w-4" />
                                 ) : (
-                                  <BadgeMinus className="h-4 w-4 text-muted-foreground" />
+                                  <BadgeMinus className="h-4 w-4" />
                                 )}
                               </Button>
                             </TooltipTrigger>
@@ -320,7 +320,6 @@ const MiniAppTable: FC<MiniAppTableProps> = ({
                               <Button
                                 variant="outline"
                                 size="sm"
-                                className="text-destructive"
                                 onClick={() => {
                                   setSelectedApp(app)
                                   setIsDeleteDialogOpen(true)

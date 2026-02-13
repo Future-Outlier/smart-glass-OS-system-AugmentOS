@@ -282,10 +282,7 @@ const HardwareRequirementsForm: React.FC<HardwareRequirementsFormProps> = ({requ
       </div>
 
       {requirements.length === 0 ? (
-        <div className="text-center py-4 text-muted-foreground">
-          <p>No hardware requirements specified.</p>
-          <p className="text-xs mt-1">The app will be assumed to work with any hardware.</p>
-        </div>
+        <div></div>
       ) : (
         <div className="space-y-2">
           {requirements.map((requirement, index) => (

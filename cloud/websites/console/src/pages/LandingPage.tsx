@@ -2,6 +2,7 @@
 import React from 'react';
 import { Button } from '../components/ui/button';
 import { Link, useNavigate } from 'react-router-dom';
+import { IMAGES } from '@mentra/shared';
 
 const LandingPage: React.FC = () => {
   const navigate = useNavigate();
@@ -12,7 +13,7 @@ const LandingPage: React.FC = () => {
         <div className=" mx-auto px-5 py-4 flex items-center justify-between">
           <div className='select-none'>
             <div className="flex items-end gap-0">
-              <img src="https://imagedelivery.net/nrc8B2Lk8UIoyW7fY8uHVg/757b23a3-9ec0-457d-2634-29e28f03fe00/verysmall" alt="Mentra Logo" />
+              <img src={IMAGES.logoLight} alt="Mentra Logo" className="h-6" />
             </div>
             <h2 className="text-sm text-muted-foreground pb-1 ">Developer Portal</h2>
           </div>

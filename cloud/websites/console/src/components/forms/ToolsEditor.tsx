@@ -602,9 +602,7 @@ const ToolsEditor: React.FC<ToolsEditorProps> = ({
       </div>
 
       {internalTools.length === 0 ? (
-        <div className="text-center py-4 text-muted-foreground">
-          <p>No AI tools defined yet.</p>
-        </div>
+        <div></div>
       ) : (
         <div className="space-y-2">
           {internalTools.map((tool, index) => (
