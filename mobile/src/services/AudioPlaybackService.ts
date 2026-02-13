@@ -1,5 +1,6 @@
 import {createAudioPlayer, AudioPlayer, AudioStatus, setAudioModeAsync} from "expo-audio"
 import CoreModule from "modules/core"
+import {BackgroundTimer} from "@/utils/timers"
 
 interface AudioPlayRequest {
   requestId: string
@@ -26,7 +27,8 @@ class AudioPlaybackService {
   private audioModeConfigured: boolean = false
   // Debounce timer for notifying native that audio stopped
   // Prevents mic toggle flicker when playing back-to-back audio
-  private audioStopDebounceTimer: ReturnType<typeof setTimeout> | null = null
+  // Uses BackgroundTimer to work reliably when app is backgrounded on Android
+  private audioStopDebounceTimer: number | null = null
   private static readonly AUDIO_STOP_DEBOUNCE_MS = 500
 
   private constructor() {}
@@ -119,8 +121,8 @@ class AudioPlaybackService {
       // Notify native that our app is playing audio
       // Used to suspend LC3 mic during audio playback to avoid MCU overload
       // Cancel any pending "stop" notification first (handles back-to-back audio)
-      if (this.audioStopDebounceTimer) {
-        clearTimeout(this.audioStopDebounceTimer)
+      if (this.audioStopDebounceTimer !== null) {
+        BackgroundTimer.clearTimeout(this.audioStopDebounceTimer)
         this.audioStopDebounceTimer = null
       }
       CoreModule.setOwnAppAudioPlaying(true).catch((e) => {
@@ -193,12 +195,13 @@ class AudioPlaybackService {
    */
   private notifyAudioStopDebounced(): void {
     // Clear any existing timer
-    if (this.audioStopDebounceTimer) {
-      clearTimeout(this.audioStopDebounceTimer)
+    if (this.audioStopDebounceTimer !== null) {
+      BackgroundTimer.clearTimeout(this.audioStopDebounceTimer)
     }
 
     // Set a new timer - if new audio starts within this window, the timer gets cancelled
-    this.audioStopDebounceTimer = setTimeout(() => {
+    // Uses BackgroundTimer to work reliably when app is backgrounded on Android
+    this.audioStopDebounceTimer = BackgroundTimer.setTimeout(() => {
       this.audioStopDebounceTimer = null
       CoreModule.setOwnAppAudioPlaying(false).catch((e) => {
         console.warn("AUDIO: Failed to notify native of audio stop:", e)
