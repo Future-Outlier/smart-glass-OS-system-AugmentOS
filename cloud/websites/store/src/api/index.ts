@@ -1,5 +1,5 @@
 // store/web/src/services/api.service.ts
-import { AppI } from "@/types";
+import { AppI, DeviceInfo } from "@/types";
 import axios from "axios";
 
 // Configure base axios defaults
@@ -11,6 +11,19 @@ export interface ApiResponse<T> {
   success: boolean;
   data: T;
   message?: string;
+  deviceInfo?: DeviceInfo;
+}
+
+// Response type for apps with device info
+export interface AppsWithDeviceInfo {
+  apps: AppI[];
+  deviceInfo?: DeviceInfo;
+}
+
+// Response type for single app with device info
+export interface AppWithDeviceInfo {
+  app: AppI | null;
+  deviceInfo?: DeviceInfo;
 }
 
 // Token exchange response
@@ -61,8 +74,9 @@ const appService = {
    * Get all available apps (auth required)
    * Uses store backend
    * @param options Optional filter options
+   * @returns Apps with device info for compatibility filtering
    */
-  getAvailableApps: async (options?: AppFilterOptions): Promise<AppI[]> => {
+  getAvailableApps: async (options?: AppFilterOptions): Promise<AppsWithDeviceInfo> => {
     try {
       let url = `/api/store/published-apps-loggedin`;
 
@@ -72,7 +86,10 @@ const appService = {
       }
 
       const response = await axios.get<ApiResponse<AppI[]>>(url);
-      return response.data.data;
+      return {
+        apps: response.data.data,
+        deviceInfo: response.data.deviceInfo,
+      };
     } catch (error) {
       console.error("Error fetching available apps:", error);
       throw error;
@@ -94,16 +111,20 @@ const appService = {
   },
 
   /**
-   * Get app details by package name (no auth required)
+   * Get app details by package name (no auth required, but enriched with compatibility if authenticated)
    * Uses store backend
+   * @returns App with device info for compatibility display
    */
-  getAppByPackageName: async (packageName: string): Promise<AppI | null> => {
+  getAppByPackageName: async (packageName: string): Promise<AppWithDeviceInfo> => {
     try {
       const response = await axios.get<ApiResponse<AppI>>(`/api/store/${packageName}`);
-      return response.data.data;
+      return {
+        app: response.data.data,
+        deviceInfo: response.data.deviceInfo,
+      };
     } catch (error) {
       console.error(`Error fetching app ${packageName}:`, error);
-      return null;
+      return { app: null, deviceInfo: undefined };
     }
   },
 
@@ -172,12 +193,13 @@ const appService = {
   },
 
   /**
-   * Search for apps (no auth required)
+   * Search for apps (no auth required, but enriched with compatibility if authenticated)
    * Uses store backend
    * @param query Search query string
    * @param options Optional filter options
+   * @returns Apps with device info for compatibility filtering
    */
-  searchApps: async (query: string, options?: AppFilterOptions): Promise<AppI[]> => {
+  searchApps: async (query: string, options?: AppFilterOptions): Promise<AppsWithDeviceInfo> => {
     try {
       let url = `/api/store/search?q=${encodeURIComponent(query)}`;
 
@@ -187,10 +209,13 @@ const appService = {
       }
 
       const response = await axios.get<ApiResponse<AppI[]>>(url);
-      return response.data.data || [];
+      return {
+        apps: response.data.data || [],
+        deviceInfo: response.data.deviceInfo,
+      };
     } catch (error) {
       console.error(`Error searching apps with query "${query}":`, error);
-      return []; // Return empty array on error
+      return { apps: [], deviceInfo: undefined };
     }
   },
 };

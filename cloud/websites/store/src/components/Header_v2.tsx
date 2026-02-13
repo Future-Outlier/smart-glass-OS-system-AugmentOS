@@ -76,6 +76,7 @@ const Header: React.FC<HeaderProps> = ({ onSearch, onSearchClear, onSearchChange
   const [selectedTab, setSelectedTab] = useState<"apps" | "glasses" | "support">("apps");
   const [isScrolled, setIsScrolled] = useState(false);
   const [windowWidth, setWindowWidth] = useState(typeof window !== "undefined" ? window.innerWidth : 1920);
+  const hasAttemptedRefresh = useRef(false);
 
   // Track window width for responsive behavior
   useEffect(() => {
@@ -94,20 +95,20 @@ const Header: React.FC<HeaderProps> = ({ onSearch, onSearchClear, onSearchChange
     return user.avatarUrl || null;
   };
 
-  // Refresh user data on mount to ensure avatar is loaded
+  // Refresh user data on mount to ensure avatar is loaded (only once)
   useEffect(() => {
-    if (isAuthenticated && !user?.avatarUrl) {
+    if (isAuthenticated && !user?.avatarUrl && !hasAttemptedRefresh.current) {
+      hasAttemptedRefresh.current = true;
       refreshUser();
     }
   }, [isAuthenticated, user?.avatarUrl, refreshUser]);
 
-  // Debug: log user data
+  // Reset refresh flag when user logs out
   useEffect(() => {
-    if (user) {
-      console.log("User data:", user);
-      console.log("Avatar URL:", getUserAvatar());
+    if (!isAuthenticated) {
+      hasAttemptedRefresh.current = false;
     }
-  }, [user]);
+  }, [isAuthenticated]);
 
   // Handle scroll detection
   useEffect(() => {
