@@ -20,6 +20,7 @@ import {CompatibilityResult, HardwareCompatibility} from "@/utils/hardware"
 import {BackgroundTimer} from "@/utils/timers"
 import {storage} from "@/utils/storage"
 import {useShallow} from "zustand/react/shallow"
+import composer from "@/services/Composer"
 
 export interface ClientAppletInterface extends AppletInterface {
   offline: boolean
@@ -30,6 +31,8 @@ export interface ClientAppletInterface extends AppletInterface {
   onStart?: () => AsyncResult<void, Error>
   onStop?: () => AsyncResult<void, Error>
   screenshot?: string
+  runtimePermissions?: string[]
+  declaredPermissions?: string[]
 }
 
 interface AppStatusState {
@@ -39,6 +42,7 @@ interface AppStatusState {
   stopApplet: (packageName: string) => Promise<void>
   stopAllApplets: () => AsyncResult<void, Error>
   saveScreenshot: (packageName: string, screenshot: string) => Promise<void>
+  setInstalledLmas: (installedLmas: ClientAppletInterface[]) => void
 }
 
 export const DUMMY_APPLET: ClientAppletInterface = {
@@ -338,6 +342,10 @@ const startStopApplet = (applet: ClientAppletInterface, status: boolean): AsyncR
     return startStopOfflineApplet(applet, status)
   }
 
+  if (applet.local) {
+    return composer.startStop(applet, status)
+  }
+
   // TODO: not the best way to handle this, but it works reliably:
   // For online apps, schedule a refresh to confirm the state from the server
   if (refreshTimeout) {
@@ -532,6 +540,10 @@ export const useAppletStatusStore = create<AppStatusState>((set, get) => ({
       apps: state.apps.map((a) => (a.packageName === packageName ? {...a, screenshot} : a)),
     }))
   },
+
+  setInstalledLmas: (installedLmas: ClientAppletInterface[]) => {
+    // set({localMiniApps: installedLmas})
+  },
 }))
 
 export const useApplets = () => useAppletStatusStore((state) => state.apps)
@@ -605,10 +617,6 @@ export const useLocalMiniApps = () => {
 
 export const useActiveAppPackageNames = () =>
   useAppletStatusStore(useShallow((state) => state.apps.filter((app) => app.running).map((a) => a.packageName)))
-
-export const useInstalledLmas = () => {
-  return useAppletStatusStore(useShallow((state) => state.apps.filter((app) => app.local)))
-}
 
 // export const useIncompatibleApps = async () => {
 //   const apps = useApplets()

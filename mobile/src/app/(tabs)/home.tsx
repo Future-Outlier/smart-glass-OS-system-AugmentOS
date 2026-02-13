@@ -1,7 +1,7 @@
 import {useFocusEffect} from "@react-navigation/native"
-import {useCallback, useEffect, useRef, useState} from "react"
+import {useCallback, useEffect, useRef} from "react"
 import {ScrollView, View} from "react-native"
-import {useSharedValue, withSpring} from "react-native-reanimated"
+import {useSharedValue} from "react-native-reanimated"
 
 import {MentraLogoStandalone} from "@/components/brands/MentraLogoStandalone"
 import {ActiveForegroundApp} from "@/components/home/ActiveForegroundApp"
