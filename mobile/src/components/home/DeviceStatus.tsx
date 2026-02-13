@@ -148,7 +148,7 @@ export const DeviceStatus = ({style}: {style?: ViewStyle}) => {
   if (!glassesConnected || !glassesFullyBooted || isSearching) {
     return (
       <View style={[themed($disconnectedContainer), style]}>
-        <View className="just">
+        <View className="justify-between items-center flex-row">
           <Text className="font-semibold text-secondary-foreground text-lg" text={defaultWearable} />
           <Icon name="bluetooth-off" size={18} color={theme.colors.foreground} />
         </View>

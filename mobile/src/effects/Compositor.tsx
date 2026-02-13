@@ -6,12 +6,12 @@ import LocalMiniApp from "@/components/home/LocalMiniApp"
 function Compositor() {
   const lmas = useLocalMiniApps()
 
-  useEffect(() => {
-    console.log(
-      "Lmas:",
-      lmas.map((lma) => lma.packageName),
-    )
-  }, [lmas])
+  // useEffect(() => {
+  //   console.log(
+  //     "Lmas:",
+  //     lmas.map((lma) => lma.packageName),
+  //   )
+  // }, [lmas])
 
   const renderLmas = () => {
     return lmas.map((lma) => {

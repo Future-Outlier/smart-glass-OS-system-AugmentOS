@@ -1,5 +1,5 @@
 import React, {useCallback, useEffect, useMemo, useRef, useState} from "react"
-import {View, Dimensions, Pressable, Image, TouchableOpacity} from "react-native"
+import {View, Dimensions, Pressable, Image, TouchableOpacity, Platform} from "react-native"
 import {Text} from "@/components/ignite/"
 import Animated, {
   useSharedValue,
@@ -10,6 +10,7 @@ import Animated, {
   Extrapolation,
   useDerivedValue,
   SharedValue,
+  useAnimatedReaction,
 } from "react-native-reanimated"
 import {Gesture, GestureDetector} from "react-native-gesture-handler"
 import {scheduleOnRN} from "react-native-worklets"
@@ -224,6 +225,7 @@ export default function AppSwitcher({swipeProgress}: AppSwitcherProps) {
   let directApps = useActiveApps()
   let [apps, setApps] = useState<ClientAppletInterface[]>([])
   const prevAppsLength = useRef(0)
+  const [isOpen, setIsOpen] = useState(false)
 
   // for testing:
   //   apps = [...DUMMY_APPS, ...apps]
@@ -270,6 +272,17 @@ export default function AppSwitcher({swipeProgress}: AppSwitcherProps) {
     prevAppsLength.current = apps.length
   }, [apps.length])
 
+  // useAnimatedReaction(
+  //   () => swipeProgress.value,
+  //   (current, previous) => {
+  //     if (previous !== null && current == 1 && previous < 1) {
+  //       scheduleOnRN(() => {setIsOpen(true)})
+  //     } else if (previous !== null && current == 0 && previous > 0) {
+  //       scheduleOnRN(() => {setIsOpen(false)})
+  //     }
+  //   }
+  // )
+
   // Derive animations from swipeProgress
   const backdropStyle = useAnimatedStyle(() => ({
     opacity: swipeProgress.value,
@@ -280,6 +293,16 @@ export default function AppSwitcher({swipeProgress}: AppSwitcherProps) {
       transform: [{translateY: 100 * (1 - swipeProgress.value)}],
       opacity: swipeProgress.value,
     }
+  })
+
+  // fix for android because it doesn't handle pointer events correctly
+  const parentContainerStyle = useAnimatedStyle(() => {
+    if (Platform.OS === "android") {
+      return {
+        pointerEvents: swipeProgress.value == 1 ? "auto" : "none",
+      }
+    }
+    return {}
   })
 
   const panGesture = Gesture.Pan()
@@ -462,11 +485,12 @@ export default function AppSwitcher({swipeProgress}: AppSwitcherProps) {
     // do after we have closed the swipe progress:
     setTimeout(() => {
       goToIndex(apps.length - 1, true)
+      setIsOpen(false)
     }, 250)
   }, [apps.length])
 
   return (
-    <View className="absolute -mx-6 inset-0 z-[1000]" pointerEvents="box-none" style={{paddingBottom: insets.bottom}}>
+    <Animated.View className="absolute -mx-6 inset-0" pointerEvents="box-none" style={[{paddingBottom: insets.bottom}, parentContainerStyle]} >
       {/* Blurred Backdrop */}
       <Animated.View className="absolute inset-0 bg-black/70" style={backdropStyle}>
         <Pressable className="flex-1" onPress={handleClose} />
@@ -487,9 +511,9 @@ export default function AppSwitcher({swipeProgress}: AppSwitcherProps) {
 
         {/* Cards Carousel */}
         <GestureDetector gesture={panGesture}>
-          <Animated.View className="flex-1 justify-center" pointerEvents="box-none">
+          <Animated.View className="flex-1 justify-center">
             <Pressable className="absolute inset-0" onPress={handleClose} />
-            <Animated.View className="flex-row items-center" pointerEvents="box-none">
+            <Animated.View className="flex-row items-center">
               {apps.map((app, index) => (
                 <AppCardItem
                   key={app.packageName}
@@ -541,7 +565,7 @@ export default function AppSwitcher({swipeProgress}: AppSwitcherProps) {
           <Button preset="secondary" tx="common:close" style={{minWidth: 200}} onPress={onClose} />
         </View> */}
       </Animated.View>
-    </View>
+    </Animated.View>
   )
 }
 
