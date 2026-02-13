@@ -3,7 +3,7 @@ import {EventEmitter} from "events"
 import mantle from "./MantleManager"
 import CoreModule from "core"
 
-export interface SuperWebViewMessage {
+export interface WebViewMessage {
   type: string
   payload?: any
   timestamp?: number
@@ -11,11 +11,10 @@ export interface SuperWebViewMessage {
 
 class MiniComms {
   private static instance: MiniComms | null = null
-  private eventEmitter: EventEmitter
   private webViewMessageHandler: ((message: string) => void) | null = null
+  private messageHandlers: Record<string, (message: WebViewMessage) => void> = {}
 
   private constructor() {
-    this.eventEmitter = new EventEmitter()
   }
 
   public static getInstance(): MiniComms {
@@ -26,18 +25,17 @@ class MiniComms {
   }
 
   public cleanup() {
-    this.eventEmitter.removeAllListeners()
     this.webViewMessageHandler = null
     MiniComms.instance = null
   }
 
   // Register the WebView message sender
-  public setWebViewMessageHandler(handler: (message: string) => void) {
-    this.webViewMessageHandler = handler
+  public setWebViewMessageHandler(handler: (message: string) => void, packageName: string) {
+    this.messageHandlers[packageName] = handler
   }
 
   // Send message to WebView
-  public sendToWebView(message: SuperWebViewMessage) {
+  public sendToWebView(message: WebViewMessage) {
     if (!this.webViewMessageHandler) {
       console.warn("SUPERCOMMS: No WebView message handler registered")
       return
@@ -53,34 +51,31 @@ class MiniComms {
   }
 
   // Handle incoming message from WebView
-  public handleWebViewMessage(data: string) {
+  public handleWebViewMessage(packageName: string, data: string) {
     try {
-      const message: SuperWebViewMessage = JSON.parse(data)
-      console.log(`SUPERCOMMS: Received from WebView: ${message.type}`)
-
-      // Emit event for any listeners
-      this.eventEmitter.emit("message", message)
+      const message: WebViewMessage = JSON.parse(data)
+      console.log(`SUPERCOMMS: Received from WebView: ${message.type} from ${packageName}`)
 
       // Handle specific message types
-      this.handleMessage(message)
+      this.handleMessage(packageName, message)
     } catch (error) {
       console.error(`SUPERCOMMS: Error parsing WebView message:`, error)
     }
   }
 
-  private handle_data_update(message: SuperWebViewMessage) {
+  private handle_data_update(message: WebViewMessage) {
     console.log(`SUPERCOMMS: Data updated:`, message.payload.count)
     mantle.displayTextMain(`count: ${message.payload.count}`)
   }
 
-  private handleCoreFn(message: SuperWebViewMessage) {
+  private handleCoreFn(message: WebViewMessage) {
     const {fn, args} = message.payload
     console.log(`SUPERCOMMS: Core function:`, fn, args)
     CoreModule[fn](...args)
   }
 
   // Message handlers - these handle specific message types from WebView
-  private handleMessage(message: SuperWebViewMessage) {
+  private handleMessage(packageName: string, message: WebViewMessage) {
     switch (message.type) {
       case "core_fn":
         this.handleCoreFn(message)
@@ -106,7 +101,7 @@ class MiniComms {
     }
   }
 
-  private handleButtonClick(message: SuperWebViewMessage) {
+  private handleButtonClick(message: WebViewMessage) {
     console.log(`SUPERCOMMS: Button clicked:`, message.payload)
 
     // Send a response back to WebView
@@ -121,7 +116,7 @@ class MiniComms {
     })
   }
 
-  private handlePageReady(_message: SuperWebViewMessage) {
+  private handlePageReady(_message: WebViewMessage) {
     console.log(`SUPERCOMMS: Page is ready`)
 
     // Send initial data to WebView
@@ -135,7 +130,7 @@ class MiniComms {
     })
   }
 
-  private handleCustomAction(_message: SuperWebViewMessage) {
+  private handleCustomAction(_message: WebViewMessage) {
     console.log(`SUPERCOMMS: Custom action:`, _message.payload)
   }
 

@@ -7,6 +7,7 @@ import {useAppTheme} from "@/contexts/ThemeContext"
 import miniComms, {SuperWebViewMessage} from "@/services/MiniComms"
 
 interface LocalMiniAppProps {
+  packageName: string
   url?: string | null
   html?: string | null
 }
@@ -15,6 +16,7 @@ export default function LocalMiniApp(props: LocalMiniAppProps) {
   const {theme} = useAppTheme()
   const webViewRef = useRef<WebView>(null)
   const keepAliveIntervalRef = useRef<number | null>(null)
+  const {packageName} = props
 
   // Set up SuperComms message handler to send messages to WebView
   useEffect(() => {
@@ -51,7 +53,7 @@ export default function LocalMiniApp(props: LocalMiniAppProps) {
   // Handle messages from WebView
   const handleWebViewMessage = (event: any) => {
     const data = event.nativeEvent.data
-    miniComms.handleWebViewMessage(data)
+    miniComms.handleWebViewMessage(packageName, data)
   }
 
   let source: any = null
