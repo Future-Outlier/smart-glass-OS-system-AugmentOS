@@ -26,6 +26,7 @@ class PhoneAudioMonitor private constructor(private val context: Context) {
         @Volatile
         private var instance: PhoneAudioMonitor? = null
 
+        @JvmStatic
         fun getInstance(context: Context): PhoneAudioMonitor {
             return instance ?: synchronized(this) {
                 instance ?: PhoneAudioMonitor(context.applicationContext).also {
