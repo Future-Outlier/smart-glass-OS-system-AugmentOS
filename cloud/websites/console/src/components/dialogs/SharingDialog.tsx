@@ -1,8 +1,6 @@
 // components/dialogs/SharingDialog.tsx
 import {useEffect, useState, FC} from "react"
-import {Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle} from "@/components/ui/dialog"
-import {Button} from "@/components/ui/button"
-import {Input} from "@/components/ui/input"
+import {Button, Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, Input} from "@mentra/shared"
 
 import {Copy, LinkIcon, CheckCircle, ExternalLink} from "lucide-react"
 import api from "@/services/api.service"

@@ -20,7 +20,7 @@ import AdminPanel from "./pages/AdminPanel"
 import NotFound from "./pages/NotFound"
 import CLIKeys from "./pages/CLIKeys"
 import StoreGuidelines from "./pages/StoreGuidelines"
-import {AuthProvider, useAuth, ForgotPasswordPage, ResetPasswordPage} from "@mentra/shared"
+import {AuthProvider, useAuth, ForgotPasswordPage, ResetPasswordPage, Spinner} from "@mentra/shared"
 import {OrganizationProvider} from "./context/OrganizationContext"
 import {useAccountStore} from "./stores/account.store"
 import {useOrgStore} from "./stores/orgs.store"
@@ -72,7 +72,7 @@ function ProtectedRoute({
   if (isLoading) {
     return (
       <div className="h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
+        <Spinner size="lg" />
       </div>
     )
   }

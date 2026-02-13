@@ -1,10 +1,6 @@
 // pages/EditMiniApp.tsx
 import { useState, useEffect, useRef } from "react";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
-import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Alert, AlertDescription, Button, Input, Label, Spinner, Textarea } from "@mentra/shared";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import {
   ArrowLeftIcon,
@@ -1120,8 +1116,8 @@ export default function EditMiniApp() {
 
         <div>
           {isLoading ? (
-            <div className="p-8 text-center">
-              <div className="animate-spin mx-auto h-8 w-8 border-t-2 border-b-2 border-blue-500 rounded-full"></div>
+            <div className="p-8 text-center flex flex-col items-center">
+              <Spinner size="lg" />
               <p className="mt-2 text-muted-foreground">Loading MiniApp data...</p>
             </div>
           ) : (

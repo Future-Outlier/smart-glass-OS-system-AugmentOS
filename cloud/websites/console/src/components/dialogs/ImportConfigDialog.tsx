@@ -1,14 +1,15 @@
 import React from 'react';
-import { Button } from "@/components/ui/button";
 import {
+  Alert,
+  AlertDescription,
+  Button,
   Dialog,
   DialogContent,
   DialogDescription,
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from "@/components/ui/dialog";
-import { Alert, AlertDescription } from "@/components/ui/alert";
+} from "@mentra/shared";
 import { CheckCircle2, AlertCircle, Upload } from "lucide-react";
 
 /**

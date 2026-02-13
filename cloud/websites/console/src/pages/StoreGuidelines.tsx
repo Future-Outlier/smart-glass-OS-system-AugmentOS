@@ -1,6 +1,5 @@
 import React from "react";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
+import { Button, Card, CardContent, CardDescription, CardHeader, CardTitle } from "@mentra/shared";
 import { ExternalLink, FileText, CheckCircle, AlertCircle, Info } from "lucide-react";
 import DashboardLayout from "../components/DashboardLayout";
 
@@ -54,35 +53,35 @@ const StoreGuidelines: React.FC = () => {
                 <li className="flex items-start gap-2">
                   <CheckCircle className="h-4 w-4 text-success mt-0.5 shrink-0" />
                   <span className="text-muted-foreground">
-                    <strong>Accurate metadata:</strong> Display name, description,
+                    Display name, description,
                     and logo accurately represent your MiniApp&apos;s functionality
                   </span>
                 </li>
                 <li className="flex items-start gap-2">
                   <CheckCircle className="h-4 w-4 text-success mt-0.5 shrink-0" />
                   <span className="text-muted-foreground">
-                    <strong>Working server:</strong> Your Server URL must be
+                    Your Server URL must be
                     reachable and respond to health checks
                   </span>
                 </li>
                 <li className="flex items-start gap-2">
                   <CheckCircle className="h-4 w-4 text-success mt-0.5 shrink-0" />
                   <span className="text-muted-foreground">
-                    <strong>Required permissions:</strong> Only request permissions
+                    Only request permissions
                     that are necessary for your MiniApp&apos;s core functionality
                   </span>
                 </li>
                 <li className="flex items-start gap-2">
                   <CheckCircle className="h-4 w-4 text-success mt-0.5 shrink-0" />
                   <span className="text-muted-foreground">
-                    <strong>Organization profile:</strong> Complete your
+                    Complete your
                     organization profile with a valid contact email
                   </span>
                 </li>
                 <li className="flex items-start gap-2">
                   <CheckCircle className="h-4 w-4 text-success mt-0.5 shrink-0" />
                   <span className="text-muted-foreground">
-                    <strong>Preview images:</strong> Include at least one preview
+                    Include at least one preview
                     image showing your MiniApp in use (recommended)
                   </span>
                 </li>

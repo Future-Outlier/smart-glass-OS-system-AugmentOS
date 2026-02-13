@@ -1,8 +1,6 @@
 // components/dialogs/DeleteDialog.tsx
 import { useState } from 'react';
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Button } from "@/components/ui/button";
-import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Alert, AlertDescription, Button, Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@mentra/shared";
 import { AlertTriangle, Trash2, Loader2 } from "lucide-react";
 // import { App } from "@/types/app";
 import api from '@/services/api.service';

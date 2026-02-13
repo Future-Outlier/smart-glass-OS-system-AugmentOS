@@ -1,6 +1,6 @@
 import React from "react";
 import { cn } from "@/libs/utils";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "./card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@mentra/shared";
 import { ExternalLinkIcon } from "./icons";
 
 interface FormSectionProps {

@@ -1,13 +1,13 @@
 // pages/DashboardHome.tsx
 import { useMemo } from "react";
-import { Button } from "@/components/ui/button";
 import {
+  Button,
   Card,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
-} from "@/components/ui/card";
+} from "@mentra/shared";
 import { PlusIcon } from "lucide-react";
 import { Link } from "react-router-dom";
 import DashboardLayout from "../components/DashboardLayout";

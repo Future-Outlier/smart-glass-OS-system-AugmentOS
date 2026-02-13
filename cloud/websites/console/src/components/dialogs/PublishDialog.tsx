@@ -1,18 +1,19 @@
 import React, { useState, useEffect } from 'react';
 import {
+  Alert,
+  AlertDescription,
+  Button,
   Dialog,
   DialogContent,
   DialogDescription,
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from "@/components/ui/dialog";
-import { Button } from "@/components/ui/button";
+} from "@mentra/shared";
 import { AppResponse } from '@/services/api.service';
 import api from '@/services/api.service';
 import { toast } from 'sonner';
 import { App } from '@/types/app';
-import { Alert, AlertDescription } from "@/components/ui/alert";
 import { AlertCircle } from "lucide-react";
 import { useNavigate } from 'react-router-dom';
 import { useOrganization } from '@/context/OrganizationContext';

@@ -22,6 +22,19 @@ export {
   SelectValue,
 } from './auth/components/ui/select';
 export { Spinner } from './auth/components/ui/spinner';
+export { Switch } from './auth/components/ui/switch';
+export { Checkbox } from './auth/components/ui/checkbox';
+export { Badge, badgeVariants } from './auth/components/ui/badge';
+export { Alert, AlertTitle, AlertDescription, alertVariants } from './auth/components/ui/alert';
+export {
+  Card,
+  CardHeader,
+  CardFooter,
+  CardTitle,
+  CardAction,
+  CardDescription,
+  CardContent,
+} from './auth/components/ui/card';
 export {
   Dialog,
   DialogClose,
@@ -34,6 +47,20 @@ export {
   DialogTitle,
   DialogTrigger,
 } from './auth/components/ui/dialog';
+export {
+  AlertDialog,
+  AlertDialogPortal,
+  AlertDialogOverlay,
+  AlertDialogTrigger,
+  AlertDialogContent,
+  AlertDialogHeader,
+  AlertDialogFooter,
+  AlertDialogTitle,
+  AlertDialogDescription,
+  AlertDialogAction,
+  AlertDialogCancel,
+} from './auth/components/ui/alert-dialog';
+export { RadioGroup, RadioGroupItem } from './auth/components/ui/radio-group';
 
 // Export all your shared components, utils, hooks, etc.
 export const SharedButton: React.FC = () => {

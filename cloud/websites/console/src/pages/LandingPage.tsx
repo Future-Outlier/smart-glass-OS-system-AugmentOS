@@ -1,8 +1,7 @@
 // LandingPage.tsx
 import React from 'react';
-import { Button } from '../components/ui/button';
+import { Button, IMAGES } from '@mentra/shared';
 import { Link, useNavigate } from 'react-router-dom';
-import { IMAGES } from '@mentra/shared';
 
 const LandingPage: React.FC = () => {
   const navigate = useNavigate();

@@ -1,8 +1,7 @@
 // components/DashboardLayout.tsx
 import {useState, useEffect} from "react"
 import {Link, useLocation, useNavigate} from "react-router-dom"
-import {Button} from "@/components/ui/button"
-import {useAuth, IMAGES} from "@mentra/shared"
+import {Button, IMAGES, useAuth} from "@mentra/shared"
 import api from "@/services/api.service"
 import OrgSwitcher from "./OrgSwitcher"
 import ContactEmailBanner from "./ui/ContactEmailBanner"

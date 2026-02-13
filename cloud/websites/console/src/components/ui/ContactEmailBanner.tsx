@@ -1,7 +1,7 @@
 import { AlertTriangle } from 'lucide-react';
 import { useOrganization } from '@/context/OrganizationContext';
 import { Link } from 'react-router-dom';
-import { Alert, AlertTitle, AlertDescription } from './alert';
+import { Alert, AlertTitle, AlertDescription } from '@mentra/shared';
 
 /**
  * Banner component that displays a warning when the current organization

@@ -1,7 +1,5 @@
 import React, { useState, useCallback } from "react";
-import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
-import { Label } from "@/components/ui/label";
+import { Button, Input, Label } from "@mentra/shared";
 import { CheckCircle2, XCircle, Loader2, RefreshCw } from "lucide-react";
 import { normalizeUrl } from "@/libs/utils";
 import { cn } from "@/libs/utils";

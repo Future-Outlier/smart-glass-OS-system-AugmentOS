@@ -1,9 +1,7 @@
 // components/MiniAppTable.tsx
 import {useEffect, useState, type FC} from "react"
 import {useNavigate} from "react-router-dom"
-import {Button} from "@/components/ui/button"
-import {Input} from "@/components/ui/input"
-import {Card, CardContent, CardHeader, CardTitle, CardDescription} from "@/components/ui/card"
+import {Button, Card, CardContent, CardDescription, CardHeader, CardTitle, Input} from "@mentra/shared"
 import {Table, TableBody, TableCell, TableHead, TableHeader, TableRow} from "@/components/ui/table"
 import {Link} from "react-router-dom"
 import {Edit, Trash, Share2, Plus, BadgeCheck, BadgeMinus} from "lucide-react"

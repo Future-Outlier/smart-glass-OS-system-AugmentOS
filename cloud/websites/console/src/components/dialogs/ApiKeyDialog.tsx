@@ -1,15 +1,16 @@
 // components/dialogs/ApiKeyDialog.tsx
 import { FC, useState, useEffect } from "react";
 import {
+  Alert,
+  AlertDescription,
+  Button,
   Dialog,
   DialogContent,
   DialogDescription,
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from "@/components/ui/dialog";
-import { Button } from "@/components/ui/button";
-import { Alert, AlertDescription } from "@/components/ui/alert";
+} from "@mentra/shared";
 import {
   Copy,
   KeyRound,

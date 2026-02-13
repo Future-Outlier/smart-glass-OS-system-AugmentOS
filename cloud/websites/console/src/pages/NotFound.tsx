@@ -1,6 +1,6 @@
 // pages/NotFound.tsx
 import React from 'react';
-import { Button } from "@/components/ui/button";
+import { Button } from "@mentra/shared";
 import { Link } from 'react-router-dom';
 
 const NotFound: React.FC = () => {

@@ -1,7 +1,6 @@
 // components/dialogs/AppSuccessDialog.tsx
 import React, { useState } from 'react';
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Button } from "@/components/ui/button";
+import { Button, Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@mentra/shared";
 import { AppResponse } from '@/services/api.service';
 import { toast } from 'sonner';
 import { CheckCircle, KeyRound, Copy, ArrowRight, AlertCircle } from "lucide-react";

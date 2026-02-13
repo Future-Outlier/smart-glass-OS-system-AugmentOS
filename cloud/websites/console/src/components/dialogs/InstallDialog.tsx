@@ -1,12 +1,9 @@
 // components/dialogs/InstallDialog.tsx
 import {useState} from "react"
-import {Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle} from "@/components/ui/dialog"
-import {Button} from "@/components/ui/button"
-import {Alert, AlertDescription} from "@/components/ui/alert"
+import {Alert, AlertDescription, Button, Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, useAuth} from "@mentra/shared"
 import {Download, PackageX, Loader2, CheckCircle, Info} from "lucide-react"
 import api from "@/services/api.service"
 import {AppI} from "@mentra/sdk"
-import {useAuth} from "@mentra/shared"
 
 interface InstallDialogProps {
   app: AppI | null

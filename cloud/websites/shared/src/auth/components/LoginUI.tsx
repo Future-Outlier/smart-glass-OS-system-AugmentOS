@@ -13,7 +13,7 @@ const IS_CHINA = (import.meta.env.VITE_DEPLOYMENT_REGION || "global") === "china
 interface LoginUIProps {
   /** Logo image URL */
   logoUrl?: string
-  /** Site name to display below logo */
+  /** Site name to display below logo (e.g., "Developer Portal") */
   siteName: string
   /** Optional message to display (e.g., for invites) */
   message?: string
@@ -122,7 +122,7 @@ export const LoginUI: React.FC<LoginUIProps> = ({
 
           {/* Site name / Welcome message */}
           <p className="text-xl text-secondary-foreground text-center mb-4">
-            Welcome to the MentraOS {siteName}
+            Welcome to the Mentra {siteName}
           </p>
 
           {/* Invite message if present */}

@@ -1,11 +1,7 @@
 // pages/CreateMiniApp.tsx
 import { useState } from "react";
 import { AxiosError } from "axios";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
-import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Alert, AlertDescription, Button, Input, Label, Textarea } from "@mentra/shared";
 import { Link, useNavigate } from "react-router-dom";
 import { ArrowLeftIcon, AlertCircle, CheckCircle } from "lucide-react";
 import DashboardLayout from "../components/DashboardLayout";

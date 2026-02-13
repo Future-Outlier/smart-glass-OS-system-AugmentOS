@@ -1,16 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Alert, AlertDescription } from "@/components/ui/alert";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue
-} from "@/components/ui/select";
+import { Alert, AlertDescription, Button, Card, CardContent, CardDescription, CardHeader, CardTitle, Input, Label, Select, SelectContent, SelectItem, SelectTrigger, SelectValue, Spinner } from "@mentra/shared";
 import {
   Table,
   TableBody,
@@ -280,8 +269,8 @@ const Members: React.FC = () => {
           </CardHeader>
           <CardContent>
             {loadingMembers || permissionsLoading ? (
-              <div className="p-8 text-center">
-                <div className="animate-spin mx-auto h-8 w-8 border-t-2 border-b-2 border-blue-500 rounded-full"></div>
+              <div className="p-8 text-center flex flex-col items-center">
+                <Spinner size="lg" />
                 <p className="mt-2 text-muted-foreground">Loading members...</p>
               </div>
             ) : (

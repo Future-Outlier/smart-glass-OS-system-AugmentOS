@@ -1,7 +1,6 @@
 import React, { useState, useRef } from 'react';
 import { Upload, X, AlertCircle, Loader2, Image as ImageIcon } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Alert, AlertDescription, Button } from '@mentra/shared';
 import api from '@/services/api.service';
 import { toast } from 'sonner';
 
