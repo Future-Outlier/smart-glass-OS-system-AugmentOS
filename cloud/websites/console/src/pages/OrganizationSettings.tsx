@@ -22,6 +22,7 @@ import {
   SelectItem,
   SelectTrigger,
   SelectValue,
+  Spinner,
   Textarea,
 } from "@mentra/shared";
 import { CheckCircle2, AlertCircle, Loader2, Building, Globe, Mail, FileText, Image, AlertTriangle, LockIcon, Trash, Plus } from "lucide-react";
@@ -414,8 +415,8 @@ const OrganizationSettings: React.FC = () => {
         {/* Main Settings Card */}
         <Card className="shadow-sm">
           {isLoading || permissionsLoading ? (
-            <div className="p-8 text-center">
-              <div className="animate-spin mx-auto h-8 w-8 border-t-2 border-b-2 border-primary rounded-full"></div>
+            <div className="p-8 text-center flex flex-col items-center">
+              <Spinner size="lg" />
               <p className="mt-2 text-muted-foreground">Loading organization data...</p>
             </div>
           ) : (

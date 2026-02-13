@@ -1,7 +1,7 @@
 // components/MiniAppTable.tsx
 import {useEffect, useState, type FC} from "react"
 import {useNavigate} from "react-router-dom"
-import {Button, Card, CardContent, CardDescription, CardHeader, CardTitle, Input} from "@mentra/shared"
+import {Button, Card, CardContent, CardDescription, CardHeader, CardTitle, Input, Spinner} from "@mentra/shared"
 import {Table, TableBody, TableCell, TableHead, TableHeader, TableRow} from "@/components/ui/table"
 import {Link} from "react-router-dom"
 import {Edit, Trash, Share2, Plus, BadgeCheck, BadgeMinus} from "lucide-react"
@@ -131,8 +131,8 @@ const MiniAppTable: FC<MiniAppTableProps> = ({
       <CardContent>
         <div className="overflow-x-auto">
           {isLoading ? (
-            <div className="p-8 text-center">
-              <div className="animate-spin mx-auto h-8 w-8 border-t-2 border-b-2 border-primary rounded-full"></div>
+            <div className="p-8 text-center flex flex-col items-center">
+              <Spinner size="lg" />
               <p className="mt-2 text-muted-foreground">Loading MiniApps...</p>
             </div>
           ) : error ? (
