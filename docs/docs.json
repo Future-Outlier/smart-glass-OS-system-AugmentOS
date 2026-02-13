@@ -16,6 +16,10 @@
           {
             "group": "Welcome",
             "pages": ["index"]
+          },
+          {
+            "group": "Legal",
+            "pages": ["third-party-licenses"]
           }
         ]
       },

@@ -20,6 +20,9 @@ import {useThemeProvider} from "@/contexts/ThemeContext"
 import {SETTINGS, useSetting, useSettingsStore} from "@/stores/settings"
 import {ModalProvider} from "@/utils/AlertUtils"
 import {KonamiCodeProvider} from "@/utils/debug/konami"
+import ConnectionOverlayProvider from "@/contexts/ConnectionOverlayContext"
+// JsStack imports commented out - were used for Android-specific navigation (currently disabled)
+// import {getAnimation, JsStack, simplePush, woltScreenOptions} from "@/components/navigation/JsStack"
 
 // components at the top wrap everything below them in order:
 export const AllProviders = withWrappers(
@@ -136,8 +139,11 @@ export const AllProviders = withWrappers(
       </>
     )
   },
+  ConnectionOverlayProvider,
   (props) => {
-    const {preventBack} = useNavigationHistory()
+    const {preventBack, animation} = useNavigationHistory()
+
+    // if (Platform.OS === "ios") {
     return (
       <>
         {props.children}
@@ -146,11 +152,27 @@ export const AllProviders = withWrappers(
             headerShown: false,
             gestureEnabled: !preventBack,
             gestureDirection: "horizontal",
-            animation: "simple_push",
+            animation: animation,
           }}
         />
       </>
     )
+    // }
+
+    // return (
+    //   <>
+    //     {props.children}
+    //     <JsStack
+    //       screenOptions={{
+    //         headerShown: false,
+    //         ...woltScreenOptions,
+    //         gestureEnabled: !preventBack,
+    //         gestureDirection: "horizontal",
+    //         cardStyleInterpolator: getAnimation(animation),
+    //       }}
+    //     />
+    //   </>
+    // )
   },
 )
 

@@ -186,6 +186,15 @@ export default function PairingPrepScreen() {
           // We just need to stop the flow here
           return
         }
+
+        // Check connectivity for Android AFTER all permissions are granted
+        // This must be done after location permission is granted to avoid premature "Connection issue" popup
+        if (needsBluetoothPermissions) {
+          const requirementsCheck = await checkConnectivityRequirementsUI()
+          if (!requirementsCheck) {
+            return
+          }
+        }
       } else {
         console.log("Skipping location permission on iOS - not needed after BLE fix")
       }
@@ -195,14 +204,6 @@ export default function PairingPrepScreen() {
         {text: translate("common:ok")},
       ])
       return
-    }
-
-    // Check connectivity for Android after permissions are granted
-    if (needsBluetoothPermissions && Platform.OS === "android") {
-      const requirementsCheck = await checkConnectivityRequirementsUI()
-      if (!requirementsCheck) {
-        return
-      }
     }
 
     console.log("needsBluetoothPermissions", needsBluetoothPermissions)
@@ -235,18 +236,19 @@ export default function PairingPrepScreen() {
   }
 
   const MentraLivePairingGuide = () => {
-    const CDN_BASE = "https://mentra-videos-cdn.mentraglass.com/onboarding/mentra-live/light"
+    // const CDN_BASE = "https://mentra-videos-cdn.mentraglass.com/onboarding/mentra-live/light"
     let steps: OnboardingStep[] = [
       {
         name: "power_on_tutorial",
         type: "video",
-        source: `${CDN_BASE}/ONB1_power_button.mp4`,
-        // poster: require("@assets/onboarding/live/thumbnails/ONB0_power.png"),
+        source: `${CDN_BASE}/ONB1_power_button_loop.mp4`,
+        poster: require("@assets/onboarding/live/thumbnails/ONB0_power.png"),
         transition: false,
         title: translate("pairing:powerOn"), // for spacing so it's consistent with the other steps
         subtitle: translate("onboarding:livePowerOnTutorial"),
         info: translate("onboarding:livePowerOnInfo"),
-        playCount: 99999, //1,
+        playCount: -1, // repeat forever
+        showButtonImmediately: true,
       },
     ]
 
@@ -257,7 +259,7 @@ export default function PairingPrepScreen() {
         showCloseButton={false}
         showSkipButton={false}
         showHeader={false}
-        exitFn={() => {
+        skipFn={() => {
           advanceToPairing()
         }}
         endButtonText={translate("pairing:poweredOn")}
@@ -306,12 +308,12 @@ export default function PairingPrepScreen() {
     )
   }
 
-  const MentraNexGlassesPairingGuide = () => {
+  const MentraDisplayGlassesPairingGuide = () => {
     return (
       <View className="flex-1 flex-col justify-start mt-6">
-        <Text text="Mentra Nex" className="text-2xl font-bold mb-4 text-secondary-foreground" />
+        <Text text="Mentra Display" className="text-2xl font-bold mb-4 text-secondary-foreground" />
         <Text
-          text="1. Make sure your Mentra Nex is fully charged and turned on."
+          text="1. Make sure your Mentra Display is fully charged and turned on."
           className="text-lg text-secondary-foreground"
         />
       </View>
@@ -378,7 +380,7 @@ export default function PairingPrepScreen() {
       case DeviceTypes.Z100:
         return <VuzixZ100PairingGuide />
       case DeviceTypes.NEX:
-        return <MentraNexGlassesPairingGuide />
+        return <MentraDisplayGlassesPairingGuide />
     }
 
     throw new Error(`Unknown model name: ${deviceModel}`)

@@ -153,8 +153,8 @@ const deepLinkRoutes: DeepLinkRoute[] = [
   {
     pattern: "/auth/callback",
     handler: async (url: string, params: Record<string, string>, navObject: NavObject) => {
-      console.log("[LOGIN DEBUG] params:", params)
-      console.log("[LOGIN DEBUG] url:", url)
+      // console.log("[LOGIN DEBUG] params:", params)
+      // console.log("[LOGIN DEBUG] url:", url)
 
       const parseAuthParams = (url: string) => {
         const parts = url.split("#")
@@ -219,7 +219,8 @@ const deepLinkRoutes: DeepLinkRoute[] = [
         BackgroundTimer.setTimeout(() => {
           console.log("[LOGIN DEBUG] Inside setTimeout, navigating to index")
           try {
-            navObject.replace("/")
+            navObject.setAnimation("none")
+            navObject.replaceAll("/")
             console.log("[LOGIN DEBUG] router.replace called successfully")
           } catch (navError) {
             console.error("[LOGIN DEBUG] Error calling router.replace:", navError)
@@ -376,7 +377,7 @@ const DeeplinkContext = createContext<DeeplinkContextType>({} as DeeplinkContext
 export const useDeeplink = () => useContext(DeeplinkContext)
 
 export const DeeplinkProvider: FC<{children: ReactNode}> = ({children}) => {
-  const {push, replace, goBack, setPendingRoute, getPendingRoute, navigate, replaceAll, preventBack} =
+  const {push, replace, goBack, setPendingRoute, getPendingRoute, navigate, replaceAll, preventBack, setAnimation} =
     useNavigationHistory()
   const config = {
     scheme: "com.mentra",
@@ -533,6 +534,8 @@ export const DeeplinkProvider: FC<{children: ReactNode}> = ({children}) => {
           getPendingRoute,
           navigate,
           replaceAll,
+          preventBack,
+          setAnimation,
         }
         await matchedRoute.handler(url, params, navObject)
       } catch (error) {

@@ -52,6 +52,8 @@ abstract class SGCManager {
     abstract fun getBatteryStatus()
     abstract fun setSilentMode(enabled: Boolean)
     abstract fun exit()
+    abstract fun sendShutdown()
+    abstract fun sendReboot()
     abstract fun sendRgbLedControl(
             requestId: String,
             packageName: String?,
@@ -83,9 +85,12 @@ abstract class SGCManager {
     abstract fun queryGalleryStatus()
     abstract fun sendGalleryMode()
 
+    // Version info
+    abstract fun requestVersionInfo()
+
     // GlassesStore-backed read-only getters for convenience
-    val isFullyBooted: Boolean
-        get() = GlassesStore.get("glasses", "isFullyBooted") as? Boolean ?: false
+    val fullyBooted: Boolean
+        get() = GlassesStore.get("glasses", "fullyBooted") as? Boolean ?: false
 
     val connected: Boolean
         get() = GlassesStore.get("glasses", "connected") as? Boolean ?: false

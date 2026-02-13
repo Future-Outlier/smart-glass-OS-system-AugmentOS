@@ -10,6 +10,20 @@ import showAlert, {showBluetoothAlert, showLocationAlert, showLocationServicesAl
 import {checkAndRequestNotificationAccessSpecialPermission} from "@/utils/NotificationServiceUtils"
 import {storage} from "@/utils/storage/storage"
 
+type _UI_PERMISSION =
+  | "LOCATION"
+  | "MICROPHONE"
+  | "CALENDAR"
+  | "POST_NOTIFICATIONS"
+  | "READ_NOTIFICATIONS"
+  | "BACKGROUND_LOCATION"
+  | "CAMERA"
+  | "GLASSES_CAMERA"
+  | "BLUETOOTH"
+  | "PHONE_STATE"
+  | "BATTERY_OPTIMIZATION"
+  | "BASIC"
+
 // Define permission features with their required permissions
 export const PermissionFeatures: Record<string, string> = {
   BASIC: "basic", // Basic permissions needed for the app to function
@@ -56,12 +70,9 @@ const PERMISSION_CONFIG: Record<string, PermissionConfig> = {
   },
   [PermissionFeatures.READ_NOTIFICATIONS]: {
     name: "Notification Access",
-    description: "Allow AugmentOS to forward notifications to your glasses",
-    ios: [], // iOS notification permission
-    android:
-      typeof Platform.Version === "number" && Platform.Version >= 33
-        ? [PermissionsAndroid.PERMISSIONS.POST_NOTIFICATIONS]
-        : [],
+    description: "Allow Mentra to forward notifications to your glasses",
+    ios: [], // iOS doesn't need special permission for reading notifications
+    android: [], // Android uses NotificationListener service, handled separately
     critical: false,
   },
   [PermissionFeatures.CAMERA]: {
@@ -665,7 +676,7 @@ export const checkFeaturePermissions = async (featureKey: string): Promise<boole
   return false
 }
 
-export const askPermissionsUI = async (app: AppletInterface, theme: Theme): Promise<number> => {
+export const askPermissionsUI = async (app: AppletInterface, _theme: Theme): Promise<number> => {
   const neededPermissions = await checkPermissionsUI(app)
 
   if (neededPermissions.length == 0) {
@@ -749,10 +760,11 @@ export const checkPermissionsUI = async (app: AppletInterface) => {
         }
         break
       case "CAMERA":
-        const hasCamera = await checkFeaturePermissions(PermissionFeatures.GLASSES_CAMERA)
-        if (!hasCamera) {
-          neededPermissions.push(PermissionFeatures.GLASSES_CAMERA)
-        }
+        // glasses_camera is not a real permission since it doesn't need to be requested
+        // const hasCamera = await checkFeaturePermissions(PermissionFeatures.GLASSES_CAMERA)
+        // if (!hasCamera) {
+        //   neededPermissions.push(PermissionFeatures.GLASSES_CAMERA)
+        // }
         break
       case "CALENDAR":
         const hasCalendar = await checkFeaturePermissions(PermissionFeatures.CALENDAR)

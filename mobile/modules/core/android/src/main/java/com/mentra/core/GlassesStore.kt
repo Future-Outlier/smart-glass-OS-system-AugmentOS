@@ -1,11 +1,11 @@
 package com.mentra.core
 
+import com.mentra.core.utils.DeviceTypes
 import com.mentra.core.utils.MicMap
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
-import com.mentra.core.utils.DeviceTypes
 
 /** Centralized observable state store for glasses and core settings */
 object GlassesStore {
@@ -19,7 +19,7 @@ object GlassesStore {
         // GLASSES STATE:
         store.set("glasses", "batteryLevel", -1)
         store.set("glasses", "charging", false)
-        store.set("glasses", "isFullyBooted", false)
+        store.set("glasses", "fullyBooted", false)
         store.set("glasses", "connected", false)
         store.set("glasses", "connectionState", "disconnected")
         store.set("glasses", "deviceModel", "")
@@ -52,8 +52,6 @@ object GlassesStore {
         store.set("core", "wifiScanResults", emptyList<Any>())
         store.set("core", "micRanking", MicMap.map["auto"]!!)
         store.set("core", "lastLog", mutableListOf<String>())
-        // UI hints:
-        store.set("core", "shouldShowBootingMessage", false)
 
         // CORE SETTINGS:
         store.set("core", "default_wearable", "")
@@ -84,7 +82,7 @@ object GlassesStore {
         store.set("core", "button_video_height", 720)
         store.set("core", "button_video_fps", 30)
         store.set("core", "preferred_mic", "auto")
-        store.set("core", "lc3_frame_size", 20)
+        store.set("core", "lc3_frame_size", 60)
         store.set("core", "auth_email", "")
         store.set("core", "auth_token", "")
     }
@@ -104,17 +102,14 @@ object GlassesStore {
 
         // Trigger hardware updates based on setting changes
         when (category to key) {
-            "glasses" to "isFullyBooted" -> {
+            "glasses" to "fullyBooted" -> {
                 if (value is Boolean) {
                     if (value) {
                         CoreManager.getInstance().handleDeviceReady()
                     } else {
                         CoreManager.getInstance().handleDeviceDisconnected()
                     }
-                    // if ready is true, set connected to true
-                    if (value) {
-                        store.set("glasses", "connected", true)
-                    }
+                    // we shouldn't call store.set in this function as this is only intended for side-effects, not driving state updates
                 }
             }
             "glasses" to "headUp" -> {
@@ -133,20 +128,6 @@ object GlassesStore {
             "core" to "auth_token" -> {
                 if (value is String) {
                     // CoreManager.getInstance().sgc?.sendAuthToken(value)
-                }
-            }
-            "core" to "lc3_frame_size" -> {
-                if (value is Int) {
-                    if (value != 20 && value != 40 && value != 60) {
-                        Bridge.log(
-                                "MAN: Invalid LC3 frame size $value, must be 20, 40, or 60. Using default 20."
-                        )
-                        store.set("core", "lc3_frame_size", 20)
-                        return
-                    }
-                    Bridge.log(
-                            "MAN: LC3 frame size set to $value bytes (${value * 800 / 1000}kbps)"
-                    )
                 }
             }
             "core" to "isHeadUp" -> {
@@ -240,14 +221,29 @@ object GlassesStore {
             }
             "core" to "offline_mode" -> {
                 (value as? Boolean)?.let { offline ->
+                    // set should_send_transcript to true if offline_mode is true && running is true, otherwise false
+                    val shouldSendTranscript = offline && (store.get("core", "offline_captions_running") as? Boolean) ?: false
                     CoreManager.getInstance()
                             .setMicState(
                                     (store.get("core", "should_send_pcm_data") as? Boolean)
                                             ?: false,
-                                    (store.get("core", "should_send_transcript") as? Boolean)
-                                            ?: false,
+                                    shouldSendTranscript,
                                     (store.get("core", "bypass_vad") as? Boolean) ?: true
                             )
+                }
+            }
+            "core" to "offline_captions_running" -> {
+                (value as? Boolean)?.let { running ->
+                    Bridge.log("GlassesStore: offline_captions_running changed to $running")
+                    // When offline captions are enabled, start the microphone for local transcription
+                    // When disabled, stop the microphone
+                    // set should_send_transcript to true if offline_mode is true && running is true, otherwise false
+                    val shouldSendTranscript = (store.get("core", "offline_mode") as? Boolean) ?: false && running
+                    CoreManager.getInstance().setMicState(
+                        (store.get("core", "should_send_pcm_data") as? Boolean) ?: false,
+                        shouldSendTranscript,
+                        (store.get("core", "bypass_vad") as? Boolean) ?: true
+                    )
                 }
             }
             "core" to "enforce_local_transcription" -> {
@@ -265,6 +261,9 @@ object GlassesStore {
             "core" to "default_wearable" -> {
                 (value as? String)?.let { wearable ->
                     Bridge.saveSetting("default_wearable", wearable)
+                    if (wearable.contains(DeviceTypes.SIMULATED)) {
+                        CoreManager.getInstance().initSGC(wearable)
+                    }
                 }
             }
             "core" to "device_name" -> {

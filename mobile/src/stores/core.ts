@@ -16,8 +16,7 @@ const initialState: CoreStatus = {
   searchResults: [],
   wifiScanResults: [],
   lastLog: [],
-  // UI hints:
-  shouldShowBootingMessage: false,
+  otherBtConnected: false,
 }
 
 export const useCoreStore = create<CoreState>()(

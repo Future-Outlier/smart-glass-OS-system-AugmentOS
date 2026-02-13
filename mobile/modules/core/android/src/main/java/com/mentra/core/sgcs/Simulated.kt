@@ -10,7 +10,7 @@ class Simulated : SGCManager() {
 
     init {
         type = DeviceTypes.SIMULATED
-        GlassesStore.apply("glasses", "isFullyBooted", true)
+        GlassesStore.apply("glasses", "fullyBooted", true)
         GlassesStore.apply("glasses", "connected", true)
         GlassesStore.apply("glasses", "connectionState", ConnTypes.CONNECTED)
         GlassesStore.apply("glasses", "micEnabled", false)
@@ -138,6 +138,14 @@ class Simulated : SGCManager() {
         Bridge.log("exit")
     }
 
+    override fun sendShutdown() {
+        Bridge.log("sendShutdown - not supported on Simulated")
+    }
+
+    override fun sendReboot() {
+        Bridge.log("sendReboot - not supported on Simulated")
+    }
+
     override fun sendRgbLedControl(
             requestId: String,
             packageName: String?,
@@ -165,7 +173,6 @@ class Simulated : SGCManager() {
     }
 
     override fun connectById(id: String) {
-        CoreManager.getInstance().handleConnectionStateChanged()
     }
 
     override fun getConnectedBluetoothName(): String {
@@ -204,5 +211,10 @@ class Simulated : SGCManager() {
 
     override fun sendGalleryMode() {
         Bridge.log("SIMULATED: 📸 Received gallery mode")
+    }
+
+    // Version info
+    override fun requestVersionInfo() {
+        Bridge.log("SIMULATED: 📱 Requesting version info (no-op)")
     }
 }

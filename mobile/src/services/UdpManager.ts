@@ -173,7 +173,7 @@ class UdpManager {
       // Wait initial delay on first attempt to let server register user
       if (!isRetry) {
         // console.log(`UDP: Waiting ${UDP_INITIAL_DELAY_MS}ms before first probe...`)
-        await new Promise((resolve) => BackgroundTimer.setTimeout(resolve, UDP_INITIAL_DELAY_MS))
+        await new Promise<void>((resolve) => BackgroundTimer.setTimeout(() => resolve(), UDP_INITIAL_DELAY_MS))
 
         // Re-check WebSocket after delay
         if (!socketComms.isWebSocketConnected()) {
@@ -186,11 +186,7 @@ class UdpManager {
       console.log(`UDP: ${isRetry ? "Retry" : "Initial"} probe for ${this.config?.host}:${this.config?.port}`)
 
       // Send registration to server via WebSocket (so server knows our hash for routing)
-      const msg = {
-        type: "udp_register",
-        userIdHash: this.userIdHash,
-      }
-      socketComms.sendText(JSON.stringify(msg))
+      socketComms.sendUdpRegister(this.userIdHash)
       // console.log(`UDP: Sent registration with hash ${userIdHash}`)
 
       // Probe UDP with multiple retries (UDP is lossy, single ping unreliable)
@@ -440,7 +436,7 @@ class UdpManager {
       // If encryption enabled, we need to recalculate alignment after accounting for overhead
       let maxChunkSize: number
       if (this.encryptionConfig) {
-        const frameSizeBytes = useSettingsStore.getState().getSetting(SETTINGS.lc3_frame_size.key) || 60
+        const frameSizeBytes = useSettingsStore.getState().getSetting(SETTINGS.lc3_frame_size.key)
         const availableForAudio = MAX_AUDIO_CHUNK_SIZE_BASE - ENCRYPTION_OVERHEAD // 1018 - 40 = 978
         const maxFrames = Math.floor(availableForAudio / frameSizeBytes) // 978 / 60 = 16 frames
         maxChunkSize = maxFrames * frameSizeBytes // 16 * 60 = 960 bytes (properly aligned)
@@ -522,7 +518,7 @@ class UdpManager {
       // If encryption enabled, we need to recalculate alignment after accounting for overhead
       let maxChunkSize: number
       if (this.encryptionConfig) {
-        const frameSizeBytes = useSettingsStore.getState().getSetting(SETTINGS.lc3_frame_size.key) || 60
+        const frameSizeBytes = useSettingsStore.getState().getSetting(SETTINGS.lc3_frame_size.key)
         const availableForAudio = MAX_AUDIO_CHUNK_SIZE_BASE - ENCRYPTION_OVERHEAD // 1018 - 40 = 978
         const maxFrames = Math.floor(availableForAudio / frameSizeBytes)
         maxChunkSize = maxFrames * frameSizeBytes // Properly aligned to LC3 frames

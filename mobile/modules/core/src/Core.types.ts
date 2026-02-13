@@ -1,4 +1,9 @@
 // Core Event Types
+export type GlassesNotReadyEvent = {
+  type: "glasses_not_ready"
+  message: string
+}
+
 export type ButtonPressEvent = {
   type: "button_press"
   buttonId: string
@@ -196,17 +201,6 @@ export type OtaProgressEvent = {
   error_message?: string
 }
 
-export type VersionInfoEvent = {
-  type: "version_info"
-  app_version: string
-  build_number: string
-  device_model: string
-  android_version: string
-  ota_version_url: string
-  firmware_version: string
-  bt_mac_address: string
-}
-
 // Union type of all core events
 export type CoreEvent =
   | ButtonPressEvent
@@ -239,13 +233,14 @@ export type CoreEvent =
   | MtkUpdateCompleteEvent
   | OtaUpdateAvailableEvent
   | OtaProgressEvent
-  | VersionInfoEvent
+  | GlassesNotReadyEvent
 
 export type CoreModuleEvents = {
   glasses_status: (changed: Partial<GlassesStatus>) => void
   core_status: (changed: Partial<CoreStatus>) => void
   log: (event: LogEvent) => void
   // Individual event handlers
+  glasses_not_ready: (event: GlassesNotReadyEvent) => void
   button_press: (event: ButtonPressEvent) => void
   touch_event: (event: TouchEvent) => void
   head_up: (event: HeadUpEvent) => void
@@ -276,7 +271,6 @@ export type CoreModuleEvents = {
   mtk_update_complete: (event: MtkUpdateCompleteEvent) => void
   ota_update_available: (event: OtaUpdateAvailableEvent) => void
   ota_progress: (event: OtaProgressEvent) => void
-  version_info: (event: VersionInfoEvent) => void
 }
 
 export type GlassesConnectionState = "disconnected" | "connected" | "connecting"
@@ -305,7 +299,7 @@ export interface OtaProgress {
 
 export interface GlassesStatus {
   // state:
-  isFullyBooted: boolean
+  fullyBooted: boolean
   connected: boolean
   micEnabled: boolean
   connectionState: string
@@ -314,6 +308,8 @@ export interface GlassesStatus {
   deviceModel: string
   androidVersion: string
   fwVersion: string
+  besFwVersion: string
+  mtkFwVersion: string
   btMacAddress: string
   buildNumber: string
   otaVersionUrl: string
@@ -367,6 +363,5 @@ export interface CoreStatus {
   searchResults: DeviceSearchResult[]
   wifiScanResults: WifiSearchResult[]
   lastLog: string[]
-  // UI hints:
-  shouldShowBootingMessage: boolean // Set when glasses report ready=0 during connection
+  otherBtConnected: boolean
 }

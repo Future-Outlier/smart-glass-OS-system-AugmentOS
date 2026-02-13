@@ -1,6 +1,6 @@
 import {DeviceTypes, getModelCapabilities} from "@/../../cloud/packages/types/src"
-import CoreModule from "core"
-import {useState} from "react"
+import CoreModule, {GlassesNotReadyEvent} from "core"
+import {useState, useEffect} from "react"
 import {ActivityIndicator, Image, ImageStyle, Linking, TextStyle, TouchableOpacity, View, ViewStyle} from "react-native"
 
 import {BatteryStatus} from "@/components/glasses/info/BatteryStatus"
@@ -45,8 +45,7 @@ export const CompactDeviceStatus = ({style}: {style?: ViewStyle}) => {
   const [showSimulatedGlasses, setShowSimulatedGlasses] = useState(false)
   const [isExpanded, setIsExpanded] = useState(false)
   const glassesConnected = useGlassesStore((state) => state.connected)
-  const isFullyBooted = useGlassesStore((state) => state.isFullyBooted)
-  const shouldShowBootingMessage = useCoreStore((state) => state.shouldShowBootingMessage)
+  const glassesFullyBooted = useGlassesStore((state) => state.fullyBooted)
   const glassesStyle = useGlassesStore((state) => state.style)
   const color = useGlassesStore((state) => state.color)
   const caseRemoved = useGlassesStore((state) => state.caseRemoved)
@@ -56,6 +55,24 @@ export const CompactDeviceStatus = ({style}: {style?: ViewStyle}) => {
   const wifiConnected = useGlassesStore((state) => state.wifiConnected)
   const wifiSsid = useGlassesStore((state) => state.wifiSsid)
   const searching = useCoreStore((state) => state.searching)
+  const [showGlassesBooting, setShowGlassesBooting] = useState(false)
+
+  // Listen for glasses_not_ready event to know when glasses are actually booting
+  useEffect(() => {
+    const sub = CoreModule.addListener("glasses_not_ready", (_event: GlassesNotReadyEvent) => {
+      setShowGlassesBooting(true)
+    })
+    return () => {
+      sub.remove()
+    }
+  }, [])
+
+  // Reset booting state when glasses become fully booted or disconnected
+  useEffect(() => {
+    if (glassesFullyBooted || !glassesConnected) {
+      setShowGlassesBooting(false)
+    }
+  }, [glassesFullyBooted, glassesConnected])
 
   if (defaultWearable.includes(DeviceTypes.SIMULATED)) {
     return <ConnectedSimulatedGlassesInfo style={style} mirrorStyle={{backgroundColor: theme.colors.background}} />
@@ -113,12 +130,22 @@ export const CompactDeviceStatus = ({style}: {style?: ViewStyle}) => {
 
   let isSearching = searching || isCheckingConnectivity
   let connectingText = translate("home:connectingGlasses")
-  // Only show booting message if glasses explicitly reported ready=0
-  if (shouldShowBootingMessage) {
+  // Only show booting message when we've received a glasses_not_ready event
+  if (showGlassesBooting) {
     connectingText = "Glasses are booting..."
   }
 
-  if (!glassesConnected || !isFullyBooted || isSearching) {
+  const handleGetSupport = () => {
+    showAlert(translate("home:getSupport"), translate("home:getSupportMessage"), [
+      {text: translate("common:cancel"), style: "cancel"},
+      {
+        text: translate("common:continue"),
+        onPress: () => Linking.openURL("https://mentraglass.com/contact"),
+      },
+    ])
+  }
+
+  if (!glassesConnected || !glassesFullyBooted || isSearching) {
     return (
       <View style={[themed($disconnectedContainer), style]}>
         <View style={themed($header)}>
@@ -143,20 +170,7 @@ export const CompactDeviceStatus = ({style}: {style?: ViewStyle}) => {
           }}>
           {!isSearching ? (
             <>
-              <Button
-                compact
-                tx="home:getSupport"
-                preset="alternate"
-                onPress={() => {
-                  showAlert(translate("home:getSupport"), translate("home:getSupportMessage"), [
-                    {text: translate("common:cancel"), style: "cancel"},
-                    {
-                      text: translate("common:continue"),
-                      onPress: () => Linking.openURL("https://mentraglass.com/contact"),
-                    },
-                  ])
-                }}
-              />
+              <Button compact tx="home:getSupport" preset="alternate" onPress={handleGetSupport} />
               <Button compact flex tx="home:connectGlasses" preset="primary" onPress={connectGlasses} />
             </>
           ) : (

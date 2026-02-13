@@ -1,9 +1,10 @@
-import {router, useFocusEffect, useNavigationContainerRef, usePathname, useSegments, useNavigation} from "expo-router"
+import {router, useFocusEffect, usePathname, useSegments, useNavigation} from "expo-router"
 import {createContext, useContext, useEffect, useRef, useCallback, useState} from "react"
 import {BackHandler} from "react-native"
 import {CommonActions} from "@react-navigation/native"
 
 import {navigationRef} from "@/contexts/NavigationRef"
+import {StackAnimationTypes} from "react-native-screens"
 
 export type NavigationHistoryPush = (path: string, params?: any) => void
 export type NavigationHistoryReplace = (path: string, params?: any) => void
@@ -19,6 +20,7 @@ export type NavObject = {
   getPendingRoute: () => string | null
   navigate: (path: string, params?: any) => void
   preventBack: boolean
+  setAnimation: (animation: StackAnimationTypes) => void
 }
 
 interface NavigationHistoryContextType {
@@ -41,6 +43,8 @@ interface NavigationHistoryContextType {
   incPreventBack: () => void
   decPreventBack: () => void
   setAndroidBackFn: (fn: () => void) => void
+  setAnimation: (animation: StackAnimationTypes) => void
+  animation: StackAnimationTypes
 }
 
 const NavigationHistoryContext = createContext<NavigationHistoryContextType | undefined>(undefined)
@@ -60,7 +64,8 @@ export function NavigationHistoryProvider({children}: {children: React.ReactNode
   const setAndroidBackFn = (fn: () => void) => {
     androidBackFnRef.current = fn
   }
-  const rootNavigation = useNavigationContainerRef()
+  const [animation, setAnimation] = useState<StackAnimationTypes>("simple_push")
+  // const rootNavigation = useNavigationContainerRef()
 
   useEffect(() => {
     const newPath = pathname
@@ -431,6 +436,7 @@ export function NavigationHistoryProvider({children}: {children: React.ReactNode
     getPendingRoute,
     navigate,
     preventBack,
+    setAnimation,
   }
 
   // Set the ref so we can use it from outside the context:
@@ -460,6 +466,8 @@ export function NavigationHistoryProvider({children}: {children: React.ReactNode
         incPreventBack,
         decPreventBack,
         setAndroidBackFn,
+        setAnimation,
+        animation,
       }}>
       {children}
     </NavigationHistoryContext.Provider>

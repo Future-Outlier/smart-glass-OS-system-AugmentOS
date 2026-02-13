@@ -11,6 +11,7 @@ public class CoreModule: Module {
             "core_status",
             "log",
             // Individual event handlers
+            "glasses_not_ready",
             "button_press",
             "touch_event",
             "head_up",
@@ -40,8 +41,7 @@ public class CoreModule: Module {
             "keep_alive_ack",
             "mtk_update_complete",
             "ota_update_available",
-            "ota_progress",
-            "version_info"
+            "ota_progress"
         )
 
         OnCreate {
@@ -196,6 +196,28 @@ public class CoreModule: Module {
         AsyncFunction("sendOtaStart") {
             await MainActor.run {
                 CoreManager.shared.sendOtaStart()
+            }
+        }
+
+        // MARK: - Version Info Commands
+
+        AsyncFunction("requestVersionInfo") {
+            await MainActor.run {
+                CoreManager.shared.requestVersionInfo()
+            }
+        }
+
+        // MARK: - Power Control Commands
+
+        AsyncFunction("sendShutdown") {
+            await MainActor.run {
+                CoreManager.shared.sendShutdown()
+            }
+        }
+
+        AsyncFunction("sendReboot") {
+            await MainActor.run {
+                CoreManager.shared.sendReboot()
             }
         }
 

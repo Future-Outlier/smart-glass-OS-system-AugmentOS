@@ -324,6 +324,10 @@ class G1: NSObject, SGCManager {
 
     func sendOtaStart() {}
 
+    func requestVersionInfo() {
+        Bridge.log("G1: requestVersionInfo - not supported on G1")
+    }
+
     var connectionState: String = ConnTypes.DISCONNECTED
 
     func sendJson(_: [String: Any], wakeUp _: Bool, requireAck _: Bool) {}
@@ -358,12 +362,12 @@ class G1: NSObject, SGCManager {
     )
     private var writeCompletionCount = 0
 
-    private var _isFullyBooted: Bool = false
-    var isFullyBooted: Bool {
-        get { GlassesStore.shared.get("glasses", "isFullyBooted") as? Bool ?? false }
+    private var _fullyBooted: Bool = false
+    var fullyBooted: Bool {
+        get { GlassesStore.shared.get("glasses", "fullyBooted") as? Bool ?? false }
         set {
-            let oldValue = GlassesStore.shared.get("glasses", "isFullyBooted") as? Bool ?? false
-            GlassesStore.shared.apply("glasses", "isFullyBooted", newValue)
+            let oldValue = GlassesStore.shared.get("glasses", "fullyBooted") as? Bool ?? false
+            GlassesStore.shared.apply("glasses", "fullyBooted", newValue)
             if !newValue {
                 // Reset battery levels when disconnected
                 batteryLevel = -1
@@ -386,7 +390,6 @@ class G1: NSObject, SGCManager {
     @Published var quickNotes: [QuickNote] = []
     @Published var leftBatteryLevel: Int = -1
     @Published var rightBatteryLevel: Int = -1
-    
 
     private var batteryLevel: Int {
         get { GlassesStore.shared.get("glasses", "batteryLevel") as? Int ?? -1 }
@@ -941,9 +944,9 @@ class G1: NSObject, SGCManager {
         }
 
         //         CoreCommsService.log("g1Ready set to \(leftReady) \(rightReady) \(leftReady && rightReady) left: \(left), right: \(right)")
-        isFullyBooted = leftReady && rightReady
+        fullyBooted = leftReady && rightReady
         connected = leftReady && rightReady
-        if isFullyBooted {
+        if fullyBooted {
             stopReconnectionTimer()
         }
     }
@@ -1446,6 +1449,14 @@ extension G1 {
         queueChunks([exitDataArray])
     }
 
+    func sendShutdown() {
+        Bridge.log("sendShutdown - not supported on G1")
+    }
+
+    func sendReboot() {
+        Bridge.log("sendReboot - not supported on G1")
+    }
+
     func sendRgbLedControl(
         requestId: String, packageName _: String?, action _: String, color _: String?,
         ontime _: Int, offtime _: Int, count _: Int
@@ -1485,7 +1496,7 @@ extension G1 {
 
         var heartbeatArray = heartbeatData.map { UInt8($0) }
 
-        if isFullyBooted {
+        if fullyBooted {
             queueChunks([heartbeatArray])
         }
 
@@ -2223,7 +2234,7 @@ extension G1: CBCentralManagerDelegate, CBPeripheralDelegate {
                 guard let self else { return false }
 
                 // Check if already connected
-                if await MainActor.run(body: { self.isFullyBooted }) {
+                if await MainActor.run(body: { self.fullyBooted }) {
                     Bridge.log("G1: Already connected, stopping reconnection")
                     return true // Returning true stops the reconnection loop
                 }

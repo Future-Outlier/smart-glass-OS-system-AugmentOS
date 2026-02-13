@@ -8,7 +8,7 @@
 @MainActor
 class Simulated: SGCManager {
     init() {
-        GlassesStore.shared.apply("glasses", "isFullyBooted", true)
+        GlassesStore.shared.apply("glasses", "fullyBooted", true)
         GlassesStore.shared.apply("glasses", "connected", true)
         GlassesStore.shared.apply("glasses", "connectionState", ConnTypes.CONNECTED)
         GlassesStore.shared.apply("glasses", "micEnabled", false)
@@ -18,7 +18,7 @@ class Simulated: SGCManager {
     // MARK: - Device Information
 
     var type: String = DeviceTypes.SIMULATED
-    var isFullyBooted: Bool = true
+    var ready: Bool = true
     var connectionState: String = ConnTypes.CONNECTED
 
     var appVersion: String = ""
@@ -179,6 +179,14 @@ class Simulated: SGCManager {
         Bridge.log("exit")
     }
 
+    func sendShutdown() {
+        Bridge.log("sendShutdown - not supported on Simulated")
+    }
+
+    func sendReboot() {
+        Bridge.log("sendReboot - not supported on Simulated")
+    }
+
     func sendRgbLedControl(requestId: String, packageName _: String?, action _: String, color _: String?, ontime _: Int, offtime _: Int, count _: Int) {
         Bridge.log("sendRgbLedControl - not supported on Simulated")
         Bridge.sendRgbLedControlResponse(requestId: requestId, success: false, error: "device_not_supported")
@@ -244,5 +252,11 @@ class Simulated: SGCManager {
 
     func sendGalleryMode() {
         Bridge.log("sendGalleryMode")
+    }
+
+    // MARK: - Version Info
+
+    func requestVersionInfo() {
+        Bridge.log("requestVersionInfo - not supported on Simulated")
     }
 }

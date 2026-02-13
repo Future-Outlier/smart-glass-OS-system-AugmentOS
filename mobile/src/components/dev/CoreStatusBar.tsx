@@ -2,33 +2,10 @@ import {ScrollView, View} from "react-native"
 import {useRef, useEffect} from "react"
 
 import {Icon, Text} from "@/components/ignite"
-import {translate} from "@/i18n"
 import {useAppTheme} from "@/contexts/ThemeContext"
 import {useCoreStore} from "@/stores/core"
 import {useDebugStore} from "@/stores/debug"
-
-type DisplayStatus = "connected" | "warning" | "disconnected"
-
-const STATUS_CONFIG: Record<DisplayStatus, {icon: string; label: () => string; bgClass: string; iconColor: string}> = {
-  connected: {
-    icon: "wifi",
-    label: () => translate("connection:connected"),
-    bgClass: "bg-green-500",
-    iconColor: "#fff",
-  },
-  warning: {
-    icon: "wifi",
-    label: () => translate("connection:connecting"),
-    bgClass: "bg-orange-500",
-    iconColor: "#fff",
-  },
-  disconnected: {
-    icon: "wifi-off",
-    label: () => translate("connection:disconnected"),
-    bgClass: "bg-destructive",
-    iconColor: "#fff",
-  },
-}
+import {useGlassesStore} from "@/stores/glasses"
 
 export default function CoreStatusBar() {
   const searching = useCoreStore((state) => state.searching)
@@ -37,6 +14,7 @@ export default function CoreStatusBar() {
   const systemMicUnavailable = useCoreStore((state) => state.systemMicUnavailable)
   const lastLog = useCoreStore((state) => state.lastLog)
   const micDataRecvd = useDebugStore((state) => state.micDataRecvd)
+  const btcConnected = useGlassesStore((state) => state.btcConnected)
   const {theme} = useAppTheme()
 
   const scrollViewRef = useRef<ScrollView>(null)
@@ -45,8 +23,11 @@ export default function CoreStatusBar() {
     scrollViewRef.current?.scrollToEnd({animated: true})
   }, [lastLog])
 
+  const glassesConnected = useGlassesStore((state) => state.connected)
+  const glassesFullyBooted = useGlassesStore((state) => state.fullyBooted)
+
   return (
-    <View className="flex-col bg-primary-foreground p-2 bottom-2 rounded-xl items-center self-center align-middle justify-center gap-2">
+    <View className="flex-col bg-primary-foreground p-2 bottom-2 rounded-xl items-center self-center align-middle justify-center gap-2 w-full">
       {/* <ScrollView ref={scrollViewRef} className="h-24">
         {lastLog.slice(-10).map((log, index) => (
           <Text key={index} className="text-secondary-foreground text-xs font-medium font-mono ml-2">
@@ -96,6 +77,29 @@ export default function CoreStatusBar() {
           </View>
         </View>
       )}
+
+      <View className="flex-row gap-2">
+        <View className="flex-row items-center self-center align-middle justify-center py-1 px-2 rounded-full bg-primary">
+          <Icon name="bluetooth" size={14} color={theme.colors.secondary_foreground} />
+          <Text className="text-secondary-foreground text-sm font-medium ml-2">
+            {glassesConnected ? "Connected" : "Disconnected"}
+          </Text>
+        </View>
+        <View className="flex-row items-center self-center align-middle justify-center py-1 px-2 rounded-full bg-primary">
+          <Icon name="bluetooth" size={14} color={theme.colors.secondary_foreground} />
+          <Text className="text-secondary-foreground text-sm font-medium ml-2">
+            {glassesFullyBooted ? "Fully Booted" : "Not fully booted"}
+          </Text>
+        </View>
+      </View>
+      <View className="flex-row gap-2">
+        <View className="flex-row items-center self-center align-middle justify-center py-1 px-2 rounded-full bg-primary">
+          <Icon name="bluetooth" size={14} color={theme.colors.secondary_foreground} />
+          <Text className="text-secondary-foreground text-sm font-medium ml-2">
+            {btcConnected ? "BT Classic Connected" : "BT Classic Disconnected"}
+          </Text>
+        </View>
+      </View>
     </View>
   )
 }

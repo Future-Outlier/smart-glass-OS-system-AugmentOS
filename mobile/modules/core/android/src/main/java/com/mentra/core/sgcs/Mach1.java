@@ -106,11 +106,9 @@ public class Mach1 extends SGCManager {
         GlassesStore.INSTANCE.apply("glasses", "connectionState", state);
 
         if (state.equals(ConnTypes.CONNECTED)) {
-            GlassesStore.INSTANCE.apply("glasses", "isFullyBooted", true);
-            CoreManager.getInstance().handleConnectionStateChanged();
+            GlassesStore.INSTANCE.apply("glasses", "fullyBooted", true);
         } else if (state.equals(ConnTypes.DISCONNECTED)) {
-            GlassesStore.INSTANCE.apply("glasses", "isFullyBooted", false);
-            CoreManager.getInstance().handleConnectionStateChanged();
+            GlassesStore.INSTANCE.apply("glasses", "fullyBooted", false);
         }
     }
 
@@ -278,6 +276,16 @@ public class Mach1 extends SGCManager {
     }
 
     @Override
+    public void sendShutdown() {
+        Bridge.log("sendShutdown - not supported on Mach1");
+    }
+
+    @Override
+    public void sendReboot() {
+        Bridge.log("sendReboot - not supported on Mach1");
+    }
+
+    @Override
     public void sendRgbLedControl(String requestId, String packageName, String action, String color, int ontime, int offtime, int count) {
         Bridge.log("sendRgbLedControl - not supported on Mach1");
         Bridge.sendRgbLedControlResponse(requestId, false, "device_not_supported");
@@ -366,6 +374,12 @@ public class Mach1 extends SGCManager {
     public void sendGalleryMode() {
         // Mach1 doesn't have a built-in camera/gallery system
         Bridge.log("Mach1: sendGalleryModeActive - not supported on Mach1");
+    }
+
+    @Override
+    public void requestVersionInfo() {
+        // Mach1 doesn't support version info requests
+        Bridge.log("Mach1: requestVersionInfo - not supported on Mach1");
     }
 
     public class UltraliteListener implements EventListener{
