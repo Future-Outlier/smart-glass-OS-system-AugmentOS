@@ -136,7 +136,8 @@ function AppCardItem({app, index, count, translateX, onDismiss, onSelect}: AppCa
     }
   })
 
-  console.log("packageName", app.packageName, "index", index)
+  // debug sort order:
+  // console.log("packageName", app.packageName, "index", index)
 
   return (
     <GestureDetector gesture={composedGesture}>

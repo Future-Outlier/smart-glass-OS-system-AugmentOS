@@ -148,7 +148,7 @@ export const CompactDeviceStatus = ({style}: {style?: ViewStyle}) => {
   if (!glassesConnected || !glassesFullyBooted || isSearching) {
     return (
       <View style={[themed($disconnectedContainer), style]}>
-        <View className="just">
+        <View className="justify-between items-center flex-row">
           <Text className="font-semibold text-secondary-foreground text-lg" text={defaultWearable} />
           <Icon name="bluetooth-off" size={18} color={theme.colors.foreground} />
         </View>
@@ -359,12 +359,6 @@ const $glassesImageExpanded: ThemedStyle<ImageStyle> = () => ({
   maxWidth: 200,
   height: 100,
   resizeMode: "contain",
-})
-
-const $headerText: ThemedStyle<TextStyle> = ({colors}) => ({
-  color: colors.secondary_foreground,
-  fontSize: 20,
-  fontWeight: 600,
 })
 
 const $iconRow: ThemedStyle<ViewStyle> = ({spacing}) => ({
