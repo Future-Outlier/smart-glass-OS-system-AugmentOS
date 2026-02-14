@@ -1226,6 +1226,7 @@ export class AppManager {
       };
 
       ws.send(JSON.stringify(ackMessage));
+      metricsService.incrementMiniappMessagesOut();
 
       // Send full device state snapshot immediately after CONNECTION_ACK
       this.userSession.deviceManager.sendFullStateSnapshot(ws);
