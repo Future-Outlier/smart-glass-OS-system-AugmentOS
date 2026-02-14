@@ -179,14 +179,14 @@ export default function WifiConnectingScreen() {
 
   return (
     <Screen preset="fixed" safeAreaEdges={["bottom"]}>
-      {connectionStatus === "connecting" ? (
+      {connectionStatus === "success" ? (
+        <Header />
+      ) : (
         <Header
           leftIcon="chevron-left"
           onLeftPress={handleHeaderBack}
           RightActionComponent={<MentraLogoStandalone />}
         />
-      ) : (
-        <Header />
       )}
       {renderContent()}
     </Screen>

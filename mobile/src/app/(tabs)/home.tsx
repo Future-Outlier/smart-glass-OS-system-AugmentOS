@@ -18,7 +18,7 @@ import {useGlassesStore} from "@/stores/glasses"
 import {useCoreStore} from "@/stores/core"
 import WebsocketStatus from "@/components/error/WebsocketStatus"
 import CoreStatusBar from "@/components/dev/CoreStatusBar"
-import {attemptReconnect} from "@/effects/Reconnect"
+import {attemptReconnectToDefaultWearable} from "@/effects/Reconnect"
 
 export default function Homepage() {
   const refreshApplets = useRefreshApplets()
@@ -43,7 +43,7 @@ export default function Homepage() {
       if (hasAttemptedInitialConnect.current) {
         return
       }
-      let attempted = await attemptReconnect()
+      let attempted = await attemptReconnectToDefaultWearable()
       if (attempted) {
         hasAttemptedInitialConnect.current = true
       }

@@ -308,12 +308,12 @@ export default function PairingPrepScreen() {
     )
   }
 
-  const MentraNexGlassesPairingGuide = () => {
+  const MentraDisplayGlassesPairingGuide = () => {
     return (
       <View className="flex-1 flex-col justify-start mt-6">
-        <Text text="Mentra Nex" className="text-2xl font-bold mb-4 text-secondary-foreground" />
+        <Text text="Mentra Display" className="text-2xl font-bold mb-4 text-secondary-foreground" />
         <Text
-          text="1. Make sure your Mentra Nex is fully charged and turned on."
+          text="1. Make sure your Mentra Display is fully charged and turned on."
           className="text-lg text-secondary-foreground"
         />
       </View>
@@ -380,7 +380,7 @@ export default function PairingPrepScreen() {
       case DeviceTypes.Z100:
         return <VuzixZ100PairingGuide />
       case DeviceTypes.NEX:
-        return <MentraNexGlassesPairingGuide />
+        return <MentraDisplayGlassesPairingGuide />
     }
 
     throw new Error(`Unknown model name: ${deviceModel}`)
