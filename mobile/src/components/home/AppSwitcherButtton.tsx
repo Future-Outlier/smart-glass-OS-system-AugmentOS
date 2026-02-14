@@ -1,4 +1,4 @@
-import {View} from "react-native"
+import {Platform, View} from "react-native"
 import Animated, {runOnJS, SharedValue, useSharedValue, withSpring} from "react-native-reanimated"
 import {Gesture, GestureDetector} from "react-native-gesture-handler"
 
@@ -16,9 +16,9 @@ interface AppSwitcherButtonProps {
 }
 
 const SWIPE_DISTANCE_THRESHOLD = 300 // Distance needed to trigger open
-const SWIPE_VELOCITY_THRESHOLD = 800 // Velocity threshold for quick swipes
 const SWIPE_DISTANCE_MULTIPLIER = 1
 const SWIPE_PERCENT_THRESHOLD = 0.2
+// const SWIPE_VELOCITY_THRESHOLD = 800 // Velocity threshold for quick swipes
 
 export default function AppSwitcherButton({swipeProgress}: AppSwitcherButtonProps) {
   const {theme} = useAppTheme()
@@ -31,7 +31,11 @@ export default function AppSwitcherButton({swipeProgress}: AppSwitcherButtonProp
   const translateY = useSharedValue(0)
 
   const buzz = () => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light)
+    if (Platform.OS === "ios") {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light)
+    } else {
+      Haptics.performAndroidHapticsAsync(Haptics.AndroidHaptics.Keyboard_Tap)
+    }
   }
 
   const panGesture = Gesture.Pan()
@@ -54,13 +58,14 @@ export default function AppSwitcherButton({swipeProgress}: AppSwitcherButtonProp
         if (shouldOpen && !hasBuzzedRef.current) {
           hasBuzzedRef.current = true
           scheduleOnRN(buzz)
+          // runOnJS(buzz)()
         }
       }
     })
     .onEnd((event) => {
       const swipeDistance = Math.abs(translateY.value)
       // const normalizedVelocity = event.velocityY / (SWIPE_DISTANCE_THRESHOLD * SWIPE_DISTANCE_MULTIPLIER)
-      const velocity = event.velocityY / 100
+      // const velocity = event.velocityY / 100
 
       const shouldOpen =
         swipeProgress.value > SWIPE_PERCENT_THRESHOLD ||
