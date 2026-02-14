@@ -191,7 +191,7 @@ const en = {
     liveCableDescription: "Take off your glasses, connect the cable, then put them back on",
     liveCableInfo: "The cable allows you to use Mentra Live while it charges",
     liveEndTitle: "Great job!",
-    liveEndMessage: "That's the basics. Now let's set up some advanced features",
+    liveEndMessage: "You're all set. Time to start using Mentra Live.",
     liveWelcomeTitle: "Welcome to Mentra Live",
     liveWelcomeSubtitle: "Learn the basics",
     livePowerOnTutorial: "Press and hold the power button for 5 seconds",

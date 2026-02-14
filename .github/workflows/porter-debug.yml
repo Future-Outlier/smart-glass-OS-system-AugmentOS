@@ -4,7 +4,7 @@ on:
   workflow_dispatch: # Manual trigger fallback
   push:
     branches:
-      - cloud/cloud-scaling
+      - cloud/ws-liveness-detection
     paths:
       - "cloud/**"
       - ".github/workflows/porter-debug.yml"
