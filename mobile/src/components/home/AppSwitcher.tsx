@@ -13,7 +13,7 @@ import Animated, {
   useAnimatedReaction,
 } from "react-native-reanimated"
 import {Gesture, GestureDetector} from "react-native-gesture-handler"
-import {scheduleOnRN} from "react-native-worklets"
+import {runOnJS, scheduleOnRN} from "react-native-worklets"
 import {
   ClientAppletInterface,
   getLastOpenTime,
@@ -225,7 +225,6 @@ export default function AppSwitcher({swipeProgress}: AppSwitcherProps) {
   let directApps = useActiveApps()
   let [apps, setApps] = useState<ClientAppletInterface[]>([])
   const prevAppsLength = useRef(0)
-  const [isOpen, setIsOpen] = useState(false)
 
   // for testing:
   //   apps = [...DUMMY_APPS, ...apps]
@@ -271,17 +270,6 @@ export default function AppSwitcher({swipeProgress}: AppSwitcherProps) {
     }
     prevAppsLength.current = apps.length
   }, [apps.length])
-
-  // useAnimatedReaction(
-  //   () => swipeProgress.value,
-  //   (current, previous) => {
-  //     if (previous !== null && current == 1 && previous < 1) {
-  //       scheduleOnRN(() => {setIsOpen(true)})
-  //     } else if (previous !== null && current == 0 && previous > 0) {
-  //       scheduleOnRN(() => {setIsOpen(false)})
-  //     }
-  //   }
-  // )
 
   // Derive animations from swipeProgress
   const backdropStyle = useAnimatedStyle(() => ({
@@ -485,12 +473,30 @@ export default function AppSwitcher({swipeProgress}: AppSwitcherProps) {
     // do after we have closed the swipe progress:
     setTimeout(() => {
       goToIndex(apps.length - 1, true)
-      setIsOpen(false)
     }, 250)
   }, [apps.length])
 
+  useAnimatedReaction(
+    () => swipeProgress.value,
+    (current, previous) => {
+      if (previous !== null && current == 1 && previous < 1) {
+        setTimeout(() => {
+          if (apps.length > 1) {
+            runOnJS(goToIndex)(apps.length - 2, false)
+          }
+        }, 250)
+        // scheduleOnRN(() => {setIsOpen(true)})
+      } else if (previous !== null && current == 0 && previous > 0) {
+        // scheduleOnRN(() => {setIsOpen(false)})
+      }
+    },
+  )
+
   return (
-    <Animated.View className="absolute -mx-6 inset-0" pointerEvents="box-none" style={[{paddingBottom: insets.bottom}, parentContainerStyle]} >
+    <Animated.View
+      className="absolute -mx-6 inset-0"
+      pointerEvents="box-none"
+      style={[{paddingBottom: insets.bottom}, parentContainerStyle]}>
       {/* Blurred Backdrop */}
       <Animated.View className="absolute inset-0 bg-black/70" style={backdropStyle}>
         <Pressable className="flex-1" onPress={handleClose} />

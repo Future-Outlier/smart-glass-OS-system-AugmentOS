@@ -1,25 +1,24 @@
 import {View} from "react-native"
-import Animated, {SharedValue, useSharedValue, withSpring} from "react-native-reanimated"
+import Animated, {runOnJS, SharedValue, useSharedValue, withSpring} from "react-native-reanimated"
 import {Gesture, GestureDetector} from "react-native-gesture-handler"
 
 import {Text} from "@/components/ignite"
 import AppIcon from "@/components/home/AppIcon"
 import {useAppTheme} from "@/contexts/ThemeContext"
 import {translate} from "@/i18n"
-import {
-  useActiveApps,
-  useActiveBackgroundApps,
-  useActiveForegroundApp,
-} from "@/stores/applets"
+import {useActiveApps, useActiveBackgroundApps, useActiveForegroundApp} from "@/stores/applets"
+import * as Haptics from "expo-haptics"
+import { useRef } from "react"
+import { scheduleOnRN } from "react-native-worklets"
 
 interface AppSwitcherButtonProps {
   swipeProgress: SharedValue<number>
 }
 
-const SWIPE_DISTANCE_THRESHOLD = 100 // Distance needed to trigger open
+const SWIPE_DISTANCE_THRESHOLD = 300 // Distance needed to trigger open
 const SWIPE_VELOCITY_THRESHOLD = 800 // Velocity threshold for quick swipes
-const SWIPE_DISTANCE_MULTIPLIER = 0.5
-const SWIPE_PERCENT_THRESHOLD = 0.5
+const SWIPE_DISTANCE_MULTIPLIER = 1
+const SWIPE_PERCENT_THRESHOLD = 0.2
 
 export default function AppSwitcherButton({swipeProgress}: AppSwitcherButtonProps) {
   const {theme} = useAppTheme()
@@ -27,8 +26,13 @@ export default function AppSwitcherButton({swipeProgress}: AppSwitcherButtonProp
   const foregroundApp = useActiveForegroundApp()
   const apps = useActiveApps()
   const appsCount = apps.length
+  const hasBuzzedRef = useRef(false)
 
   const translateY = useSharedValue(0)
+
+  const buzz = () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light)
+  }
 
   const panGesture = Gesture.Pan()
     .activeOffsetY([-10, 10])
@@ -40,33 +44,44 @@ export default function AppSwitcherButton({swipeProgress}: AppSwitcherButtonProp
           1,
           Math.abs(translateY.value) / (SWIPE_DISTANCE_THRESHOLD * SWIPE_DISTANCE_MULTIPLIER),
         )
+
+        const swipeDistance = Math.abs(translateY.value)
+
+        const shouldOpen =
+          swipeProgress.value > SWIPE_PERCENT_THRESHOLD ||
+          swipeDistance > SWIPE_DISTANCE_THRESHOLD
+
+        if (shouldOpen && !hasBuzzedRef.current) {
+          hasBuzzedRef.current = true
+          scheduleOnRN(buzz)
+        }
       }
     })
     .onEnd((event) => {
       const swipeDistance = Math.abs(translateY.value)
-      const swipeVelocity = Math.abs(event.velocityY)
-      const normalizedVelocity = event.velocityY / (SWIPE_DISTANCE_THRESHOLD * SWIPE_DISTANCE_MULTIPLIER)
+      // const normalizedVelocity = event.velocityY / (SWIPE_DISTANCE_THRESHOLD * SWIPE_DISTANCE_MULTIPLIER)
+      const velocity = event.velocityY / 100
 
       const shouldOpen =
         swipeProgress.value > SWIPE_PERCENT_THRESHOLD ||
-        swipeDistance > SWIPE_DISTANCE_THRESHOLD ||
-        swipeVelocity > SWIPE_VELOCITY_THRESHOLD
+        swipeDistance > SWIPE_DISTANCE_THRESHOLD
 
       if (shouldOpen) {
         swipeProgress.value = withSpring(1, {
           damping: 20,
-          stiffness: 300,
+          stiffness: 500,
           overshootClamping: true,
-          velocity: normalizedVelocity,
+          // velocity: velocity,
         })
       } else {
         swipeProgress.value = withSpring(0, {
           damping: 20,
           stiffness: 300,
           overshootClamping: true,
-          velocity: normalizedVelocity,
+          // velocity: velocity,
         })
       }
+      hasBuzzedRef.current = false
 
       translateY.value = 0
     })
