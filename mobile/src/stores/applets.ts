@@ -33,6 +33,7 @@ export interface ClientAppletInterface extends AppletInterface {
   screenshot?: string
   runtimePermissions?: string[]
   declaredPermissions?: string[]
+  version?: string
 }
 
 interface AppStatusState {
@@ -77,7 +78,7 @@ export const simulatedPackageName = "com.mentra.simulated"
 export const mirrorPackageName = "com.mentra.mirror"
 export const lmaInstallerPackageName = "com.mentra.lma_installer"
 
-const saveLocalAppRunningState = (packageName: string, status: boolean): AsyncResult<void, Error> => {
+export const saveLocalAppRunningState = (packageName: string, status: boolean): AsyncResult<void, Error> => {
   return Res.try_async(async () => {
     await storage.save(`${packageName}_running`, status)
     return undefined

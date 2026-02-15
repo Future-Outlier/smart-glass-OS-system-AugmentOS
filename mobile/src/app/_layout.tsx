@@ -24,6 +24,8 @@ const IGNORED_LOGS = [
   /Attempted to import the module/,
   /The action 'RESET' with payload/,
   /The action 'POP_TO_TOP' was not handled/,
+  /socket-0 binding/,
+  /socket-0 bound to/,
 ]
 
 LogBox.ignoreLogs(IGNORED_LOGS)

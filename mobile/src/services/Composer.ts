@@ -1,11 +1,26 @@
-import {ClientAppletInterface, useAppletStatusStore} from "@/stores/applets"
+import {
+  ClientAppletInterface,
+  lmaInstallerPackageName,
+  saveLocalAppRunningState,
+  useAppletStatusStore,
+} from "@/stores/applets"
 import {downloadAndInstallMiniApp} from "@/utils/storage/zip"
-import {Directory, Paths} from "expo-file-system"
+import {Directory, Paths, File} from "expo-file-system"
 import {AsyncResult} from "typesafe-ts"
 import {result as Res} from "typesafe-ts"
 export interface LmaPermission {
   type: string
   description: string
+}
+
+interface InstalledInfo {
+  version: string
+  name: string
+}
+
+interface InstalledLma {
+  packageName: string
+  versions: InstalledInfo[]
 }
 
 class Composer {
@@ -56,24 +71,86 @@ class Composer {
       return []
     }
   }
+  public getAppletInstalledVersions(packageName: string): string[] {
+    try {
+      const lmaDir = new Directory(Paths.document, "lmas", packageName)
+      const lma = lmaDir.list()
+      console.log("COMPOSER: Local applet", lma)
+      return lma.map((lma) => lma.name)
+    } catch (error) {
+      console.error("COMPOSER: Error getting local applet versions", error)
+      return []
+    }
+  }
+
+  public getAppletMetadata(packageName: string, version: string): InstalledInfo {
+    try {
+      const lmaDir = new Directory(Paths.document, "lmas", packageName, version)
+      const appJsonFile = new File(lmaDir, "app.json")
+      const appJson = JSON.parse(appJsonFile.textSync())
+      return {name: appJson.name, version: version}
+    } catch (error) {
+      console.error("COMPOSER: Error getting local applet metadata", error)
+      return {name: "error", version: "0.0.0"}
+    }
+  }
+  // return {packageName: string, versions: string[]}
+  public getInstalledAppletsInfo(): {packageName: string; versions: InstalledInfo[]}[] {
+    const packageNames = this.getPackageNames()
+    const appletsInfo: {packageName: string; versions: InstalledInfo[]}[] = []
+    for (const packageName of packageNames) {
+      const versions = this.getAppletInstalledVersions(packageName)
+      const installedVersion: InstalledLma = {packageName, versions: []}
+      for (const versionString of versions) {
+        const info: InstalledInfo = this.getAppletMetadata(packageName, versionString)
+        installedVersion.versions.push(info)
+      }
+      appletsInfo.push(installedVersion)
+    }
+    // console.log("COMPOSER: Applets info", appletsInfo)
+    return appletsInfo
+  }
 
   public getLocalApplets(): ClientAppletInterface[] {
-    if (!this.refreshNeeded) {
+    if (!this.refreshNeeded && this.installedLmas.length > 0) {
       return this.installedLmas
     }
 
     const packageNames = this.getPackageNames()
-    try {
-      for (const packageName of packageNames) {
-        const lmaDir = new Directory(Paths.document, "lmas", packageName)
-        const lma = lmaDir.list()
-        console.log("COMPOSER: Local applet", lma)
-      }
-      return []
-    } catch (error) {
-      console.error("COMPOSER: Error getting local applets", error)
-      return []
+    const installedLmasInfo = this.getInstalledAppletsInfo()
+    console.log("COMPOSER: Installed Lmas Info", installedLmasInfo)
+    // use the latest version for now (will be overriddable later via <packageName>_version_key)
+    // build the installedLmas array:
+    const lmas: ClientAppletInterface[] = []
+    for (const lmaInfo of installedLmasInfo) {
+      let version = lmaInfo.versions[0]
+      // for (const version of appletInfo.versions) {
+      lmas.push({
+        packageName: lmaInfo.packageName,
+        version: version.version,
+        running: false,
+        local: true,
+        healthy: true,
+        loading: false,
+        offline: false,
+        offlineRoute: "",
+        name: version.name,
+        webviewUrl: "",
+        logoUrl: "",
+        type: "standard",
+        permissions: [],
+        hardwareRequirements: [],
+        onStart: () => saveLocalAppRunningState(lmaInfo.packageName, true),
+        onStop: () => saveLocalAppRunningState(lmaInfo.packageName, false),
+      })
     }
+
+    this.installedLmas = lmas
+    this.refreshNeeded = false
+
+    console.log("COMPOSER: Installed Lmas", this.installedLmas)
+
+    return this.installedLmas
   }
 
   public startStop(applet: ClientAppletInterface, status: boolean): AsyncResult<void, Error> {
