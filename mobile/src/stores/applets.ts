@@ -75,6 +75,7 @@ export const settingsPackageName = "com.mentra.settings"
 export const storePackageName = "com.mentra.store"
 export const simulatedPackageName = "com.mentra.simulated"
 export const mirrorPackageName = "com.mentra.mirror"
+export const lmaInstallerPackageName = "com.mentra.lma_installer"
 
 const saveLocalAppRunningState = (packageName: string, status: boolean): AsyncResult<void, Error> => {
   return Res.try_async(async () => {
@@ -266,6 +267,27 @@ const getOfflineApplets = async (): Promise<ClientAppletInterface[]> => {
     // },
   ]
 
+  let superMode = useSettingsStore.getState().getSetting(SETTINGS.super_mode.key)
+  if (superMode) {
+    miniApps.push({
+      packageName: lmaInstallerPackageName,
+      name: "LMA",
+      type: "standard",
+      offline: true,
+      offlineRoute: "/miniapps/dev/mini-app-installer",
+      local: false,
+      webviewUrl: "",
+      permissions: [],
+      running: false,
+      loading: false,
+      healthy: true,
+      hardwareRequirements: [],
+      logoUrl: require("@assets/applet-icons/store.png"),
+      onStart: () => saveLocalAppRunningState(lmaInstallerPackageName, true),
+      onStop: () => saveLocalAppRunningState(lmaInstallerPackageName, false),
+    })
+  }
+
   let appSwitcherUi = useSettingsStore.getState().getSetting(SETTINGS.app_switcher_ui.key)
   if (!appSwitcherUi) {
     // remove the settings, gallery, and simulator apps:
@@ -393,7 +415,7 @@ export const useAppletStatusStore = create<AppStatusState>((set, get) => ({
     }
 
     // merge in the offline apps:
-    let applets: ClientAppletInterface[] = [...onlineApps, ...(await getOfflineApplets())]
+    let applets: ClientAppletInterface[] = [...onlineApps, ...(await getOfflineApplets()), ...(await composer.getLocalApplets())]
     const offlineMode = useSettingsStore.getState().getSetting(SETTINGS.offline_mode.key)
 
     // remove duplicates and keep the online versions:
@@ -563,7 +585,7 @@ export const useInactiveForegroundApps = () => {
 }
 export const useForegroundApps = () => {
   const apps = useApplets()
-  return useMemo(() => apps.filter((app) => (app.type === "standard" || app.type === "background" || !app.type)), [apps])
+  return useMemo(() => apps.filter((app) => app.type === "standard" || app.type === "background" || !app.type), [apps])
 }
 
 export const useActiveApps = () => {

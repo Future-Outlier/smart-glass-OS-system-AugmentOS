@@ -10,15 +10,15 @@ import showAlert, {showBluetoothAlert, showLocationAlert, showLocationServicesAl
 import {checkAndRequestNotificationAccessSpecialPermission} from "@/utils/NotificationServiceUtils"
 import {storage} from "@/utils/storage/storage"
 
-type _UI_PERMISSION =
+export type UiPermission =
   | "LOCATION"
+  | "BACKGROUND_LOCATION"
   | "MICROPHONE"
   | "CALENDAR"
   | "POST_NOTIFICATIONS"
   | "READ_NOTIFICATIONS"
   | "BACKGROUND_LOCATION"
-  | "CAMERA"
-  | "GLASSES_CAMERA"
+  | "PHONE_CAMERA"
   | "BLUETOOTH"
   | "PHONE_STATE"
   | "BATTERY_OPTIMIZATION"

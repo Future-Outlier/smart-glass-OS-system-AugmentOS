@@ -1,8 +1,10 @@
 {
-    "name": "lma_example_captions",
+    "name": "Local Captions",
+    "packageName": "com.mentra.local_captions",
     "version": "1.0.0",
     "main": "index.html",
     "type": "standard",
     "hardwareRequirements": [{"type": "DISPLAY", "level": "REQUIRED"}, {"type": "MICROPHONE", "level": "REQUIRED"}],
-    "subscriptions": ["online_trancription"]
+    "declaredPermissions": ["MICROPHONE"],
+    "subscriptions": ["online_transcription"]
 }

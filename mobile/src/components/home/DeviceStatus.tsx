@@ -147,8 +147,8 @@ export const DeviceStatus = ({style}: {style?: ViewStyle}) => {
 
   if (!glassesConnected || !glassesFullyBooted || isSearching) {
     return (
-      <View style={[themed($disconnectedContainer), style]}>
-        <View className="justify-between items-center flex-row">
+      <TouchableOpacity style={[themed($disconnectedContainer), style]} onPress={() => push("/settings/glasses")}>
+        <View className="just">
           <Text className="font-semibold text-secondary-foreground text-lg" text={defaultWearable} />
           <Icon name="bluetooth-off" size={18} color={theme.colors.foreground} />
         </View>
@@ -183,7 +183,7 @@ export const DeviceStatus = ({style}: {style?: ViewStyle}) => {
             </>
           )}
         </View>
-      </View>
+      </TouchableOpacity>
     )
   }
 
@@ -217,7 +217,9 @@ export const DeviceStatus = ({style}: {style?: ViewStyle}) => {
   }
 
   return (
-    <TouchableOpacity className="bg-primary-foreground px-6 py-5 justify-center flex rounded-2xl" onPress={() => push("/settings/glasses")}>
+    <TouchableOpacity
+      className="bg-primary-foreground px-6 py-5 justify-center flex rounded-2xl"
+      onPress={() => push("/settings/glasses")}>
       <View className="justify-center items-center flex-row">
         <View className="flex-1 self-start">
           <Image source={getCurrentGlassesImage()} className="w-full h-full max-w-40 max-h-20 resize-contain" />

@@ -182,6 +182,7 @@ module.exports = ({config}: ConfigContext): Partial<ExpoConfig> => {
             compileSdkVersion: 36,
           },
           ios: {
+            deploymentTarget: "15.5",// for react-native-zip-archive
             extraPods: [
               {
                 name: "SDWebImage",

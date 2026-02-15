@@ -5,6 +5,7 @@ import ToggleSetting from "@/components/settings/ToggleSetting"
 import {Group} from "@/components/ui/Group"
 import {useNavigationHistory} from "@/contexts/NavigationHistoryContext"
 import {SETTINGS, useSetting} from "@/stores/settings"
+import { RouteButton } from "@/components/ui/RouteButton"
 
 export default function SuperSettingsScreen() {
   const {goBack} = useNavigationHistory()
@@ -14,6 +15,7 @@ export default function SuperSettingsScreen() {
   )
   const [debugCoreStatusBarEnabled, setDebugCoreStatusBarEnabled] = useSetting(SETTINGS.debug_core_status_bar.key)
   const [appSwitcherUi, setAppSwitcherUi] = useSetting(SETTINGS.app_switcher_ui.key)
+  const {push} = useNavigationHistory()
 
   return (
     <Screen preset="fixed">
@@ -45,6 +47,18 @@ export default function SuperSettingsScreen() {
               label="App Switcher UI"
               value={appSwitcherUi}
               onValueChange={(value) => setAppSwitcherUi(value)}
+            />
+          </Group>
+
+          <Group title="Mini Apps">
+            <RouteButton
+              label="Local Captions"
+              onPress={() => push("/miniapps/local-captions")}
+            />
+
+            <RouteButton
+              label="Local Mini App installer"
+              onPress={() => push("/miniapps/dev/mini-app-installer")}
             />
           </Group>
         </View>
