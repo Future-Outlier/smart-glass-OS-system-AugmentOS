@@ -129,7 +129,7 @@ private async createStreamInstance(
 
 `getMergedOptionsForLanguage()` inspects all raw subscriptions that normalize to this base language and unions their options. `buildSubscriptionWithOptions()` reconstructs a subscription string with merged query params — this is what the Soniox stream uses in `sendConfiguration()` to extract hints.
 
-### Change 2: Set DataStream.streamType to base language form (Cloud)
+### Change 2: Per-app streamType routing in DataStream (Cloud)
 
 **File:** `packages/cloud/src/services/session/transcription/TranscriptionManager.ts`
 
@@ -139,9 +139,60 @@ In `relayDataToApps()`, the DataStream is currently constructed with:
 streamType: subscription as ExtendedStreamType  // closure value from createStreamCallbacks
 ```
 
-After Change 1, the closure value IS the base language form (because `createStreamCallbacks(normalizedSubscription)` is called with the normalized key). So this change is **automatic** — no additional code needed. The DataStream will carry `streamType: "transcription:en-US"` because that's what the stream was created with.
+After Change 1, the closure value is the base language form (`"transcription:en-US"`). But old SDK apps have handlers registered with the full subscription string including query params (`"transcription:en-US?hints=ja"`). Old SDKs do exact string matching — `"transcription:en-US"` ≠ `"transcription:en-US?hints=ja"` — and silently drop the data.
 
-Verify: the `subscription` parameter in `createStreamCallbacks()` comes from the `for...of` loop in `updateSubscriptions()` or `startStream()`, which now uses the normalized key. ✅
+**To maintain backward compatibility with old SDK versions**, the cloud must send each app its **own subscription string** as `streamType`, not the stream's normalized key. This way the old SDK's exact match succeeds because the `streamType` is literally what the app subscribed with.
+
+**Updated `relayDataToApps()`** — when constructing the DataStream for each app, look up the app's own transcription subscription:
+
+```
+for (const packageName of subscribedApps) {
+  const appSessionId = `${this.userSession.sessionId}-${packageName}`;
+
+  // Find this app's actual subscription for this base language
+  // so old SDKs can exact-match their handler key
+  const appSubscription = this.findAppTranscriptionSubscription(
+    packageName, data.transcribeLanguage
+  );
+
+  const dataStream: DataStream = {
+    type: CloudToAppMessageType.DATA_STREAM,
+    sessionId: appSessionId,
+    streamType: (appSubscription || effectiveSubscription) as ExtendedStreamType,
+    data,
+    timestamp: new Date(),
+  };
+  // send...
+}
+```
+
+**New private method `findAppTranscriptionSubscription()`:**
+
+```
+private findAppTranscriptionSubscription(
+  packageName: string,
+  transcribeLanguage: string,
+): ExtendedStreamType | null {
+  const appSubs = this.userSession.subscriptionManager.getAppSubscriptions(packageName);
+  for (const sub of appSubs) {
+    if (!isLanguageStream(sub as string)) continue;
+    const parsed = parseLanguageStream(sub as ExtendedStreamType);
+    if (parsed?.type === StreamType.TRANSCRIPTION &&
+        parsed?.transcribeLanguage === transcribeLanguage) {
+      return sub;
+    }
+  }
+  return null;
+}
+```
+
+**What this achieves:**
+
+- recorder subscribed to `"transcription:en-US"` → gets `streamType: "transcription:en-US"` → old SDK exact match ✅
+- captions subscribed to `"transcription:en-US?hints=ja"` → gets `streamType: "transcription:en-US?hints=ja"` → old SDK exact match ✅
+- New SDK with `findMatchingStream()` → works with any `streamType` ✅
+
+**Performance**: `getAppSubscriptions()` is an O(1) Map lookup returning the app's subscription Set. The linear scan of the Set is O(k) where k ≈ 3-8 (typical app subscription count). This runs once per app per data relay event (~5-20 Hz × 1-5 apps = 5-100 calls/sec). Negligible.
 
 ### Change 3: Language-aware handler matching in the SDK
 
@@ -276,8 +327,9 @@ One fewer indirection. The loop over `targetSubscriptions` was always a single i
 
 - One Soniox stream: `"transcription:en-US"` with merged config `language_hints: ["en", "ja"]`
 - One audio feed. 1x cost.
-- Both apps receive from the same stream. SDK matches by base language.
-- DataStream arrives with `streamType: "transcription:en-US"`. SDK finds captions' handler for `"transcription:en-US?hints=ja"` via language-aware matching. ✅
+- Both apps receive from the same stream.
+- recorder gets DataStream with `streamType: "transcription:en-US"` (its own sub) → old and new SDK ✅
+- captions gets DataStream with `streamType: "transcription:en-US?hints=ja"` (its own sub) → old SDK exact match ✅, new SDK `findMatchingStream` ✅
 
 ### Subscription update: app changes hints
 
@@ -295,7 +347,7 @@ One fewer indirection. The loop over `targetSubscriptions` was always a single i
 - No stream killed, no stream created. `activeSubscriptions` unchanged.
 - Merged hints updated: `["en", "ja"]` → `["en", "fr"]` (assuming recorder still has no hints: `["en", "fr"]`)
 - If config changed, stream is reconfigured or recreated
-- DataStream still carries `streamType: "transcription:en-US"`. SDK still matches. ✅
+- DataStream carries each app's own subscription string. Old and new SDKs both match. ✅
 
 ### Subscription update: app unsubscribes from transcription
 
@@ -372,15 +424,15 @@ However, Change 3 (SDK `findMatchingStream`) should handle translation streams t
 
 ## Decision Log
 
-| Decision                                            | Alternatives considered                                                                                                             | Why we chose this                                                                                                                                                                                                                                                                                                                                                                                                                                        |
-| --------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Normalize stream identity to base language          | (a) Keep separate streams, fix only routing. (b) Strip options entirely.                                                            | (a) doesn't fix 2x cost. (b) loses hints for Soniox which may help multilingual users. Normalizing identity while merging options gets both.                                                                                                                                                                                                                                                                                                             |
-| Merge hints from all subscribers                    | (a) Use first subscriber's hints. (b) Ignore hints entirely. (c) Let each app choose hints independently (separate streams).        | Union is the safest default. Soniox deduplicates hints internally. If a user has apps wanting `["ja"]` and `["fr"]` hints, sending `["en", "ja", "fr"]` covers both use cases.                                                                                                                                                                                                                                                                           |
-| Language-aware matching in SDK `handleMessage`      | (a) Normalize handler keys to base language. (b) Change `streamType` to always be base type. (c) Uncomment the reconstruction code. | (a) would break `getRegisteredStreams()` which is used for subscription payloads — options would be lost. (b) is what we do on cloud side, but SDK still needs to find the handler. (c) that code reconstructs without options, which is what we want, but it also doesn't match the handler key. Option we chose: keep handler keys as-is, add `findMatchingStream()` that does language-aware lookup. Minimal diff, no change to subscription payload. |
-| Don't change `getTranscriptionSubscriptions()`      | Dedup there instead of in TranscriptionManager.                                                                                     | TranscriptionManager needs both raw strings (for option merging) and normalized keys (for stream identity). Deduping in SubscriptionManager would lose the raw strings.                                                                                                                                                                                                                                                                                  |
-| Don't fix TranslationManager in this PR             | Fix it too.                                                                                                                         | Lower risk (translation subs are pair-specific), and we want a small, reviewable PR. Same pattern can be applied later.                                                                                                                                                                                                                                                                                                                                  |
-| `findMatchingStream` is O(n) linear scan            | Build a secondary index (Map from base language to handler key).                                                                    | n ≤ 5 in practice. A Map would need to be kept in sync with the handlers Map on every add/remove. Not worth the complexity.                                                                                                                                                                                                                                                                                                                              |
-| Set `DataStream.streamType` via closure (automatic) | Explicitly compute base language in `relayDataToApps`.                                                                              | After Change 1, the closure already captures the normalized key. No additional code needed. If we later add per-app routing, we can revisit.                                                                                                                                                                                                                                                                                                             |
+| Decision                                       | Alternatives considered                                                                                                               | Why we chose this                                                                                                                                                                                                                                                                                                                                                                                       |
+| ---------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Normalize stream identity to base language     | (a) Keep separate streams, fix only routing. (b) Strip options entirely.                                                              | (a) doesn't fix 2x cost. (b) loses hints for Soniox which may help multilingual users. Normalizing identity while merging options gets both.                                                                                                                                                                                                                                                            |
+| Merge hints from all subscribers               | (a) Use first subscriber's hints. (b) Ignore hints entirely. (c) Let each app choose hints independently (separate streams).          | Union is the safest default. Soniox deduplicates hints internally. If a user has apps wanting `["ja"]` and `["fr"]` hints, sending `["en", "ja", "fr"]` covers both use cases.                                                                                                                                                                                                                          |
+| Per-app `streamType` in DataStream             | (a) Always send base language form. (b) Send the stream's closure subscription.                                                       | (a) breaks old SDK apps that use hints or `disableLanguageIdentification` — their exact-match handler lookup fails. (b) is the current behavior, works by accident with duplicate streams but breaks when deduped. Per-app routing sends each app its OWN subscription string, so old SDKs exact-match correctly and new SDKs also work via `findMatchingStream`. Zero regressions for any SDK version. |
+| Language-aware matching in SDK `handleMessage` | (a) Normalize handler keys to base language. (b) Always rely on per-app streamType from cloud. (c) Uncomment the reconstruction code. | (a) would break `getRegisteredStreams()` which is used for subscription payloads — options would be lost. (b) works for new cloud but not old cloud (old cloud sends stream's closure subscription, not per-app). (c) that code reconstructs without options, still doesn't match handler key. `findMatchingStream()` is a safety net that makes new SDK work with BOTH old and new cloud.              |
+| Don't change `getTranscriptionSubscriptions()` | Dedup there instead of in TranscriptionManager.                                                                                       | TranscriptionManager needs both raw strings (for option merging) and normalized keys (for stream identity). Deduping in SubscriptionManager would lose the raw strings.                                                                                                                                                                                                                                 |
+| Don't fix TranslationManager in this PR        | Fix it too.                                                                                                                           | Lower risk (translation subs are pair-specific), and we want a small, reviewable PR. Same pattern can be applied later.                                                                                                                                                                                                                                                                                 |
+| `findMatchingStream` is O(n) linear scan       | Build a secondary index (Map from base language to handler key).                                                                      | n ≤ 5 in practice. A Map would need to be kept in sync with the handlers Map on every add/remove. Not worth the complexity.                                                                                                                                                                                                                                                                             |
 
 ---
 
@@ -471,25 +523,29 @@ Track the "desired merged config" so that `ensureStreamsExist()` and VAD recreat
 
 ### Order
 
-1. **Cloud changes first** (Changes 1, 2, 4, 6): Deploy to debug. Verify only one Soniox stream per language in logs. Verify DataStream carries base language streamType.
+1. **Cloud changes first** (Changes 1, 2, 4, 6): Deploy to debug. Verify only one Soniox stream per language in logs. Verify each app receives DataStream with its own subscription string as streamType. Old SDK apps should continue working immediately.
 
-2. **SDK change** (Changes 3, 5): Deploy apps using updated SDK to debug. Verify apps receive transcription data with the new base-language streamType.
+2. **SDK change** (Changes 3, 5): Deploy apps using updated SDK to debug. Verify `findMatchingStream` works as a safety net. Verify unmatched DataStream debug logging.
 
 3. **Verify on dev**, then staging, then prod — standard progression.
 
 ### Backward compatibility
 
-**Cloud → old SDK**: Cloud sends `streamType: "transcription:en-US"`. Old SDK does exact match against handler key. If handler key is `"transcription:en-US"` (no hints), it works. If handler key is `"transcription:en-US?hints=ja"`, it silently drops. **This is the same behavior as Bug 2 today** — no regression.
+**New cloud → old SDK**: Cloud sends each app its **own subscription string** as `streamType` (Change 2). Old SDK does exact match against handler key. Since `streamType` equals the app's own subscription, the exact match succeeds. **Zero regressions for any old SDK app**, regardless of whether they use hints, `disableLanguageIdentification`, or plain subscriptions.
 
-**New SDK → old cloud**: Old cloud sends `streamType: "transcription:en-US?hints=ja"` (from a hints stream). New SDK uses `findMatchingStream` which matches by base language → handler fires. **This is strictly better** — new SDK handles both old and new cloud.
+**New cloud → new SDK**: Cloud sends per-app `streamType`. New SDK's `findMatchingStream` matches (either exact or by base language). Works. ✅
 
-**Conclusion**: SDK change can be deployed independently and improves behavior regardless of cloud version. Cloud change should be deployed first to eliminate duplicate streams, but is also safe independently (just means SDK might not match for hints-subscribed apps — same as today).
+**New SDK → old cloud**: Old cloud sends `streamType` from the stream's closure subscription (e.g., `"transcription:en-US?hints=ja"`). New SDK uses `findMatchingStream` which matches by base language → handler fires even if the app subscribed with different hints. **Strictly better than today.** ✅
+
+**Old cloud → old SDK**: No change. Same as today. ✅
+
+**Conclusion**: Cloud change is safe to deploy first and fixes old mini-apps immediately. SDK change is a safety net that improves behavior against both old and new cloud. Either can be deployed independently. Together they provide full coverage.
 
 ### Rollback
 
 If issues are discovered:
 
-- **Cloud rollback**: Revert to raw-string stream identity. Duplicate streams return (2x cost) but no data loss — apps go back to receiving from "their own" stream.
-- **SDK rollback**: Revert to exact match. Apps with hints subscriptions go back to only receiving from matching streams. Same as today.
+- **Cloud rollback**: Revert to raw-string stream identity. Duplicate streams return (2x cost) but no data loss — apps go back to receiving from "their own" stream via the accidental exact-match routing.
+- **SDK rollback**: Revert to exact match. Apps still work because new cloud sends per-app streamType. If cloud is also rolled back, behavior is same as today.
 
 Both rollbacks are safe and independent. No data migration, no state to clean up.
