@@ -139,12 +139,12 @@ module.exports = ({config}: ConfigContext): Partial<ExpoConfig> => {
         "expo-splash-screen",
         {
           image: "./assets/logo/logo.png",
-          resizeMode: "contain",
+          resizeMode: "cover",
           imageWidth: 100,
           backgroundColor: "#fff",
-          dark: {
-            backgroundColor: "#171717",
-          },
+          // dark: {
+            // backgroundColor: "#171717",
+          // },
         },
       ],
       "expo-router",

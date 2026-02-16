@@ -124,7 +124,6 @@ class Composer {
     const lmas: ClientAppletInterface[] = []
     for (const lmaInfo of installedLmasInfo) {
       let version = lmaInfo.versions[0]
-      // for (const version of appletInfo.versions) {
       lmas.push({
         packageName: lmaInfo.packageName,
         version: version.version,
