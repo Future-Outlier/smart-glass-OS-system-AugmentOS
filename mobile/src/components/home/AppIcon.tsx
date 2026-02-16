@@ -6,7 +6,7 @@ import {withUniwind} from "uniwind"
 
 import {Icon} from "@/components/ignite"
 import {useAppTheme} from "@/contexts/ThemeContext"
-import {ClientAppletInterface, cameraPackageName, getMoreAppsApplet} from "@/stores/applets"
+import {ClientAppletInterface} from "@/stores/applets"
 import {SETTINGS, useSetting} from "@/stores/settings"
 
 // Helper to extract style properties for width/height override

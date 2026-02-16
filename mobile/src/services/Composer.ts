@@ -16,6 +16,7 @@ export interface LmaPermission {
 interface InstalledInfo {
   version: string
   name: string
+  logoUrl: string
 }
 
 interface InstalledLma {
@@ -88,10 +89,11 @@ class Composer {
       const lmaDir = new Directory(Paths.document, "lmas", packageName, version)
       const appJsonFile = new File(lmaDir, "app.json")
       const appJson = JSON.parse(appJsonFile.textSync())
-      return {name: appJson.name, version: version}
+      const logoUrl = new File(lmaDir, "icon.png").uri
+      return {name: appJson.name, version: version, logoUrl: logoUrl}
     } catch (error) {
       console.error("COMPOSER: Error getting local applet metadata", error)
-      return {name: "error", version: "0.0.0"}
+      return {name: "error", version: "0.0.0", logoUrl: ""}
     }
   }
   // return {packageName: string, versions: string[]}
@@ -124,6 +126,8 @@ class Composer {
     const lmas: ClientAppletInterface[] = []
     for (const lmaInfo of installedLmasInfo) {
       let version = lmaInfo.versions[0]
+      console.log("COMPOSER: Version", version)
+      console.log("COMPOSER: Logo Url", version.logoUrl)
       lmas.push({
         packageName: lmaInfo.packageName,
         version: version.version,
@@ -135,7 +139,7 @@ class Composer {
         offlineRoute: "",
         name: version.name,
         webviewUrl: "",
-        logoUrl: "",
+        logoUrl: version.logoUrl,
         type: "standard",
         permissions: [],
         hardwareRequirements: [],
