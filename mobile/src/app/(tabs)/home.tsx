@@ -85,18 +85,27 @@ export default function Homepage() {
   }
 
   return (
-    <Screen preset="fixed">
-      <Header
-        leftTx="home:title"
-        RightActionComponent={
-          <View className="flex-row items-center flex-1 justify-end">
-            <WebsocketStatus />
-            <NonProdWarning />
-            <View className="w-2" />
-            <MentraLogoStandalone />
-          </View>
-        }
-      />
+    <Screen preset="fixed" safeAreaEdges={[appSwitcherUi && "top"]}>
+      {!appSwitcherUi && (
+        <Header
+          leftTx="home:title"
+          RightActionComponent={
+            <View className="flex-row items-center flex-1 justify-end">
+              <WebsocketStatus />
+              <NonProdWarning />
+              <View className="w-2" />
+              <MentraLogoStandalone />
+            </View>
+          }
+        />
+      )}
+
+      {/* {appSwitcherUi && (
+        <View className="px-6 flex-row">
+          <WebsocketStatus />
+          <NonProdWarning />
+        </View>
+      )} */}
 
       <ScrollView
         contentInsetAdjustmentBehavior="automatic"

@@ -827,6 +827,7 @@ const en = {
     mirror: "Glasses Mirror",
     simulated: "Simulated Glasses",
     store: "Get more apps",
+    lmaInstaller: "Local Store",
   },
 }
 

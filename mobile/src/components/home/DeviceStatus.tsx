@@ -218,14 +218,14 @@ export const DeviceStatus = ({style}: {style?: ViewStyle}) => {
 
   return (
     <TouchableOpacity
-      className="bg-primary-foreground px-6 py-5 justify-center flex rounded-2xl"
+      className="bg-primary-foreground px-6 py-0 justify-center flex rounded-2xl"
       onPress={() => push("/settings/glasses")}>
       <View className="justify-center items-center flex-row">
         <View className="flex-1 self-start">
-          <Image source={getCurrentGlassesImage()} className="w-full h-full max-w-40 max-h-20 resize-contain" />
+          <Image source={getCurrentGlassesImage()} className="w-full h-full max-w-40 max-h-20" style={{resizeMode: "contain"}} />
         </View>
 
-        <View className="justify-between items-center flex-col gap-1">
+        <View className="justify-between items-center flex-col gap-1 py-5">
           <View className="flex-row items-center gap-2">
             {batteryLevel !== -1 && (
               <View className="flex-row items-center gap-1">

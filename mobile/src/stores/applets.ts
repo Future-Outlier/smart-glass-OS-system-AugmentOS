@@ -272,7 +272,7 @@ const getOfflineApplets = async (): Promise<ClientAppletInterface[]> => {
   if (superMode) {
     miniApps.push({
       packageName: lmaInstallerPackageName,
-      name: "LMA",
+      name: translate("miniApps:lmaInstaller"),
       type: "standard",
       offline: true,
       offlineRoute: "/miniapps/dev/mini-app-installer",
