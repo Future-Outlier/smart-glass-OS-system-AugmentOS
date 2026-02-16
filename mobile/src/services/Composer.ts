@@ -115,7 +115,9 @@ class Composer {
 
   public getLocalApplets(): ClientAppletInterface[] {
     if (!this.refreshNeeded && this.installedLmas.length > 0) {
-      return this.installedLmas
+      // return this.installedLmas
+      // this is the source of truth for running state:
+      return useAppletStatusStore.getState().apps.filter((a) => a.local)
     }
 
     const installedLmasInfo = this.getInstalledAppletsInfo()
@@ -161,9 +163,9 @@ class Composer {
     })
   }
 
-  public startStop(applet: ClientAppletInterface, status: boolean): AsyncResult<void, Error> {
-    return Res.try_async(async () => {})
-  }
+  // public startStop(applet: ClientAppletInterface, status: boolean): AsyncResult<void, Error> {
+  //   return Res.try_async(async () => {})
+  // }
 }
 
 const composer = Composer.getInstance()

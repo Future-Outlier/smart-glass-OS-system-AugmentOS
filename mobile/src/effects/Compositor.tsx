@@ -5,20 +5,26 @@ import LocalMiniApp from "@/components/home/LocalMiniApp"
 import composer from "@/services/Composer"
 import {useLocalSearchParams, usePathname} from "expo-router"
 import {Screen} from "@/components/ignite"
-import { useNavigationHistory } from "@/contexts/NavigationHistoryContext"
+import {useNavigationHistory} from "@/contexts/NavigationHistoryContext"
 
 const LmaContainer = memo(
   function LmaContainer({
     html,
     packageName,
     isActive,
+    enabled,
     index,
   }: {
     html: string
     packageName: string
     isActive: boolean
+    enabled: boolean
     index: number
   }) {
+    // don't waste rendering a webview if the app is not enabled:
+    if (!enabled) {
+      return null
+    }
     return (
       <View
         className={
@@ -37,7 +43,8 @@ const LmaContainer = memo(
       prev.isActive === next.isActive &&
       prev.html === next.html &&
       prev.packageName === next.packageName &&
-      prev.index === next.index
+      prev.index === next.index &&
+      prev.enabled === next.enabled
     )
   },
 )
@@ -77,16 +84,18 @@ function Compositor() {
         }
         const htmlRes = composer.getLocalMiniAppHtml(lma.packageName, lma.version)
         if (htmlRes.is_ok()) {
-          return {packageName: lma.packageName, html: htmlRes.value}
+          return {packageName: lma.packageName, html: htmlRes.value, running: lma.running}
         }
         console.error("COMPOSITOR: Error getting local mini app html", htmlRes.error)
         return null
       })
-      .filter(Boolean) as {packageName: string; html: string}[]
+      .filter(Boolean) as {packageName: string; html: string; running: boolean}[]
   }, [lmas])
 
+  // console.log("COMPOSITOR: Resolved Lmas", resolvedLmas.map((lma) => lma.packageName + " " + lma.running))
+
   return (
-    <View className={`absolute inset-0 ${isActive ? "z-11" : "z-0"}`}  pointerEvents="box-none">
+    <View className={`absolute inset-0 ${isActive ? "z-11" : "z-0"}`} pointerEvents="box-none">
       <Screen preset="fixed" safeAreaEdges={["top"]} KeyboardAvoidingViewProps={{enabled: true}}>
         <View className="flex-1">
           {resolvedLmas.map((lma, index) => (
@@ -94,6 +103,7 @@ function Compositor() {
               key={lma.packageName}
               html={lma.html}
               packageName={lma.packageName}
+              enabled={lma.running}
               isActive={packageName === lma.packageName}
               index={index}
             />

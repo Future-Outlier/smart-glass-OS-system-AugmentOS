@@ -101,7 +101,7 @@ export default function AppSwitcherButton({swipeProgress}: AppSwitcherButtonProp
     // Show placeholder when no active app
     return (
       <GestureDetector gesture={composedGesture}>
-        <Animated.View className="bg-primary-foreground py-1.5 pl-3 min-h-15 rounded-2xl flex-row justify-between items-center mt-4 mb-8">
+        <Animated.View className="bg-primary-foreground py-1.5 pl-3 min-h-15 rounded-2xl flex-row justify-between items-center mt-0 mb-8">
           <View className="flex-row items-center justify-center flex-1">
             <Text className="text-muted-foreground text-lg" tx="home:appletPlaceholder2" />
           </View>
@@ -112,7 +112,7 @@ export default function AppSwitcherButton({swipeProgress}: AppSwitcherButtonProp
 
   return (
     <GestureDetector gesture={composedGesture}>
-      <Animated.View className="bg-primary-foreground py-1.5 pl-3 rounded-2xl flex-row justify-between items-center mt-4 mb-8">
+      <Animated.View className="bg-primary-foreground py-1.5 pl-3 rounded-2xl flex-row justify-between items-center mt-0 mb-8">
         <View className="flex-row items-center gap-3 flex-1 px-2">
           <View className="flex-col gap-1 flex-1">
             <Text

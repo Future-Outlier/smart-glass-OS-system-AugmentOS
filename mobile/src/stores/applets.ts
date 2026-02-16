@@ -366,7 +366,8 @@ const startStopApplet = (applet: ClientAppletInterface, status: boolean): AsyncR
   }
 
   if (applet.local) {
-    return composer.startStop(applet, status)
+    // return composer.startStop(applet, status)
+    return startStopOfflineApplet(applet, status)
   }
 
   // TODO: not the best way to handle this, but it works reliably:
