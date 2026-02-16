@@ -118,16 +118,13 @@ class Composer {
       return this.installedLmas
     }
 
-    const packageNames = this.getPackageNames()
     const installedLmasInfo = this.getInstalledAppletsInfo()
-    console.log("COMPOSER: Installed Lmas Info", installedLmasInfo)
+    // console.log("COMPOSER: Installed Lmas Info", installedLmasInfo)
     // use the latest version for now (will be overriddable later via <packageName>_version_key)
     // build the installedLmas array:
     const lmas: ClientAppletInterface[] = []
     for (const lmaInfo of installedLmasInfo) {
       let version = lmaInfo.versions[0]
-      console.log("COMPOSER: Version", version)
-      console.log("COMPOSER: Logo Url", version.logoUrl)
       lmas.push({
         packageName: lmaInfo.packageName,
         version: version.version,
