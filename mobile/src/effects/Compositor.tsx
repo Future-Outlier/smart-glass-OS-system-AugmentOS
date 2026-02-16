@@ -1,25 +1,107 @@
-import {useEffect} from "react"
+import {memo, useEffect, useMemo, useState} from "react"
 import {View} from "react-native"
 import {useLocalMiniApps} from "@/stores/applets"
 import LocalMiniApp from "@/components/home/LocalMiniApp"
+import composer from "@/services/Composer"
+import {useLocalSearchParams, usePathname} from "expo-router"
+import {Screen} from "@/components/ignite"
+import { useNavigationHistory } from "@/contexts/NavigationHistoryContext"
+
+const LmaContainer = memo(
+  function LmaContainer({
+    html,
+    packageName,
+    isActive,
+    index,
+  }: {
+    html: string
+    packageName: string
+    isActive: boolean
+    index: number
+  }) {
+    return (
+      <View
+        className={
+          isActive ? "absolute inset-0 z-10" : "absolute left-0 top-0 w-[100px] h-[100px] overflow-hidden z-[1]"
+          // isActive ? "absolute inset-0 z-10" : "absolute left-0 w-[100px] h-[100px] overflow-hidden z-[1]"
+        }
+        style={!isActive ? {bottom: index * 12} : undefined}
+        pointerEvents={isActive ? "auto" : "none"}>
+        <LocalMiniApp html={html} packageName={packageName} />
+      </View>
+    )
+  },
+  (prev, next) => {
+    // Only re-render if active state changes or the html/packageName changed
+    return (
+      prev.isActive === next.isActive &&
+      prev.html === next.html &&
+      prev.packageName === next.packageName &&
+      prev.index === next.index
+    )
+  },
+)
 
 function Compositor() {
   const lmas = useLocalMiniApps()
+  const pathname = usePathname()
 
-  // useEffect(() => {
-  //   console.log(
-  //     "Lmas:",
-  //     lmas.map((lma) => lma.packageName),
-  //   )
-  // }, [lmas])
+  const [packageName, setPackageName] = useState<string | null>(null)
+  const {getCurrentParams} = useNavigationHistory()
 
-  const renderLmas = () => {
-    return lmas.map((lma) => {
-      return <LocalMiniApp key={lma.packageName} url={lma.webviewUrl} packageName={lma.packageName} />
-    })
-  }
+  useEffect(() => {
+    if (pathname.includes("/applet/local")) {
+      const params = getCurrentParams()
+      if (params && params.packageName) {
+        setPackageName(params.packageName as string)
+      } else {
+        setPackageName(null)
+      }
+    } else {
+      setPackageName(null)
+    }
+  }, [pathname])
 
-  return <View className="flex-1 absolute bottom-0">{renderLmas()}</View>
+  console.log("COMPOSITOR: Package Name", packageName)
+
+  const isActive = pathname.includes("/applet/local")
+  // const activePackageName = pathname.includes("/applet/local") ? packageName : null
+
+  const resolvedLmas = useMemo(() => {
+    return lmas
+      .filter((lma) => !!lma.version)
+      .map((lma) => {
+        if (!lma.version) {
+          console.error("COMPOSITOR: Local mini app has no version", lma.packageName)
+          return null
+        }
+        const htmlRes = composer.getLocalMiniAppHtml(lma.packageName, lma.version)
+        if (htmlRes.is_ok()) {
+          return {packageName: lma.packageName, html: htmlRes.value}
+        }
+        console.error("COMPOSITOR: Error getting local mini app html", htmlRes.error)
+        return null
+      })
+      .filter(Boolean) as {packageName: string; html: string}[]
+  }, [lmas])
+
+  return (
+    <View className={`absolute inset-0 ${isActive ? "z-11" : "z-0"}`}  pointerEvents="box-none">
+      <Screen preset="fixed" safeAreaEdges={["top"]} KeyboardAvoidingViewProps={{enabled: true}}>
+        <View className="flex-1">
+          {resolvedLmas.map((lma, index) => (
+            <LmaContainer
+              key={lma.packageName}
+              html={lma.html}
+              packageName={lma.packageName}
+              isActive={packageName === lma.packageName}
+              index={index}
+            />
+          ))}
+        </View>
+      </Screen>
+    </View>
+  )
 }
 
 export default Compositor

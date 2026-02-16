@@ -524,6 +524,16 @@ export const useAppletStatusStore = create<AppStatusState>((set, get) => ({
             transition: "fade",
           })
         }
+
+        if (applet.local) {
+          console.log("APPLETS: Pushing local applet", applet.packageName, applet.version, applet.name)
+          push("/applet/local", {
+            packageName: applet.packageName,
+            version: applet.version,
+            appName: applet.name,
+            transition: "fade",
+          })
+        }
       }
     }
 

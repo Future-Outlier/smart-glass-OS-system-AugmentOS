@@ -57,7 +57,7 @@ class MiniComms {
       console.log(`SUPERCOMMS: Received from MiniApp: ${message.type} from ${packageName}`)
 
       // Handle specific message types
-      this.handleMessageFromMiniApp(packageName, message)
+      // this.handleMessageFromMiniApp(packageName, message)
     } catch (error) {
       console.error(`SUPERCOMMS: Error parsing WebView message:`, error)
     }

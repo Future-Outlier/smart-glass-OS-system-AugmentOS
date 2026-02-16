@@ -455,6 +455,13 @@ export default function AppSwitcher({swipeProgress}: AppSwitcherProps) {
         packageName: applet.packageName,
         transition: "fade",
       })
+    } else if (applet.local) {
+      setLastOpenTime(applet.packageName)
+      push("/applet/local", {
+        packageName: applet.packageName,
+        appName: applet.name,
+        transition: "fade",
+      })
     } else {
       setLastOpenTime(applet.packageName)
       push("/applet/settings", {

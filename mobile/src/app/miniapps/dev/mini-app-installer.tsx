@@ -5,6 +5,7 @@ import {Button, Screen} from "@/components/ignite"
 import {MiniAppDualButtonHeader} from "@/components/miniapps/DualButton"
 import {Text} from "@/components/ignite"
 import composer from "@/services/Composer"
+import Toast from "react-native-toast-message"
 
 export default function MiniAppInstaller() {
   const viewShotRef = useRef<View>(null)
@@ -12,7 +13,13 @@ export default function MiniAppInstaller() {
 
   const handleInstallMiniApp = async () => {
     console.log(`Installing MiniApp: ${url}`)
-    composer.installMiniApp(url)
+    let result = await composer.installMiniApp(url)
+    console.log("result", result)
+    if (result.is_ok()) {
+        Toast.show({type: "success", text1: "Mini app installed successfully"})
+    } else {
+        Toast.show({type: "error", text1: "Failed to install mini app"})
+    }
   }
 
   return (

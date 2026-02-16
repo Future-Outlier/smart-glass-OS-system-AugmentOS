@@ -22,6 +22,7 @@ export type NavObject = {
   preventBack: boolean
   setAnimation: (animation: StackAnimationTypes) => void
   getCurrentRoute: () => string | null
+  getCurrentParams: () => any | null
 }
 
 type PushParams = {
@@ -49,6 +50,8 @@ interface NavigationHistoryContextType {
   setAndroidBackFn: (fn: () => void) => void
   setAnimation: (animation: StackAnimationTypes) => void
   animation: StackAnimationTypes
+  getCurrentParams: () => any | null
+  getCurrentRoute: () => string | null
 }
 
 const NavigationHistoryContext = createContext<NavigationHistoryContextType | undefined>(undefined)
@@ -241,6 +244,10 @@ export function NavigationHistoryProvider({children}: {children: React.ReactNode
 
   const getCurrentRoute = () => {
     return historyRef.current[historyRef.current.length - 1]
+  }
+
+  const getCurrentParams = () => {
+    return historyParamsRef.current[historyParamsRef.current.length - 1]
   }
 
   const getPreviousRoute = (index: number = 0) => {
@@ -457,6 +464,7 @@ export function NavigationHistoryProvider({children}: {children: React.ReactNode
     preventBack,
     setAnimation,
     getCurrentRoute,
+    getCurrentParams,
   }
 
   // Set the ref so we can use it from outside the context:
@@ -488,6 +496,8 @@ export function NavigationHistoryProvider({children}: {children: React.ReactNode
         setAndroidBackFn,
         setAnimation,
         animation,
+        getCurrentRoute,
+        getCurrentParams,
       }}>
       {children}
     </NavigationHistoryContext.Provider>

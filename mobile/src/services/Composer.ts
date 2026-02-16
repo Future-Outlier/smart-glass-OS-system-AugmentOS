@@ -6,7 +6,7 @@ import {
 } from "@/stores/applets"
 import {downloadAndInstallMiniApp} from "@/utils/storage/zip"
 import {Directory, Paths, File} from "expo-file-system"
-import {AsyncResult} from "typesafe-ts"
+import {AsyncResult, Result} from "typesafe-ts"
 import {result as Res} from "typesafe-ts"
 export interface LmaPermission {
   type: string
@@ -150,6 +150,14 @@ class Composer {
     console.log("COMPOSER: Installed Lmas", this.installedLmas)
 
     return this.installedLmas
+  }
+
+  public getLocalMiniAppHtml(packageName: string, version: string): Result<string, Error> {
+    return Res.try(() => {
+      const lmaDir = new Directory(Paths.document, "lmas", packageName, version)
+      const htmlFile = new File(lmaDir, "index.html")
+      return htmlFile.textSync()
+    })
   }
 
   public startStop(applet: ClientAppletInterface, status: boolean): AsyncResult<void, Error> {

@@ -8,7 +8,6 @@ import {useAppTheme} from "@/contexts/ThemeContext"
 import {
   ClientAppletInterface,
   DUMMY_APPLET,
-  getMoreAppsApplet,
   storePackageName,
   useBackgroundApps,
   useStartApplet,

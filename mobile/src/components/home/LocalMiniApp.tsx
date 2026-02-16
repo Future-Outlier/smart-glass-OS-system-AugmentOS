@@ -54,7 +54,7 @@ export default function LocalMiniApp(props: LocalMiniAppProps) {
   // Handle messages from WebView
   const handleWebViewMessage = (event: any) => {
     const data = event.nativeEvent.data
-    miniComms.handleRawMessageFromMiniApp(packageName, data)
+    // miniComms.handleRawMessageFromMiniApp(packageName, data)
   }
 
   let source: any = null
