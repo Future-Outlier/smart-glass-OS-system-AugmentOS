@@ -69,7 +69,7 @@ function Compositor() {
     }
   }, [pathname])
 
-  console.log("COMPOSITOR: Package Name", packageName)
+  // console.log("COMPOSITOR: Package Name", packageName)
 
   const isActive = pathname.includes("/applet/local")
   // const activePackageName = pathname.includes("/applet/local") ? packageName : null
@@ -91,6 +91,8 @@ function Compositor() {
       })
       .filter(Boolean) as {packageName: string; html: string; running: boolean}[]
   }, [lmas])
+
+  // return null
 
   // console.log("COMPOSITOR: Resolved Lmas", resolvedLmas.map((lma) => lma.packageName + " " + lma.running))
 
