@@ -74,7 +74,6 @@ export default function Homepage() {
       <>
         {debugCoreStatusBarEnabled && <CoreStatusBar />}
         <Group>
-          {/* <CompactDeviceStatus /> */}
           {!appSwitcherUi && <CompactDeviceStatus />}
           {appSwitcherUi && <DeviceStatus />}
           {!offlineMode && !appSwitcherUi && <BackgroundAppsLink />}
