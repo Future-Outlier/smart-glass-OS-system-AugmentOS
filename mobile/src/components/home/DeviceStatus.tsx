@@ -225,8 +225,8 @@ export const DeviceStatus = ({style}: {style?: ViewStyle}) => {
           <Image source={getCurrentGlassesImage()} className="w-full h-full max-w-40 max-h-20" style={{resizeMode: "contain"}} />
         </View>
 
-        <View className="justify-between items-center flex-col gap-1 py-5">
-          <View className="flex-row items-center gap-2">
+        <View className="justify-between items-center flex-col gap-2 py-5">
+          <View className="flex-row items-center gap-3">
             {batteryLevel !== -1 && (
               <View className="flex-row items-center gap-1">
                 <Icon name={getBatteryIcon(batteryLevel) as any} size={18} color={theme.colors.foreground} />

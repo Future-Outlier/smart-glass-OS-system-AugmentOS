@@ -306,7 +306,7 @@ class CoreManager {
         }
 
         // Also set up a periodic check as backup (some devices don't fire PACKAGE_CHANGED reliably)
-        // startPeriodicPermissionCheck()
+        startPeriodicPermissionCheck()
     }
 
     private fun startPeriodicPermissionCheck() {
@@ -342,6 +342,11 @@ class CoreManager {
             )
             lastHadMicrophonePermission = currentHasMicrophonePermission
             permissionsChanged = true
+        }
+
+        if (permissionsChanged && !currentHasBluetoothPermission) {
+            Bridge.log("MAN: Bluetooth permission revoked disconnecting glasses")
+            disconnect()
         }
 
         if (permissionsChanged && serviceStarted) {
