@@ -5,6 +5,6 @@
     "main": "index.html",
     "type": "standard",
     "hardwareRequirements": [{"type": "DISPLAY", "level": "REQUIRED"}, {"type": "MICROPHONE", "level": "REQUIRED"}],
-    "declaredPermissions": ["MICROPHONE"],
+    "declaredPermissions": [{"type": "MICROPHONE", "level": "REQUIRED"}],
     "subscriptions": ["online_transcription"]
 }
