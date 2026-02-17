@@ -916,7 +916,7 @@ public class MentraLive extends SGCManager {
 
                     if (savedDeviceName != null && bluetoothAdapter != null) {
                         Log.i(TAG, "🔌 🔍 STARTING RECONNECT #" + reconnectAttempts + "/" + MAX_RECONNECT_ATTEMPTS + 
-                              " - Fast scan (" + RECONNECT_SCAN_TIMEOUT_MS + "ms) for device: " + lastDeviceName);
+                              " - Fast scan (" + RECONNECT_SCAN_TIMEOUT_MS + "ms) for device: " + savedDeviceName);
                         Bridge.log("LIVE: 🔌 🔍 Reconnection attempt " + reconnectAttempts + "/" + MAX_RECONNECT_ATTEMPTS + 
                               " - Starting FAST BLE scan for: " + savedDeviceName);
                         // Start scan to find this device (will use fast timeout)
