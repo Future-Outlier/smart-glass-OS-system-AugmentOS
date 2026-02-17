@@ -54,9 +54,6 @@ class CoreManager {
     private val handler = Handler(Looper.getMainLooper())
     private var permissionCheckRunnable: Runnable? = null
 
-    // notifications settings
-    public var notificationsEnabled = false
-    public var notificationsBlocklist = listOf<String>()
     // MARK: - End Unique
 
     // MARK: - Properties

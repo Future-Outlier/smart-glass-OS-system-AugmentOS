@@ -101,6 +101,20 @@ export const SETTINGS: Record<string, Setting> = {
     saveOnServer: false,
     persist: true,
   },
+  saved_backend_urls: {
+    key: "saved_backend_urls",
+    defaultValue: () => [],
+    writable: true,
+    saveOnServer: true,
+    persist: true,
+  },
+  saved_store_urls: {
+    key: "saved_store_urls",
+    defaultValue: () => [],
+    writable: true,
+    saveOnServer: true,
+    persist: true,
+  },
   reconnect_on_app_foreground: {
     key: "reconnect_on_app_foreground",
     defaultValue: () => true,
