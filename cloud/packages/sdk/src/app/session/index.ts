@@ -1,5 +1,5 @@
-/* eslint-disable import/order */
  
+
 /**
  * 🎯 App Session Module
  *
@@ -1554,12 +1554,34 @@ export class AppSession {
             this.audio.handleAudioPlayResponse(message as AudioPlayResponse);
           }
         } else if (isPhotoResponse(message)) {
-          // Legacy photo response handling - now photos come directly via webhook
-          // This branch can be removed in the future as all photos now go through /photo-upload
-          this.logger.warn(
-            { message },
-            "Received legacy photo response - photos should now come via /photo-upload webhook",
-          );
+          const photoResponse = message as import("../../types/messages/glasses-to-cloud").PhotoResponse;
+          const { requestId, success } = photoResponse;
+
+          if (!success && requestId) {
+            // Photo error — reject the pending Promise immediately instead of waiting for 30s timeout
+            const errorCode = photoResponse.error?.code || "UNKNOWN_ERROR";
+            const errorMsg = photoResponse.error?.message || "Photo capture failed";
+            this.logger.warn(
+              { requestId, errorCode, errorMsg },
+              `📸 Photo error received via WebSocket — rejecting pending request`,
+            );
+
+            const pending = this.appServer?.completePhotoRequest(requestId);
+            if (pending) {
+              pending.reject(new Error(`Photo capture failed: ${errorMsg} (code: ${errorCode})`));
+            } else {
+              this.logger.debug(
+                { requestId },
+                "📸 No pending photo request found for error response (may have already timed out)",
+              );
+            }
+          } else {
+            // Success responses should come via /photo-upload HTTP endpoint, not WebSocket
+            this.logger.debug(
+              { requestId },
+              "Received photo success via WebSocket — photos should arrive via /photo-upload webhook",
+            );
+          }
         } else if (isRgbLedControlResponse(message)) {
           // LED control responses are no longer handled - fire-and-forget mode
           this.logger.debug({ message }, "Received LED control response (ignored - fire-and-forget mode)");
@@ -1959,7 +1981,7 @@ export class AppSession {
     const response = await fetch(url, {
       method: "POST",
       headers: {
-        Authorization: `Bearer ${appApiKey}`,
+        "Authorization": `Bearer ${appApiKey}`,
         "Content-Type": "application/json",
       },
       body: JSON.stringify(body),
