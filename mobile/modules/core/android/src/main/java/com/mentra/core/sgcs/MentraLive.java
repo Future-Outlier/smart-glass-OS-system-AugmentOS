@@ -911,14 +911,14 @@ public class MentraLive extends SGCManager {
             public void run() {
                 if (!isConnected && !isConnecting && !isKilled) {
                     // Check for last known device name to start scan
-                    SharedPreferences prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
-                    String lastDeviceName = prefs.getString(PREF_DEVICE_NAME, null);
+                    // SharedPreferences prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
+                    // String lastDeviceName = prefs.getString(PREF_DEVICE_NAME, null);
 
-                    if (lastDeviceName != null && bluetoothAdapter != null) {
+                    if (savedDeviceName != null && bluetoothAdapter != null) {
                         Log.i(TAG, "🔌 🔍 STARTING RECONNECT #" + reconnectAttempts + "/" + MAX_RECONNECT_ATTEMPTS + 
                               " - Fast scan (" + RECONNECT_SCAN_TIMEOUT_MS + "ms) for device: " + lastDeviceName);
                         Bridge.log("LIVE: 🔌 🔍 Reconnection attempt " + reconnectAttempts + "/" + MAX_RECONNECT_ATTEMPTS + 
-                              " - Starting FAST BLE scan for: " + lastDeviceName);
+                              " - Starting FAST BLE scan for: " + savedDeviceName);
                         // Start scan to find this device (will use fast timeout)
                         startScan();
                         // The scan will automatically connect if it finds a device with the saved name
@@ -3446,11 +3446,11 @@ public class MentraLive extends SGCManager {
     public void connectById(String id) {
         Bridge.log("LIVE: Connecting to Mentra Live glasses by ID: " + id);
         savedDeviceName = id;
-        // Persist immediately so reconnection logic can find it in case this connection fails
-        SharedPreferences prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
-        prefs.edit().putString(PREF_DEVICE_NAME, id).apply();
-        Log.i(TAG, "🔌 💾 Saved device name for future reconnection: " + connectedDevice.getName());
-        Bridge.log("LIVE: Saved device name for future reconnection: " + connectedDevice.getName());
+        // // Persist immediately so reconnection logic can find it in case this connection fails
+        // SharedPreferences prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
+        // prefs.edit().putString(PREF_DEVICE_NAME, id).apply();
+        // Log.i(TAG, "🔌 💾 Saved device name for future reconnection: " + connectedDevice.getName());
+        // Bridge.log("LIVE: Saved device name for future reconnection: " + connectedDevice.getName());
         connectToSmartGlasses();
     }
 
@@ -3458,9 +3458,9 @@ public class MentraLive extends SGCManager {
         Bridge.log("LIVE: Forgetting Mentra Live glasses");
 
         // Clear saved device name to prevent reconnection to this device
-        SharedPreferences prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
-        prefs.edit().remove(PREF_DEVICE_NAME).apply();
-        Bridge.log("LIVE: Cleared saved device name");
+        // SharedPreferences prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
+        // prefs.edit().remove(PREF_DEVICE_NAME).apply();
+        // Bridge.log("LIVE: Cleared saved device name");
 
         // Reset reconnection state
         reconnectAttempts = 0;
