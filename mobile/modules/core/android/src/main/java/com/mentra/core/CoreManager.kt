@@ -303,7 +303,7 @@ class CoreManager {
         }
 
         // Also set up a periodic check as backup (some devices don't fire PACKAGE_CHANGED reliably)
-        startPeriodicPermissionCheck()
+        // startPeriodicPermissionCheck()
     }
 
     private fun startPeriodicPermissionCheck() {
