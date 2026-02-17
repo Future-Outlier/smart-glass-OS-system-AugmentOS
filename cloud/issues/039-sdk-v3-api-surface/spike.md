@@ -133,39 +133,78 @@ Settings access is split between `session.settings.*` and `session.events.onSett
 
 ```typescript
 export interface AppServerConfig {
-  packageName: string // ✅ Used
-  apiKey: string // ✅ Used
+  packageName: string // ✅ Required
+  apiKey: string // ✅ Required
   port?: number // ✅ Used (default: 7010)
 
   cloudApiUrl?: string // ❌ DEPRECATED — cloud tells the SDK its public URL via the webhook payload now
   webhookPath?: string // ❌ DEPRECATED — SDK auto-exposes at '/webhook', marked deprecated in JSDoc but still in the type
   appInstructions?: string // ❌ DEPRECATED — no longer used
 
-  publicDir?: string | false // ✅ Used — static file serving
-  healthCheck?: boolean // ✅ Used — /health endpoint
-  cookieSecret?: string // ✅ Used — session cookie signing
+  publicDir?: string | false // 🔸 REMOVABLE — with Hono, devs can add serveStatic middleware themselves (one line)
+  healthCheck?: boolean // 🔸 REMOVABLE — trivial one-line Hono route, doesn't need to be SDK config
+  cookieSecret?: string // 🔸 REMOVABLE — webview auth concern, not core SDK config
 }
 ```
 
-3 out of 9 fields are deprecated but still present in the interface. New developers see them in autocomplete and wonder if they should set them. The deprecated `webhookPath` has a JSDoc note but the others don't.
+3 fields are deprecated, 3 more are removable now that AppServer extends Hono (devs can wire these up themselves with one line of Hono middleware). That leaves just `packageName`, `apiKey`, and `port` as actual config.
+
+### AppServer is moving from Express to Hono (`cloud/sdk-hono` branch)
+
+Work-in-progress on `origin/cloud/sdk-hono`: `AppServer` now **extends** `Hono` instead of wrapping an Express instance.
+
+```typescript
+// Before (v2): AppServer HAS an Express app
+export class AppServer {
+  private app: express.Application
+  // devs can't add routes without getExpressApp()
+}
+
+// After (v3): AppServer IS a Hono app
+export class AppServer extends Hono<{Variables: AuthVariables}> {
+  // devs can add routes directly: this.get('/my-endpoint', handler)
+}
+```
+
+**Why this is good:**
+
+- Hono is lighter, faster, native Bun support, better TypeScript — Express is dead weight
+- Cloud backend already uses Hono — consistency across the stack
+- Devs who extend AppServer (`class MyApp extends AppServer`) get full Hono capabilities for free — custom routes, middleware, etc.
+- Removes the awkward `getExpressApp()` escape hatch (already marked deprecated on the branch)
+
+**Why `extends` over composition:**
+
+- `class MyApp extends AppServer` is already the established pattern — devs subclass AppServer. With `extends Hono`, their subclass is also a Hono app. This means they CAN add custom HTTP endpoints alongside MentraOS webhook/session machinery if they need to (OAuth callbacks, webview serving, status pages, etc.)
+- Composition (`AppServer has a .hono` property) would require devs to go through an accessor to add routes — more boilerplate for the same result
+- Route collisions are unlikely — SDK routes are namespaced (`/webhook`, `/health`, `/tool-call`, `/settings`, `/photo-upload`)
+
+**Why `publicDir` can go:** With `extends Hono`, static file serving is one line in the dev's constructor:
+
+```typescript
+this.use("/public/*", serveStatic({root: "./public"}))
+```
+
+No need for SDK config to handle this.
 
 ---
 
 ## Pain Points Summary
 
-| #   | Pain Point                                                                         | Severity                             |
-| --- | ---------------------------------------------------------------------------------- | ------------------------------------ |
-| 1   | Multiple ways to subscribe to transcription/translation                            | HIGH — confusing for new devs        |
-| 2   | EventManager god object — too many concerns                                        | HIGH — poor discoverability          |
-| 3   | No manager pattern — everything flat on session                                    | MEDIUM — hard to find features       |
-| 4   | Provider-specific options leak into app API (hints, disableLanguageIdentification) | MEDIUM — unnecessary complexity      |
-| 5   | Handler cleanup functions easy to forget                                           | MEDIUM — subscription leaks          |
-| 6   | No error taxonomy (see 038)                                                        | HIGH — addressed in 038              |
-| 7   | No logging control (see 038)                                                       | HIGH — addressed in 038              |
-| 8   | Session object too large (~1600 lines)                                             | MEDIUM — maintainability             |
-| 9   | Typos in code (`lastLanguageTranscriptioCleanupHandler`)                           | LOW — but embarrassing in public API |
-| 10  | No type safety on settings keys                                                    | LOW — nice-to-have                   |
-| 11  | AppServerConfig has 3 deprecated fields still in the interface                     | MEDIUM — confuses new devs           |
+| #   | Pain Point                                                                         | Severity                                  |
+| --- | ---------------------------------------------------------------------------------- | ----------------------------------------- |
+| 1   | Multiple ways to subscribe to transcription/translation                            | HIGH — confusing for new devs             |
+| 2   | EventManager god object — too many concerns                                        | HIGH — poor discoverability               |
+| 3   | No manager pattern — everything flat on session                                    | MEDIUM — hard to find features            |
+| 4   | Provider-specific options leak into app API (hints, disableLanguageIdentification) | MEDIUM — unnecessary complexity           |
+| 5   | Handler cleanup functions easy to forget                                           | MEDIUM — subscription leaks               |
+| 6   | No error taxonomy (see 038)                                                        | HIGH — addressed in 038                   |
+| 7   | No logging control (see 038)                                                       | HIGH — addressed in 038                   |
+| 8   | Session object too large (~1600 lines)                                             | MEDIUM — maintainability                  |
+| 9   | Typos in code (`lastLanguageTranscriptioCleanupHandler`)                           | LOW — but embarrassing in public API      |
+| 10  | No type safety on settings keys                                                    | LOW — nice-to-have                        |
+| 11  | AppServerConfig has 3 deprecated fields still in the interface                     | MEDIUM — confuses new devs                |
+| 12  | Express dependency is dead weight, Hono migration in progress                      | HIGH — already underway on cloud/sdk-hono |
 
 ---
 
@@ -211,15 +250,18 @@ session.events.onGlassesBatteryUpdate(handler)
 ### After (v3 idea)
 
 ```typescript
-// ─── Config (clean, no deprecated fields) ────────
+// ─── Config (minimal — just what matters) ────────
 const app = new AppServer({
   packageName: 'com.example.app',
   apiKey: 'xxx',
-  port: 7010,               // optional
-  publicDir: './public',     // optional
+  port: 7010,               // optional, default 7010
   logLevel: 'warn',          // from 038
   verbose: false,            // from 038
 });
+
+// AppServer extends Hono — add your own routes/middleware
+app.use('/public/*', serveStatic({ root: './public' }));
+app.get('/status', (c) => c.json({ ok: true }));
 
 // ─── Transcription ───────────────────────────────
 session.transcription.on((data) => { ... });
@@ -283,13 +325,14 @@ The key constraint: **v2 SDK apps must keep working with the current cloud, and 
 
 This means:
 
-| Layer                                                             | Can change? | Notes                             |
-| ----------------------------------------------------------------- | ----------- | --------------------------------- |
-| Public API surface (`session.transcription.on()` etc.)            | ✅ Yes      | This is what v3 is about          |
-| Internal subscription strings (`"transcription:en-US?hints=ja"`)  | ❌ No       | Cloud expects these exact formats |
-| WebSocket message types (`AppConnectionInit`, `DataStream`, etc.) | ❌ No       | Both sides must agree             |
-| Handler registration / event dispatch                             | ✅ Yes      | Internal to SDK                   |
-| Manager classes wrapping existing logic                           | ✅ Yes      | Pure refactor                     |
+| Layer                                                             | Can change? | Notes                                |
+| ----------------------------------------------------------------- | ----------- | ------------------------------------ |
+| Public API surface (`session.transcription.on()` etc.)            | ✅ Yes      | This is what v3 is about             |
+| Internal subscription strings (`"transcription:en-US?hints=ja"`)  | ❌ No       | Cloud expects these exact formats    |
+| WebSocket message types (`AppConnectionInit`, `DataStream`, etc.) | ❌ No       | Both sides must agree                |
+| Handler registration / event dispatch                             | ✅ Yes      | Internal to SDK                      |
+| Manager classes wrapping existing logic                           | ✅ Yes      | Pure refactor                        |
+| HTTP framework (Express → Hono)                                   | ✅ Yes      | Internal detail, already in progress |
 
 The managers are a **wrapper layer** over the existing subscription/event machinery. `session.transcription.on(handler)` internally calls the same `subscribe("transcription:en-US")` and `addHandler(...)` that v2 uses. The wire format doesn't change.
 
@@ -351,21 +394,22 @@ This lets v2 code still compile against v3 with warnings, giving developers time
 
 ## Rough Effort Estimate
 
-| Task                                                     | Effort        |
-| -------------------------------------------------------- | ------------- |
-| TranscriptionManager (replaces events.onTranscription\*) | ~1.5 days     |
-| TranslationManager (replaces events.onTranslation\*)     | ~1 day        |
-| DisplayManager (wraps layouts)                           | ~0.5 day      |
-| CameraManager (wraps camera + RTMP)                      | ~0.5 day      |
-| AudioManager (wraps audio play + audio chunk sub)        | ~0.5 day      |
-| DeviceManager + PhoneManager (wraps hardware events)     | ~1 day        |
-| Deprecation wrappers for v2 API                          | ~0.5 day      |
-| Session refactor (wire up managers, slim down)           | ~1 day        |
-| Tests                                                    | ~2 days       |
-| Migration guide / docs                                   | ~1 day        |
-| **Total**                                                | **~9.5 days** |
+| Task                                                     | Effort         |
+| -------------------------------------------------------- | -------------- |
+| TranscriptionManager (replaces events.onTranscription\*) | ~1.5 days      |
+| TranslationManager (replaces events.onTranslation\*)     | ~1 day         |
+| DisplayManager (wraps layouts)                           | ~0.5 day       |
+| CameraManager (wraps camera + RTMP)                      | ~0.5 day       |
+| AudioManager (wraps audio play + audio chunk sub)        | ~0.5 day       |
+| DeviceManager + PhoneManager (wraps hardware events)     | ~1 day         |
+| Deprecation wrappers for v2 API                          | ~0.5 day       |
+| Hono migration (merge cloud/sdk-hono, clean up)          | ~1 day         |
+| Session refactor (wire up managers, slim down)           | ~1 day         |
+| Tests                                                    | ~2 days        |
+| Migration guide / docs                                   | ~1 day         |
+| **Total**                                                | **~10.5 days** |
 
-Combined with 038 (~4.5 days), SDK v3 is roughly **~14 days** of work. Could parallelize some of it.
+Combined with 038 (~4.5 days), SDK v3 is roughly **~15 days** of work. Could parallelize some of it. Hono migration is partially done on `cloud/sdk-hono` which reduces the actual remaining effort.
 
 ---
 
