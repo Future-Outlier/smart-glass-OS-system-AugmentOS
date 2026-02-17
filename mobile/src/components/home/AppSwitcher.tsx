@@ -386,7 +386,7 @@ export default function AppSwitcher({swipeProgress}: AppSwitcherProps) {
 
       let newTarget = Math.round(-translateX.value / cardWidth)
 
-      console.log("absVelocity", absVelocity)
+      // console.log("absVelocity", absVelocity)
 
       if (absVelocity > 500) {
         newTarget = velocity > 0 ? newTarget - 1 : newTarget + 1
