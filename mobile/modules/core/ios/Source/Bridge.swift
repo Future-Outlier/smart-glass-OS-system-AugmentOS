@@ -82,7 +82,7 @@ class Bridge {
             "level": level,
             "charging": charging,
             "timestamp": Date().timeIntervalSince1970 * 1000,
-            // TODO: time remaining
+                // TODO: time remaining
         ]
 
         let jsonData = try! JSONSerialization.data(withJSONObject: vadMsg)
@@ -179,21 +179,14 @@ class Bridge {
     }
 
     static func sendPhotoResponse(requestId: String, photoUrl: String) {
-        do {
-            let event: [String: Any] = [
-                "type": "photo_response",
-                "requestId": requestId,
-                "photoUrl": photoUrl,
-                "timestamp": Int(Date().timeIntervalSince1970 * 1000),
-            ]
-
-            let jsonData = try JSONSerialization.data(withJSONObject: event)
-            if let jsonString = String(data: jsonData, encoding: .utf8) {
-                Bridge.sendWSText(jsonString)
-            }
-        } catch {
-            Bridge.log("ServerComms: Error building photo_response JSON: \(error)")
-        }
+        let event: [String: Any] = [
+            "type": "photo_response",
+            "requestId": requestId,
+            "success": true,
+            "photoUrl": photoUrl,
+            "timestamp": Int(Date().timeIntervalSince1970 * 1000),
+        ]
+        Bridge.sendTypedMessage("photo_response", body: event)
     }
 
     static func sendPhotoError(requestId: String, errorCode: String, errorMessage: String) {
@@ -202,14 +195,15 @@ class Bridge {
             "requestId": requestId,
             "success": false,
             "photoUrl": "",
+            "timestamp": Int(Date().timeIntervalSince1970 * 1000),
         ]
-        if let errorCode {
+        if !errorCode.isEmpty {
             event["errorCode"] = errorCode
         }
-        if let errorMessage {
+        if !errorMessage.isEmpty {
             event["errorMessage"] = errorMessage
         }
-        Bridge.sendTypedMessage("photo_error", body: event)
+        Bridge.sendTypedMessage("photo_response", body: event)
     }
 
     static func sendVideoStreamResponse(appId: String, streamUrl: String) {
@@ -274,7 +268,7 @@ class Bridge {
                 "serial_number": serialNumber,
                 "style": style,
                 "color": color,
-            ],
+            ]
         ]
         Bridge.sendTypedMessage("glasses_serial_number", body: body)
     }
