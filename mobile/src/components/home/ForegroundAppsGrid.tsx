@@ -23,9 +23,8 @@ export const ForegroundAppsGrid: React.FC = () => {
     // Filter out incompatible apps and running apps
     let filteredApps = apps.filter((app) => {
       // Exclude running apps
-      // if (app.running && !appSwitcherUi) return false
-      // if (!app.compatibility?.isCompatible) return false
-      return true
+      if (app.running && !appSwitcherUi) return false
+      if (!app.compatibility?.isCompatible) return false
     })
 
     // Sort to put Camera app first, then alphabetical
