@@ -1,4 +1,4 @@
-import {memo, useEffect, useMemo, useState} from "react"
+import {memo, useEffect, useMemo, useRef, useState} from "react"
 import {View} from "react-native"
 import {useLocalMiniApps} from "@/stores/applets"
 import LocalMiniApp from "@/components/home/LocalMiniApp"
@@ -6,6 +6,7 @@ import composer from "@/services/Composer"
 import {useLocalSearchParams, usePathname} from "expo-router"
 import {Screen} from "@/components/ignite"
 import {useNavigationHistory} from "@/contexts/NavigationHistoryContext"
+import {MiniAppDualButtonHeader} from "@/components/miniapps/DualButton"
 
 const LmaContainer = memo(
   function LmaContainer({
@@ -52,7 +53,7 @@ const LmaContainer = memo(
 function Compositor() {
   const lmas = useLocalMiniApps()
   const pathname = usePathname()
-
+  const viewShotRef = useRef<View>(null)
   const [packageName, setPackageName] = useState<string | null>(null)
   const {getCurrentParams} = useNavigationHistory()
 
@@ -98,8 +99,20 @@ function Compositor() {
 
   return (
     <View className={`absolute inset-0 ${isActive ? "z-11" : "z-0"}`} pointerEvents="box-none">
-      <Screen preset="fixed" safeAreaEdges={["top"]} KeyboardAvoidingViewProps={{enabled: true}}>
-        <View className="flex-1">
+      <Screen preset="fixed" safeAreaEdges={["top"]} KeyboardAvoidingViewProps={{enabled: true}} ref={viewShotRef}>
+        <View className="z-12">
+          <MiniAppDualButtonHeader
+            viewShotRef={viewShotRef}
+            onEllipsisPress={() => {
+              // push("/applet/settings", {
+              //   packageName: packageName as string,
+              //   fromWebView: "true",
+              // })
+            }}
+            packageName={packageName as string}
+          />
+        </View>
+        <View className="flex-1 -mx-6">
           {resolvedLmas.map((lma, index) => (
             <LmaContainer
               key={lma.packageName}

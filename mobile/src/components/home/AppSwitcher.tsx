@@ -414,7 +414,9 @@ export default function AppSwitcher({swipeProgress}: AppSwitcherProps) {
       let lastApp = apps[apps.length - 1]
       // Adjust if we were on the last card
       if (lastApp.packageName === packageName) {
-        goToIndex(apps.length - 2)
+        setTimeout(() => {
+          runOnJS(goToIndex)(apps.length - 2)
+        }, 100)
       }
 
       setTimeout(() => {
@@ -501,7 +503,7 @@ export default function AppSwitcher({swipeProgress}: AppSwitcherProps) {
           if (apps.length > 1) {
             runOnJS(goToIndex)(apps.length - 1, false)
           }
-        }, 100)
+        }, 200)
         // scheduleOnRN(() => {setIsOpen(true)})
       } else if (previous !== null && current == 0 && previous > 0) {
         // scheduleOnRN(() => {setIsOpen(false)})
