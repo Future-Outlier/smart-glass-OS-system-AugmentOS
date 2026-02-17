@@ -64,6 +64,7 @@ export default function Homepage() {
           {debugCoreStatusBarEnabled && <CoreStatusBar />}
           <Group>
             <PairGlassesCard />
+            {!appSwitcherUi && <ForegroundAppsGrid />}
           </Group>
         </>
       )
