@@ -382,21 +382,30 @@ export default function AppSwitcher({swipeProgress}: AppSwitcherProps) {
     .onEnd((event) => {
       const cardWidth = CARD_WIDTH + CARD_SPACING
       const velocity = event.velocityX
+      const absVelocity = Math.abs(velocity)
 
       let newTarget = Math.round(-translateX.value / cardWidth)
 
-      if (Math.abs(velocity) > 500) {
+      console.log("absVelocity", absVelocity)
+
+      if (absVelocity > 500) {
         newTarget = velocity > 0 ? newTarget - 1 : newTarget + 1
+      }
+      if (absVelocity > 2800) {
+        newTarget = velocity > 0 ? newTarget - 2 : newTarget + 2
       }
 
       newTarget = Math.max(-1, Math.min(newTarget, apps.length - 2))
 
       targetIndex.value = newTarget
 
+      // console.log("newTarget", newTarget)
+
       translateX.value = withSpring(-newTarget * cardWidth, {
-        damping: 20,
-        stiffness: 90,
+        damping: 4000,
+        stiffness: 200,
         velocity: velocity,
+        // overshootClamping: true,
       })
     })
 
@@ -419,7 +428,7 @@ export default function AppSwitcher({swipeProgress}: AppSwitcherProps) {
     (index: number, instant: boolean = false) => {
       index = index - 1
       const cardWidth = CARD_WIDTH + CARD_SPACING
-      const clamped = Math.max(-1, Math.min(index, apps.length - 2))
+      const clamped = Math.max(-1, Math.min(index, apps.length - 1))
       targetIndex.value = clamped
       let target = -clamped * cardWidth
       if (instant) {
@@ -427,8 +436,8 @@ export default function AppSwitcher({swipeProgress}: AppSwitcherProps) {
       } else {
         translateX.value = withSpring(target, {
           damping: 1000,
-         stiffness: 500,
-         overshootClamping: true,
+          stiffness: 350,
+          overshootClamping: true,
         })
       }
     },
@@ -480,7 +489,7 @@ export default function AppSwitcher({swipeProgress}: AppSwitcherProps) {
     swipeProgress.value = withSpring(0, {damping: 20, stiffness: 300, overshootClamping: true})
     // do after we have closed the swipe progress:
     setTimeout(() => {
-      goToIndex(apps.length - 1, true)
+      goToIndex(apps.length, true)
     }, 250)
   }, [apps.length])
 
@@ -490,7 +499,7 @@ export default function AppSwitcher({swipeProgress}: AppSwitcherProps) {
       if (previous !== null && current == 1 && previous < 1) {
         setTimeout(() => {
           if (apps.length > 1) {
-            runOnJS(goToIndex)(apps.length - 2, false)
+            runOnJS(goToIndex)(apps.length - 1, false)
           }
         }, 100)
         // scheduleOnRN(() => {setIsOpen(true)})

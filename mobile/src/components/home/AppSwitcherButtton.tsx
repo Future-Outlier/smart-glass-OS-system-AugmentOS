@@ -43,7 +43,7 @@ export default function AppSwitcherButton({swipeProgress}: AppSwitcherButtonProp
     .onUpdate((event) => {
       // Only track upward swipes (negative Y)
       if (event.translationY < 0) {
-        translateY.value = event.translationY * 1
+        translateY.value = event.translationY
         let swipeValue = Math.min(
           1,
           Math.abs(translateY.value) / (SWIPE_DISTANCE_THRESHOLD * SWIPE_DISTANCE_MULTIPLIER),
