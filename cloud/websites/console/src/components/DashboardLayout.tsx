@@ -1,11 +1,11 @@
 // components/DashboardLayout.tsx
-import {useState, useEffect} from "react"
-import {Link, useLocation, useNavigate} from "react-router-dom"
-import {Button, IMAGES, useAuth} from "@mentra/shared"
-import api from "@/services/api.service"
-import OrgSwitcher from "./OrgSwitcher"
-import ContactEmailBanner from "./ui/ContactEmailBanner"
-import {useAccountStore} from "@/stores/account.store"
+import { useState, useEffect } from "react";
+import { Link, useLocation, useNavigate } from "react-router-dom";
+import { Button, IMAGES, useAuth } from "@mentra/shared";
+import api from "@/services/api.service";
+import OrgSwitcher from "./OrgSwitcher";
+import ContactEmailBanner from "./ui/ContactEmailBanner";
+import { useAccountStore } from "@/stores/account.store";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -13,76 +13,66 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
-import {
-  Home,
-  Package,
-  Building2,
-  Users,
-  Terminal,
-  ClipboardCheck,
-  FileText,
-  Cpu,
-  User,
-} from "lucide-react"
+} from "@/components/ui/dropdown-menu";
+import { Home, Package, Building2, Users, Terminal, ClipboardCheck, FileText, Cpu, User } from "lucide-react";
 
 interface DashboardLayoutProps {
-  children: React.ReactNode
+  children: React.ReactNode;
 }
 
-const DashboardLayout: React.FC<DashboardLayoutProps> = ({children}) => {
-  const location = useLocation()
-  const navigate = useNavigate()
-  const {signOut} = useAuth()
-  const currentPath = location.pathname
-  const [isAdmin, setIsAdmin] = useState(false)
-  const email = useAccountStore((s) => s.email)
+const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
+  const location = useLocation();
+  const navigate = useNavigate();
+  const { signOut } = useAuth();
+  const currentPath = location.pathname;
+  const [isAdmin, setIsAdmin] = useState(false);
+  const email = useAccountStore((s) => s.email);
 
   // Check if the user is an admin
   useEffect(() => {
     // Start with admin set to false - don't show admin panel by default
-    setIsAdmin(false)
+    setIsAdmin(false);
 
     const checkAdminStatus = async () => {
       try {
         // First, check if we have a token
-        const authToken = localStorage.getItem("core_token")
+        const authToken = localStorage.getItem("core_token");
         if (!authToken) {
-          return
+          return;
         }
 
         // Try to use API service
         try {
-          const result = await api.admin.checkAdmin()
+          const result = await api.admin.checkAdmin();
           // Only set admin to true if the API explicitly confirms admin status
           if (result && result.isAdmin === true) {
-            setIsAdmin(true)
+            setIsAdmin(true);
           }
         } finally {
-          console.log("")
+          console.log("");
         }
       } catch (error) {
-        console.error("Error checking admin status:", error)
+        console.error("Error checking admin status:", error);
       }
-    }
+    };
 
-    checkAdminStatus()
-  }, [])
+    checkAdminStatus();
+  }, []);
 
   // Handle sign out with navigation
   const handleSignOut = async () => {
-    await signOut()
-    navigate("/signin")
-  }
+    await signOut();
+    navigate("/signin");
+  };
 
   // Helper to check if a path is active (for styling)
   const isActivePath = (path: string): boolean => {
     if (path === "/dashboard") {
-      return currentPath === "/dashboard"
+      return currentPath === "/dashboard";
     }
     // For /apps, we want to highlight for all routes under /apps
-    return currentPath.startsWith(path)
-  }
+    return currentPath.startsWith(path);
+  };
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -91,11 +81,7 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({children}) => {
         <div className="mx-auto px-5 sm:px-6 lg:px-8 h-full flex items-center justify-between">
           <div className="select-none">
             <div className="flex items-end gap-0">
-              <img
-                src={IMAGES.logoLight}
-                alt="Mentra Logo"
-                className="h-6"
-              />
+              <img src={IMAGES.logoLight} alt="Mentra Logo" className="h-6" />
             </div>
             <h2 className="text-xs text-muted-foreground pb-1">Developer Portal</h2>
           </div>
@@ -223,9 +209,7 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({children}) => {
                 <div className="px-2 py-1.5 text-sm text-muted-foreground truncate">{email ?? "unknown@user"}</div>
                 <DropdownMenuSeparator />
 
-                <DropdownMenuItem onClick={() => signOut()}>
-                  Sign out
-                </DropdownMenuItem>
+                <DropdownMenuItem onClick={handleSignOut}>Sign out</DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
           </div>
@@ -238,7 +222,7 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({children}) => {
         </main>
       </div>
     </div>
-  )
-}
+  );
+};
 
-export default DashboardLayout
+export default DashboardLayout;

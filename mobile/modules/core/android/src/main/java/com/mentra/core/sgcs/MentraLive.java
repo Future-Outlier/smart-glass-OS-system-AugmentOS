@@ -124,7 +124,7 @@ public class MentraLive extends SGCManager {
     // Feature Flags
     // BLOCK_AUDIO_DUPLEX: When true, suspends LC3 mic while phone is playing audio via A2DP
     // to avoid overloading the MCU. Set to false to allow simultaneous A2DP + LC3 mic.
-    private static final boolean BLOCK_AUDIO_DUPLEX = true;
+    private static final boolean BLOCK_AUDIO_DUPLEX = false;
 
     // LC3 frame size for Mentra Live
     private static final int LC3_FRAME_SIZE = 40;

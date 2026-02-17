@@ -11,13 +11,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@mentra/shared";
-import {
-  Copy,
-  KeyRound,
-  RefreshCw,
-  CheckCircle,
-  AlertCircle,
-} from "lucide-react";
+import { Copy, KeyRound, RefreshCw, CheckCircle, AlertCircle } from "lucide-react";
 import api from "@/services/api.service";
 import type { AppI } from "@mentra/sdk";
 import { App } from "@/types/app";
@@ -31,14 +25,7 @@ interface ApiKeyDialogProps {
   orgId?: string;
 }
 
-const ApiKeyDialog: FC<ApiKeyDialogProps> = ({
-  app,
-  open,
-  onOpenChange,
-  apiKey,
-  onKeyRegenerated,
-  orgId,
-}) => {
+const ApiKeyDialog: FC<ApiKeyDialogProps> = ({ app, open, onOpenChange, apiKey, onKeyRegenerated, orgId }) => {
   // Local states for dialog
   const [isRegenerating, setIsRegenerating] = useState(false);
   const [showConfirmation, setShowConfirmation] = useState(false);
@@ -118,9 +105,7 @@ const ApiKeyDialog: FC<ApiKeyDialogProps> = ({
 
       // Only reset state if App has changed
       if (currentAppId !== appId) {
-        console.log(
-          `App changed from ${currentAppId} to ${appId}, resetting dialog state`,
-        );
+        console.log(`App changed from ${currentAppId} to ${appId}, resetting dialog state`);
 
         // Reset all state
         setApiKey("");
@@ -138,10 +123,7 @@ const ApiKeyDialog: FC<ApiKeyDialogProps> = ({
   // Update local state when apiKey prop changes (only if it's a real key)
   useEffect(() => {
     if (apiKey && apiKey.length > 10 && !apiKey.includes("********")) {
-      console.log(
-        "Setting API key from props:",
-        apiKey.substring(0, 5) + "...",
-      );
+      console.log("Setting API key from props:", apiKey.substring(0, 5) + "...");
       setApiKey(apiKey);
       setSuccess("API key regenerated successfully");
     }
@@ -189,9 +171,7 @@ const ApiKeyDialog: FC<ApiKeyDialogProps> = ({
             <KeyRound className="h-5 w-5" />
             API Key
           </DialogTitle>
-          <DialogDescription>
-            {app && `API key for ${app.name}`}
-          </DialogDescription>
+          <DialogDescription>{app && `API key for ${app.name}`}</DialogDescription>
         </DialogHeader>
 
         <div className="py-6">
@@ -207,9 +187,7 @@ const ApiKeyDialog: FC<ApiKeyDialogProps> = ({
           {success && (
             <Alert className="mb-4 bg-success-light border-success">
               <CheckCircle className="h-4 w-4 text-success" />
-              <AlertDescription className="text-foreground">
-                {success}
-              </AlertDescription>
+              <AlertDescription className="text-foreground">{success}</AlertDescription>
             </Alert>
           )}
 
@@ -217,20 +195,17 @@ const ApiKeyDialog: FC<ApiKeyDialogProps> = ({
           {showConfirmation ? (
             <div className="space-y-2">
               <p className="text-sm text-muted-foreground">
-                Warning: Regenerating this API key will invalidate the
-                previous key. Any applications using the old key will stop
-                working.
+                Warning: Regenerating this API key will invalidate the previous key. Any applications using the old key
+                will stop working.
               </p>
-              <p className="text-sm text-muted-foreground">
-                Are you sure you want to continue?
-              </p>
+              <p className="text-sm text-muted-foreground">Are you sure you want to continue?</p>
             </div>
           ) : (
             <>
               <div className="space-y-2">
                 <p className="text-sm text-muted-foreground">
-                  Your API key is used to authenticate your app with MentraOS
-                  cloud services. Keep it secure and never share it publicly.
+                  Your API key is used to authenticate your app with MentraOS cloud services. Keep it secure and never
+                  share it publicly.
                 </p>
                 {_apiKey ? (
                   <>
@@ -238,28 +213,17 @@ const ApiKeyDialog: FC<ApiKeyDialogProps> = ({
                       <div className="flex-1 font-mono text-sm p-2 border rounded-md bg-secondary overflow-x-auto break-all">
                         {formatApiKey(_apiKey)}
                       </div>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={handleCopyApiKey}
-                        className="shrink-0"
-                      >
-                        {isCopied ? (
-                          <CheckCircle className="h-4 w-4 text-success" />
-                        ) : (
-                          <Copy className="h-4 w-4" />
-                        )}
+                      <Button variant="outline" size="sm" onClick={handleCopyApiKey} className="shrink-0">
+                        {isCopied ? <CheckCircle className="h-4 w-4 text-success" /> : <Copy className="h-4 w-4" />}
                       </Button>
                     </div>
                     <p className="text-xs text-destructive font-medium mt-1">
-                      Important: This key is only shown once. Please copy it
-                      now!
+                      Important: This key is only shown once. Please copy it now!
                     </p>
                   </>
                 ) : (
                   <p className="text-sm text-muted-foreground">
-                    Click &quot;Regenerate Key&quot; to create a new API key.
-                    This will invalidate any previous keys.
+                    Click &quot;Regenerate Key&quot; to create a new API key. This will invalidate any previous keys.
                   </p>
                 )}
               </div>
@@ -281,23 +245,14 @@ const ApiKeyDialog: FC<ApiKeyDialogProps> = ({
         </div>
 
         <DialogFooter className="flex flex-col sm:flex-row items-start sm:items-center sm:justify-between gap-4 sm:gap-2">
-          <p className="text-xs text-muted-foreground">
-            Last regenerated: {lastRegenerated.toLocaleDateString()}
-          </p>
+          <p className="text-xs text-muted-foreground">Last regenerated: {lastRegenerated.toLocaleDateString()}</p>
           <div className="flex gap-2 w-full sm:w-auto justify-end">
             {showConfirmation ? (
               <>
-                <Button
-                  variant="secondary"
-                  onClick={handleCancelRegeneration}
-                  disabled={isRegenerating}
-                >
+                <Button variant="secondary" onClick={handleCancelRegeneration} disabled={isRegenerating}>
                   Cancel
                 </Button>
-                <Button
-                  onClick={handleConfirmRegenerate}
-                  disabled={isRegenerating}
-                >
+                <Button onClick={handleConfirmRegenerate} disabled={isRegenerating}>
                   {isRegenerating ? (
                     <>
                       <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
@@ -310,12 +265,10 @@ const ApiKeyDialog: FC<ApiKeyDialogProps> = ({
               </>
             ) : (
               <>
-                <Button variant="secondary" onClick={() => onOpenChange(false)}>
+                <Button variant="secondary" onClick={() => handleOpenChange(false)}>
                   Cancel
                 </Button>
-                <Button onClick={handleStartRegenerate}>
-                  Regenerate Key
-                </Button>
+                <Button onClick={handleStartRegenerate}>Regenerate Key</Button>
               </>
             )}
           </div>
