@@ -1,5 +1,5 @@
-/* eslint-disable import/order */
  
+
 /**
  * 🎯 App Session Module
  *
@@ -1345,27 +1345,29 @@ export class AppSession {
             this.events.emit(StreamType.GLASSES_CONNECTION_STATE, sanitizedData);
           }
         } else if (isDataStream(message)) {
-          // Ensure streamType exists before emitting the event
           const messageStreamType = message.streamType as ExtendedStreamType;
-          // if (message.streamType === StreamType.TRANSCRIPTION) {
-          //   const transcriptionData = message.data as TranscriptionData;
-          //   if (transcriptionData.transcribeLanguage) {
-          //     messageStreamType = createTranscriptionStream(transcriptionData.transcribeLanguage) as ExtendedStreamType;
-          //   }
-          // } else if (message.streamType === StreamType.TRANSLATION) {
-          //   const translationData = message.data as TranslationData;
-          //   if (translationData.transcribeLanguage && translationData.translateLanguage) {
-          //     messageStreamType = createTranslationStream(translationData.transcribeLanguage, translationData.translateLanguage) as ExtendedStreamType;
-          //   }
-          // }
 
-          // Check if we have a handler registered for this stream type (derived from handlers)
-          const hasHandler = this.events.getRegisteredStreams().includes(messageStreamType);
-          if (messageStreamType && hasHandler) {
-            const sanitizedData = this.sanitizeEventData(messageStreamType, message.data) as EventData<
-              typeof messageStreamType
+          // Use language-aware matching: "transcription:en-US" matches handler
+          // for "transcription:en-US?hints=ja" (same base language, different options).
+          // This ensures apps receive data after stream dedup normalizes streamType
+          // to base language form, AND maintains backward compat when cloud sends
+          // the app's own subscription string (which includes options).
+          const matchedStreamType = this.events.findMatchingStream(messageStreamType);
+
+          if (matchedStreamType) {
+            const sanitizedData = this.sanitizeEventData(matchedStreamType, message.data) as EventData<
+              typeof matchedStreamType
             >;
-            this.events.emit(messageStreamType, sanitizedData);
+            this.events.emit(matchedStreamType, sanitizedData);
+          } else if (messageStreamType) {
+            // Log unmatched DataStream for debugging (previously a silent black hole)
+            this.logger.debug(
+              {
+                streamType: messageStreamType,
+                registeredStreams: this.events.getRegisteredStreams(),
+              },
+              `[AppSession] Received DataStream with no matching handler: ${messageStreamType}`,
+            );
           }
         } else if (isRtmpStreamStatus(message)) {
           // Emit as a standard stream event if subscribed (check derived from handlers)
@@ -1959,7 +1961,7 @@ export class AppSession {
     const response = await fetch(url, {
       method: "POST",
       headers: {
-        Authorization: `Bearer ${appApiKey}`,
+        "Authorization": `Bearer ${appApiKey}`,
         "Content-Type": "application/json",
       },
       body: JSON.stringify(body),
