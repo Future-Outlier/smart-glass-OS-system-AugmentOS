@@ -129,6 +129,26 @@ session.events.onSettingsUpdate((settings) => { ... });
 
 Settings access is split between `session.settings.*` and `session.events.onSettingsUpdate`. The schema definition is out-of-band (web console). No type safety on settings keys/values.
 
+### AppServerConfig is full of dead/deprecated fields
+
+```typescript
+export interface AppServerConfig {
+  packageName: string // ✅ Used
+  apiKey: string // ✅ Used
+  port?: number // ✅ Used (default: 7010)
+
+  cloudApiUrl?: string // ❌ DEPRECATED — cloud tells the SDK its public URL via the webhook payload now
+  webhookPath?: string // ❌ DEPRECATED — SDK auto-exposes at '/webhook', marked deprecated in JSDoc but still in the type
+  appInstructions?: string // ❌ DEPRECATED — no longer used
+
+  publicDir?: string | false // ✅ Used — static file serving
+  healthCheck?: boolean // ✅ Used — /health endpoint
+  cookieSecret?: string // ✅ Used — session cookie signing
+}
+```
+
+3 out of 9 fields are deprecated but still present in the interface. New developers see them in autocomplete and wonder if they should set them. The deprecated `webhookPath` has a JSDoc note but the others don't.
+
 ---
 
 ## Pain Points Summary
@@ -145,6 +165,7 @@ Settings access is split between `session.settings.*` and `session.events.onSett
 | 8   | Session object too large (~1600 lines)                                             | MEDIUM — maintainability             |
 | 9   | Typos in code (`lastLanguageTranscriptioCleanupHandler`)                           | LOW — but embarrassing in public API |
 | 10  | No type safety on settings keys                                                    | LOW — nice-to-have                   |
+| 11  | AppServerConfig has 3 deprecated fields still in the interface                     | MEDIUM — confuses new devs           |
 
 ---
 
@@ -190,6 +211,16 @@ session.events.onGlassesBatteryUpdate(handler)
 ### After (v3 idea)
 
 ```typescript
+// ─── Config (clean, no deprecated fields) ────────
+const app = new AppServer({
+  packageName: 'com.example.app',
+  apiKey: 'xxx',
+  port: 7010,               // optional
+  publicDir: './public',     // optional
+  logLevel: 'warn',          // from 038
+  verbose: false,            // from 038
+});
+
 // ─── Transcription ───────────────────────────────
 session.transcription.on((data) => { ... });
 session.transcription.setLanguage("en-US");
