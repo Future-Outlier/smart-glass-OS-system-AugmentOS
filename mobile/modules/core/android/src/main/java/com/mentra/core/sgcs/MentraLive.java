@@ -253,6 +253,8 @@ public class MentraLive extends SGCManager {
     private final Object filePacketBufferLock = new Object();
     private int fileReadNotificationCount = 0; // Debug counter for FILE_READ notifications
 
+    private final Object connectionLock = new Object();
+
     private static class BlePhotoTransfer {
         String bleImgId;
         String requestId;
@@ -676,17 +678,16 @@ public class MentraLive extends SGCManager {
                 @Override
                 public void run() {
                     if (isScanning) {
-                        if (isReconnecting) {
-                            Log.w(TAG, "🔌 ⏰ RECONNECT SCAN TIMEOUT after " + scanTimeout + "ms - Device not found (attempt #" + reconnectAttempts + ")");
-                            Bridge.log("LIVE: 🔌 ⏰ Reconnect scan timeout - device not found, will retry");
-                        } else {
-                            Bridge.log("LIVE: Scan timeout reached - stopping BLE scan");
-                        }
                         stopScan();
                         
-                        // If reconnecting and scan timed out, trigger next reconnection attempt
                         if (isReconnecting) {
-                            Log.i(TAG, "🔌 🔄 Scan timeout - scheduling next reconnection attempt...");
+                            synchronized (connectionLock) {
+                                // If scanCallback already claimed a connection, don't start another reconnect cycle
+                                if (isConnecting || isConnected) {
+                                    Log.i(TAG, "🔌 Scan timeout fired but connection already in progress, skipping reconnect");
+                                    return;
+                                }
+                            }
                             handleReconnection();
                         }
                     }
@@ -762,16 +763,17 @@ public class MentraLive extends SGCManager {
                         // smartGlassesDevice.deviceModelName, deviceName));
                 Bridge.sendDiscoveredDevice(DeviceTypes.LIVE, deviceName);
 
-                // If already connecting or connected, don't start another connection
-                if (isConnected || isConnecting) {
-                    return;
-                }
-
                 // If this is the specific device we want to connect to by name, connect to it
                 if (savedDeviceName != null && savedDeviceName.equals(deviceName)) {
                     Log.i(TAG, "🔌 🎯 RECONNECT TARGET FOUND - Device: " + deviceName + " (Attempt #" + reconnectAttempts + ")");
                     Bridge.log("LIVE: 🔌 🎯 Found our remembered device by name, connecting: " + deviceName + 
                               " (Reconnect attempt #" + reconnectAttempts + ")");
+                    synchronized (connectionLock) {
+                        if (isConnected || isConnecting) {
+                            return;
+                        }
+                        isConnecting = true;
+                    }
                     stopScan();
                     connectToDevice(result.getDevice());
                 }
@@ -878,6 +880,11 @@ public class MentraLive extends SGCManager {
             return;
         }
 
+        if (isReconnecting) {
+            Bridge.log("LIVE: 🔌 RECONNECT ABORTED - already reconnecting");
+            return;
+        } 
+
         if (reconnectAttempts >= MAX_RECONNECT_ATTEMPTS) {
             Log.e(TAG, "🔌 ❌ RECONNECTION FAILED - Maximum attempts reached (" + MAX_RECONNECT_ATTEMPTS + ")");
             Bridge.log("LIVE: 🔌 ❌ RECONNECTION FAILED - Gave up after " + MAX_RECONNECT_ATTEMPTS + " attempts");
@@ -956,12 +963,13 @@ public class MentraLive extends SGCManager {
                     connectedDevice = gatt.getDevice();
 
                     // Save the connected device name for future reconnections
-                    if (connectedDevice != null && connectedDevice.getName() != null) {
-                        SharedPreferences prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
-                        prefs.edit().putString(PREF_DEVICE_NAME, connectedDevice.getName()).apply();
-                        Log.i(TAG, "🔌 💾 Saved device name for future reconnection: " + connectedDevice.getName());
-                        Bridge.log("LIVE: Saved device name for future reconnection: " + connectedDevice.getName());
-                    }
+                    // no longer needed as we now save it immediately in connectToDevice()
+                    // if (connectedDevice != null && connectedDevice.getName() != null) {
+                    //     SharedPreferences prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
+                    //     prefs.edit().putString(PREF_DEVICE_NAME, connectedDevice.getName()).apply();
+                    //     Log.i(TAG, "🔌 💾 Saved device name for future reconnection: " + connectedDevice.getName());
+                    //     Bridge.log("LIVE: Saved device name for future reconnection: " + connectedDevice.getName());
+                    // }
 
                     // CTKD Implementation: Register bonding receiver and create bond for BT Classic
                     registerBondingReceiver();
@@ -3435,6 +3443,11 @@ public class MentraLive extends SGCManager {
     public void connectById(String id) {
         Bridge.log("LIVE: Connecting to Mentra Live glasses by ID: " + id);
         savedDeviceName = id;
+        // Persist immediately so reconnection logic can find it in case this connection fails
+        SharedPreferences prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
+        prefs.edit().putString(PREF_DEVICE_NAME, id).apply();
+        Log.i(TAG, "🔌 💾 Saved device name for future reconnection: " + connectedDevice.getName());
+        Bridge.log("LIVE: Saved device name for future reconnection: " + connectedDevice.getName());
         connectToSmartGlasses();
     }
 
