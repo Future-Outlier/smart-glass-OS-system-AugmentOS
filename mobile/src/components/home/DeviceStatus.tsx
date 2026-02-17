@@ -220,9 +220,9 @@ export const DeviceStatus = ({style}: {style?: ViewStyle}) => {
     <TouchableOpacity
       className="bg-primary-foreground px-6 py-0 justify-center flex rounded-2xl"
       onPress={() => push("/settings/glasses")}>
-      <View className="justify-center items-center flex-row">
+      <View className="justify-center items-center flex-row max-h-20">
         <View className="flex-1 self-start">
-          <Image source={getCurrentGlassesImage()} className="w-full h-full max-w-40 max-h-20" style={{resizeMode: "contain"}} />
+          <Image source={getCurrentGlassesImage()} className="w-full h-full max-w-40" style={{resizeMode: "contain"}} />
         </View>
 
         <View className="justify-between items-center flex-col gap-2 py-5">
