@@ -251,7 +251,7 @@ export default function FeedbackPage() {
   }
 
   return (
-    <Screen preset="fixed">
+    <Screen preset="fixed" safeAreaEdges={["bottom"]}>
       <Header title={translate("feedback:giveFeedback")} leftIcon="chevron-left" onLeftPress={goBack} />
       <ScrollView className="pt-6 -mx-6 px-6" contentContainerClassName="flex-grow" keyboardShouldPersistTaps="handled">
         <View className="gap-6">
@@ -352,16 +352,17 @@ export default function FeedbackPage() {
             </>
           )}
         </View>
+        <View className="flex-1" />
+        <Button
+          text={
+            isSubmitting ? "" : feedbackType === "bug" ? translate("feedback:continue") : translate("feedback:submit")
+          }
+          onPress={handleSubmitFeedback}
+          disabled={!isFormValid() || isSubmitting}
+          preset="primary">
+          {isSubmitting && <ActivityIndicator color={theme.colors.background} />}
+        </Button>
       </ScrollView>
-      <Button
-        text={
-          isSubmitting ? "" : feedbackType === "bug" ? translate("feedback:continue") : translate("feedback:submit")
-        }
-        onPress={handleSubmitFeedback}
-        disabled={!isFormValid() || isSubmitting}
-        preset="primary">
-        {isSubmitting && <ActivityIndicator color={theme.colors.background} />}
-      </Button>
     </Screen>
   )
 }
