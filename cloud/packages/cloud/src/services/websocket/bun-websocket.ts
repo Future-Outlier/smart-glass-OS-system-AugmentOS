@@ -473,6 +473,14 @@ async function handleGlassesMessage(ws: GlassesServerWebSocket, message: string 
       return;
     }
 
+    // Client pong (response to server's app-level ping). Consume silently.
+    // Protocol-level pongs are handled separately in websocketHandlers.pong().
+    // Without this, the pong falls through to handleGlassesMessage → default
+    // case → relayMessageToApps, causing 1800 debug logs/user/hour in BetterStack.
+    if (parsed.type === "pong") {
+      return;
+    }
+
     // Handle connection init specially (re-init after reconnect)
     if (parsed.type === GlassesToCloudMessageType.CONNECTION_INIT) {
       userSession.logger.info("Received CONNECTION_INIT from glasses");
