@@ -44,10 +44,17 @@ export default function AppSwitcherButton({swipeProgress}: AppSwitcherButtonProp
       // Only track upward swipes (negative Y)
       if (event.translationY < 0) {
         translateY.value = event.translationY * 1
-        swipeProgress.value = Math.min(
+        let swipeValue = Math.min(
           1,
           Math.abs(translateY.value) / (SWIPE_DISTANCE_THRESHOLD * SWIPE_DISTANCE_MULTIPLIER),
         )
+
+        // don't allow the swipe progress to be 1, until we have ended the swipe gesture:
+        if (swipeValue > 0.9) {
+          swipeProgress.value = 0.9
+        } else {
+          swipeProgress.value = swipeValue
+        }
 
         const swipeDistance = Math.abs(translateY.value)
 
@@ -74,14 +81,14 @@ export default function AppSwitcherButton({swipeProgress}: AppSwitcherButtonProp
       if (shouldOpen) {
         swipeProgress.value = withSpring(1, {
           damping: 20,
-          stiffness: 500,
+          stiffness: 2000,
           overshootClamping: true,
           // velocity: velocity,
         })
       } else {
         swipeProgress.value = withSpring(0, {
           damping: 20,
-          stiffness: 300,
+          stiffness: 500,
           overshootClamping: true,
           // velocity: velocity,
         })

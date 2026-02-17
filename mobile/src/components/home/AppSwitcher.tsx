@@ -426,8 +426,9 @@ export default function AppSwitcher({swipeProgress}: AppSwitcherProps) {
         translateX.value = withTiming(target, {duration: 100})
       } else {
         translateX.value = withSpring(target, {
-          damping: 20,
-          stiffness: 90,
+          damping: 1000,
+         stiffness: 500,
+         overshootClamping: true,
         })
       }
     },
@@ -491,7 +492,7 @@ export default function AppSwitcher({swipeProgress}: AppSwitcherProps) {
           if (apps.length > 1) {
             runOnJS(goToIndex)(apps.length - 2, false)
           }
-        }, 250)
+        }, 100)
         // scheduleOnRN(() => {setIsOpen(true)})
       } else if (previous !== null && current == 0 && previous > 0) {
         // scheduleOnRN(() => {setIsOpen(false)})
