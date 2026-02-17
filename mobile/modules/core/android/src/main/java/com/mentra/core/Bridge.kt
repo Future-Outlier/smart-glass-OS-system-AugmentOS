@@ -277,7 +277,6 @@ public class Bridge private constructor() {
         /** Send photo response */
         @JvmStatic
         fun sendPhotoResponse(requestId: String, photoUrl: String) {
-            // try {
             val event = HashMap<String, Any>()
             event["type"] = "photo_response"
             event["requestId"] = requestId
@@ -285,13 +284,6 @@ public class Bridge private constructor() {
             event["timestamp"] = System.currentTimeMillis().toInt()
             event["success"] = true
             sendTypedMessage("photo_response", event as Map<String, Any>)
-
-            // val jsonData = JSONObject(event as Map<*, *>)
-            // val jsonString = jsonData.toString()
-            // sendWSText(jsonString)
-            // } catch (e: Exception) {
-            //     log("ServerComms: Error building photo_response JSON: $e")
-            // }
         }
 
         @JvmStatic
@@ -299,6 +291,7 @@ public class Bridge private constructor() {
             val event = HashMap<String, Any>()
             event["type"] = "photo_response"
             event["requestId"] = requestId
+            event["photoUrl"] = ""
             event["success"] = false
             event["errorCode"] = errorCode
             event["errorMessage"] = errorMessage

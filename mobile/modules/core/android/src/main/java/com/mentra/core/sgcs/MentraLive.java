@@ -2719,10 +2719,12 @@ public class MentraLive extends SGCManager {
 
             if (fileName.isEmpty()) {
                 Log.e(TAG, "❌ Transfer failed notification missing fileName: " + json.toString());
+                Bridge.sendPhotoError(photoTransfer.requestId, "FILE_NAME_MISSING", "Transfer failed notification missing fileName");
                 return;
             }
 
             Log.e(TAG, "❌ Transfer failed for: " + fileName + " (reason: " + reason + ")");
+            Bridge.sendPhotoError(photoTransfer.requestId, "TRANSFER_FAILED", "Transfer failed for: " + fileName + " (reason: " + reason + ")");
 
             // Clean up any active transfer for this file
             FileTransferSession session = activeFileTransfers.remove(fileName);
