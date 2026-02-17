@@ -5,6 +5,7 @@ import axios from "axios";
 // Configure base axios defaults
 axios.defaults.withCredentials = true;
 axios.defaults.baseURL = import.meta.env.VITE_CLOUD_API_URL || "http://localhost:8002";
+console.log(`[Store API] Using cloud API: ${axios.defaults.baseURL}`);
 
 // Response interfaces
 export interface ApiResponse<T> {

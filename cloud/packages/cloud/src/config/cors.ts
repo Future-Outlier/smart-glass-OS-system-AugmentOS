@@ -51,6 +51,7 @@ export const CORS_ORIGINS = [
   "https://mentra-cloud-server.ngrok.app",
   "https://israelovtpa.ngrok.app",
   "https://israelovpuddle.ngrok.app",
+  "https://isaiah-store.ngrok.app",
 
   // mentra.glass API
   "https://mentra.glass",
