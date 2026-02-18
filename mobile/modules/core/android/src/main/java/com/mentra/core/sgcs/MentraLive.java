@@ -124,7 +124,7 @@ public class MentraLive extends SGCManager {
     // Feature Flags
     // BLOCK_AUDIO_DUPLEX: When true, suspends LC3 mic while phone is playing audio via A2DP
     // to avoid overloading the MCU. Set to false to allow simultaneous A2DP + LC3 mic.
-    private static final boolean BLOCK_AUDIO_DUPLEX = true;
+    private static final boolean BLOCK_AUDIO_DUPLEX = false;
 
     // LC3 frame size for Mentra Live
     private static final int LC3_FRAME_SIZE = 40;
@@ -1001,11 +1001,6 @@ public class MentraLive extends SGCManager {
                     isConnected = false;
                     isConnecting = false;
 
-                    // CTKD Implementation: Disconnect BT per documentation
-                    if (connectedDevice != null) {
-                        Bridge.log("LIVE: CTKD: Disconnecting BT via removeBond per documentation");
-                        removeBond(connectedDevice);
-                    }
 
                     connectedDevice = null;
                     glassesReady = false; // Reset ready state on disconnect
@@ -3466,6 +3461,13 @@ public class MentraLive extends SGCManager {
         reconnectAttempts = 0;
         isReconnecting = false;
 
+        // Remove BT Classic bond - this is the ONLY place where we unbond,
+        // ensuring bond is only removed when user explicitly unpairs
+        if (connectedDevice != null) {
+            Bridge.log("LIVE: CTKD: Removing BT bond on explicit unpair");
+            removeBond(connectedDevice);
+        }
+
         stopScan();
         disconnect();
     }
@@ -4132,11 +4134,6 @@ public class MentraLive extends SGCManager {
         // Close A2DP profile proxy
         closeA2dpProxy();
 
-        // CTKD Implementation: Disconnect BT per documentation
-        if (connectedDevice != null) {
-            Bridge.log("LIVE: CTKD: Destroy - disconnecting BT via removeBond per documentation");
-            removeBond(connectedDevice);
-        }
 
         // Stop readiness check loop
         stopReadinessCheckLoop();
