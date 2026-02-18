@@ -173,7 +173,7 @@ class UdpManager {
       // Wait initial delay on first attempt to let server register user
       if (!isRetry) {
         // console.log(`UDP: Waiting ${UDP_INITIAL_DELAY_MS}ms before first probe...`)
-        await new Promise<void>((resolve) => BackgroundTimer.setTimeout(() => resolve(), UDP_INITIAL_DELAY_MS))
+        await new Promise<void>((resolve) => BackgroundTimer.BackgroundTimer.setTimeout(() => resolve(), UDP_INITIAL_DELAY_MS))
 
         // Re-check WebSocket after delay
         if (!socketComms.isWebSocketConnected()) {
@@ -343,17 +343,17 @@ class UdpManager {
 
       // Bind to any available port (we're only sending, not receiving)
       await new Promise<void>((resolve, reject) => {
-        const timeout = setTimeout(() => {
+        const timeout = BackgroundTimer.setTimeout(() => {
           reject(new Error("Socket bind timeout"))
         }, 5000)
 
         this.socket!.bind(0, () => {
-          clearTimeout(timeout)
+          BackgroundTimer.clearTimeout(timeout)
           resolve()
         })
 
         this.socket!.once("error", (err: Error) => {
-          clearTimeout(timeout)
+          BackgroundTimer.clearTimeout(timeout)
           reject(err)
         })
       })
@@ -376,7 +376,7 @@ class UdpManager {
    */
   public stop(): void {
     if (this.pingTimeout) {
-      clearTimeout(this.pingTimeout)
+      BackgroundTimer.clearTimeout(this.pingTimeout)
       this.pingTimeout = null
     }
 
@@ -642,7 +642,7 @@ class UdpManager {
       this.pingRetryCount = 0
 
       // Set overall timeout
-      this.pingTimeout = setTimeout(() => {
+      this.pingTimeout = BackgroundTimer.setTimeout(() => {
         console.log("UDP: Probe timed out after all retries")
         this.pingResolve = null
         this.pingTimeout = null
@@ -670,7 +670,7 @@ class UdpManager {
 
         // Schedule next retry if we haven't received ack yet
         if (this.pingResolve && this.pingRetryCount < PING_RETRY_COUNT) {
-          setTimeout(() => {
+          BackgroundTimer.setTimeout(() => {
             if (this.pingResolve) {
               this.sendPingWithRetry()
             }
@@ -687,10 +687,10 @@ class UdpManager {
    * This confirms UDP connectivity is working
    */
   public onPingAckReceived(): void {
-    console.log("UDP: Ping ack received - UDP is working")
+    // console.log("UDP: Ping ack received - UDP is working")
 
     if (this.pingTimeout) {
-      clearTimeout(this.pingTimeout)
+      BackgroundTimer.clearTimeout(this.pingTimeout)
       this.pingTimeout = null
     }
 

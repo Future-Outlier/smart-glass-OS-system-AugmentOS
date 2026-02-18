@@ -14,18 +14,18 @@ import {MentraLogoStandalone} from "@/components/brands/MentraLogoStandalone"
 export function SplashVideo() {
   // stretch vertically slightly to compensate for native splash screen scaling on ios:
   // TBD if this is needed for android as well
-  if (Platform.OS === "ios") {
-    return (
-      <View
-        style={{transform: [{scaleY: 1.12}, {scaleX: 1}]}}
-        className="flex-1 justify-center items-center bg-background">
-        <MentraLogoStandalone width={100} height={48} />
-      </View>
-    )
-  }
+  // if (Platform.OS === "ios") {
+  //   return (
+  //     <View
+  //       style={{transform: [{scaleY: 1.12}, {scaleX: 1}]}}
+  //       className="flex-1 justify-center items-center bg-background">
+  //       <MentraLogoStandalone width={100} height={53} />
+  //     </View>
+  //   )
+  // }
   return (
     <View className="flex-1 justify-center items-center bg-background">
-      <MentraLogoStandalone width={100} height={48} />
+      <MentraLogoStandalone width={100} height={53} />
     </View>
   )
 }
