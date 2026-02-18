@@ -269,7 +269,8 @@ const getOfflineApplets = async (): Promise<ClientAppletInterface[]> => {
   ]
 
   let superMode = useSettingsStore.getState().getSetting(SETTINGS.super_mode.key)
-  if (superMode) {
+  let appSwitcherUi = useSettingsStore.getState().getSetting(SETTINGS.app_switcher_ui.key)
+  if (superMode && appSwitcherUi) {
     miniApps.push({
       packageName: lmaInstallerPackageName,
       name: translate("miniApps:lmaInstaller"),
@@ -289,7 +290,6 @@ const getOfflineApplets = async (): Promise<ClientAppletInterface[]> => {
     })
   }
 
-  let appSwitcherUi = useSettingsStore.getState().getSetting(SETTINGS.app_switcher_ui.key)
   if (!appSwitcherUi) {
     // remove the settings, gallery, and simulator apps:
     miniApps = miniApps.filter(
