@@ -142,9 +142,10 @@ module.exports = ({config}: ConfigContext): Partial<ExpoConfig> => {
           resizeMode: "cover",
           imageWidth: 100,
           backgroundColor: "#fff",
-          // dark: {
+          dark: {
+            backgroundColor: "#fff",
             // backgroundColor: "#171717",
-          // },
+          },
         },
       ],
       "expo-router",
