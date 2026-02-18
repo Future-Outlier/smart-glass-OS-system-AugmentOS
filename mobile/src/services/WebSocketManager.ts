@@ -8,18 +8,39 @@ import {BackgroundTimer} from "@/utils/timers"
 // ---------------------------------------------------------------------------
 // Liveness detection constants
 // ---------------------------------------------------------------------------
-// The SERVER sends {"type":"ping"} every 2 s. The client responds with
-// {"type":"pong"} (via SocketComms.handle_ping). This bidirectional traffic
-// keeps nginx proxy-read-timeout AND proxy-send-timeout alive, and gives the
-// client a guaranteed periodic message to track liveness against.
+// Bidirectional ping/pong keeps the connection alive and detectable:
 //
-// The client does NOT send its own pings — the server's pings are sufficient,
-// and skipping the client ping sender saves battery on mobile.
+// 1. SERVER sends {"type":"ping"} every 2 s → client responds with
+//    {"type":"pong"} (via SocketComms.handle_ping).
+// 2. CLIENT sends {"type":"ping"} every 2 s → server responds with
+//    {"type":"pong"} (via bun-websocket handleGlassesMessage).
+//
+// Both directions keep nginx proxy-read-timeout AND proxy-send-timeout
+// alive, and give the client guaranteed periodic messages to track
+// liveness against.
+//
+// IMPORTANT: The liveness checker uses plain setInterval — NOT
+// BackgroundTimer (react-native-nitro-bg-timer).  NitroTimer dispatches
+// callbacks via JSI which can fire with higher priority than RN's
+// WebSocket onmessage events.  When the JS thread is busy after
+// CONNECTION_ACK (REST calls, UDP setup, audio config), the NitroTimer
+// liveness check can beat queued onmessage callbacks to the thread,
+// see a stale lastMessageTime, and false-disconnect the socket.  Plain
+// setInterval runs in the same JS event-loop priority as onmessage,
+// so it cannot overtake queued WebSocket messages.
+//
+// BackgroundTimer is still used for the reconnect interval — that one
+// DOES need to fire when the app is backgrounded.
 
-// If we haven't received ANY message (server ping, transcription, display
-// event, …) within this window, consider the connection dead and force-close.
-// 4 s = missing two full server-ping cycles — brief blips won't trigger this.
-const LIVENESS_TIMEOUT_MS = 4_000
+// How often the client sends {"type":"ping"} to the server.
+const PING_INTERVAL_MS = 2_000
+
+// If we haven't received ANY message (server ping, pong, transcription,
+// display event, …) within this window, consider the connection dead and
+// force-close.  8 s ≈ missing 4 server-ping cycles — brief blips and
+// thread-busy windows won't trigger this, but real failures are caught
+// within seconds instead of the 30-120+ s OS TCP keepalive takes.
+const LIVENESS_TIMEOUT_MS = 8_000
 
 // How often we check whether lastMessageTime has gone stale.
 const LIVENESS_CHECK_INTERVAL_MS = 2_000
@@ -43,9 +64,11 @@ class WebSocketManager extends EventEmitter {
   private reconnectInterval: ReturnType<typeof BackgroundTimer.setInterval> = 0
   private manuallyDisconnected: boolean = false
 
-  // Liveness detection state
+  // Liveness detection state — uses plain JS timers, NOT BackgroundTimer.
+  // See the block comment above for why.
   private lastMessageTime: number = 0
-  private livenessCheckInterval: ReturnType<typeof BackgroundTimer.setInterval> = 0
+  private livenessCheckInterval: ReturnType<typeof setInterval> | null = null
+  private pingInterval: ReturnType<typeof setInterval> | null = null
 
   private constructor() {
     super()
@@ -188,6 +211,8 @@ class WebSocketManager extends EventEmitter {
       return
     }
 
+    // BackgroundTimer is correct here — reconnect SHOULD fire even when the
+    // app is backgrounded so we recover from transient network drops.
     this.reconnectInterval = BackgroundTimer.setInterval(this.actuallyReconnect.bind(this), RECONNECT_INTERVAL_MS)
   }
 
@@ -211,19 +236,29 @@ class WebSocketManager extends EventEmitter {
   /**
    * Start the liveness monitor.
    *
-   * A single repeating timer checks whether we've received ANY message
-   * within LIVENESS_TIMEOUT_MS.  The server sends {"type":"ping"} every
-   * 2 s, so under normal conditions lastMessageTime resets constantly.
-   * If the server stops sending (network black-hole, Cloudflare edge
-   * rebalance, pod crash without close frame, etc.), the liveness check
-   * fires within 4-6 s and force-closes the connection so we can
-   * reconnect immediately — instead of waiting 30-120+ s for the OS
-   * TCP keepalive to notice.
+   * Two plain-JS timers run while connected:
    *
-   * No client-side ping sender is needed: the server's pings already
-   * generate bidirectional traffic (server→ping, client→pong via
-   * SocketComms.handle_ping) which keeps nginx and Cloudflare alive.
-   * Omitting the client ping sender saves battery on mobile.
+   * 1. **Ping sender** — sends {"type":"ping"} every PING_INTERVAL_MS.
+   *    The server echoes back {"type":"pong"}, creating guaranteed
+   *    bidirectional traffic.  This also keeps nginx proxy-send-timeout
+   *    alive (client→server direction) since audio moved to UDP.
+   *
+   * 2. **Liveness checker** — every LIVENESS_CHECK_INTERVAL_MS, checks
+   *    whether we've received ANY message within LIVENESS_TIMEOUT_MS.
+   *    The server sends {"type":"ping"} every 2 s plus display events,
+   *    app state changes, etc.  Under normal conditions lastMessageTime
+   *    resets constantly.  If the server stops sending (network
+   *    black-hole, Cloudflare edge rebalance, pod crash without close
+   *    frame, etc.), the liveness check fires within 8-10 s and
+   *    force-closes the connection so we can reconnect immediately —
+   *    instead of waiting 30-120+ s for the OS TCP keepalive to notice.
+   *
+   * CRITICAL: These use plain setInterval, NOT BackgroundTimer.
+   * BackgroundTimer wraps react-native-nitro-bg-timer on Android, which
+   * dispatches callbacks via JSI at higher priority than RN's WebSocket
+   * onmessage events.  This caused the old liveness checker to fire
+   * before queued onmessage callbacks could update lastMessageTime,
+   * resulting in false-positive disconnects every ~4 seconds.
    */
   private startLivenessMonitor() {
     // In case we're called twice without a stop in between
@@ -231,8 +266,20 @@ class WebSocketManager extends EventEmitter {
 
     this.lastMessageTime = Date.now()
 
+    // --- Client-side ping sender ---
+    this.pingInterval = setInterval(() => {
+      if (this.webSocket && this.isConnected()) {
+        try {
+          this.webSocket.send(JSON.stringify({type: "ping"}))
+        } catch {
+          // Send failure on a dead socket is expected — the liveness
+          // checker or onerror/onclose will handle reconnection.
+        }
+      }
+    }, PING_INTERVAL_MS)
+
     // --- Liveness checker ---
-    this.livenessCheckInterval = BackgroundTimer.setInterval(() => {
+    this.livenessCheckInterval = setInterval(() => {
       const elapsed = Date.now() - this.lastMessageTime
       if (elapsed > LIVENESS_TIMEOUT_MS) {
         console.log(`WSM: Liveness timeout — no message for ${elapsed}ms, force-closing`)
@@ -251,9 +298,13 @@ class WebSocketManager extends EventEmitter {
    * Stop the liveness monitor — clear both intervals.
    */
   private stopLivenessMonitor() {
-    if (this.livenessCheckInterval) {
-      BackgroundTimer.clearInterval(this.livenessCheckInterval)
-      this.livenessCheckInterval = 0
+    if (this.pingInterval !== null) {
+      clearInterval(this.pingInterval)
+      this.pingInterval = null
+    }
+    if (this.livenessCheckInterval !== null) {
+      clearInterval(this.livenessCheckInterval)
+      this.livenessCheckInterval = null
     }
   }
 

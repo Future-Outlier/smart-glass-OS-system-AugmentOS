@@ -1,8 +1,8 @@
 # Post-Mortem: WebSocket Liveness Detection (Issue 034/035)
 
-**Date:** February 16, 2026
+**Date:** February 16, 2026 (updated February 18, 2026)
 **Author:** Isaiah Ballah, Claude
-**Status:** Server fix deployed to debug/dev/staging. Client fix on branch `cloud/ping-pong-fixes`. Prod rollout pending.
+**Status:** Server fix deployed to debug/dev/staging. Client fix v2 on `dev` branch. Prod rollout pending.
 
 ---
 
@@ -164,6 +164,86 @@ Together, these fixes should eliminate the "apps stopped and won't start" bug cl
 
 ---
 
+---
+
+## Update: Feb 18, 2026 — Client-Side False-Disconnect Bug
+
+### Problem
+
+After deploying the client-side liveness detection to dev, mobile clients began disconnecting every ~5 seconds in a tight loop:
+
+```
+connect → ~5s → liveness timeout → clean close (1000) → 5s reconnect delay → connect → repeat
+```
+
+Matt.cfosse's device accumulated **176 close events in 28 minutes** on dev (17:50–18:18 UTC, Feb 18). Every close was code 1000 (client-initiated clean close from the liveness timer).
+
+### Investigation (BetterStack logs)
+
+The server logs proved the server WAS actively sending messages to the glasses WebSocket throughout each connection's lifetime:
+
+| Time (UTC)       | Server action                                         |
+| ---------------- | ----------------------------------------------------- |
+| 18:08:38.423     | WS opened, heartbeat established, CONNECTION_ACK sent |
+| 18:08:38.502     | Mic state change sent to glasses WS                   |
+| 18:08:38.802     | Display event sent to glasses WS (captions)           |
+| 18:08:39.599     | Display event sent                                    |
+| 18:08:40.015     | Display event sent                                    |
+| 18:08:41.613     | Display event sent                                    |
+| 18:08:42.018     | Display event sent                                    |
+| 18:08:42.417     | Display event sent                                    |
+| 18:08:42.907     | Display event sent                                    |
+| 18:08:43.305     | Display event sent                                    |
+| **18:08:43.723** | **Glasses WebSocket closed (code: 1000)**             |
+
+The server sent display events every 0.4–1.5 seconds. Yet the client's liveness timer fired after ~4 seconds, claiming no messages were received. The close code was 1000 — not 1006 — confirming the CLIENT initiated the disconnect.
+
+The CONNECTION_ACK WAS reaching the client (proven by the ~5.3s open→close gap vs the 4s timeout — the extra 1.3s is the CONNECTION_ACK resetting the timer once, plus network propagation delay for the close frame). But subsequent messages (display events, pings) were not triggering `onmessage` before the liveness check fired.
+
+### Root cause: `BackgroundTimer` (react-native-nitro-bg-timer) priority inversion
+
+The liveness checker used `BackgroundTimer.setInterval()`, which on Android wraps `react-native-nitro-bg-timer` — a Nitro/JSI module. The timer file itself has a warning:
+
+```
+// until https://github.com/tconns/react-native-nitro-bg-timer/issues/2 is resolved,
+// we need to use this class to disable this package on iOS
+```
+
+NitroTimer dispatches callbacks via JSI, which can fire with **higher priority** than React Native's WebSocket `onmessage` events in the JS thread's event queue. When the client is busy processing CONNECTION_ACK (REST calls for applets, audio format configuration, UDP socket setup), the sequence is:
+
+1. **T=0**: `onopen` fires, `startLivenessMonitor()` starts, `lastMessageTime = Date.now()`
+2. **T=0.1s**: CONNECTION_ACK arrives, `onmessage` fires, `lastMessageTime` updated
+3. **T=0.1–4s**: JS thread busy processing CONNECTION_ACK (async REST calls, UDP configure, encryption setup)
+4. **T=2s**: Server sends display events → queued in WebSocket receive buffer
+5. **T=2s**: NitroTimer fires liveness check → queued via JSI (higher priority)
+6. **T=4s**: NitroTimer fires again → queued via JSI (higher priority)
+7. **T=~4.2s**: JS thread becomes available. NitroTimer callback runs FIRST (JSI priority), checks `elapsed = 4.2 - 0.1 = 4.1s > 4s` → **FALSE TIMEOUT**
+8. **T=~4.2s**: WebSocket detached and closed. Queued `onmessage` callbacks for display events **never fire**.
+
+The NitroTimer's JSI dispatch mechanism gives its callbacks scheduling priority over React Native's bridge-dispatched WebSocket events. In a less loaded scenario, both would be dispatched promptly and the race wouldn't matter. But after CONNECTION_ACK, the client does enough work (multiple REST calls, UDP setup, audio config) to create a window where the timer callback beats the WebSocket callbacks to the thread.
+
+### Fix (3 changes in `WebSocketManager.ts`)
+
+1. **Replaced `BackgroundTimer` with plain `setInterval` for liveness timers.** Plain JS `setInterval` runs in the same event-loop priority as `onmessage`. It cannot overtake queued WebSocket messages. `BackgroundTimer` is still used for the reconnect interval (which genuinely needs to fire when backgrounded).
+
+2. **Added client-side ping sender** (as originally spec'd in 034 but removed as a "battery optimization"). The client now sends `{"type":"ping"}` every 2s, matching the server's ping interval. This creates guaranteed bidirectional traffic, keeping nginx `proxy-send-timeout` alive independently of the server pings. It also means the client gets `{"type":"pong"}` responses from the server, providing additional liveness signals beyond the server-initiated pings.
+
+3. **Increased liveness timeout from 4s to 8s.** 4s (2 missed server-ping cycles) was too aggressive given real-world JS thread busyness after connection setup. 8s (4 missed cycles) provides a comfortable margin while still detecting dead connections in seconds rather than minutes.
+
+### Why this didn't affect production
+
+Production mobile app builds don't have the liveness detection code yet — it was only in the dev/debug builds being tested. Production's close code distribution confirms this:
+
+| Environment | Code 1000 (client clean close) | Code 1006 (abnormal) | Code 1001 (going away) |
+| ----------- | ------------------------------ | -------------------- | ---------------------- |
+| development | **170** (94%)                  | 5                    | 5                      |
+| debug       | **44** (90%)                   | 4                    | 1                      |
+| production  | 11 (1%)                        | **615** (74%)        | 208 (25%)              |
+
+Dev/debug: overwhelmingly code 1000 (client liveness timer). Production: overwhelmingly 1006/1001 (organic disconnects, server-side kills). The false-disconnect bug was entirely caused by the new client-side liveness code.
+
+---
+
 ## Lessons Learned
 
 1. **Traffic pattern changes expose hidden timeouts.** The WS was never idle when it carried audio. Moving audio to LiveKit/UDP and client→cloud messages to REST was the right call, but it exposed the 60s nginx timeout that was previously masked by constant bidirectional traffic.
@@ -175,3 +255,7 @@ Together, these fixes should eliminate the "apps stopped and won't start" bug cl
 4. **Server pings alone are NOT backward-compatible.** The client's `handle_ping` (which responds with pong) was only added on Feb 13, 2026. Clients older than that won't respond to server pings, meaning no client→server traffic flows, and `proxy-send-timeout` still kills the connection at 60s. The nginx annotation fix (`proxy-send-timeout: 3600`) is critical for old clients. Client liveness detection works independently of server pings — any incoming message resets the clock.
 
 5. **Measure connection lifetimes, not just 1006 counts.** Raw 1006 counts are noisy (WiFi issues, user activity patterns). Connection lifetime distribution is the clear signal: a cluster at 58–60s = nginx timeout; sporadic = organic network events.
+
+6. **Don't use native background timers for liveness checks.** (Added Feb 18) React Native's JS thread has multiple dispatch paths with different priorities: JSI (Nitro modules), the bridge (WebSocket events), and the JS event loop (plain timers). Mixing dispatch mechanisms for interdependent logic (timer reads a value that WebSocket writes) creates priority-inversion races that are invisible in normal conditions but surface under load. Use the same dispatch mechanism for both sides of a race — plain `setInterval` for liveness checks ensures they run at the same priority as `onmessage`.
+
+7. **"Battery optimization" shortcuts need proof.** (Added Feb 18) Removing the client-side ping sender to "save battery" seemed reasonable but removed a critical robustness mechanism. A 15-byte JSON message every 2 seconds is negligible next to the audio streaming, display rendering, and BLE traffic the app already handles. The decision was made without measuring the actual battery impact. Keep both ping directions unless profiling proves otherwise.
