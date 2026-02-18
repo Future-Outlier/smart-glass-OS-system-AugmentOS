@@ -6,7 +6,7 @@ import {withUniwind} from "uniwind"
 
 import {Icon} from "@/components/ignite"
 import {useAppTheme} from "@/contexts/ThemeContext"
-import {ClientAppletInterface, cameraPackageName, getMoreAppsApplet} from "@/stores/applets"
+import {ClientAppletInterface} from "@/stores/applets"
 import {SETTINGS, useSetting} from "@/stores/settings"
 
 // Helper to extract style properties for width/height override
@@ -97,11 +97,12 @@ const AppIcon = ({app, onClick, style}: AppIconProps) => {
         </View>
       )}
       {/* Show wifi-off badge for offline apps (excluding camera app) */}
-      {app.offline && app.packageName !== getMoreAppsApplet().packageName && app.packageName !== cameraPackageName && (
+      {/* disabled for now */}
+      {/* {app.offline && app.packageName !== getMoreAppsApplet().packageName && app.packageName !== cameraPackageName && (
         <View className="absolute -right-1 -bottom-1 bg-primary-foreground border-primary-foreground border-1 rounded-full">
           <Icon name="wifi-off" size={theme.spacing.s4} color={theme.colors.text} />
         </View>
-      )}
+      )} */}
     </View>
   )
 }

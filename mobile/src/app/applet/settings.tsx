@@ -20,15 +20,16 @@ import ToggleSetting from "@/components/settings/ToggleSetting"
 import Divider from "@/components/ui/Divider"
 import InfoCardSection from "@/components/ui/InfoCard"
 import {RouteButton} from "@/components/ui/RouteButton"
-import {useNavigationHistory} from "@/contexts/NavigationHistoryContext"
+import {focusEffectPreventBack, useNavigationHistory} from "@/contexts/NavigationHistoryContext"
 import {useAppTheme} from "@/contexts/ThemeContext"
 import {translate} from "@/i18n"
 import restComms from "@/services/RestComms"
-import {useApplets, useRefreshApplets, useStartApplet, useStopApplet} from "@/stores/applets"
+import {useApplets, useAppletStatusStore, useRefreshApplets, useStartApplet, useStopApplet} from "@/stores/applets"
 import {ThemedStyle} from "@/theme"
 import {showAlert} from "@/utils/AlertUtils"
 import {askPermissionsUI} from "@/utils/PermissionsUtils"
 import {storage} from "@/utils/storage"
+import {captureRef} from "react-native-view-shot"
 
 export default function AppSettings() {
   const {packageName, appName: appNameParam} = useLocalSearchParams()
@@ -66,6 +67,26 @@ export default function AppSettings() {
   const SETTINGS_CACHE_KEY = (packageName: string) => `app_settings_cache_${packageName}`
   const [settingsLoading, setSettingsLoading] = useState(true)
   const [hasCachedSettings, setHasCachedSettings] = useState(false)
+
+  const viewShotRef = useRef(null)
+  const handleExit = async () => {
+    // take a screenshot of the webview and save it to the applet zustand store:
+    try {
+      const uri = await captureRef(viewShotRef, {
+        format: "jpg",
+        quality: 0.5,
+      })
+      // save uri to zustand stoare
+      console.log("saving screenshot for", packageName)
+      await useAppletStatusStore.getState().saveScreenshot(packageName as string, uri)
+    } catch (e) {
+      console.warn("screenshot failed:", e)
+    }
+    goBack()
+  }
+  focusEffectPreventBack(() => {
+    handleExit()
+  }, true)
 
   // Handle app start/stop actions with debouncing
   const handleStartStopApp = async () => {
@@ -465,19 +486,6 @@ export default function AppSettings() {
     }
   }
 
-  useFocusEffect(
-    useCallback(() => {
-      const onBackPress = () => {
-        goBack()
-        return true
-      }
-      const subscription = BackHandler.addEventListener("hardwareBackPress", onBackPress)
-      return () => {
-        subscription.remove()
-      }
-    }, [goBack]),
-  )
-
   // Reset hasLoadedData when packageName changes
   useEffect(() => {
     hasLoadedData.current = false
@@ -552,11 +560,11 @@ export default function AppSettings() {
   }
 
   return (
-    <Screen preset="fixed" safeAreaEdges={[]}>
+    <Screen preset="fixed" ref={viewShotRef}>
       {isUninstalling && <LoadingOverlay message={`Uninstalling ${appInfo?.name || appName}...`} />}
 
       <View>
-        <Header title="" leftIcon="chevron-left" onLeftPress={() => goBack()} />
+        <Header title="" leftIcon="chevron-left" onLeftPress={handleExit} />
         <Animated.View
           style={{
             opacity: headerOpacity,
@@ -687,8 +695,8 @@ export default function AppSettings() {
                     appInfo?.type === "standard"
                       ? translate("appSettings:foreground")
                       : appInfo?.type === "background"
-                        ? translate("appSettings:background")
-                        : "—",
+                      ? translate("appSettings:background")
+                      : "—",
                 },
                 {
                   label: translate("appSettings:packageName"),
