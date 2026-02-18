@@ -52,8 +52,8 @@ export default function SuperSettingsScreen() {
 
           <Group title="Mini Apps">
             <RouteButton
-              label="Local Captions"
-              onPress={() => push("/miniapps/local-captions")}
+              label="Local Captions Example"
+              onPress={() => push("/miniapps/dev/local-captions")}
             />
 
             <RouteButton
