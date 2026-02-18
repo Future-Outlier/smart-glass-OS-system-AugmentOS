@@ -21,7 +21,7 @@ import {SETTINGS, useSetting, useSettingsStore} from "@/stores/settings"
 import {ModalProvider} from "@/utils/AlertUtils"
 import {KonamiCodeProvider} from "@/utils/debug/konami"
 import ConnectionOverlayProvider from "@/contexts/ConnectionOverlayContext"
-import { getAnimation, JsStack, woltScreenOptions } from "@/components/navigation/JsStack"
+import {getAnimation, JsStack, woltScreenOptions} from "@/components/navigation/JsStack"
 // JsStack imports commented out - were used for Android-specific navigation (currently disabled)
 // import {getAnimation, JsStack, simplePush, woltScreenOptions} from "@/components/navigation/JsStack"
 
@@ -108,10 +108,11 @@ export const AllProviders = withWrappers(
   //   )
   // },
   (props) => {
+    const insets = useSafeAreaInsets()
     return (
       <>
         {props.children}
-        <Toast />
+        <Toast topOffset={insets.top} bottomOffset={insets.bottom} />
       </>
     )
   },
