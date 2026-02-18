@@ -64,7 +64,7 @@ function AppCardItem({app, index, count, translateX, onDismiss, onSelect}: AppCa
     }
     // otherwise, animate as normal:
     if (index != animatedIndex.value) {
-      animatedIndex.value = withSpring(index, {damping: 20, stiffness: 90})
+      animatedIndex.value = withSpring(index, {damping: 200, stiffness: 200})
     }
   }, [index])
 
@@ -220,6 +220,7 @@ export default function AppSwitcher({swipeProgress}: AppSwitcherProps) {
   const offsetX = useSharedValue(0)
   const targetIndex = useSharedValue(0)
   const prevTranslationX = useSharedValue(0)
+  const openX = useSharedValue(-1)
   const {push} = useNavigationHistory()
   const insets = useSafeAreaInsets()
   let directApps = useActiveApps()
@@ -280,6 +281,12 @@ export default function AppSwitcher({swipeProgress}: AppSwitcherProps) {
     return {
       transform: [{translateY: 100 * (1 - swipeProgress.value)}],
       opacity: swipeProgress.value,
+    }
+  })
+
+  const openXAnimatedStyle = useAnimatedStyle(() => {
+    return {
+      transform: [{translateX: openX.value * SCREEN_WIDTH}],
     }
   })
 
@@ -499,13 +506,15 @@ export default function AppSwitcher({swipeProgress}: AppSwitcherProps) {
     () => swipeProgress.value,
     (current, previous) => {
       if (previous !== null && current == 1 && previous < 1) {
-        setTimeout(() => {
-          if (apps.length > 1) {
-            runOnJS(goToIndex)(apps.length - 1, false)
-          }
-        }, 200)
+        // setTimeout(() => {
+        if (apps.length > 1) {
+          runOnJS(goToIndex)(apps.length - 1, true)
+        }
+        openX.value = withSpring(0, {damping: 200, stiffness: 500, overshootClamping: false})
+        // }, 200)
         // scheduleOnRN(() => {setIsOpen(true)})
       } else if (previous !== null && current == 0 && previous > 0) {
+        openX.value = -1
         // scheduleOnRN(() => {setIsOpen(false)})
       }
     },
@@ -536,7 +545,7 @@ export default function AppSwitcher({swipeProgress}: AppSwitcherProps) {
 
         {/* Cards Carousel */}
         <GestureDetector gesture={panGesture}>
-          <Animated.View className="flex-1 justify-center">
+          <Animated.View className="flex-1 justify-center" style={openXAnimatedStyle}>
             <Pressable className="absolute inset-0" onPress={handleClose} />
             <Animated.View className="flex-row items-center">
               {apps.map((app, index) => (
