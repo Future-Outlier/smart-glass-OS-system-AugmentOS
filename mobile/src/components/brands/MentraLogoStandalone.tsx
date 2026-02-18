@@ -7,7 +7,7 @@ interface LogoProps extends SvgProps {
   fill?: string
 }
 
-export const MentraLogoStandalone: React.FC<LogoProps> = ({width = 50, height = 27, color = "#36DD89"}) => (
+export const MentraLogoStandalone: React.FC<LogoProps> = ({width = 33, height = 16, color = "#36DD89"}) => (
   <Svg width={width} height={height} viewBox="0 0 50 27" fill="none">
     <Rect y={14.8072} width={11.8457} height={11.8457} fill={color} />
     <Path d="M9.36639 0L30.7163 14.8072V26.6529L9.36639 11.8457V0Z" fill={color} />
