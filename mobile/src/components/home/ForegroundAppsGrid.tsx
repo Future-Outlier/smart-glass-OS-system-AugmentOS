@@ -78,15 +78,22 @@ export const ForegroundAppsGrid: React.FC = () => {
       return (
         <TouchableOpacity className="flex-1 items-center" onPress={() => handlePress(item)} activeOpacity={0.7}>
           <AppIcon app={item} className="w-16 h-16" />
-          <View className="w-full h-7 my-1 items-center justify-start">
-            <AutoSizeText
-              className="text-secondary-foreground text-center mt-1"
+          <View className="w-full h-7 my-1 items-center justify-start w-full h-9">
+            <Text
+              className="text-secondary-foreground text-center mt-1 text-[12px] shrink"
+              numberOfLines={2}
+              ellipsizeMode="tail"
+              text={item.name}
+            />
+            {/* <AutoSizeText
+              className="text-secondary-foreground text-wrap text-center mt-1"
               numberOfLines={numberOfLines}
               ellipsizeMode="tail"
-              fontSize={14}
+              minimumFontScale={1}
+              fontSize={12}
               mode={ResizeTextMode.max_lines}>
               {item.name}
-            </AutoSizeText>
+            </AutoSizeText> */}
           </View>
         </TouchableOpacity>
       )
