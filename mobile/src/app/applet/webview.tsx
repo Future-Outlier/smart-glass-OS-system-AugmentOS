@@ -27,7 +27,7 @@ export default function AppWebView() {
   const [retryTrigger, setRetryTrigger] = useState(0)
   const {goBack, push} = useNavigationHistory()
   const viewShotRef = useRef(null)
-  const appSwitcherUi = useSetting(SETTINGS.app_switcher_ui.key)
+  const [appSwitcherUi] = useSetting(SETTINGS.app_switcher_ui.key)
 
   // WebView loading state
   const [isWebViewReady, setIsWebViewReady] = useState(false)
@@ -211,7 +211,11 @@ export default function AppWebView() {
   }
 
   return (
-    <Screen preset="fixed" safeAreaEdges={["top"]} KeyboardAvoidingViewProps={{enabled: true}} ref={viewShotRef}>
+    <Screen
+      preset="fixed"
+      safeAreaEdges={[appSwitcherUi && "top"]}
+      KeyboardAvoidingViewProps={{enabled: true}}
+      ref={viewShotRef}>
       {appSwitcherUi && (
         <MiniAppDualButtonHeader
           packageName={packageName}
