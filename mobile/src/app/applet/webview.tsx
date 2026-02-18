@@ -4,12 +4,12 @@ import {View} from "react-native"
 import {WebView} from "react-native-webview"
 import Animated, {useSharedValue, useAnimatedStyle, withTiming} from "react-native-reanimated"
 
-import {Screen, Text} from "@/components/ignite"
+import {Header, Screen, Text} from "@/components/ignite"
 import InternetConnectionFallbackComponent from "@/components/ui/InternetConnectionFallbackComponent"
 import LoadingOverlay from "@/components/ui/LoadingOverlay"
 import {focusEffectPreventBack, useNavigationHistory} from "@/contexts/NavigationHistoryContext"
 import restComms from "@/services/RestComms"
-import {useSettingsStore} from "@/stores/settings"
+import {SETTINGS, useSetting, useSettingsStore} from "@/stores/settings"
 import showAlert from "@/utils/AlertUtils"
 import {captureRef} from "react-native-view-shot"
 import {useAppletStatusStore} from "@/stores/applets"
@@ -27,6 +27,7 @@ export default function AppWebView() {
   const [retryTrigger, setRetryTrigger] = useState(0)
   const {goBack, push} = useNavigationHistory()
   const viewShotRef = useRef(null)
+  const appSwitcherUi = useSetting(SETTINGS.app_switcher_ui.key)
 
   // WebView loading state
   const [isWebViewReady, setIsWebViewReady] = useState(false)
@@ -211,17 +212,34 @@ export default function AppWebView() {
 
   return (
     <Screen preset="fixed" safeAreaEdges={["top"]} KeyboardAvoidingViewProps={{enabled: true}} ref={viewShotRef}>
-      <MiniAppDualButtonHeader
-        packageName={packageName}
-        viewShotRef={viewShotRef}
-        onEllipsisPress={() => {
-          push("/applet/settings", {
-            packageName: packageName as string,
-            appName: appName as string,
-            fromWebView: "true",
-          })
-        }}
-      />
+      {appSwitcherUi && (
+        <MiniAppDualButtonHeader
+          packageName={packageName}
+          viewShotRef={viewShotRef}
+          onEllipsisPress={() => {
+            push("/applet/settings", {
+              packageName: packageName as string,
+              appName: appName as string,
+              fromWebView: "true",
+            })
+          }}
+        />
+      )}
+      {!appSwitcherUi && (
+        <Header
+          leftIcon="chevron-left"
+          onLeftPress={() => goBack()}
+          title={appName}
+          rightIcon="settings"
+          onRightPress={() => {
+            push("/applet/settings", {
+              packageName: packageName as string,
+              appName: appName as string,
+              fromWebView: "true",
+            })
+          }}
+        />
+      )}
       <View className="flex-1 -mx-6">
         {renderLoadingOverlay()}
         {finalUrl && (
