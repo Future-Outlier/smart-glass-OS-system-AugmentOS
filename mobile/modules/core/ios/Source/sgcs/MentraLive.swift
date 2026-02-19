@@ -870,7 +870,7 @@ class MentraLive: NSObject, SGCManager {
     // Feature Flags
     // BLOCK_AUDIO_DUPLEX: When true, suspends LC3 mic while phone is playing audio via A2DP
     // to avoid overloading the MCU. Set to false to allow simultaneous A2DP + LC3 mic.
-    private let BLOCK_AUDIO_DUPLEX = true
+    private let BLOCK_AUDIO_DUPLEX = false
 
     var connectionState: String = ConnTypes.DISCONNECTED
 
