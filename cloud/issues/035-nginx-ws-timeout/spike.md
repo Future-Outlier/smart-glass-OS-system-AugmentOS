@@ -51,13 +51,13 @@ Checked the deployed code in `UserSession.ts`. Both ping mechanisms are active:
 ```typescript
 // Protocol-level pings every 10s
 this.glassesHeartbeatInterval = setInterval(() => {
-  this.websocket.ping?.()
-}, 10000)
+  this.websocket.ping?.();
+}, 10000);
 
 // App-level pings every 2s
 this.appLevelPingInterval = setInterval(() => {
-  this.websocket.send(JSON.stringify({type: "ping"}))
-}, 2000)
+  this.websocket.send(JSON.stringify({ type: "ping" }));
+}, 2000);
 ```
 
 BetterStack logs confirmed heartbeats being established and cleared on each reconnect cycle. The server code is running correctly.

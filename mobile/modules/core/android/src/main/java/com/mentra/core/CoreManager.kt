@@ -27,6 +27,7 @@ import java.util.*
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
 import kotlin.jvm.JvmStatic
+import android.bluetooth.BluetoothAdapter
 
 class CoreManager {
     companion object {
@@ -54,9 +55,10 @@ class CoreManager {
     private val handler = Handler(Looper.getMainLooper())
     private var permissionCheckRunnable: Runnable? = null
 
-    // notifications settings
-    public var notificationsEnabled = false
-    public var notificationsBlocklist = listOf<String>()
+    // Bluetooth adapter state monitoring (detects BT toggle from control center)
+    private var bluetoothStateReceiver: BroadcastReceiver? = null
+    private var isBluetoothStateReceiverRegistered = false
+
     // MARK: - End Unique
 
     // MARK: - Properties
@@ -228,6 +230,7 @@ class CoreManager {
         initializeViewStates()
         startForegroundService()
         // setupPermissionMonitoring()
+        setupBluetoothStateMonitoring()
         phoneMic = PhoneMic.getInstance()
         // Initialize local STT transcriber
         try {
@@ -344,6 +347,11 @@ class CoreManager {
             permissionsChanged = true
         }
 
+        if (permissionsChanged && !currentHasBluetoothPermission) {
+            Bridge.log("MAN: Bluetooth permission revoked disconnecting glasses")
+            disconnect()
+        }
+
         if (permissionsChanged && serviceStarted) {
             Bridge.log("MAN: Permissions changed, restarting service")
             restartForegroundService()
@@ -367,6 +375,60 @@ class CoreManager {
                 context,
                 android.Manifest.permission.RECORD_AUDIO
         ) == PackageManager.PERMISSION_GRANTED
+    }
+
+    private fun setupBluetoothStateMonitoring() {
+        val context = Bridge.getContext()
+
+        bluetoothStateReceiver = object : BroadcastReceiver() {
+            override fun onReceive(context: Context?, intent: Intent?) {
+                if (intent?.action != BluetoothAdapter.ACTION_STATE_CHANGED) return
+
+                val state = intent.getIntExtra(BluetoothAdapter.EXTRA_STATE, BluetoothAdapter.ERROR)
+                when (state) {
+                    BluetoothAdapter.STATE_OFF -> {
+                        Bridge.log("MAN: Bluetooth turned OFF (control center or settings)")
+                        disconnect()
+                    }
+                    BluetoothAdapter.STATE_TURNING_OFF -> {
+                        Bridge.log("MAN: Bluetooth turning off...")
+                    }
+                    BluetoothAdapter.STATE_ON -> {
+                        Bridge.log("MAN: Bluetooth turned ON")
+                        // Auto-reconnect to last known device if we have one
+                        if (defaultWearable.isNotEmpty() && deviceName.isNotEmpty()) {
+                            Bridge.log("MAN: Bluetooth restored, attempting reconnect to: $deviceName")
+                            handler.postDelayed({
+                                connectDefault()
+                            }, 2000) // Small delay to let BT stack stabilize
+                        }
+                    }
+                    BluetoothAdapter.STATE_TURNING_ON -> {
+                        Bridge.log("MAN: Bluetooth turning on...")
+                    }
+                }
+            }
+        }
+
+        try {
+            val filter = IntentFilter(BluetoothAdapter.ACTION_STATE_CHANGED)
+            context.registerReceiver(bluetoothStateReceiver, filter)
+            isBluetoothStateReceiverRegistered = true
+            Bridge.log("MAN: Bluetooth state monitoring started")
+        } catch (e: Exception) {
+            Bridge.log("MAN: Failed to register Bluetooth state receiver: ${e.message}")
+        }
+    }
+
+    private fun stopBluetoothStateMonitoring() {
+        if (isBluetoothStateReceiverRegistered && bluetoothStateReceiver != null) {
+            try {
+                Bridge.getContext().unregisterReceiver(bluetoothStateReceiver)
+            } catch (e: Exception) {
+                Bridge.log("MAN: Error unregistering Bluetooth state receiver: ${e.message}")
+            }
+            isBluetoothStateReceiverRegistered = false
+        }
     }
 
     private fun startForegroundService() {
@@ -489,7 +551,8 @@ class CoreManager {
                     Bridge.log("MAN: ERROR - LC3 encoder not initialized but format is LC3")
                     return
                 }
-                val lc3FrameSize = (GlassesStore.store.get("core", "lc3_frame_size") as Number).toInt()
+                val lc3FrameSize =
+                        (GlassesStore.store.get("core", "lc3_frame_size") as Number).toInt()
                 val lc3Data = Lc3Cpp.encodeLC3(lc3EncoderPtr, pcmData, lc3FrameSize)
                 if (lc3Data == null || lc3Data.isEmpty()) {
                     Bridge.log("MAN: ERROR - LC3 encoding returned empty data")
@@ -887,7 +950,7 @@ class CoreManager {
         pendingWearable = ""
         defaultWearable = sgc?.type ?: ""
         searching = false
-        
+
         // Show welcome message on first connect for all display glasses
         if (shouldSendBootingMessage) {
             shouldSendBootingMessage = false
@@ -1041,27 +1104,21 @@ class CoreManager {
     }
 
     /**
-     * Request version info from glasses.
-     * Glasses will respond with version_info message containing build number, firmware version, etc.
+     * Request version info from glasses. Glasses will respond with version_info message containing
+     * build number, firmware version, etc.
      */
     fun requestVersionInfo() {
         Bridge.log("MAN: 📱 Requesting version info from glasses")
         sgc?.requestVersionInfo()
     }
 
-    /**
-     * Send shutdown command to glasses.
-     * This will initiate a graceful shutdown of the device.
-     */
+    /** Send shutdown command to glasses. This will initiate a graceful shutdown of the device. */
     fun sendShutdown() {
         Bridge.log("MAN: 🔌 Sending shutdown command to glasses")
         sgc?.sendShutdown()
     }
 
-    /**
-     * Send reboot command to glasses.
-     * This will initiate a reboot of the device.
-     */
+    /** Send reboot command to glasses. This will initiate a reboot of the device. */
     fun sendReboot() {
         Bridge.log("MAN: 🔄 Sending reboot command to glasses")
         sgc?.sendReboot()
@@ -1228,6 +1285,8 @@ class CoreManager {
 
     // MARK: Cleanup
     fun cleanup() {
+        stopBluetoothStateMonitoring()
+
         // Clean up transcriber resources
         transcriber?.shutdown()
         transcriber = null

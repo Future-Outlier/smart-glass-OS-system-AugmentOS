@@ -236,7 +236,7 @@ export default function PairingPrepScreen() {
   }
 
   const MentraLivePairingGuide = () => {
-    // const CDN_BASE = "https://mentra-videos-cdn.mentraglass.com/onboarding/mentra-live/light"
+    const CDN_BASE = "https://mentra-videos-cdn.mentraglass.com/onboarding/mentra-live/light"
     let steps: OnboardingStep[] = [
       {
         name: "power_on_tutorial",
@@ -367,12 +367,31 @@ export default function PairingPrepScreen() {
     )
   }
 
+  // show a coming soon message:
+  const G2PairingGuide = () => {
+    return (
+      <View className="flex-1 flex-col justify-center items-center">
+        <Text text="Coming soon" className="text-3xl font-bold text-secondary-foreground text-center" />
+      </View>
+    )
+  }
+
+  const G2Buttons = () => {
+    return (
+      <View className="gap-4">
+        <Button tx="common:back" onPress={() => goBack()} />
+      </View>
+    )
+  }
+
   const renderGuide = () => {
     switch (deviceModel) {
       case DeviceTypes.SIMULATED:
         return <SimulatedPairingGuide />
       case DeviceTypes.G1:
         return <G1PairingGuide />
+      case DeviceTypes.G2:
+        return <G2PairingGuide />
       case DeviceTypes.LIVE:
         return <MentraLivePairingGuide />
       case DeviceTypes.MACH1:
@@ -390,6 +409,8 @@ export default function PairingPrepScreen() {
     switch (deviceModel) {
       case DeviceTypes.G1:
         return <G1Buttons />
+      case DeviceTypes.G2:
+        return <G2Buttons />
       case DeviceTypes.LIVE:
         return null
       default:

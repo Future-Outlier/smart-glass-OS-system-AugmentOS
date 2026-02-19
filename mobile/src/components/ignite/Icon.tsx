@@ -2,12 +2,14 @@ import {createIconSet} from "@expo/vector-icons"
 import {
   Bell,
   CircleUser,
+  Ellipsis,
   FileType2,
   Fullscreen,
   Glasses,
   Info,
   LayoutDashboard,
   Locate,
+  Minus,
   Unlink,
   Unplug,
   UserRound,
@@ -117,6 +119,8 @@ const lucideIcons = {
   "shopping-bag-filled": ShoppingBagIcon,
   "house": HomeIcon,
   "house-filled": HomeIcon,
+  "ellipsis": Ellipsis,
+  "minus": Minus,
 }
 
 const tablerIcons = {

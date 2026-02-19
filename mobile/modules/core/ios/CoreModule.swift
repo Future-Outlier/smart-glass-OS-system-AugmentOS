@@ -20,6 +20,7 @@ public class CoreModule: Module {
             "wifi_status_change",
             "hotspot_status_change",
             "hotspot_error",
+            "photo_response",
             "gallery_status",
             "compatible_glasses_search_stop",
             "heartbeat_sent",
@@ -285,6 +286,14 @@ public class CoreModule: Module {
             await MainActor.run {
                 CoreManager.shared.restartTranscriber()
             }
+        }
+
+        // MARK: - Audio Playback Monitoring
+
+        AsyncFunction("setOwnAppAudioPlaying") { (playing: Bool) in
+            // Notify PhoneAudioMonitor that our app started/stopped playing audio
+            // This is used to suspend LC3 mic during audio playback to avoid MCU overload
+            PhoneAudioMonitor.getInstance().setOwnAppAudioPlaying(playing)
         }
 
         // MARK: - RGB LED Control

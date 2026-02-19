@@ -70,6 +70,7 @@ import com.mentra.core.utils.MessageChunker;
 import com.mentra.core.utils.audio.Lc3Player;
 import com.mentra.core.utils.BlePhotoUploadService;
 import com.mentra.core.GlassesStore;
+import com.mentra.core.utils.PhoneAudioMonitor;
 
 // old augmentos imports:
 import com.mentra.lc3Lib.Lc3Cpp;
@@ -119,6 +120,11 @@ import java.util.Locale;
 public class MentraLive extends SGCManager {
     private static final String TAG = "Live";
     public String savedDeviceName = "";
+
+    // Feature Flags
+    // BLOCK_AUDIO_DUPLEX: When true, suspends LC3 mic while phone is playing audio via A2DP
+    // to avoid overloading the MCU. Set to false to allow simultaneous A2DP + LC3 mic.
+    private static final boolean BLOCK_AUDIO_DUPLEX = true;
 
     // LC3 frame size for Mentra Live
     private static final int LC3_FRAME_SIZE = 40;
@@ -216,6 +222,13 @@ public class MentraLive extends SGCManager {
     private boolean shouldUseGlassesMic = false; // Whether to use glasses microphone for audio input
     private boolean isMicrophoneEnabled = false; // Track current microphone state
 
+    // LC3 Mic suspend/resume state machine for A2DP conflict avoidance
+    // When phone plays audio via A2DP while LC3 mic is active, it overloads the MCU
+    // So we temporarily suspend the LC3 mic during phone audio playback
+    private boolean micIntentEnabled = false;       // User/system WANTS mic enabled
+    private boolean micSuspendedForAudio = false;   // Mic temporarily suspended due to phone audio
+    private PhoneAudioMonitor phoneAudioMonitor;
+
     // Rate limiting - minimum delay between BLE characteristic writes
     private static final long MIN_SEND_DELAY_MS = 160; // 160ms minimum delay (increased from 100ms)
     private long lastSendTimeMs = 0; // Timestamp of last send
@@ -239,6 +252,8 @@ public class MentraLive extends SGCManager {
     private int filePacketBufferSize = 0;
     private final Object filePacketBufferLock = new Object();
     private int fileReadNotificationCount = 0; // Debug counter for FILE_READ notifications
+
+    private final Object connectionLock = new Object();
 
     private static class BlePhotoTransfer {
         String bleImgId;
@@ -558,6 +573,22 @@ public class MentraLive extends SGCManager {
             lc3DecoderPtr = Lc3Cpp.initDecoder();
             Bridge.log("LIVE: Initialized LC3 decoder for PCM conversion: " + lc3DecoderPtr);
         }
+
+        // Initialize phone audio monitor for LC3 mic suspend/resume (if enabled)
+        // This detects when phone is playing audio and temporarily suspends LC3 mic
+        // to avoid overloading the MCU when both A2DP output and LC3 mic input are active
+        if (BLOCK_AUDIO_DUPLEX) {
+            phoneAudioMonitor = PhoneAudioMonitor.getInstance(context);
+            phoneAudioMonitor.startMonitoring(new PhoneAudioMonitor.Listener() {
+                @Override
+                public void onPhoneAudioStateChanged(boolean isPlaying) {
+                    handlePhoneAudioStateChanged(isPlaying);
+                }
+            });
+            Bridge.log("LIVE: 🎵 Phone audio monitor started for LC3 mic suspend/resume (BLOCK_AUDIO_DUPLEX=true)");
+        } else {
+            Bridge.log("LIVE: 🎵 Phone audio monitor disabled (BLOCK_AUDIO_DUPLEX=false)");
+        }
     }
 
     public void cleanup() {
@@ -647,17 +678,16 @@ public class MentraLive extends SGCManager {
                 @Override
                 public void run() {
                     if (isScanning) {
-                        if (isReconnecting) {
-                            Log.w(TAG, "🔌 ⏰ RECONNECT SCAN TIMEOUT after " + scanTimeout + "ms - Device not found (attempt #" + reconnectAttempts + ")");
-                            Bridge.log("LIVE: 🔌 ⏰ Reconnect scan timeout - device not found, will retry");
-                        } else {
-                            Bridge.log("LIVE: Scan timeout reached - stopping BLE scan");
-                        }
                         stopScan();
                         
-                        // If reconnecting and scan timed out, trigger next reconnection attempt
                         if (isReconnecting) {
-                            Log.i(TAG, "🔌 🔄 Scan timeout - scheduling next reconnection attempt...");
+                            synchronized (connectionLock) {
+                                // If scanCallback already claimed a connection, don't start another reconnect cycle
+                                if (isConnecting || isConnected) {
+                                    Log.i(TAG, "🔌 Scan timeout fired but connection already in progress, skipping reconnect");
+                                    return;
+                                }
+                            }
                             handleReconnection();
                         }
                     }
@@ -733,16 +763,17 @@ public class MentraLive extends SGCManager {
                         // smartGlassesDevice.deviceModelName, deviceName));
                 Bridge.sendDiscoveredDevice(DeviceTypes.LIVE, deviceName);
 
-                // If already connecting or connected, don't start another connection
-                if (isConnected || isConnecting) {
-                    return;
-                }
-
                 // If this is the specific device we want to connect to by name, connect to it
                 if (savedDeviceName != null && savedDeviceName.equals(deviceName)) {
                     Log.i(TAG, "🔌 🎯 RECONNECT TARGET FOUND - Device: " + deviceName + " (Attempt #" + reconnectAttempts + ")");
                     Bridge.log("LIVE: 🔌 🎯 Found our remembered device by name, connecting: " + deviceName + 
                               " (Reconnect attempt #" + reconnectAttempts + ")");
+                    synchronized (connectionLock) {
+                        if (isConnected || isConnecting) {
+                            return;
+                        }
+                        isConnecting = true;
+                    }
                     stopScan();
                     connectToDevice(result.getDevice());
                 }
@@ -849,6 +880,11 @@ public class MentraLive extends SGCManager {
             return;
         }
 
+        if (isReconnecting) {
+            Bridge.log("LIVE: 🔌 RECONNECT ABORTED - already reconnecting");
+            return;
+        } 
+
         if (reconnectAttempts >= MAX_RECONNECT_ATTEMPTS) {
             Log.e(TAG, "🔌 ❌ RECONNECTION FAILED - Maximum attempts reached (" + MAX_RECONNECT_ATTEMPTS + ")");
             Bridge.log("LIVE: 🔌 ❌ RECONNECTION FAILED - Gave up after " + MAX_RECONNECT_ATTEMPTS + " attempts");
@@ -875,14 +911,14 @@ public class MentraLive extends SGCManager {
             public void run() {
                 if (!isConnected && !isConnecting && !isKilled) {
                     // Check for last known device name to start scan
-                    SharedPreferences prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
-                    String lastDeviceName = prefs.getString(PREF_DEVICE_NAME, null);
+                    // SharedPreferences prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
+                    // String lastDeviceName = prefs.getString(PREF_DEVICE_NAME, null);
 
-                    if (lastDeviceName != null && bluetoothAdapter != null) {
+                    if (savedDeviceName != null && bluetoothAdapter != null) {
                         Log.i(TAG, "🔌 🔍 STARTING RECONNECT #" + reconnectAttempts + "/" + MAX_RECONNECT_ATTEMPTS + 
-                              " - Fast scan (" + RECONNECT_SCAN_TIMEOUT_MS + "ms) for device: " + lastDeviceName);
+                              " - Fast scan (" + RECONNECT_SCAN_TIMEOUT_MS + "ms) for device: " + savedDeviceName);
                         Bridge.log("LIVE: 🔌 🔍 Reconnection attempt " + reconnectAttempts + "/" + MAX_RECONNECT_ATTEMPTS + 
-                              " - Starting FAST BLE scan for: " + lastDeviceName);
+                              " - Starting FAST BLE scan for: " + savedDeviceName);
                         // Start scan to find this device (will use fast timeout)
                         startScan();
                         // The scan will automatically connect if it finds a device with the saved name
@@ -927,12 +963,13 @@ public class MentraLive extends SGCManager {
                     connectedDevice = gatt.getDevice();
 
                     // Save the connected device name for future reconnections
-                    if (connectedDevice != null && connectedDevice.getName() != null) {
-                        SharedPreferences prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
-                        prefs.edit().putString(PREF_DEVICE_NAME, connectedDevice.getName()).apply();
-                        Log.i(TAG, "🔌 💾 Saved device name for future reconnection: " + connectedDevice.getName());
-                        Bridge.log("LIVE: Saved device name for future reconnection: " + connectedDevice.getName());
-                    }
+                    // no longer needed as we now save it immediately in connectToDevice()
+                    // if (connectedDevice != null && connectedDevice.getName() != null) {
+                    //     SharedPreferences prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
+                    //     prefs.edit().putString(PREF_DEVICE_NAME, connectedDevice.getName()).apply();
+                    //     Log.i(TAG, "🔌 💾 Saved device name for future reconnection: " + connectedDevice.getName());
+                    //     Bridge.log("LIVE: Saved device name for future reconnection: " + connectedDevice.getName());
+                    // }
 
                     // CTKD Implementation: Register bonding receiver and create bond for BT Classic
                     registerBondingReceiver();
@@ -964,11 +1001,6 @@ public class MentraLive extends SGCManager {
                     isConnected = false;
                     isConnecting = false;
 
-                    // CTKD Implementation: Disconnect BT per documentation
-                    if (connectedDevice != null) {
-                        Bridge.log("LIVE: CTKD: Disconnecting BT via removeBond per documentation");
-                        removeBond(connectedDevice);
-                    }
 
                     connectedDevice = null;
                     glassesReady = false; // Reset ready state on disconnect
@@ -2679,13 +2711,16 @@ public class MentraLive extends SGCManager {
         try {
             String fileName = json.optString("fileName", "");
             String reason = json.optString("reason", "unknown");
+            String requestId = json.optString("requestId", "");
 
             if (fileName.isEmpty()) {
                 Log.e(TAG, "❌ Transfer failed notification missing fileName: " + json.toString());
+                Bridge.sendPhotoError(requestId, "FILE_NAME_MISSING", "Transfer failed notification missing fileName");
                 return;
             }
 
             Log.e(TAG, "❌ Transfer failed for: " + fileName + " (reason: " + reason + ")");
+            Bridge.sendPhotoError(requestId, "TRANSFER_FAILED", "Transfer failed for: " + fileName + " (reason: " + reason + ")");
 
             // Clean up any active transfer for this file
             FileTransferSession session = activeFileTransfers.remove(fileName);
@@ -3406,6 +3441,11 @@ public class MentraLive extends SGCManager {
     public void connectById(String id) {
         Bridge.log("LIVE: Connecting to Mentra Live glasses by ID: " + id);
         savedDeviceName = id;
+        // // Persist immediately so reconnection logic can find it in case this connection fails
+        // SharedPreferences prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
+        // prefs.edit().putString(PREF_DEVICE_NAME, id).apply();
+        // Log.i(TAG, "🔌 💾 Saved device name for future reconnection: " + connectedDevice.getName());
+        // Bridge.log("LIVE: Saved device name for future reconnection: " + connectedDevice.getName());
         connectToSmartGlasses();
     }
 
@@ -3413,13 +3453,20 @@ public class MentraLive extends SGCManager {
         Bridge.log("LIVE: Forgetting Mentra Live glasses");
 
         // Clear saved device name to prevent reconnection to this device
-        SharedPreferences prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
-        prefs.edit().remove(PREF_DEVICE_NAME).apply();
-        Bridge.log("LIVE: Cleared saved device name");
+        // SharedPreferences prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
+        // prefs.edit().remove(PREF_DEVICE_NAME).apply();
+        // Bridge.log("LIVE: Cleared saved device name");
 
         // Reset reconnection state
         reconnectAttempts = 0;
         isReconnecting = false;
+
+        // Remove BT Classic bond - this is the ONLY place where we unbond,
+        // ensuring bond is only removed when user explicitly unpairs
+        if (connectedDevice != null) {
+            Bridge.log("LIVE: CTKD: Removing BT bond on explicit unpair");
+            removeBond(connectedDevice);
+        }
 
         stopScan();
         disconnect();
@@ -3515,27 +3562,65 @@ public class MentraLive extends SGCManager {
     }
 
     public void setMicEnabled(boolean enable) {
-        Bridge.log("LIVE: 🎤 Microphone state changed: " + enable);
+        Bridge.log("LIVE: 🎤 Microphone state change requested: " + enable);
 
         // Update the microphone state tracker
         isMicrophoneEnabled = enable;
 
         GlassesStore.INSTANCE.apply("glasses", "micEnabled", enable);
 
-        // Post event for frontend notification
-        // EventBus.getDefault().post(new isMicEnabledForFrontendEvent(enable));
-
         // Update the shouldUseGlassesMic flag to reflect the current state
-        var m = CoreManager.getInstance();
         this.shouldUseGlassesMic = enable;
-        Bridge.log("LIVE: 🎤 Updated shouldUseGlassesMic to: " + shouldUseGlassesMic);
 
-        if (this.shouldUseGlassesMic) {
-            Bridge.log("LIVE: 🎤 Microphone enabled, starting audio input handling");
-            startMicBeat();
+        // Update the intent state for the suspend/resume state machine
+        micIntentEnabled = enable;
+
+        if (enable) {
+            // User wants mic ON
+            // Check if we should suspend due to phone audio (only if BLOCK_AUDIO_DUPLEX is enabled)
+            if (BLOCK_AUDIO_DUPLEX && phoneAudioMonitor != null && phoneAudioMonitor.isPlaying()) {
+                // Phone is currently playing audio - don't start mic yet, mark as suspended
+                micSuspendedForAudio = true;
+                Bridge.log("LIVE: 🎤 Mic requested but phone audio is playing - suspending until audio stops");
+            } else {
+                // Safe to start mic
+                micSuspendedForAudio = false;
+                Bridge.log("LIVE: 🎤 Microphone enabled, starting audio input handling");
+                startMicBeat();
+            }
         } else {
+            // User wants mic OFF - clear suspended state and stop
+            micSuspendedForAudio = false;
             Bridge.log("LIVE: 🎤 Microphone disabled, stopping audio input handling");
             stopMicBeat();
+        }
+    }
+
+    /**
+     * Handle phone audio playback state changes
+     * Called by PhoneAudioMonitor when phone starts/stops playing audio
+     *
+     * State machine logic:
+     * - When phone starts playing audio: suspend LC3 mic if it was running
+     * - When phone stops playing audio: resume LC3 mic if it was suspended
+     */
+    private void handlePhoneAudioStateChanged(boolean isPlaying) {
+        Bridge.log("LIVE: 🎵 Phone audio state changed: " + (isPlaying ? "PLAYING" : "STOPPED"));
+
+        if (isPlaying) {
+            // Phone started playing audio - suspend mic if it was running
+            if (micIntentEnabled && !micSuspendedForAudio) {
+                Bridge.log("LIVE: 🎤 Phone audio started - suspending LC3 mic to avoid MCU overload");
+                stopMicBeat();
+                micSuspendedForAudio = true;
+            }
+        } else {
+            // Phone stopped playing audio - resume mic if it was suspended
+            if (micIntentEnabled && micSuspendedForAudio) {
+                Bridge.log("LIVE: 🎤 Phone audio stopped - resuming LC3 mic");
+                micSuspendedForAudio = false;
+                startMicBeat();
+            }
         }
     }
 
@@ -4049,11 +4134,6 @@ public class MentraLive extends SGCManager {
         // Close A2DP profile proxy
         closeA2dpProxy();
 
-        // CTKD Implementation: Disconnect BT per documentation
-        if (connectedDevice != null) {
-            Bridge.log("LIVE: CTKD: Destroy - disconnecting BT via removeBond per documentation");
-            removeBond(connectedDevice);
-        }
 
         // Stop readiness check loop
         stopReadinessCheckLoop();
@@ -4063,6 +4143,12 @@ public class MentraLive extends SGCManager {
 
         // Stop micbeat mechanism
         stopMicBeat();
+
+        // Stop phone audio monitor
+        if (phoneAudioMonitor != null) {
+            phoneAudioMonitor.stopMonitoring();
+            Bridge.log("LIVE: 🎵 Phone audio monitor stopped");
+        }
 
         // Cancel connection timeout
         if (connectionTimeoutRunnable != null) {

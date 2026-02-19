@@ -26,6 +26,7 @@ class CoreModule : Module() {
             "wifi_status_change",
             "hotspot_status_change",
             "hotspot_error",
+            "photo_response",
             "gallery_status",
             "compatible_glasses_search_stop",
             "heartbeat_sent",
@@ -207,6 +208,15 @@ class CoreModule : Module() {
         }
 
         AsyncFunction("restartTranscriber") { coreManager?.restartTranscriber() }
+
+        // MARK: - Audio Playback Monitoring
+
+        AsyncFunction("setOwnAppAudioPlaying") { playing: Boolean ->
+            // Notify PhoneAudioMonitor that our app started/stopped playing audio
+            // This is used to suspend LC3 mic during audio playback to avoid MCU overload
+            val context = appContext.reactContext ?: return@AsyncFunction
+            com.mentra.core.utils.PhoneAudioMonitor.getInstance(context).setOwnAppAudioPlaying(playing)
+        }
 
         // MARK: - RGB LED Control
 

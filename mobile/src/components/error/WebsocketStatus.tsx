@@ -50,6 +50,8 @@ export default function WebsocketStatus() {
     const prevStatus = prevConnectionStatusRef.current
     prevConnectionStatusRef.current = connectionStatus
 
+    console.log(`WSM: useEffect: connectionStatus: ${connectionStatus}`)
+
     if (connectionStatus === WebSocketStatus.CONNECTED) {
       if (disconnectionTimerRef.current) {
         BackgroundTimer.clearTimeout(disconnectionTimerRef.current)
@@ -85,10 +87,6 @@ export default function WebsocketStatus() {
 
   const config = STATUS_CONFIG[displayStatus]
 
-  if (!superMode && displayStatus == "connected") {
-    return null
-  }
-
   if (offlineMode) {
     return (
       <TouchableOpacity
@@ -104,6 +102,10 @@ export default function WebsocketStatus() {
         </View>
       </TouchableOpacity>
     )
+  }
+
+  if (!superMode && displayStatus == "connected") {
+    return null
   }
 
   return (

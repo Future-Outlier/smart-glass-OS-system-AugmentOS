@@ -1,12 +1,31 @@
 import React, { useState, useEffect } from 'react';
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
-import { Alert, AlertDescription } from "@/components/ui/alert";
+import {
+  Alert,
+  AlertDescription,
+  Button,
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  Input,
+  Label,
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+  Spinner,
+  Textarea,
+} from "@mentra/shared";
 import { CheckCircle2, AlertCircle, Loader2, Building, Globe, Mail, FileText, Image, AlertTriangle, LockIcon, Trash, Plus } from "lucide-react";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import DashboardLayout from "../components/DashboardLayout";
 import api from '@/services/api.service';
 import { toast } from 'sonner';
@@ -52,6 +71,8 @@ const OrganizationSettings: React.FC = () => {
 
   // State for create org dialog
   const [showCreateOrgDialog, setShowCreateOrgDialog] = useState(false);
+  // State for delete confirmation dialog
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
 
   // Handle missing organization by creating a personal one
   useEffect(() => {
@@ -208,20 +229,13 @@ const OrganizationSettings: React.FC = () => {
   const handleDeleteOrg = async () => {
     if (!currentOrg) return;
 
-    const confirmed = typeof globalThis !== 'undefined' && typeof (globalThis as any).confirm === 'function'
-      ? (globalThis as any).confirm(
-          `Are you sure you want to permanently delete the organization "${currentOrg.name}"? This action cannot be undone.`
-        )
-      : false;
-
-    if (!confirmed) return;
-
     try {
       setIsDeleting(true);
       setDeleteError(null);
 
       await api.orgs.delete(currentOrg.id);
 
+      setShowDeleteDialog(false);
       toast.success('Organization deleted successfully');
 
       // Refresh organizations list; OrganizationContext will handle currentOrg selection
@@ -295,20 +309,25 @@ const OrganizationSettings: React.FC = () => {
 
   return (
     <DashboardLayout>
-      <div className="max-w-3xl mx-auto">
+      <div className="max-w-7xl mx-auto">
+        <div className="flex items-center justify-between mb-6 min-h-10">
+          <h1 className="text-2xl font-semibold text-foreground">Organization Settings</h1>
+        </div>
+
+        <div className="space-y-6">
         {/* Welcome message for new members */}
         {(isNewMember || isExistingMember) && (
-          <Card className="shadow-sm mb-6 border-green-200 bg-green-50">
+          <Card className="shadow-sm border-success bg-success-light">
             <CardHeader className="pb-4">
               <div className="flex items-start gap-3">
-                <CheckCircle2 className="h-8 w-8 text-green-600 mt-1" />
+                <CheckCircle2 className="h-8 w-8 text-success mt-1" />
                 <div className="flex-1">
-                  <CardTitle className="text-2xl text-green-900">
+                  <CardTitle className="text-2xl text-success">
                     {isNewMember
                       ? `Welcome to ${invitedOrgName || currentOrg?.name || 'the organization'}!`
                       : 'Welcome back!'}
                   </CardTitle>
-                  <CardDescription className="text-green-700 mt-2">
+                  <CardDescription className="text-success mt-2">
                     {isNewMember
                       ? `You have successfully joined ${invitedOrgName || currentOrg?.name || 'the organization'}. You can now collaborate with your team members and manage apps together.`
                       : `You're already a member of this organization. You can access all your organization's resources and collaborate with your team.`}
@@ -317,7 +336,7 @@ const OrganizationSettings: React.FC = () => {
               </div>
             </CardHeader>
             <CardContent className="pt-0">
-              <div className="flex flex-col gap-2 text-sm text-green-700">
+              <div className="flex flex-col gap-2 text-sm text-success">
                 <p className="font-medium">What you can do now:</p>
                 <ul className="list-disc list-inside space-y-1 ml-2">
                   {isAdmin && (
@@ -327,7 +346,7 @@ const OrganizationSettings: React.FC = () => {
                     Access the organization's{' '}
                     <a
                       href="/apps"
-                      className="font-medium underline hover:text-green-800"
+                      className="font-medium underline hover:text-success"
                     >
                       apps and resources
                     </a>
@@ -335,8 +354,8 @@ const OrganizationSettings: React.FC = () => {
                   <li>Collaborate with other team members</li>
                   <li>Create and publish apps under this organization</li>
                 </ul>
-                <div className="mt-3 p-3 bg-green-100 rounded-md">
-                  <p className="text-sm text-green-800">
+                <div className="mt-3 p-3 bg-success-light rounded-md">
+                  <p className="text-sm text-success">
                     💡 <strong>Tip:</strong> You can switch between different organizations you're a member of using the dropdown in the upper left corner of the dashboard.
                   </p>
                 </div>
@@ -346,7 +365,7 @@ const OrganizationSettings: React.FC = () => {
         )}
 
         {/* Organization Selector Section */}
-        <Card className="shadow-sm mb-6">
+        <Card className="shadow-sm">
           <CardHeader>
             <CardTitle className="text-xl">Current Organization</CardTitle>
             <CardDescription>
@@ -396,9 +415,9 @@ const OrganizationSettings: React.FC = () => {
         {/* Main Settings Card */}
         <Card className="shadow-sm">
           {isLoading || permissionsLoading ? (
-            <div className="p-8 text-center">
-              <div className="animate-spin mx-auto h-8 w-8 border-t-2 border-b-2 border-blue-500 rounded-full"></div>
-              <p className="mt-2 text-gray-500">Loading organization data...</p>
+            <div className="p-8 text-center flex flex-col items-center">
+              <Spinner size="lg" />
+              <p className="mt-2 text-muted-foreground">Loading organization data...</p>
             </div>
           ) : (
             <form onSubmit={handleSubmit}>
@@ -406,7 +425,7 @@ const OrganizationSettings: React.FC = () => {
                 <CardTitle className="text-2xl">Organization Settings</CardTitle>
                 <CardDescription>
                   {isAdmin
-                    ? "Update your organization information which will be displayed on your app's page in the App Store."
+                    ? "Update your organization information which will be displayed on your MiniApp's page in the Mentra MiniApp Store."
                     : "View organization information (read-only). Only administrators can update these settings."}
                 </CardDescription>
               </CardHeader>
@@ -419,16 +438,16 @@ const OrganizationSettings: React.FC = () => {
                 )}
 
                 {isSaved && (
-                  <Alert className="bg-green-50 text-green-800 border-green-200">
-                    <CheckCircle2 className="h-4 w-4 text-green-600" />
-                    <AlertDescription className="text-green-700">Organization updated successfully!</AlertDescription>
+                  <Alert className="bg-success-light text-success border-success">
+                    <CheckCircle2 className="h-4 w-4 text-success" />
+                    <AlertDescription className="text-success">Organization updated successfully!</AlertDescription>
                   </Alert>
                 )}
 
                 <div className="space-y-2 mt-4">
                   <Label htmlFor="name" className="flex items-center gap-2">
                     <Building className="h-4 w-4" />
-                    Organization Name <span className="text-red-500 ml-1">*</span>
+                    Organization Name <span className="text-destructive ml-1">*</span>
                   </Label>
                   <Input
                     id="name"
@@ -438,9 +457,9 @@ const OrganizationSettings: React.FC = () => {
                     placeholder="Your organization name"
                     required
                     readOnly={!isAdmin}
-                    className={!isAdmin ? "bg-gray-50 text-gray-500" : ""}
+                    className={!isAdmin ? "bg-secondary text-muted-foreground" : ""}
                   />
-                  <p className="text-xs text-gray-500">
+                  <p className="text-xs text-muted-foreground">
                     The name of your organization that will be displayed to users. Required to publish apps.
                   </p>
                 </div>
@@ -457,9 +476,9 @@ const OrganizationSettings: React.FC = () => {
                     onChange={handleChange}
                     placeholder="https://example.com"
                     readOnly={!isAdmin}
-                    className={!isAdmin ? "bg-gray-50 text-gray-500" : ""}
+                    className={!isAdmin ? "bg-secondary text-muted-foreground" : ""}
                   />
-                  <p className="text-xs text-gray-500">
+                  <p className="text-xs text-muted-foreground">
                     Your organization's website URL.
                   </p>
                 </div>
@@ -467,7 +486,7 @@ const OrganizationSettings: React.FC = () => {
                 <div className="space-y-2">
                   <Label htmlFor="contactEmail" className="flex items-center gap-2">
                     <Mail className="h-4 w-4" />
-                    Contact Email <span className="text-red-500 ml-1">*</span>
+                    Contact Email <span className="text-destructive ml-1">*</span>
                   </Label>
                   <Input
                     id="contactEmail"
@@ -478,9 +497,9 @@ const OrganizationSettings: React.FC = () => {
                     required
                     type="email"
                     readOnly={!isAdmin}
-                    className={!isAdmin ? "bg-gray-50 text-gray-500" : ""}
+                    className={!isAdmin ? "bg-secondary text-muted-foreground" : ""}
                   />
-                  <p className="text-xs text-gray-500">
+                  <p className="text-xs text-muted-foreground">
                     An email address where users can contact you for support or inquiries. Required to publish apps.
                   </p>
                 </div>
@@ -498,9 +517,9 @@ const OrganizationSettings: React.FC = () => {
                     placeholder="Tell users about your organization"
                     rows={4}
                     readOnly={!isAdmin}
-                    className={!isAdmin ? "bg-gray-50 text-gray-500" : ""}
+                    className={!isAdmin ? "bg-secondary text-muted-foreground" : ""}
                   />
-                  <p className="text-xs text-gray-500">
+                  <p className="text-xs text-muted-foreground">
                     A short description of your organization.
                   </p>
                 </div>
@@ -525,7 +544,7 @@ const OrganizationSettings: React.FC = () => {
                     disabled={!isAdmin || isSaving}
                   />
                   {/* Note: The actual Cloudflare URL is stored in logo but not displayed to the user */}
-                  <p className="text-xs text-gray-500">
+                  <p className="text-xs text-muted-foreground">
                     {isAdmin
                       ? "Upload your organization logo (recommended: square format, 512x512 PNG)."
                       : "Organization logo"}
@@ -540,40 +559,30 @@ const OrganizationSettings: React.FC = () => {
                       </Alert>
                     )}
               </CardContent>
-              <CardFooter className="flex justify-end p-6">
-                                  {isAdmin ? (
-                                    <div className="flex gap-4">
-                                      <Button
-                                        type="button"
-                                        variant="destructive"
-                                        onClick={handleDeleteOrg}
-                                        disabled={isDeleting}
-                                        className="gap-2"
-                                      >
-                                        {isDeleting ? (
-                                          <>
-                                            <Loader2 className="h-4 w-4 animate-spin" />
-                                            Deleting...
-                                          </>
-                                        ) : (
-                                          <>
-                                            <Trash className="h-4 w-4" />
-                                            Delete Organization
-                                          </>
-                                        )}
-                                      </Button>
-                                      <Button type="submit" disabled={isSaving}>
-                                        {isSaving ? (
-                                          <>
-                                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                                            Saving...
-                                          </>
-                                        ) : (
-                                          'Save Changes'
-                                        )}
-                                      </Button>
-                                    </div>
-                                  ) : (
+              <CardFooter className="flex justify-between p-6">
+                {isAdmin ? (
+                  <>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={() => setShowDeleteDialog(true)}
+                      className="gap-2"
+                    >
+                      <Trash className="h-4 w-4" />
+                      Delete Organization
+                    </Button>
+                    <Button type="submit" disabled={isSaving}>
+                      {isSaving ? (
+                        <>
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                          Saving...
+                        </>
+                      ) : (
+                        'Save Changes'
+                      )}
+                    </Button>
+                  </>
+                ) : (
                   <p className="text-sm text-muted-foreground">
                     Contact an administrator to make changes
                   </p>
@@ -589,6 +598,48 @@ const OrganizationSettings: React.FC = () => {
           onOpenChange={setShowCreateOrgDialog}
           onOrgCreated={handleOrgCreated}
         />
+
+        {/* Delete Organization Dialog */}
+        <Dialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Delete Organization</DialogTitle>
+              <DialogDescription>
+                Are you sure you want to permanently delete "{currentOrg?.name}"? This action cannot be undone and all associated data will be lost.
+              </DialogDescription>
+            </DialogHeader>
+            {deleteError && (
+              <Alert variant="destructive">
+                <AlertCircle className="h-4 w-4" />
+                <AlertDescription>{deleteError}</AlertDescription>
+              </Alert>
+            )}
+            <DialogFooter>
+              <Button
+                variant="secondary"
+                onClick={() => setShowDeleteDialog(false)}
+                disabled={isDeleting}
+              >
+                Cancel
+              </Button>
+              <Button
+                variant="destructive"
+                onClick={handleDeleteOrg}
+                disabled={isDeleting}
+              >
+                {isDeleting ? (
+                  <>
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    Deleting...
+                  </>
+                ) : (
+                  'Delete Organization'
+                )}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+        </div>
       </div>
     </DashboardLayout>
   );
