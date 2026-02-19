@@ -441,7 +441,7 @@ export default function AppSwitcher({swipeProgress}: AppSwitcherProps) {
       targetIndex.value = clamped
       let target = -clamped * cardWidth
       if (instant) {
-        translateX.value = withTiming(target, {duration: 100})
+        translateX.value = withTiming(target, {duration: 10})
       } else {
         translateX.value = withSpring(target, {
           damping: 1000,
@@ -497,9 +497,9 @@ export default function AppSwitcher({swipeProgress}: AppSwitcherProps) {
     // reset the translateX:
     swipeProgress.value = withSpring(0, {damping: 20, stiffness: 300, overshootClamping: true})
     // do after we have closed the swipe progress:
-    setTimeout(() => {
-      goToIndex(apps.length, true)
-    }, 250)
+    // setTimeout(() => {
+    //   goToIndex(apps.length - 1, true)
+    // }, 250)
   }, [apps.length])
 
   useAnimatedReaction(
@@ -516,6 +516,10 @@ export default function AppSwitcher({swipeProgress}: AppSwitcherProps) {
       } else if (previous !== null && current == 0 && previous > 0) {
         openX.value = -1
         // scheduleOnRN(() => {setIsOpen(false)})
+      }
+      if (previous !== null && current > 0 && previous == 0) {
+        // just opened:
+        runOnJS(goToIndex)(apps.length - 1, true)
       }
     },
   )
