@@ -1,21 +1,21 @@
-import {ScrollView, View, ViewStyle, TextStyle} from "react-native"
+import {ScrollView, View} from "react-native"
 
-import {Header, Icon, Screen, Text} from "@/components/ignite"
+import {Header, Screen} from "@/components/ignite"
 import ToggleSetting from "@/components/settings/ToggleSetting"
 import {Group} from "@/components/ui/Group"
 import {useNavigationHistory} from "@/contexts/NavigationHistoryContext"
-import {useAppTheme} from "@/contexts/ThemeContext"
 import {SETTINGS, useSetting} from "@/stores/settings"
-import {ThemedStyle} from "@/theme"
+import { RouteButton } from "@/components/ui/RouteButton"
 
 export default function SuperSettingsScreen() {
-  const {theme, themed} = useAppTheme()
   const {goBack} = useNavigationHistory()
   const [superMode, setSuperMode] = useSetting(SETTINGS.super_mode.key)
   const [debugNavigationHistoryEnabled, setDebugNavigationHistoryEnabled] = useSetting(
     SETTINGS.debug_navigation_history.key,
   )
   const [debugCoreStatusBarEnabled, setDebugCoreStatusBarEnabled] = useSetting(SETTINGS.debug_core_status_bar.key)
+  const [appSwitcherUi, setAppSwitcherUi] = useSetting(SETTINGS.app_switcher_ui.key)
+  const {push} = useNavigationHistory()
 
   return (
     <Screen preset="fixed">
@@ -42,37 +42,27 @@ export default function SuperSettingsScreen() {
               value={debugCoreStatusBarEnabled}
               onValueChange={(value) => setDebugCoreStatusBarEnabled(value)}
             />
+
+            <ToggleSetting
+              label="App Switcher UI"
+              value={appSwitcherUi}
+              onValueChange={(value) => setAppSwitcherUi(value)}
+            />
+          </Group>
+
+          <Group title="Mini Apps">
+            <RouteButton
+              label="Local Captions Example"
+              onPress={() => push("/miniapps/dev/local-captions")}
+            />
+
+            <RouteButton
+              label="Local Mini App installer"
+              onPress={() => push("/miniapps/dev/mini-app-installer")}
+            />
           </Group>
         </View>
       </ScrollView>
     </Screen>
   )
 }
-
-const $warningContainer: ThemedStyle<ViewStyle> = ({colors, spacing, isDark}) => ({
-  borderRadius: spacing.s3,
-  paddingHorizontal: spacing.s4,
-  paddingVertical: spacing.s3,
-  borderWidth: spacing.s0_5,
-  borderColor: colors.destructive,
-  backgroundColor: isDark ? "#2B1E1A" : "#FEEBE7",
-})
-
-const $warningContent: ThemedStyle<ViewStyle> = () => ({
-  alignItems: "center",
-  flexDirection: "row",
-  marginBottom: 4,
-})
-
-const $warningTitle: ThemedStyle<TextStyle> = ({colors}) => ({
-  fontSize: 16,
-  fontWeight: "bold",
-  marginLeft: 6,
-  color: colors.text,
-})
-
-const $warningSubtitle: ThemedStyle<TextStyle> = ({colors}) => ({
-  fontSize: 14,
-  marginLeft: 22,
-  color: colors.text,
-})

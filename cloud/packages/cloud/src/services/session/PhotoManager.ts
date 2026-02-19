@@ -192,36 +192,19 @@ export class PhotoManager {
   }
 
   /**
-   * Handles a photo response from glasses.
-   * Adapts logic from photoRequestService.processPhotoResponse.
+   * Handles a validated photo response.
+   *
+   * Callers (the REST endpoint) are responsible for validation and
+   * building a well-formed PhotoResponse before calling this method.
    */
-  async handlePhotoResponse(glassesResponse: PhotoResponse | any): Promise<void> {
-    // Handle simplified error format from glasses/phone
-    let normalizedResponse: PhotoResponse;
-
-    if (glassesResponse.errorCode && glassesResponse.errorMessage) {
-      // Convert simplified format to expected PhotoResponse format
-      normalizedResponse = {
-        type: GlassesToCloudMessageType.PHOTO_RESPONSE,
-        requestId: glassesResponse.requestId,
-        success: glassesResponse.success || false,
-        error: {
-          code: glassesResponse.errorCode as PhotoErrorCode,
-          message: glassesResponse.errorMessage,
-        },
-      };
-    } else {
-      // Use as-is if already in expected format
-      normalizedResponse = glassesResponse as PhotoResponse;
-    }
-
-    const { requestId, success } = normalizedResponse;
+  async handlePhotoResponse(response: PhotoResponse): Promise<void> {
+    const { requestId, success } = response;
     const pendingPhotoRequest = this.pendingPhotoRequests.get(requestId);
 
     this.logger.debug(
       {
         pendingPhotoRequests: Array.from(this.pendingPhotoRequests.keys()),
-        glassesResponse,
+        response,
         success,
         requestId,
       },
@@ -230,7 +213,7 @@ export class PhotoManager {
 
     if (!pendingPhotoRequest) {
       this.logger.warn(
-        { requestId, glassesResponse: normalizedResponse },
+        { requestId, response },
         "Received photo response for unknown, timed-out, or already processed request.",
       );
       return;
@@ -241,19 +224,17 @@ export class PhotoManager {
         requestId,
         packageName: pendingPhotoRequest.packageName,
         success,
-        hasError: !success && !!normalizedResponse.error,
-        errorCode: normalizedResponse.error?.code,
+        hasError: !success && !!response.error,
+        errorCode: response.error?.code,
       },
       "Photo response received from glasses.",
     );
     this.pendingPhotoRequests.delete(requestId);
 
     if (success) {
-      // Handle success response
-      await this._sendPhotoResultToApp(pendingPhotoRequest, normalizedResponse);
+      await this._sendPhotoResultToApp(pendingPhotoRequest, response);
     } else {
-      // Handle error response
-      await this._sendPhotoErrorToApp(pendingPhotoRequest, normalizedResponse);
+      await this._sendPhotoErrorToApp(pendingPhotoRequest, response);
     }
   }
 

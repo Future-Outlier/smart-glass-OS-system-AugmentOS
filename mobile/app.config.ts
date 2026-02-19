@@ -138,12 +138,14 @@ module.exports = ({config}: ConfigContext): Partial<ExpoConfig> => {
       [
         "expo-splash-screen",
         {
-          image: "./assets/logo/logo.png",
-          resizeMode: "contain",
+          image: "./assets/logo/logo_light.png",
+          resizeMode: "cover",
           imageWidth: 100,
           backgroundColor: "#fff",
           dark: {
-            backgroundColor: "#171717",
+            backgroundColor: "#fff",
+            // backgroundColor: "#171717",
+            // image: "./assets/logo/logo_dark.png",
           },
         },
       ],
@@ -182,6 +184,7 @@ module.exports = ({config}: ConfigContext): Partial<ExpoConfig> => {
             compileSdkVersion: 36,
           },
           ios: {
+            deploymentTarget: "15.5",// for react-native-zip-archive
             extraPods: [
               {
                 name: "SDWebImage",
