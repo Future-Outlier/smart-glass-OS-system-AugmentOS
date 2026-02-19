@@ -736,50 +736,57 @@ class SonioxTranscriptionStream implements StreamInstance {
     const currentInterim = (this.stablePrefixText + tailText).replace(/\s+/g, " ").trim();
 
     if (currentInterim && currentInterim !== this.lastSentInterim) {
-      const interimData: TranscriptionData = {
-        type: StreamType.TRANSCRIPTION,
-        text: currentInterim,
-        isFinal: false,
-        utteranceId: this.currentUtteranceId || undefined,
-        speakerId: this.currentSpeakerId,
-        confidence: avgConfidence || undefined,
-        startTime: Date.now(),
-        endTime: Date.now() + 1000,
-        transcribeLanguage: this.language, // Use subscription language for routing
-        detectedLanguage: this.currentLanguage, // Actual detected language from Soniox
-        provider: "soniox",
-        metadata: {
-          provider: "soniox",
-          soniox: {
-            tokens: this.convertToSdkTokens(
-              tailTokens.map((t) => ({
-                text: t.text,
-                isFinal: t.isFinal,
-                confidence: t.confidence,
-                start_ms: t.start_ms,
-                end_ms: t.end_ms,
-                speaker: t.speaker,
-              })),
-            ),
-          },
-        },
-      };
-
-      this.callbacks.onData?.(interimData);
-      this.lastSentInterim = currentInterim;
-
-      this.logger.debug(
-        {
-          streamId: this.id,
-          text: currentInterim.substring(0, 100),
+      // If an end token is present, skip emitting the interim — we'll emit
+      // the same text as a FINAL immediately below.  Just update
+      // lastSentInterim so emitFinalTranscription picks it up.
+      if (hasEndToken) {
+        this.lastSentInterim = currentInterim;
+      } else {
+        const interimData: TranscriptionData = {
+          type: StreamType.TRANSCRIPTION,
+          text: currentInterim,
           isFinal: false,
-          utteranceId: this.currentUtteranceId,
+          utteranceId: this.currentUtteranceId || undefined,
           speakerId: this.currentSpeakerId,
-          tailTokenCount: tailTokens.length,
+          confidence: avgConfidence || undefined,
+          startTime: Date.now(),
+          endTime: Date.now() + 1000,
+          transcribeLanguage: this.language, // Use subscription language for routing
+          detectedLanguage: this.currentLanguage, // Actual detected language from Soniox
           provider: "soniox",
-        },
-        `🎙️ SONIOX: interim transcription - "${currentInterim}"`,
-      );
+          metadata: {
+            provider: "soniox",
+            soniox: {
+              tokens: this.convertToSdkTokens(
+                tailTokens.map((t) => ({
+                  text: t.text,
+                  isFinal: t.isFinal,
+                  confidence: t.confidence,
+                  start_ms: t.start_ms,
+                  end_ms: t.end_ms,
+                  speaker: t.speaker,
+                })),
+              ),
+            },
+          },
+        };
+
+        this.callbacks.onData?.(interimData);
+        this.lastSentInterim = currentInterim;
+
+        this.logger.debug(
+          {
+            streamId: this.id,
+            text: currentInterim.substring(0, 100),
+            isFinal: false,
+            utteranceId: this.currentUtteranceId,
+            speakerId: this.currentSpeakerId,
+            tailTokenCount: tailTokens.length,
+            provider: "soniox",
+          },
+          `🎙️ SONIOX: interim transcription - "${currentInterim}"`,
+        );
+      }
     }
 
     if (hasEndToken) {
