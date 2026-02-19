@@ -2385,6 +2385,18 @@ public class MentraLive extends SGCManager {
                 initializeLc3Logging();
                 Bridge.log("LIVE: ✅ LC3 audio logging initialized for device");
 
+                // Restore mic state if it was enabled before reconnect
+                if (micIntentEnabled) {
+                    if (BLOCK_AUDIO_DUPLEX && phoneAudioMonitor != null && phoneAudioMonitor.isPlaying()) {
+                        micSuspendedForAudio = true;
+                        Bridge.log("LIVE: 🎤 Restoring mic intent after reconnect, but phone audio is playing - suspending");
+                    } else {
+                        micSuspendedForAudio = false;
+                        Bridge.log("LIVE: 🎤 Restoring mic state after reconnect");
+                        startMicBeat();
+                    }
+                }
+
                 // Audio Pairing: Only mark as fully connected if audio is also ready
                 // On Android, CTKD automatically pairs BT Classic when BLE bonds, so audio is always ready
                 // This check maintains platform parity with iOS
