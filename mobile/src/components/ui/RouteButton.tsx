@@ -30,7 +30,7 @@ export function StatusCard({label, style, iconStart, iconEnd, textStyle, subtitl
           style={{
             gap: theme.spacing.s1,
           }}>
-          <Text style={[themed($label), textStyle]} weight="semibold" text={label} />
+          <Text style={[themed($label), textStyle]} className="font-semibold" text={label} />
           {subtitle && <Text style={themed($subtitle)} text={subtitle} />}
         </View>
       </View>
@@ -89,8 +89,8 @@ export function RouteButton({
   const labelColor = disabled
     ? theme.colors.textDim
     : isDestructive
-      ? theme.colors.destructive
-      : theme.colors.secondary_foreground
+    ? theme.colors.destructive
+    : theme.colors.secondary_foreground
 
   return (
     <View style={[themed($settingsGroup), {paddingVertical: 0}, disabled && {opacity: 0.5}, style]}>
@@ -103,20 +103,21 @@ export function RouteButton({
               flex: 1,
               gap: theme.spacing.s1,
             }}>
-            <View style={{flexDirection: "row", alignItems: "center", gap: theme.spacing.s4}}>
+            <View className="flex-row items-center gap-4">
               {icon && <View style={themed($icon)}>{icon}</View>}
               <Text style={[themed($label), {color: labelColor}]}>{label}</Text>
             </View>
             {subtitle && <Text style={themed($subtitle)}>{subtitle}</Text>}
           </View>
           {onPress && (
-            <View style={[themed($iconContainer), {flexShrink: 0, marginLeft: theme.spacing.s3}]}>
+            <View style={[themed($iconContainer), {flexShrink: 0}]} className="ml-3">
               <Icon name="arrow-right" size={24} color={disabled ? theme.colors.textDim : theme.colors.text} />
             </View>
           )}
           {text && (
-            <Text style={[themed($text), {flexShrink: 0, marginLeft: theme.spacing.s3}]} weight="light">
+            <Text style={[themed($text), {flexShrink: 0}]} className="font-light ml-3">
               {text}
+              {/* {"testthisisalongtestemailaddress@example.com"} */}
             </Text>
           )}
         </View>
@@ -140,6 +141,11 @@ const $settingsGroup: ThemedStyle<ViewStyle> = ({colors, spacing}) => ({
 const $text: ThemedStyle<TextStyle> = ({colors}) => ({
   color: colors.text,
   fontSize: 16,
+  alignItems: "center",
+  justifyContent: "center",
+  lineHeight: 16,
+  maxWidth: "70%",
+  textOverflow: "ellipsis",
 })
 
 const $iconContainer: ThemedStyle<ViewStyle> = ({colors, spacing}) => ({
