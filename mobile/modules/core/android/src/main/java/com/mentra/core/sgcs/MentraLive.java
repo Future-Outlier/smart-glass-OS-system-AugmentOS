@@ -124,7 +124,7 @@ public class MentraLive extends SGCManager {
     // Feature Flags
     // BLOCK_AUDIO_DUPLEX: When true, suspends LC3 mic while phone is playing audio via A2DP
     // to avoid overloading the MCU. Set to false to allow simultaneous A2DP + LC3 mic.
-    private static final boolean BLOCK_AUDIO_DUPLEX = true;
+    private static final boolean BLOCK_AUDIO_DUPLEX = false;
 
     // LC3 frame size for Mentra Live
     private static final int LC3_FRAME_SIZE = 40;
@@ -228,6 +228,8 @@ public class MentraLive extends SGCManager {
     private boolean micIntentEnabled = false;       // User/system WANTS mic enabled
     private boolean micSuspendedForAudio = false;   // Mic temporarily suspended due to phone audio
     private PhoneAudioMonitor phoneAudioMonitor;
+    private int micOnCount = 0;
+    private int micOffCount = 0;
 
     // Rate limiting - minimum delay between BLE characteristic writes
     private static final long MIN_SEND_DELAY_MS = 160; // 160ms minimum delay (increased from 100ms)
@@ -3288,7 +3290,8 @@ public class MentraLive extends SGCManager {
      * Start the micbeat mechanism - periodically enable custom audio TX
      */
     private void startMicBeat() {
-        // Bridge.log("LIVE: 🎤 Starting micbeat mechanism");
+        micOnCount++;
+        Bridge.log("LIVE: 🎤 Mic ON/OFF count: " + micOnCount + " on, " + micOffCount + " off");
         micBeatCount = 0;
 
         // Initialize custom audio TX immediately
@@ -3316,7 +3319,8 @@ public class MentraLive extends SGCManager {
      * Stop the micbeat mechanism
      */
     private void stopMicBeat() {
-        // Bridge.log("LIVE: 🎤 Stopping micbeat mechanism");
+        micOffCount++;
+        Bridge.log("LIVE: 🎤 Mic ON/OFF count: " + micOnCount + " on, " + micOffCount + " off");
         sendEnableCustomAudioTxMessage(false);
         micBeatHandler.removeCallbacks(micBeatRunnable);
         micBeatCount = 0;
@@ -4376,11 +4380,7 @@ public class MentraLive extends SGCManager {
             Bridge.log("LIVE: Sending hrt command: " + jsonStr);
             byte[] packedData = K900ProtocolUtils.packDataToK900(jsonStr.getBytes(StandardCharsets.UTF_8), K900ProtocolUtils.CMD_TYPE_STRING);
             
-            // Send this 3 times to ensure this gets through, since we don't get ACK from BES.
-            // Kind of hacky but works for now.
             queueData(packedData);
-            // queueData(packedData);
-            // queueData(packedData);
         } catch (JSONException e) {
             Log.e(TAG, "Error creating enable_custom_audio_tx command", e);
         }
