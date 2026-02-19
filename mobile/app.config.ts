@@ -24,12 +24,13 @@ module.exports = ({config}: ConfigContext): Partial<ExpoConfig> => {
     jsEngine: "hermes",
     assetBundlePatterns: ["**/*"],
     android: {
-      icon: "./assets/app-icons/ic_launcher.png",
+      // icon: "./assets/app-icons/ic_launcher.png",
       package: "com.mentra.mentra",
       versionCode: 88,
       adaptiveIcon: {
         foregroundImage: "./assets/app-icons/ic_launcher_foreground.png",
-        backgroundImage: "./assets/app-icons/ic_launcher.png",
+        // backgroundImage: "./assets/app-icons/ic_launcher.png",
+        backgroundColor: "#fff"
       },
       allowBackup: false,
       permissions: [
