@@ -4379,8 +4379,8 @@ public class MentraLive extends SGCManager {
             // Send this 3 times to ensure this gets through, since we don't get ACK from BES.
             // Kind of hacky but works for now.
             queueData(packedData);
-            queueData(packedData);
-            queueData(packedData);
+            // queueData(packedData);
+            // queueData(packedData);
         } catch (JSONException e) {
             Log.e(TAG, "Error creating enable_custom_audio_tx command", e);
         }
