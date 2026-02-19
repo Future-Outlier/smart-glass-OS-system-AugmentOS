@@ -14,6 +14,7 @@ export {
   locationApi,
   minVersionApi,
   notificationsApi,
+  photoApi,
   userSettingsApi,
 } from "./client";
 

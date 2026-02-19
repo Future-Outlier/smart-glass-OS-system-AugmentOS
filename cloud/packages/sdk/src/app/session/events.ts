@@ -25,6 +25,8 @@ import {
   createTranscriptionStream,
   isValidLanguageCode,
   createTranslationStream,
+  isLanguageStream,
+  parseLanguageStream,
   CustomMessage,
   RtmpStreamStatus,
   PhotoTaken,
@@ -423,6 +425,52 @@ export class EventManager {
    */
   getRegisteredStreams(): ExtendedStreamType[] {
     return Array.from(this.handlers.keys()) as ExtendedStreamType[];
+  }
+
+  /**
+   * 🔍 Find a registered stream that matches the incoming stream type.
+   *
+   * For non-language streams: exact match (existing behavior).
+   * For language streams: compare base type + transcribeLanguage
+   * (+ translateLanguage for translations), ignoring query params like ?hints=.
+   *
+   * This allows the SDK to receive data from a cloud stream whose subscription
+   * string doesn't include the same query params as the handler's subscription.
+   * For example, incoming "transcription:en-US" matches handler "transcription:en-US?hints=ja".
+   */
+  findMatchingStream(incoming: ExtendedStreamType): ExtendedStreamType | null {
+    // Fast path: exact match
+    if (this.handlers.has(incoming)) {
+      return incoming;
+    }
+
+    // For language streams, try base-language matching
+    if (isLanguageStream(incoming as string)) {
+      const incomingParsed = parseLanguageStream(incoming);
+      if (!incomingParsed) return null;
+
+      for (const key of this.handlers.keys()) {
+        if (!isLanguageStream(key as string)) continue;
+
+        const keyParsed = parseLanguageStream(key as ExtendedStreamType);
+        if (!keyParsed) continue;
+
+        // Compare base type
+        if (keyParsed.type !== incomingParsed.type) continue;
+
+        // Compare transcribe language
+        if (keyParsed.transcribeLanguage !== incomingParsed.transcribeLanguage) continue;
+
+        // For translations, also compare target language
+        if (incomingParsed.translateLanguage || keyParsed.translateLanguage) {
+          if (keyParsed.translateLanguage !== incomingParsed.translateLanguage) continue;
+        }
+
+        return key as ExtendedStreamType;
+      }
+    }
+
+    return null;
   }
 
   /**
