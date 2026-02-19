@@ -1216,12 +1216,6 @@ class MentraLive: NSObject, SGCManager {
                 "B": enableString,
             ]
 
-            // Send this 5 times to ensure this gets through, since we don't get ACK from BES.
-            // Kind of hacky but works for now.
-            sendRawK900Command(command)
-            sendRawK900Command(command)
-            sendRawK900Command(command)
-            sendRawK900Command(command)
             if sendRawK900Command(command) {
                 Bridge.log("LIVE: Sent enable_custom_audio_tx via queue (BES-handled command)")
             } else {
@@ -2280,10 +2274,21 @@ class MentraLive: NSObject, SGCManager {
         // Start heartbeat
         startHeartbeat()
 
+        // Restore mic state if it was enabled before reconnect
+        if micIntentEnabled {
+            if BLOCK_AUDIO_DUPLEX, let monitor = phoneAudioMonitor, monitor.isPlaying() {
+                micSuspendedForAudio = true
+                Bridge.log("LIVE: 🎤 Restoring mic intent after reconnect, but phone audio is playing - suspending")
+            } else {
+                micSuspendedForAudio = false
+                Bridge.log("LIVE: 🎤 Restoring mic state after reconnect")
+                startMicBeat()
+            }
+        }
+
         fullyBooted = true
         connected = true
         connectionState = ConnTypes.CONNECTED
-        // maybe add audio monitoring here?
     }
 
     private func handleWifiScanResult(_ json: [String: Any]) {
