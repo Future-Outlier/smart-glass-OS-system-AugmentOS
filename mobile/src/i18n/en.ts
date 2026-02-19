@@ -829,6 +829,15 @@ const en = {
     store: "Get more apps",
     lmaInstaller: "Local Store",
   },
+  lmaInstaller: {
+    installedVersions: "Installed versions",
+    miniAppInstaller: "Mini App Installer",
+    installMiniApp: "Install Mini App",
+    uninstallMiniApp: "Uninstall Mini App",
+    uninstallMiniAppConfirm: "Are you sure you want to uninstall {{appName}}?",
+    uninstallMiniAppError: "Error uninstalling mini app: {{error}}",
+    uninstallMiniAppSuccess: "{{appName}} has been uninstalled successfully",
+  },
 }
 
 export default en
