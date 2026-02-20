@@ -25,7 +25,7 @@ export function StatusCard({label, style, iconStart, iconEnd, textStyle, subtitl
   const content = (
     <View style={[themed($settingsGroup), themed($statusCardContainer), restStyle]}>
       <View style={{flexDirection: "row", alignItems: "center", gap: theme.spacing.s4}}>
-        {iconStart && <View style={themed($icon)}>{iconStart}</View>}
+        {iconStart && <View className="justify-center items-center">{iconStart}</View>}
         <View
           style={{
             gap: theme.spacing.s1,
@@ -104,7 +104,7 @@ export function RouteButton({
               gap: theme.spacing.s1,
             }}>
             <View className="flex-row items-center gap-4">
-              {icon && <View style={themed($icon)}>{icon}</View>}
+              {icon && <View className="justify-center items-center">{icon}</View>}
               <Text style={[themed($label), {color: labelColor}]}>{label}</Text>
             </View>
             {subtitle && <Text style={themed($subtitle)}>{subtitle}</Text>}
@@ -125,11 +125,6 @@ export function RouteButton({
     </View>
   )
 }
-
-const $icon: ThemedStyle<ViewStyle> = () => ({
-  justifyContent: "center",
-  alignItems: "center",
-})
 
 const $settingsGroup: ThemedStyle<ViewStyle> = ({colors, spacing}) => ({
   backgroundColor: colors.backgroundAlt,
