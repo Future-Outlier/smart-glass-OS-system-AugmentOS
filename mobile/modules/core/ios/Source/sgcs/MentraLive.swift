@@ -870,7 +870,7 @@ class MentraLive: NSObject, SGCManager {
     // Feature Flags
     // BLOCK_AUDIO_DUPLEX: When true, suspends LC3 mic while phone is playing audio via A2DP
     // to avoid overloading the MCU. Set to false to allow simultaneous A2DP + LC3 mic.
-    private let BLOCK_AUDIO_DUPLEX = true
+    private let BLOCK_AUDIO_DUPLEX = false
 
     var connectionState: String = ConnTypes.DISCONNECTED
 
@@ -2274,10 +2274,21 @@ class MentraLive: NSObject, SGCManager {
         // Start heartbeat
         startHeartbeat()
 
+        // Restore mic state if it was enabled before reconnect
+        if micIntentEnabled {
+            if BLOCK_AUDIO_DUPLEX, let monitor = phoneAudioMonitor, monitor.isPlaying() {
+                micSuspendedForAudio = true
+                Bridge.log("LIVE: 🎤 Restoring mic intent after reconnect, but phone audio is playing - suspending")
+            } else {
+                micSuspendedForAudio = false
+                Bridge.log("LIVE: 🎤 Restoring mic state after reconnect")
+                startMicBeat()
+            }
+        }
+
         fullyBooted = true
         connected = true
         connectionState = ConnTypes.CONNECTED
-        // maybe add audio monitoring here?
     }
 
     private func handleWifiScanResult(_ json: [String: Any]) {
