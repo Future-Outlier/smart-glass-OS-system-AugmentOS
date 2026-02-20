@@ -423,12 +423,12 @@ export default function AppSwitcher({swipeProgress}: AppSwitcherProps) {
       if (lastApp.packageName === packageName) {
         setTimeout(() => {
           runOnJS(goToIndex)(apps.length - 2)
-        }, 100)
+        }, 200)
       }
 
-      setTimeout(() => {
+      // setTimeout(() => {
         useAppletStatusStore.getState().stopApplet(packageName)
-      }, 100)
+      // }, 100)
     },
     [apps.length],
   )
