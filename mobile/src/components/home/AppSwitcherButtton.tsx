@@ -2,14 +2,15 @@ import {Platform, View} from "react-native"
 import Animated, {runOnJS, SharedValue, useSharedValue, withSpring} from "react-native-reanimated"
 import {Gesture, GestureDetector} from "react-native-gesture-handler"
 
-import {Text} from "@/components/ignite"
+import {Button, Icon, Text} from "@/components/ignite"
 import AppIcon from "@/components/home/AppIcon"
 import {useAppTheme} from "@/contexts/ThemeContext"
 import {translate} from "@/i18n"
-import {useActiveApps, useActiveBackgroundApps, useActiveForegroundApp} from "@/stores/applets"
+import {ClientAppletInterface, useActiveApps, useActiveBackgroundApps, useActiveForegroundApp} from "@/stores/applets"
 import * as Haptics from "expo-haptics"
-import { useRef } from "react"
-import { scheduleOnRN } from "react-native-worklets"
+import {useEffect, useRef, useState} from "react"
+import {scheduleOnRN} from "react-native-worklets"
+import AllAppsGridButton from "@/components/home/AllAppsGridButton"
 
 interface AppSwitcherButtonProps {
   swipeProgress: SharedValue<number>
@@ -27,8 +28,17 @@ export default function AppSwitcherButton({swipeProgress}: AppSwitcherButtonProp
   const apps = useActiveApps()
   const appsCount = apps.length
   const hasBuzzedRef = useRef(false)
+  const [appsList, setAppsList] = useState<ClientAppletInterface[]>([])
 
   const translateY = useSharedValue(0)
+
+  useEffect(() => {
+    let list = [...backgroundApps]
+    if (foregroundApp) {
+      list.push(foregroundApp)
+    }
+    setAppsList(list)
+  }, [backgroundApps, foregroundApp])
 
   const buzz = () => {
     if (Platform.OS === "ios") {
@@ -58,9 +68,7 @@ export default function AppSwitcherButton({swipeProgress}: AppSwitcherButtonProp
 
         const swipeDistance = Math.abs(translateY.value)
 
-        const shouldOpen =
-          swipeProgress.value > SWIPE_PERCENT_THRESHOLD ||
-          swipeDistance > SWIPE_DISTANCE_THRESHOLD
+        const shouldOpen = swipeProgress.value > SWIPE_PERCENT_THRESHOLD || swipeDistance > SWIPE_DISTANCE_THRESHOLD
 
         if (shouldOpen && !hasBuzzedRef.current) {
           hasBuzzedRef.current = true
@@ -74,9 +82,7 @@ export default function AppSwitcherButton({swipeProgress}: AppSwitcherButtonProp
       // const normalizedVelocity = event.velocityY / (SWIPE_DISTANCE_THRESHOLD * SWIPE_DISTANCE_MULTIPLIER)
       // const velocity = event.velocityY / 100
 
-      const shouldOpen =
-        swipeProgress.value > SWIPE_PERCENT_THRESHOLD ||
-        swipeDistance > SWIPE_DISTANCE_THRESHOLD
+      const shouldOpen = swipeProgress.value > SWIPE_PERCENT_THRESHOLD || swipeDistance > SWIPE_DISTANCE_THRESHOLD
 
       if (shouldOpen) {
         swipeProgress.value = withSpring(1, {
@@ -107,55 +113,59 @@ export default function AppSwitcherButton({swipeProgress}: AppSwitcherButtonProp
   if (appsCount === 0) {
     // Show placeholder when no active app
     return (
-      <GestureDetector gesture={composedGesture}>
-        <Animated.View className="bg-primary-foreground py-1.5 pl-3 min-h-15 rounded-2xl flex-row justify-between items-center mt-0 mb-8">
+      <View className="bg-primary-foreground py-1.5 pl-3 min-h-15 rounded-2xl flex-row justify-between items-center mt-0 mb-8 pr-2">
+        <GestureDetector gesture={composedGesture}>
           <View className="flex-row items-center justify-center flex-1">
-            <Text className="text-muted-foreground text-lg" tx="home:appletPlaceholder2" />
+            <Text className="text-muted-foreground text-md" tx="home:appletPlaceholder2" />
           </View>
-        </Animated.View>
-      </GestureDetector>
+        </GestureDetector>
+        <AllAppsGridButton />
+      </View>
     )
   }
 
   return (
-    <GestureDetector gesture={composedGesture}>
-      <Animated.View className="bg-primary-foreground py-1.5 pl-3 rounded-2xl flex-row justify-between items-center mt-0 mb-8">
-        <View className="flex-row items-center gap-3 flex-1 px-2">
-          <View className="flex-col gap-1 flex-1">
-            <Text
-              text={translate("home:running").toUpperCase()}
-              className="font-semibold text-secondary-foreground text-sm"
-            />
-            {/* {appsCount > 0 && <Badge text={`${translate("home:appsCount", {count: appsCount})}`} />} */}
-            {appsCount > 0 && (
+    <View className="bg-primary-foreground py-1.5 pl-3 rounded-2xl flex-row justify-between items-center mt-0 mb-8">
+      <View className="flex-row items-center gap-3 flex-1 px-2">
+        <GestureDetector gesture={composedGesture}>
+          <View className="flex-row flex-1">
+            <View className="flex-col gap-1 flex-1">
               <Text
-                text={translate("home:appsCount", {count: appsCount})}
-                className="text-secondary-foreground text-xs"
+                text={translate("home:running").toUpperCase()}
+                className="font-semibold text-secondary-foreground text-sm"
               />
-            )}
-          </View>
+              {/* {appsCount > 0 && <Badge text={`${translate("home:appsCount", {count: appsCount})}`} />} */}
+              {appsCount > 0 && (
+                <Text
+                  text={translate("home:appsCount", {count: appsCount})}
+                  className="text-secondary-foreground text-xs"
+                />
+              )}
+            </View>
 
-          <View className="flex-row items-center">
-            {backgroundApps.slice(0, 3).map((app, index) => (
-              <View
-                key={app.packageName}
-                style={{
-                  zIndex: index,
-                  marginLeft: index > 0 ? -theme.spacing.s8 : 0,
-                }}>
-                <AppIcon app={app} className="w-12 h-12" />
-              </View>
-            ))}
+            <View className="flex-row items-center">
+              {appsList.slice(0, 9).map((app, index) => (
+                <View
+                  key={app.packageName}
+                  style={{
+                    zIndex: index,
+                    marginLeft: index > 0 ? -theme.spacing.s8 : 0,
+                  }}>
+                  <AppIcon app={app} className="w-12 h-12" />
+                </View>
+              ))}
+            </View>
           </View>
-          {
+        </GestureDetector>
+        {/* {
             foregroundApp && (
               // <View className="border-2 border-primary rounded-2xl p-0.5">
               <AppIcon app={foregroundApp} className="w-12 h-12" />
-            )
+              )
             // </View>
-          }
-        </View>
-      </Animated.View>
-    </GestureDetector>
+          } */}
+        <AllAppsGridButton />
+      </View>
+    </View>
   )
 }
