@@ -19,6 +19,7 @@ import com.mentra.asg_client.io.ota.events.DownloadProgressEvent;
 import com.mentra.asg_client.io.ota.events.InstallationProgressEvent;
 import com.mentra.asg_client.io.ota.events.MtkOtaProgressEvent;
 import com.mentra.asg_client.io.bes.events.BesOtaProgressEvent;
+import com.mentra.asg_client.io.bes.BesOtaManager;
 import com.mentra.asg_client.io.ota.helpers.OtaHelper;
 import com.mentra.asg_client.events.BatteryStatusEvent;
 import com.mentra.asg_client.SysControl;
@@ -304,16 +305,21 @@ public class OtaService extends Service {
                 Log.i(TAG, "Cleaned up old MTK backup file: " + (deleted ? "success" : "failed"));
             }
 
-            java.io.File besFile = new java.io.File(OtaConstants.BES_FIRMWARE_PATH);
-            if (besFile.exists()) {
-                boolean deleted = besFile.delete();
-                Log.i(TAG, "Cleaned up old BES firmware file: " + (deleted ? "success" : "failed"));
-            }
+            // Skip BES firmware cleanup if OTA is in progress
+            if (BesOtaManager.isBesOtaInProgress) {
+                Log.d(TAG, "Skipping BES firmware cleanup - OTA in progress");
+            } else {
+                java.io.File besFile = new java.io.File(OtaConstants.BES_FIRMWARE_PATH);
+                if (besFile.exists()) {
+                    boolean deleted = besFile.delete();
+                    Log.i(TAG, "Cleaned up old BES firmware file: " + (deleted ? "success" : "failed"));
+                }
 
-            java.io.File besBackup = new java.io.File(OtaConstants.BES_BACKUP_PATH);
-            if (besBackup.exists()) {
-                boolean deleted = besBackup.delete();
-                Log.i(TAG, "Cleaned up old BES backup file: " + (deleted ? "success" : "failed"));
+                java.io.File besBackup = new java.io.File(OtaConstants.BES_BACKUP_PATH);
+                if (besBackup.exists()) {
+                    boolean deleted = besBackup.delete();
+                    Log.i(TAG, "Cleaned up old BES backup file: " + (deleted ? "success" : "failed"));
+                }
             }
         } catch (Exception e) {
             Log.e(TAG, "Error cleaning up old firmware files", e);
