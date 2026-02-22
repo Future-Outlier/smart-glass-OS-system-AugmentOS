@@ -369,6 +369,7 @@ export type CloudToAppMessage =
   | RgbLedControlResponse
   | PermissionError
   | AudioPlayResponse
+  | RequestTelemetry
 
 //===========================================================
 // Type guards
@@ -535,4 +536,19 @@ export interface Permission {
 export interface PackagePermissions {
   packageName: string
   permissions: Permission[]
+}
+
+//===========================================================
+// Telemetry messages (for incident debugging)
+//===========================================================
+
+/**
+ * Request telemetry logs from an App server for incident debugging.
+ * The cloud sends this to App servers when processing bug reports.
+ */
+export interface RequestTelemetry extends BaseMessage {
+  type: CloudToAppMessageType.REQUEST_TELEMETRY
+  incidentId: string
+  /** Time window in milliseconds to retrieve logs (e.g., 10 minutes = 600000) */
+  windowMs: number
 }

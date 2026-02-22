@@ -27,6 +27,7 @@ import {
   clientAppsApi,
   userSettingsApi,
   feedbackApi,
+  incidentLogsApi,
   calendarApi,
   locationApi,
   notificationsApi,
@@ -42,6 +43,7 @@ import {
   consoleOrgsApi,
   consoleAppsApi,
   cliKeysApi,
+  consoleIncidentsApi,
   // Store APIs (MentraOS Store website)
   storeAppsApi,
   storeAuthApi,
@@ -261,6 +263,7 @@ app.route("/api/client/min-version", minVersionApi);
 app.route("/api/client/apps", clientAppsApi);
 app.route("/api/client/user/settings", userSettingsApi);
 app.route("/api/client/feedback", feedbackApi);
+app.route("/api/incidents", incidentLogsApi);
 app.route("/api/client/calendar", calendarApi);
 app.route("/api/client/location", locationApi);
 app.route("/api/client/notifications", notificationsApi);
@@ -293,6 +296,7 @@ consoleRouter.route("/account", consoleAccountApi);
 consoleRouter.route("/orgs", consoleOrgsApi);
 consoleRouter.route("/apps", consoleAppsApi);
 consoleRouter.route("/cli-keys", cliKeysApi);
+consoleRouter.route("/admin/incidents", consoleIncidentsApi);
 app.route("/api/console", consoleRouter);
 
 // ============================================================================

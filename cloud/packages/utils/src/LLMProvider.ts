@@ -11,18 +11,30 @@ const OPENAI_API_KEY = process.env.OPENAI_API_KEY || "";
 const ANTHROPIC_API_KEY = process.env.ANTHROPIC_API_KEY || "";
 
 // LLM Configuration
-// Need to define LLMModel enum for the switch case in LLMProvider
 export enum LLMModel {
-  GPT4 = 'gpt-4o',
-  GPT4_MINI = 'gpt-4o-mini',
-  CLAUDE = 'claude-3',
-  GEMINI = 'gemini-pro',
+  // OpenAI / Azure models
+  GPT5 = 'gpt-5',
+  GPT5_MINI = 'gpt-5-mini',
+  GPT4O = 'gpt-4o',
+  GPT4O_MINI = 'gpt-4o-mini',
+  O3 = 'o3',
+  O3_MINI = 'o3-mini',
+  O4_MINI = 'o4-mini',
+  // Anthropic models
+  CLAUDE_SONNET = 'claude-sonnet-4-20250514',
+  CLAUDE_OPUS = 'claude-opus-4-20250514',
+  CLAUDE_HAIKU = 'claude-3-5-haiku-20241022',
+  // Google models
+  GEMINI_3 = 'gemini-3.0-pro',
+  GEMINI_25_PRO = 'gemini-2.5-pro',
+  GEMINI_25_FLASH = 'gemini-2.5-flash',
 }
 
 export enum LLMService {
   AZURE = 'azure',
   OPENAI = 'openai',
   ANTHROPIC = 'anthropic',
+  GOOGLE = 'google',
 }
 
 export const LLM_MODEL = process.env.LLM_MODEL || LLMModel.GPT4;
@@ -31,14 +43,32 @@ export const LLM_PROVIDER = process.env.LLM_PROVIDER || LLMService.AZURE;
 export class LLMProvider {
   static getLLM(options?: { temperature?: number; maxTokens?: number; [key: string]: any }) {
     const supportedAzureModels = [
-      LLMModel.GPT4,
+      LLMModel.GPT5,
+      LLMModel.GPT5_MINI,
+      LLMModel.GPT4O,
+      LLMModel.GPT4O_MINI,
+      LLMModel.O3,
+      LLMModel.O3_MINI,
+      LLMModel.O4_MINI,
     ]
     const supportedOpenAIModels = [
-      LLMModel.GPT4,
-      LLMModel.GPT4_MINI,
+      LLMModel.GPT5,
+      LLMModel.GPT5_MINI,
+      LLMModel.GPT4O,
+      LLMModel.GPT4O_MINI,
+      LLMModel.O3,
+      LLMModel.O3_MINI,
+      LLMModel.O4_MINI,
     ]
     const supportedAnthropicModels = [
-      LLMModel.CLAUDE,
+      LLMModel.CLAUDE_SONNET,
+      LLMModel.CLAUDE_OPUS,
+      LLMModel.CLAUDE_HAIKU,
+    ]
+    const supportedGoogleModels = [
+      LLMModel.GEMINI_3,
+      LLMModel.GEMINI_25_PRO,
+      LLMModel.GEMINI_25_FLASH,
     ]
 
     // Convert model to enum value if it's a string
@@ -81,6 +111,14 @@ export class LLMProvider {
       return new ChatAnthropic({
         modelName: model,
         anthropicApiKey: ANTHROPIC_API_KEY,
+        ...finalOptions,
+      });
+    } else if (provider === LLMService.GOOGLE) {
+      if (!supportedGoogleModels.includes(model as LLMModel)) {
+        throw new Error(`Unsupported Google model: ${model}`);
+      }
+      return new ChatVertexAI({
+        model: model,
         ...finalOptions,
       });
     } else {

@@ -1403,16 +1403,23 @@ app.route("/api/incidents", incidentLogsRoutes)
 
 1. SDK automatically buffers its own internal logs (no developer effort)
 2. Devs opt-in with `enableTelemetry: true` in AppServer config
-3. Cloud sends WebSocket message: `REQUEST_TELEMETRY { userId, incidentId }`
-4. App POSTs buffered logs to `POST /api/incidents/:incidentId/logs` (same endpoint as glasses)
+3. Cloud sends WebSocket message: `REQUEST_TELEMETRY { incidentId, windowMs }`
+4. App receives via WebSocket, POSTs buffered logs to `POST /api/incidents/:incidentId/logs` with auth headers
 
 ```
 User submits bug report
     → Cloud creates incident, processes phone/cloud logs
-    → Cloud sends via WebSocket to each app: REQUEST_TELEMETRY { userId, incidentId }
-    → App POSTs its 10-min buffer to POST /api/incidents/:incidentId/logs
-    → Cloud aggregates into incident
+    → Cloud sends via WebSocket to each connected app: REQUEST_TELEMETRY { incidentId, windowMs }
+    → App receives message in AppSession.handleMessage()
+    → App POSTs logs to /api/incidents/:incidentId/logs with X-App-Api-Key + X-App-Package headers
+    → Cloud aggregates into incident (fire-and-forget, no waiting)
 ```
+
+**Key implementation notes:**
+- Uses existing authenticated app WebSocket connections (no new endpoints needed)
+- Apps derive cloud URL from WebSocket URL via `getHttpsServerUrl()` (converts `wss://host/app-ws` to `https://host`)
+- Authentication uses existing X-App-Api-Key + X-App-Package headers
+- Fire-and-forget pattern - cloud doesn't wait for app responses
 
 ---
 
@@ -1736,23 +1743,24 @@ When duplicate is detected:
 Everything except glasses log upload:
 
 - [x] Design doc (this document)
-- [ ] Mobile: Log ring buffer + console interception (Phase 1)
-- [ ] Mobile: State snapshot collection (Phase 1)
-- [ ] Mobile: Enhanced feedback submission (Phase 1)
-- [ ] Cloud: Enhanced feedback API with incidentId (Phase 2)
-- [ ] Cloud: Unified incident logs endpoint (Phase 2b)
-- [ ] Cloud: Background job infrastructure (Phase 3)
-- [ ] Cloud: BetterStack query integration (Phase 3)
-- [ ] Cloud: R2 incident storage (Phase 4)
-- [ ] Cloud: Linear ticket creation with LLM deduplication (Phase 5)
-- [ ] Cloud: Slack/email notifications with Linear links (Phase 5)
-- [ ] Cloud: Admin API for incidents (Phase 6)
-- [ ] Console: Incidents list page (Phase 6b)
-- [ ] Console: Incident detail page (Phase 6b)
-- [ ] Scripts: `fetch-incident-logs.sh` for agents (Phase 6c)
-- [ ] Docs: Update AGENTS.md with bug report log instructions (Phase 6c)
-- [ ] SDK: Miniapp telemetry buffer + auto-capture (Phase 8)
-- [ ] Cloud: REQUEST_TELEMETRY WebSocket message (Phase 8)
+- [x] Mobile: Log ring buffer + console interception (Phase 1)
+- [x] Mobile: State snapshot collection (Phase 1)
+- [x] Mobile: Enhanced feedback submission (Phase 1)
+- [x] Cloud: Enhanced feedback API with incidentId (Phase 2)
+- [x] Cloud: Unified incident logs endpoint (Phase 2b)
+- [x] Cloud: Background job infrastructure (Phase 3)
+- [x] Cloud: BetterStack query integration (Phase 3)
+- [x] Cloud: R2 incident storage (Phase 4)
+- [x] Cloud: Linear ticket creation with LLM deduplication (Phase 5)
+- [x] Cloud: Slack/email notifications with Linear links (Phase 5)
+- [x] Cloud: Admin API for incidents (Phase 6)
+- [x] Console: Incidents list page (Phase 6b)
+- [x] Console: Incident detail page (Phase 6b)
+- [x] Scripts: `fetch-incident-logs.sh` for agents (Phase 6c)
+- [x] Docs: Update AGENTS.md with bug report log instructions (Phase 6c)
+- [x] SDK: Miniapp telemetry buffer + auto-capture (Phase 8)
+- [x] Cloud: REQUEST_TELEMETRY via WebSocket, apps POST back to /api/incidents/:id/logs (Phase 8)
+- [x] Notifications: Single notification per bug report (after Linear ticket creation, not duplicate)
 
 ## Future Scope
 
