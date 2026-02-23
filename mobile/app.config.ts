@@ -24,12 +24,13 @@ module.exports = ({config}: ConfigContext): Partial<ExpoConfig> => {
     jsEngine: "hermes",
     assetBundlePatterns: ["**/*"],
     android: {
-      icon: "./assets/app-icons/ic_launcher.png",
+      // icon: "./assets/app-icons/ic_launcher.png",
       package: "com.mentra.mentra",
-      versionCode: 87,
+      versionCode: 88,
       adaptiveIcon: {
         foregroundImage: "./assets/app-icons/ic_launcher_foreground.png",
-        backgroundImage: "./assets/app-icons/ic_launcher.png",
+        // backgroundImage: "./assets/app-icons/ic_launcher.png",
+        backgroundColor: "#fff"
       },
       allowBackup: false,
       permissions: [
@@ -184,7 +185,7 @@ module.exports = ({config}: ConfigContext): Partial<ExpoConfig> => {
             compileSdkVersion: 36,
           },
           ios: {
-            deploymentTarget: "15.5",// for react-native-zip-archive
+            deploymentTarget: "15.5", // for react-native-zip-archive
             extraPods: [
               {
                 name: "SDWebImage",
