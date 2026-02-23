@@ -1,20 +1,20 @@
 // src/index.ts
-export * from "./types/token"
+export * from "./types/token";
 
 // Message type enums
-export * from "./types/message-types"
+export * from "./types/message-types";
 
 // Base message type
-export * from "./types/messages/base"
+export * from "./types/messages/base";
 
 // Messages by direction - export everything except the conflicting type guards
-export * from "./types/messages/glasses-to-cloud"
-export * from "./types/messages/cloud-to-glasses"
-export * from "./types/messages/app-to-cloud"
+export * from "./types/messages/glasses-to-cloud";
+export * from "./types/messages/cloud-to-glasses";
+export * from "./types/messages/app-to-cloud";
 
 // Utility exports
-export * from "./utils/bitmap-utils"
-export * from "./utils/animation-utils"
+export * from "./utils/bitmap-utils";
+export * from "./utils/animation-utils";
 
 // Export cloud-to-app type guards and runtime exports
 export {
@@ -35,7 +35,7 @@ export {
   isPhotoResponse as isPhotoResponseFromCloud,
   isRgbLedControlResponse as isRgbLedControlResponseFromCloud,
   isRtmpStreamStatus as isRtmpStreamStatusFromCloud,
-} from "./types"
+} from "./types";
 
 // Export cloud-to-app types (type-only exports)
 export type {
@@ -61,37 +61,47 @@ export type {
   PermissionError,
   PermissionErrorDetail,
   AudioPlayResponse,
-} from "./types"
+} from "./types";
 
 // Stream types
-export * from "./types/streams"
+export * from "./types/streams";
 
 // Layout types
-export * from "./types/layouts"
+export * from "./types/layouts";
 
 // Dashboard types
-export * from "./types/dashboard"
+export * from "./types/dashboard";
 
 // RTMP streaming types
-export * from "./types/rtmp-stream"
+export * from "./types/rtmp-stream";
 
 // Other system enums
-export {AppType, LayoutType, ViewType, AppSettingType, HardwareType, HardwareRequirementLevel} from "./types/enums"
+export { AppType, LayoutType, ViewType, AppSettingType, HardwareType, HardwareRequirementLevel } from "./types/enums";
 
 // Core model interfaces
-export * from "./types/models"
+export * from "./types/models";
 
 // Webhook interfaces
-export * from "./types/webhooks"
+export * from "./types/webhooks";
 
 // Capability Discovery types
-export * from "./types/capabilities"
+export * from "./types/capabilities";
 
 // App session and server exports
-export * from "./app/index"
+export * from "./app/index";
 
 // Logging exports
-export * from "./logging/logger"
+export * from "./logging/logger";
+
+// Error classes
+export {
+  MentraError,
+  MentraAuthError,
+  MentraConnectionError,
+  MentraTimeoutError,
+  MentraValidationError,
+  MentraPermissionError,
+} from "./logging/errors";
 
 // Re-export common types for convenience
 // This allows developers to import commonly used types directly from the package root
@@ -124,7 +134,7 @@ export type {
   PhotoErrorDetails,
   RtmpStreamStatus,
   KeepAliveAck,
-} from "./types/messages/glasses-to-cloud"
+} from "./types/messages/glasses-to-cloud";
 
 // From messages/cloud-to-glasses.ts
 export type {
@@ -142,7 +152,7 @@ export type {
   StopRtmpStream,
   KeepRtmpStreamAlive,
   LedColor,
-} from "./types/messages/cloud-to-glasses"
+} from "./types/messages/cloud-to-glasses";
 
 // From messages/app-to-cloud.ts
 export type {
@@ -153,7 +163,7 @@ export type {
   AppToCloudMessage,
   PhotoRequest,
   RgbLedControlRequest,
-} from "./types/messages/app-to-cloud"
+} from "./types/messages/app-to-cloud";
 
 // From layout.ts
 export type {
@@ -165,7 +175,7 @@ export type {
   DisplayRequest,
   BitmapView,
   ClearView,
-} from "./types/layouts"
+} from "./types/layouts";
 
 // Type guards - re-export the most commonly used ones for convenience
 export {
@@ -179,7 +189,7 @@ export {
   isRtmpStreamStatus as isRtmpStreamStatusFromGlasses,
   isKeepAliveAck,
   isPhoneNotificationDismissed,
-} from "./types/messages/glasses-to-cloud"
+} from "./types/messages/glasses-to-cloud";
 
 export {
   isConnectionAck,
@@ -191,7 +201,7 @@ export {
   isStopRtmpStream,
   isKeepRtmpStreamAlive,
   isRgbLedControl,
-} from "./types/messages/cloud-to-glasses"
+} from "./types/messages/cloud-to-glasses";
 
 export {
   isAppConnectionInit,
@@ -202,10 +212,10 @@ export {
   isPhotoRequest as isPhotoRequestFromApp,
   isRgbLedControlRequest,
   isOwnershipRelease,
-} from "./types/messages/app-to-cloud"
+} from "./types/messages/app-to-cloud";
 
 // Export setting-related types
-export {validateAppConfig} from "./types/models"
+export { validateAppConfig } from "./types/models";
 
 export type {
   BaseAppSetting,
@@ -217,34 +227,34 @@ export type {
   HardwareRequirement,
   PreviewImage,
   PhotoOrientation,
-} from "./types/models"
+} from "./types/models";
 
 // Export RTMP streaming types
-export type {VideoConfig, AudioConfig, StreamConfig, StreamStatusHandler} from "./types/rtmp-stream"
+export type { VideoConfig, AudioConfig, StreamConfig, StreamStatusHandler } from "./types/rtmp-stream";
 
 // Export app session modules
-export * from "./app/session/modules"
+export * from "./app/session/modules";
 
 // Export photo data types
-export type {PhotoData} from "./types/photo-data"
+export type { PhotoData } from "./types/photo-data";
 
 // Export device state types (WebSocket-based observables)
-export type {DeviceState} from "./app/session/device-state"
-export {Observable} from "./utils/Observable"
+export type { DeviceState } from "./app/session/device-state";
+export { Observable } from "./utils/Observable";
 
 // Re-export types from @mentra/types so SDK users don't need to install it separately
-export type {GlassesInfo} from "@mentra/types"
+export type { GlassesInfo } from "@mentra/types";
 
 /**
  * WebSocket error information
  */
 export interface WebSocketError {
-  code: string
-  message: string
-  details?: unknown
+  code: string;
+  message: string;
+  details?: unknown;
 }
 
-export type {AuthenticatedRequest, AuthVariables} from "./types/index"
+export type { AuthenticatedRequest, AuthVariables } from "./types/index";
 
 // Frontend authentication routes for Bun fullstack apps
-export {createMentraAuthRoutes, generateFrontendToken} from "./app/webview/index"
+export { createMentraAuthRoutes, generateFrontendToken } from "./app/webview/index";

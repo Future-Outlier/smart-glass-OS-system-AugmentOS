@@ -6,17 +6,17 @@
  *
  * Now built on Hono + Bun for better performance and developer experience.
  */
-import fs from "fs"
-import path from "path"
+import fs from "fs";
+import path from "path";
 
-import axios from "axios"
-import {Hono} from "hono"
-import type {Context, MiddlewareHandler} from "hono"
-import {serveStatic} from "hono/bun"
-import {Logger} from "pino"
+import axios from "axios";
+import { Hono } from "hono";
+import type { Context, MiddlewareHandler } from "hono";
+import { serveStatic } from "hono/bun";
+import { Logger } from "pino";
 
-import {newSDKUpdate} from "../../constants/log-messages/updates"
-import {logger as rootLogger} from "../../logging/logger"
+import { getDistTag } from "../../constants/log-messages/updates";
+import { logger as rootLogger } from "../../logging/logger";
 import {
   WebhookRequest,
   WebhookResponse,
@@ -25,14 +25,14 @@ import {
   ToolCall,
   WebhookRequestType,
   AuthVariables,
-} from "../../types"
-import {AppSession} from "../session/index"
-import {createAuthMiddleware} from "../webview"
+} from "../../types";
+import { AppSession } from "../session/index";
+import { createAuthMiddleware } from "../webview";
 
 // Import PhotoData type for pending photo requests
-import type {PhotoData} from "../../types/photo-data"
+import type { PhotoData } from "../../types/photo-data";
 
-export const GIVE_APP_CONTROL_OF_TOOL_RESPONSE: string = "GIVE_APP_CONTROL_OF_TOOL_RESPONSE"
+export const GIVE_APP_CONTROL_OF_TOOL_RESPONSE: string = "GIVE_APP_CONTROL_OF_TOOL_RESPONSE";
 
 /**
  * Pending photo request stored at AppServer level for reconnection resilience.
@@ -41,13 +41,13 @@ export const GIVE_APP_CONTROL_OF_TOOL_RESPONSE: string = "GIVE_APP_CONTROL_OF_TO
  * See: cloud/issues/019-sdk-photo-request-architecture
  */
 interface PendingPhotoRequest {
-  userId: string
-  sessionId: string
-  session: AppSession
-  resolve: (photo: PhotoData) => void
-  reject: (error: Error) => void
-  timestamp: number
-  timeoutId?: ReturnType<typeof setTimeout>
+  userId: string;
+  sessionId: string;
+  session: AppSession;
+  resolve: (photo: PhotoData) => void;
+  reject: (error: Error) => void;
+  timestamp: number;
+  timeoutId?: ReturnType<typeof setTimeout>;
 }
 
 /**
@@ -65,36 +65,36 @@ interface PendingPhotoRequest {
  */
 export interface AppServerConfig {
   /** 📦 Unique identifier for your App (e.g., 'org.company.appname') must match what you specified at https://console.mentra.glass */
-  packageName: string
+  packageName: string;
   /** 🔑 API key for authentication with MentraOS Cloud */
-  apiKey: string
+  apiKey: string;
   /** 🌐 Port number for the server (default: 7010) */
-  port?: number
+  port?: number;
 
   /** Cloud API URL (default: 'api.mentra.glass') */
-  cloudApiUrl?: string
+  cloudApiUrl?: string;
 
   /** 🛣️ [DEPRECATED] do not set: The SDK will automatically expose an endpoint at '/webhook' */
-  webhookPath?: string
+  webhookPath?: string;
   /**
    * 📂 Directory for serving static files (e.g., images, logos)
    * Set to false to disable static file serving
    */
-  publicDir?: string | false
+  publicDir?: string | false;
 
   /** ❤️ Enable health check endpoint at /health (default: true) */
-  healthCheck?: boolean
+  healthCheck?: boolean;
   /**
    * 🔐 Secret key used to sign session cookies
    * This must be a strong, unique secret
    */
-  cookieSecret?: string
+  cookieSecret?: string;
   /** App instructions string shown to the user */
-  appInstructions?: string
+  appInstructions?: string;
 }
 
 // Type for Hono app with auth variables
-type AppHono = Hono<{Variables: AuthVariables}>
+type AppHono = Hono<{ Variables: AuthVariables }>;
 
 /**
  * 🎯 App Server Implementation
@@ -133,13 +133,13 @@ type AppHono = Hono<{Variables: AuthVariables}>
  * await server.start();
  * ```
  */
-export class AppServer extends Hono<{Variables: AuthVariables}> {
+export class AppServer extends Hono<{ Variables: AuthVariables }> {
   /** Server configuration */
-  protected config: AppServerConfig
+  protected config: AppServerConfig;
   /** Map of active user sessions by sessionId */
-  private activeSessions = new Map<string, AppSession>()
+  private activeSessions = new Map<string, AppSession>();
   /** Map of active user sessions by userId */
-  private activeSessionsByUserId = new Map<string, AppSession>()
+  private activeSessionsByUserId = new Map<string, AppSession>();
   /**
    * Pending photo requests by requestId - owned by AppServer for HTTP endpoint access.
    * This is the single source of truth for pending photo requests.
@@ -149,16 +149,16 @@ export class AppServer extends Hono<{Variables: AuthVariables}> {
    * 3. Survives session reconnections (session may be removed from activeSessions temporarily)
    * See: cloud/issues/019-sdk-photo-request-architecture
    */
-  private pendingPhotoRequests = new Map<string, PendingPhotoRequest>()
+  private pendingPhotoRequests = new Map<string, PendingPhotoRequest>();
   /** Array of cleanup handlers to run on shutdown */
-  private cleanupHandlers: Array<() => void> = []
+  private cleanupHandlers: Array<() => void> = [];
   /** App instructions string shown to the user */
-  private appInstructions: string | null = null
+  private appInstructions: string | null = null;
 
-  public readonly logger: Logger
+  public readonly logger: Logger;
 
   constructor(config: AppServerConfig) {
-    super() // Initialize Hono
+    super(); // Initialize Hono
 
     // Set defaults and merge with provided config
     this.config = {
@@ -167,13 +167,13 @@ export class AppServer extends Hono<{Variables: AuthVariables}> {
       publicDir: false,
       healthCheck: true,
       ...config,
-    }
+    };
 
     this.logger = rootLogger.child({
       app: this.config.packageName,
       packageName: this.config.packageName,
       service: "app-server",
-    })
+    });
 
     // Apply authentication middleware
     this.use(
@@ -182,23 +182,23 @@ export class AppServer extends Hono<{Variables: AuthVariables}> {
         apiKey: this.config.apiKey,
         packageName: this.config.packageName,
         getAppSessionForUser: (userId: string) => {
-          return this.activeSessionsByUserId.get(userId) || null
+          return this.activeSessionsByUserId.get(userId) || null;
         },
         cookieSecret: this.config.cookieSecret || this.config.apiKey, // Default to apiKey for simplicity
       }),
-    )
+    );
 
-    this.appInstructions = (config as any).appInstructions || null
+    this.appInstructions = (config as any).appInstructions || null;
 
     // Setup server features
-    this.setupWebhook()
-    this.setupSettingsEndpoint()
-    this.setupHealthCheck()
-    this.setupToolCallEndpoint()
-    this.setupPhotoUploadEndpoint()
-    this.setupMentraAuthRedirect()
-    this.setupPublicDir()
-    this.setupShutdown()
+    this.setupWebhook();
+    this.setupSettingsEndpoint();
+    this.setupHealthCheck();
+    this.setupToolCallEndpoint();
+    this.setupPhotoUploadEndpoint();
+    this.setupMentraAuthRedirect();
+    this.setupPublicDir();
+    this.setupShutdown();
   }
 
   /**
@@ -208,15 +208,15 @@ export class AppServer extends Hono<{Variables: AuthVariables}> {
   public getExpressApp(): AppHono {
     console.warn(
       "⚠️ DEPRECATION: getExpressApp() is deprecated. AppServer now extends Hono - use this.get(), this.post(), etc. directly.",
-    )
-    return this as AppHono
+    );
+    return this as AppHono;
   }
 
   /**
    * Get the Hono app instance (returns this since AppServer extends Hono)
    */
   public getHonoApp(): AppHono {
-    return this as AppHono
+    return this as AppHono;
   }
 
   /**
@@ -229,9 +229,9 @@ export class AppServer extends Hono<{Variables: AuthVariables}> {
    * @param userId - User's identifier
    */
   protected async onSession(session: AppSession, sessionId: string, userId: string): Promise<void> {
-    this.logger.info(`🚀 Starting new session handling for session ${sessionId} and user ${userId}`)
+    this.logger.info(`🚀 Starting new session handling for session ${sessionId} and user ${userId}`);
     // Core session handling logic (onboarding removed)
-    this.logger.info(`✅ Session handling completed for session ${sessionId} and user ${userId}`)
+    this.logger.info(`✅ Session handling completed for session ${sessionId} and user ${userId}`);
   }
 
   /**
@@ -244,14 +244,14 @@ export class AppServer extends Hono<{Variables: AuthVariables}> {
    * @param reason - Reason for stopping
    */
   protected async onStop(sessionId: string, userId: string, reason: string): Promise<void> {
-    this.logger.debug(`Session ${sessionId} stopped for user ${userId}. Reason: ${reason}`)
+    this.logger.debug(`Session ${sessionId} stopped for user ${userId}. Reason: ${reason}`);
 
     // Default implementation: close the session if it exists
-    const session = this.activeSessions.get(sessionId)
+    const session = this.activeSessions.get(sessionId);
     if (session) {
-      session.disconnect()
-      this.activeSessions.delete(sessionId)
-      this.activeSessionsByUserId.delete(userId)
+      session.disconnect();
+      this.activeSessions.delete(sessionId);
+      this.activeSessionsByUserId.delete(userId);
     }
   }
 
@@ -264,9 +264,9 @@ export class AppServer extends Hono<{Variables: AuthVariables}> {
    * @returns Optional string response that will be sent back to MentraOS Cloud
    */
   protected async onToolCall(toolCall: ToolCall): Promise<string | undefined> {
-    this.logger.debug(`Tool call received: ${toolCall.toolId}`)
-    this.logger.debug(`Parameters: ${JSON.stringify(toolCall.toolParameters)}`)
-    return undefined
+    this.logger.debug(`Tool call received: ${toolCall.toolId}`);
+    this.logger.debug(`Parameters: ${JSON.stringify(toolCall.toolParameters)}`);
+    return undefined;
   }
 
   /**
@@ -289,55 +289,63 @@ export class AppServer extends Hono<{Variables: AuthVariables}> {
    * @returns Promise that resolves when initialization is complete
    */
   public async start(): Promise<void> {
-    this.logger.info(`🎯 App initialized: ${this.config.packageName}`)
-    this.logger.info(`   Use Bun.serve({ fetch: app.fetch }) to start the server`)
+    this.logger.info(`🎯 App initialized: ${this.config.packageName}`);
+    this.logger.info(`   Use Bun.serve({ fetch: app.fetch }) to start the server`);
 
     if (this.config.publicDir) {
-      this.logger.info(`📂 Static files configured from ${this.config.publicDir}`)
+      this.logger.info(`📂 Static files configured from ${this.config.publicDir}`);
     }
 
     // 🔑 Grab SDK version
-    await this.checkSDKVersion()
+    await this.checkSDKVersion();
   }
 
   /**
-   * Check and log SDK version
+   * Check and log SDK version (dist-tag aware).
+   * Detects the developer's release track from their installed version
+   * and fetches the correct latest version for that track.
    */
   private async checkSDKVersion(): Promise<void> {
     try {
       // Look for the actual installed @mentra/sdk package.json in node_modules
-      const sdkPkgPath = path.resolve(process.cwd(), "node_modules/@mentra/sdk/package.json")
+      const sdkPkgPath = path.resolve(process.cwd(), "node_modules/@mentra/sdk/package.json");
 
-      let currentVersion = "unknown"
+      let currentVersion = "unknown";
 
       if (fs.existsSync(sdkPkgPath)) {
-        const sdkPkg = JSON.parse(fs.readFileSync(sdkPkgPath, "utf-8"))
-        currentVersion = sdkPkg.version || "not-found"
+        const sdkPkg = JSON.parse(fs.readFileSync(sdkPkgPath, "utf-8"));
+        currentVersion = sdkPkg.version || "not-found";
       } else {
-        this.logger.debug({sdkPkgPath}, "No @mentra/sdk package.json found at path")
+        this.logger.debug({ sdkPkgPath }, "No @mentra/sdk package.json found at path");
       }
 
-      // Fetch latest SDK version from the API endpoint
-      let latest: string | null = null
+      // Determine which dist-tag (release track) the dev is on
+      const distTag = getDistTag(currentVersion);
+
+      // Fetch latest SDK version for this track from the API endpoint
+      let latest: string | null = null;
       try {
-        const cloudHost = "api.mentra.glass"
-        const response = await axios.get(`https://${cloudHost}/api/sdk/version`, {timeout: 3000})
+        const cloudHost = "api.mentra.glass";
+        const response = await axios.get(`https://${cloudHost}/api/sdk/version`, {
+          params: { tag: distTag },
+          timeout: 3000,
+        });
         if (response.data && response.data.success && response.data.data) {
-          latest = response.data.data.latest
+          latest = response.data.data.latest;
         }
       } catch {
-        this.logger.debug("Failed to fetch latest SDK version - skipping version check (offline or API unavailable)")
+        this.logger.debug("Failed to fetch latest SDK version - skipping version check (offline or API unavailable)");
       }
 
       if (currentVersion === "not-found") {
         this.logger.warn(
-          `⚠️ @mentra/sdk not found in your project dependencies. Please install it with: npm install @mentra/sdk`,
-        )
+          `@mentra/sdk not found in your project dependencies. Install it with: bun install @mentra/sdk`,
+        );
       } else if (latest && latest !== currentVersion) {
-        this.logger.warn(newSDKUpdate(latest))
+        this.logger.warn(`SDK update available: ${currentVersion} → ${latest} — bun install @mentra/sdk@${distTag}`);
       }
     } catch (err) {
-      this.logger.error(err, "Version check failed")
+      this.logger.debug(err, "Version check failed");
     }
   }
 
@@ -346,8 +354,8 @@ export class AppServer extends Hono<{Variables: AuthVariables}> {
    * Gracefully shuts down the server and cleans up all sessions.
    */
   public async stop(): Promise<void> {
-    this.logger.info("\n🛑 Shutting down...")
-    await this.cleanup()
+    this.logger.info("\n🛑 Shutting down...");
+    await this.cleanup();
   }
 
   /**
@@ -360,15 +368,15 @@ export class AppServer extends Hono<{Variables: AuthVariables}> {
    * @returns JWT token string
    */
   protected generateToken(userId: string, sessionId: string, secretKey: string): string {
-    const {createToken} = require("../token/utils")
+    const { createToken } = require("../token/utils");
     return createToken(
       {
         userId,
         packageName: this.config.packageName,
         sessionId,
       },
-      {secretKey},
-    )
+      { secretKey },
+    );
   }
 
   /**
@@ -378,7 +386,7 @@ export class AppServer extends Hono<{Variables: AuthVariables}> {
    * @param handler - Function to call during cleanup
    */
   protected addCleanupHandler(handler: () => void): void {
-    this.cleanupHandlers.push(handler)
+    this.cleanupHandlers.push(handler);
   }
 
   // =====================================
@@ -395,25 +403,25 @@ export class AppServer extends Hono<{Variables: AuthVariables}> {
    */
   registerPhotoRequest(requestId: string, request: Omit<PendingPhotoRequest, "timeoutId">): void {
     // Set timeout at AppServer level (single source of truth)
-    const timeoutMs = 30000 // 30 seconds
+    const timeoutMs = 30000; // 30 seconds
     const timeoutId = setTimeout(() => {
-      const pending = this.pendingPhotoRequests.get(requestId)
+      const pending = this.pendingPhotoRequests.get(requestId);
       if (pending) {
-        pending.reject(new Error("Photo request timed out"))
-        this.pendingPhotoRequests.delete(requestId)
-        this.logger.warn({requestId}, "📸 Photo request timed out")
+        pending.reject(new Error("Photo request timed out"));
+        this.pendingPhotoRequests.delete(requestId);
+        this.logger.warn({ requestId }, "📸 Photo request timed out");
       }
-    }, timeoutMs)
+    }, timeoutMs);
 
     this.pendingPhotoRequests.set(requestId, {
       ...request,
       timeoutId,
-    })
+    });
 
     this.logger.debug(
-      {requestId, userId: request.userId, sessionId: request.sessionId},
+      { requestId, userId: request.userId, sessionId: request.sessionId },
       "📸 Photo request registered at AppServer level",
-    )
+    );
   }
 
   /**
@@ -423,7 +431,7 @@ export class AppServer extends Hono<{Variables: AuthVariables}> {
    * @returns The pending request, or undefined if not found
    */
   getPhotoRequest(requestId: string): PendingPhotoRequest | undefined {
-    return this.pendingPhotoRequests.get(requestId)
+    return this.pendingPhotoRequests.get(requestId);
   }
 
   /**
@@ -434,15 +442,15 @@ export class AppServer extends Hono<{Variables: AuthVariables}> {
    * @returns The pending request that was completed, or undefined if not found
    */
   completePhotoRequest(requestId: string): PendingPhotoRequest | undefined {
-    const pending = this.pendingPhotoRequests.get(requestId)
+    const pending = this.pendingPhotoRequests.get(requestId);
     if (pending) {
       if (pending.timeoutId) {
-        clearTimeout(pending.timeoutId)
+        clearTimeout(pending.timeoutId);
       }
-      this.pendingPhotoRequests.delete(requestId)
-      this.logger.debug({requestId}, "📸 Photo request completed")
+      this.pendingPhotoRequests.delete(requestId);
+      this.logger.debug({ requestId }, "📸 Photo request completed");
     }
-    return pending
+    return pending;
   }
 
   /**
@@ -452,20 +460,20 @@ export class AppServer extends Hono<{Variables: AuthVariables}> {
    * @param sessionId - The session ID to clean up requests for
    */
   cleanupPhotoRequestsForSession(sessionId: string): void {
-    let cleanedCount = 0
+    let cleanedCount = 0;
     for (const [requestId, pending] of this.pendingPhotoRequests) {
       if (pending.sessionId === sessionId) {
         if (pending.timeoutId) {
-          clearTimeout(pending.timeoutId)
+          clearTimeout(pending.timeoutId);
         }
-        pending.reject(new Error("Session ended"))
-        this.pendingPhotoRequests.delete(requestId)
-        cleanedCount++
-        this.logger.debug({requestId, sessionId}, "📸 Photo request cleaned up (session ended)")
+        pending.reject(new Error("Session ended"));
+        this.pendingPhotoRequests.delete(requestId);
+        cleanedCount++;
+        this.logger.debug({ requestId, sessionId }, "📸 Photo request cleaned up (session ended)");
       }
     }
     if (cleanedCount > 0) {
-      this.logger.info({sessionId, cleanedCount}, "📸 Cleaned up photo requests for ended session")
+      this.logger.info({ sessionId, cleanedCount }, "📸 Cleaned up photo requests for ended session");
     }
   }
 
@@ -474,42 +482,42 @@ export class AppServer extends Hono<{Variables: AuthVariables}> {
    * Creates the webhook endpoint that MentraOS Cloud calls to start new sessions.
    */
   private setupWebhook(): void {
-    const webhookPath = this.config.webhookPath || "/webhook"
+    const webhookPath = this.config.webhookPath || "/webhook";
 
     this.post(webhookPath, async (c) => {
       try {
-        const webhookRequest = (await c.req.json()) as WebhookRequest
+        const webhookRequest = (await c.req.json()) as WebhookRequest;
 
         // Handle session request
         if (webhookRequest.type === WebhookRequestType.SESSION_REQUEST) {
-          return this.handleSessionRequest(webhookRequest as SessionWebhookRequest, c)
+          return this.handleSessionRequest(webhookRequest as SessionWebhookRequest, c);
         }
         // Handle stop request
         else if (webhookRequest.type === WebhookRequestType.STOP_REQUEST) {
-          return this.handleStopRequest(webhookRequest as StopWebhookRequest, c)
+          return this.handleStopRequest(webhookRequest as StopWebhookRequest, c);
         }
         // Unknown webhook type
         else {
-          this.logger.error("❌ Unknown webhook request type")
+          this.logger.error("❌ Unknown webhook request type");
           return c.json(
             {
               status: "error",
               message: "Unknown webhook request type",
             } as WebhookResponse,
             400,
-          )
+          );
         }
       } catch (error) {
-        this.logger.error(error, "❌ Error handling webhook: " + (error as Error).message)
+        this.logger.error(error, "❌ Error handling webhook: " + (error as Error).message);
         return c.json(
           {
             status: "error",
             message: "Error handling webhook: " + (error as Error).message,
           } as WebhookResponse,
           500,
-        )
+        );
       }
-    })
+    });
   }
 
   /**
@@ -519,38 +527,38 @@ export class AppServer extends Hono<{Variables: AuthVariables}> {
   private setupToolCallEndpoint(): void {
     this.post("/tool", async (c) => {
       try {
-        const toolCall = (await c.req.json()) as ToolCall
+        const toolCall = (await c.req.json()) as ToolCall;
         if (this.activeSessionsByUserId.has(toolCall.userId)) {
-          toolCall.activeSession = this.activeSessionsByUserId.get(toolCall.userId) || null
+          toolCall.activeSession = this.activeSessionsByUserId.get(toolCall.userId) || null;
         } else {
-          toolCall.activeSession = null
+          toolCall.activeSession = null;
         }
-        this.logger.info({body: toolCall}, `🔧 Received tool call: ${toolCall.toolId}`)
+        this.logger.info({ body: toolCall }, `🔧 Received tool call: ${toolCall.toolId}`);
 
         // Call the onToolCall handler and get the response
-        const response = await this.onToolCall(toolCall)
+        const response = await this.onToolCall(toolCall);
 
         // Send back the response if one was provided
         if (response !== undefined) {
-          return c.json({status: "success", reply: response})
+          return c.json({ status: "success", reply: response });
         } else {
-          return c.json({status: "success", reply: null})
+          return c.json({ status: "success", reply: null });
         }
       } catch (error) {
-        this.logger.error(error, "❌ Error handling tool call:")
+        this.logger.error(error, "❌ Error handling tool call:");
         return c.json(
           {
             status: "error",
             message: error instanceof Error ? error.message : "Unknown error occurred calling tool",
           },
           500,
-        )
+        );
       }
-    })
+    });
 
     this.get("/tool", async (c) => {
-      return c.json({status: "success", reply: "Hello, world!"})
-    })
+      return c.json({ status: "success", reply: "Hello, world!" });
+    });
   }
 
   /**
@@ -558,43 +566,46 @@ export class AppServer extends Hono<{Variables: AuthVariables}> {
    */
   private async handleSessionRequest(
     request: SessionWebhookRequest,
-    c: Context<{Variables: AuthVariables}>,
+    c: Context<{ Variables: AuthVariables }>,
   ): Promise<Response> {
-    const {sessionId, userId, mentraOSWebsocketUrl, augmentOSWebsocketUrl} = request
-    this.logger.info({userId}, `🗣️ Received session request for user ${userId}, session ${sessionId}\n\n`)
+    const { sessionId, userId, mentraOSWebsocketUrl, augmentOSWebsocketUrl } = request;
+    this.logger.info({ userId }, `🗣️ Received session request for user ${userId}, session ${sessionId}\n\n`);
 
     // Check for existing session (user might be switching clouds)
     // If an existing session exists, we need to clean it up properly to avoid:
     // 1. Orphaned sessions with open WebSockets
     // 2. Cleanup handlers that corrupt the new session's map entries
     // See: cloud/issues/018-app-disconnect-resurrection
-    const existingSession = this.activeSessions.get(sessionId)
+    const existingSession = this.activeSessions.get(sessionId);
     if (existingSession) {
       this.logger.info(
-        {sessionId, userId},
+        { sessionId, userId },
         `🔄 Existing session found for ${sessionId} - sending OWNERSHIP_RELEASE and disconnecting before new connection`,
-      )
+      );
 
       try {
         // Send OWNERSHIP_RELEASE to tell the old cloud not to resurrect this app
         // The old cloud will mark the app as DORMANT instead of trying to restart it
-        await existingSession.releaseOwnership("switching_clouds")
+        await existingSession.releaseOwnership("switching_clouds");
       } catch (error) {
-        this.logger.warn({error, sessionId}, `⚠️ Failed to send OWNERSHIP_RELEASE to old session - continuing anyway`)
+        this.logger.warn(
+          { error, sessionId },
+          `⚠️ Failed to send OWNERSHIP_RELEASE to old session - continuing anyway`,
+        );
       }
 
       try {
         // Disconnect the old session explicitly
-        existingSession.disconnect()
+        existingSession.disconnect();
       } catch (error) {
-        this.logger.warn({error, sessionId}, `⚠️ Failed to disconnect old session - continuing anyway`)
+        this.logger.warn({ error, sessionId }, `⚠️ Failed to disconnect old session - continuing anyway`);
       }
 
       // Remove from maps immediately (don't wait for cleanup handler)
-      this.activeSessions.delete(sessionId)
-      this.activeSessionsByUserId.delete(userId)
+      this.activeSessions.delete(sessionId);
+      this.activeSessionsByUserId.delete(userId);
 
-      this.logger.info({sessionId, userId}, `✅ Old session cleaned up, proceeding with new connection`)
+      this.logger.info({ sessionId, userId }, `✅ Old session cleaned up, proceeding with new connection`);
     }
 
     // Create new App session
@@ -604,7 +615,7 @@ export class AppServer extends Hono<{Variables: AuthVariables}> {
       mentraOSWebsocketUrl: mentraOSWebsocketUrl || augmentOSWebsocketUrl,
       appServer: this,
       userId,
-    })
+    });
 
     // Setup session event handlers
     const cleanupDisconnect = session.events.onDisconnected((info) => {
@@ -615,40 +626,40 @@ export class AppServer extends Hono<{Variables: AuthVariables}> {
       // 3. Clean WebSocket closure (1000/1001) - no reconnection will be attempted
       // Temporary disconnects (abnormal closures like 1006 that trigger reconnection) should NOT remove session from maps
       // See: cloud/issues/019-sdk-photo-request-architecture
-      let isPermanent = false
-      let reason = "unknown"
+      let isPermanent = false;
+      let reason = "unknown";
 
       // Handle different disconnect info formats (string or object)
       if (typeof info === "string") {
-        this.logger.info(`👋 Session ${sessionId} disconnected: ${info}`)
-        reason = info
+        this.logger.info(`👋 Session ${sessionId} disconnected: ${info}`);
+        reason = info;
         // String-only disconnects are typically temporary (e.g., "WebSocket closed")
-        isPermanent = false
+        isPermanent = false;
       } else {
         this.logger.info(
           `👋 Session ${sessionId} disconnected: ${info.message} (code: ${info.code}, reason: ${info.reason})`,
-        )
-        reason = info.reason || info.message
+        );
+        reason = info.reason || info.message;
 
         if (info.sessionEnded === true) {
-          this.logger.info(`🛑 User session ended for session ${sessionId}, calling onStop`)
-          isPermanent = true
+          this.logger.info(`🛑 User session ended for session ${sessionId}, calling onStop`);
+          isPermanent = true;
 
           // Call onStop with session end reason
           // This allows apps to clean up resources when the user's session ends
           this.onStop(sessionId, userId, "User session ended").catch((error) => {
-            this.logger.error(error, `❌ Error in onStop handler for session end:`)
-          })
+            this.logger.error(error, `❌ Error in onStop handler for session end:`);
+          });
         }
         // Check if this is a permanent disconnection after exhausted reconnection attempts
         else if (info.permanent === true) {
-          this.logger.info(`🛑 Permanent disconnection detected for session ${sessionId}, calling onStop`)
-          isPermanent = true
+          this.logger.info(`🛑 Permanent disconnection detected for session ${sessionId}, calling onStop`);
+          isPermanent = true;
 
           // Call onStop with a reconnection failure reason
           this.onStop(sessionId, userId, `Connection permanently lost: ${info.reason}`).catch((error) => {
-            this.logger.error(error, `❌ Error in onStop handler for permanent disconnection:`)
-          })
+            this.logger.error(error, `❌ Error in onStop handler for permanent disconnection:`);
+          });
         }
         // Check if this is a clean WebSocket closure (1000/1001) that won't trigger reconnection
         // These are intentional disconnects (app shutdown, manual stop, etc.)
@@ -657,13 +668,13 @@ export class AppServer extends Hono<{Variables: AuthVariables}> {
         else if (info.wasClean === true || info.code === 1000 || info.code === 1001) {
           this.logger.info(
             `🛑 Clean WebSocket closure for session ${sessionId} (code: ${info.code}), treating as permanent`,
-          )
-          isPermanent = true
+          );
+          isPermanent = true;
 
           // Call onStop for clean disconnects too
           this.onStop(sessionId, userId, `Clean disconnect: ${reason}`).catch((error) => {
-            this.logger.error(error, `❌ Error in onStop handler for clean disconnect:`)
-          })
+            this.logger.error(error, `❌ Error in onStop handler for clean disconnect:`);
+          });
         }
       }
 
@@ -682,48 +693,48 @@ export class AppServer extends Hono<{Variables: AuthVariables}> {
         // By checking identity (===), we only delete if we're still the current session.
         // See: cloud/issues/018-app-disconnect-resurrection
         if (this.activeSessions.get(sessionId) === session) {
-          this.activeSessions.delete(sessionId)
+          this.activeSessions.delete(sessionId);
         } else {
-          this.logger.debug({sessionId}, `🔄 Session ${sessionId} cleanup skipped - a newer session has taken over`)
+          this.logger.debug({ sessionId }, `🔄 Session ${sessionId} cleanup skipped - a newer session has taken over`);
         }
         if (this.activeSessionsByUserId.get(userId) === session) {
-          this.activeSessionsByUserId.delete(userId)
+          this.activeSessionsByUserId.delete(userId);
         }
 
         // Clean up any pending photo requests for this session
-        this.cleanupPhotoRequestsForSession(sessionId)
+        this.cleanupPhotoRequestsForSession(sessionId);
       } else {
         // Temporary disconnect - session stays in maps for reconnection
         // Photo requests remain pending and can still be fulfilled
         this.logger.debug(
-          {sessionId, reason},
+          { sessionId, reason },
           `🔄 Temporary disconnect for session ${sessionId}, keeping in maps for reconnection`,
-        )
+        );
       }
-    })
+    });
 
     const cleanupError = session.events.onError((error) => {
-      this.logger.error(error, `❌ [Session ${sessionId}] Error:`)
-    })
+      this.logger.error(error, `❌ [Session ${sessionId}] Error:`);
+    });
 
     // Start the session
     try {
-      await session.connect(sessionId)
-      this.activeSessions.set(sessionId, session)
-      this.activeSessionsByUserId.set(userId, session)
-      await this.onSession(session, sessionId, userId)
-      return c.json({status: "success"} as WebhookResponse)
+      await session.connect(sessionId);
+      this.activeSessions.set(sessionId, session);
+      this.activeSessionsByUserId.set(userId, session);
+      await this.onSession(session, sessionId, userId);
+      return c.json({ status: "success" } as WebhookResponse);
     } catch (error) {
-      this.logger.error(error, "❌ Failed to connect:")
-      cleanupDisconnect()
-      cleanupError()
+      this.logger.error(error, "❌ Failed to connect:");
+      cleanupDisconnect();
+      cleanupError();
       return c.json(
         {
           status: "error",
           message: "Failed to connect",
         } as WebhookResponse,
         500,
-      )
+      );
     }
   }
 
@@ -732,23 +743,23 @@ export class AppServer extends Hono<{Variables: AuthVariables}> {
    */
   private async handleStopRequest(
     request: StopWebhookRequest,
-    c: Context<{Variables: AuthVariables}>,
+    c: Context<{ Variables: AuthVariables }>,
   ): Promise<Response> {
-    const {sessionId, userId, reason} = request
-    this.logger.info(`\n\n🛑 Received stop request for user ${userId}, session ${sessionId}, reason: ${reason}\n\n`)
+    const { sessionId, userId, reason } = request;
+    this.logger.info(`\n\n🛑 Received stop request for user ${userId}, session ${sessionId}, reason: ${reason}\n\n`);
 
     try {
-      await this.onStop(sessionId, userId, reason)
-      return c.json({status: "success"} as WebhookResponse)
+      await this.onStop(sessionId, userId, reason);
+      return c.json({ status: "success" } as WebhookResponse);
     } catch (error) {
-      this.logger.error(error, "❌ Error handling stop request:")
+      this.logger.error(error, "❌ Error handling stop request:");
       return c.json(
         {
           status: "error",
           message: "Failed to process stop request",
         } as WebhookResponse,
         500,
-      )
+      );
     }
   }
 
@@ -763,8 +774,8 @@ export class AppServer extends Hono<{Variables: AuthVariables}> {
           status: "healthy",
           app: this.config.packageName,
           activeSessions: this.activeSessions.size,
-        })
-      })
+        });
+      });
     }
   }
 
@@ -775,7 +786,7 @@ export class AppServer extends Hono<{Variables: AuthVariables}> {
   private setupSettingsEndpoint(): void {
     this.post("/settings", async (c) => {
       try {
-        const {userIdForSettings, settings} = await c.req.json()
+        const { userIdForSettings, settings } = await c.req.json();
 
         if (!userIdForSettings || !Array.isArray(settings)) {
           return c.json(
@@ -784,52 +795,52 @@ export class AppServer extends Hono<{Variables: AuthVariables}> {
               message: "Missing userId or settings array in request body",
             },
             400,
-          )
+          );
         }
 
-        this.logger.info(`⚙️ Received settings update for user ${userIdForSettings}`)
+        this.logger.info(`⚙️ Received settings update for user ${userIdForSettings}`);
 
         // Find all active sessions for this user
-        const userSessions: AppSession[] = []
+        const userSessions: AppSession[] = [];
 
         this.activeSessions.forEach((session, _sessionId) => {
           if (session.userId === userIdForSettings) {
-            userSessions.push(session)
+            userSessions.push(session);
           }
-        })
+        });
 
         if (userSessions.length === 0) {
-          this.logger.warn(`⚠️ No active sessions found for user ${userIdForSettings}`)
+          this.logger.warn(`⚠️ No active sessions found for user ${userIdForSettings}`);
         } else {
-          this.logger.info(`🔄 Updating settings for ${userSessions.length} active sessions`)
+          this.logger.info(`🔄 Updating settings for ${userSessions.length} active sessions`);
         }
 
         // Update settings for all of the user's sessions
         for (const session of userSessions) {
-          session.updateSettingsForTesting(settings)
+          session.updateSettingsForTesting(settings);
         }
 
         // Allow subclasses to handle settings updates if they implement the method
         if (typeof (this as any).onSettingsUpdate === "function") {
-          await (this as any).onSettingsUpdate(userIdForSettings, settings)
+          await (this as any).onSettingsUpdate(userIdForSettings, settings);
         }
 
         return c.json({
           status: "success",
           message: "Settings updated successfully",
           sessionsUpdated: userSessions.length,
-        })
+        });
       } catch (error) {
-        this.logger.error(error, "❌ Error handling settings update:")
+        this.logger.error(error, "❌ Error handling settings update:");
         return c.json(
           {
             status: "error",
             message: "Internal server error processing settings update",
           },
           500,
-        )
+        );
       }
-    })
+    });
   }
 
   /**
@@ -838,9 +849,9 @@ export class AppServer extends Hono<{Variables: AuthVariables}> {
    */
   private setupPublicDir(): void {
     if (this.config.publicDir) {
-      const publicPath = path.resolve(this.config.publicDir)
-      this.use("/*", serveStatic({root: publicPath}))
-      this.logger.info(`📂 Serving static files from ${publicPath}`)
+      const publicPath = path.resolve(this.config.publicDir);
+      this.use("/*", serveStatic({ root: publicPath }));
+      this.logger.info(`📂 Serving static files from ${publicPath}`);
     }
   }
 
@@ -849,8 +860,8 @@ export class AppServer extends Hono<{Variables: AuthVariables}> {
    * Registers process signal handlers for graceful shutdown.
    */
   private setupShutdown(): void {
-    process.on("SIGTERM", () => this.stop())
-    process.on("SIGINT", () => this.stop())
+    process.on("SIGTERM", () => this.stop());
+    process.on("SIGINT", () => this.stop());
   }
 
   /**
@@ -870,32 +881,32 @@ export class AppServer extends Hono<{Variables: AuthVariables}> {
    * See: cloud/issues/023-disposed-appsession-resurrection-bug
    */
   private async cleanup(): Promise<void> {
-    this.logger.info(`🔧 [LOCAL SDK] cleanup() called - NOT sending OWNERSHIP_RELEASE`)
+    this.logger.info(`🔧 [LOCAL SDK] cleanup() called - NOT sending OWNERSHIP_RELEASE`);
     // Close all active sessions WITHOUT releasing ownership
     // This allows the cloud to resurrect apps when we come back up
     for (const [sessionId, session] of this.activeSessions) {
-      this.logger.info(`👋 Closing session ${sessionId} (no ownership release - cloud will resurrect)`)
+      this.logger.info(`👋 Closing session ${sessionId} (no ownership release - cloud will resurrect)`);
       try {
         // Just disconnect, don't release ownership
         // The cloud will enter grace period and then resurrect via webhook
         await session.disconnect({
           releaseOwnership: false,
-        })
+        });
       } catch (error) {
-        this.logger.error(error, `Error during cleanup of session ${sessionId}`)
+        this.logger.error(error, `Error during cleanup of session ${sessionId}`);
         // Still try to disconnect even if release fails
         try {
-          await session.disconnect()
+          await session.disconnect();
         } catch {
           // Ignore secondary errors
         }
       }
     }
-    this.activeSessions.clear()
-    this.activeSessionsByUserId.clear()
+    this.activeSessions.clear();
+    this.activeSessionsByUserId.clear();
 
     // Run cleanup handlers
-    this.cleanupHandlers.forEach((handler) => handler())
+    this.cleanupHandlers.forEach((handler) => handler());
   }
 
   /**
@@ -906,72 +917,72 @@ export class AppServer extends Hono<{Variables: AuthVariables}> {
     this.post("/photo-upload", async (c) => {
       try {
         // Parse multipart form data
-        const body = await c.req.parseBody()
-        const requestId = body.requestId as string
-        const type = body.type as string
-        const errorCode = body.errorCode as string
-        const errorMessage = body.errorMessage as string
-        const photoFile = body.photo as File | undefined
+        const body = await c.req.parseBody();
+        const requestId = body.requestId as string;
+        const type = body.type as string;
+        const errorCode = body.errorCode as string;
+        const errorMessage = body.errorMessage as string;
+        const photoFile = body.photo as File | undefined;
 
         // Defensive parsing: photo file presence is the primary success indicator
         // The success field may be undefined/missing from some clients
-        const hasPhotoFile = !!photoFile
-        const successValue = typeof body.success === "string" ? body.success : undefined
-        const isExplicitError = type === "photo_error" || successValue === "false"
+        const hasPhotoFile = !!photoFile;
+        const successValue = typeof body.success === "string" ? body.success : undefined;
+        const isExplicitError = type === "photo_error" || successValue === "false";
 
         this.logger.info(
-          {requestId, type, hasPhotoFile, isExplicitError, rawSuccess: body.success},
+          { requestId, type, hasPhotoFile, isExplicitError, rawSuccess: body.success },
           `📸 Received photo response: ${requestId} (type: ${type})`,
-        )
+        );
 
         if (!requestId) {
-          this.logger.error("No requestId in photo response")
-          return c.json({success: false, error: "No requestId provided"}, 400)
+          this.logger.error("No requestId in photo response");
+          return c.json({ success: false, error: "No requestId provided" }, 400);
         }
 
         // Complete the request (O(1) lookup and cleanup)
-        const pending = this.completePhotoRequest(requestId)
+        const pending = this.completePhotoRequest(requestId);
         if (!pending) {
           this.logger.warn(
-            {requestId, pendingCount: this.pendingPhotoRequests.size},
+            { requestId, pendingCount: this.pendingPhotoRequests.size },
             "📸 No pending request found for photo (may have timed out or session ended)",
-          )
+          );
           return c.json(
-            {success: false, error: "No pending request found for this photo (may have timed out or session ended)"},
+            { success: false, error: "No pending request found for this photo (may have timed out or session ended)" },
             404,
-          )
+          );
         }
 
         // Handle error response: only if explicitly marked as error AND no photo file
         if (isExplicitError && !hasPhotoFile) {
           this.logger.error(
-            {requestId, errorCode, errorMessage},
+            { requestId, errorCode, errorMessage },
             `📸 Photo capture failed: ${errorCode} - ${errorMessage}`,
-          )
-          pending.reject(new Error(`${errorCode || "UNKNOWN_ERROR"}: ${errorMessage || "Unknown error"}`))
+          );
+          pending.reject(new Error(`${errorCode || "UNKNOWN_ERROR"}: ${errorMessage || "Unknown error"}`));
 
           return c.json({
             success: true,
             requestId,
             message: "Photo error received successfully",
-          })
+          });
         }
 
         // Handle successful photo upload
         if (!photoFile) {
-          const errorMsg = "No photo file in upload (and no explicit error reported)"
-          this.logger.error({requestId, bodyKeys: Object.keys(body)}, errorMsg)
-          pending.reject(new Error(errorMsg))
-          return c.json({success: false, error: errorMsg}, 400)
+          const errorMsg = "No photo file in upload (and no explicit error reported)";
+          this.logger.error({ requestId, bodyKeys: Object.keys(body) }, errorMsg);
+          pending.reject(new Error(errorMsg));
+          return c.json({ success: false, error: errorMsg }, 400);
         }
 
         // Read file buffer
-        const buffer = Buffer.from(await photoFile.arrayBuffer())
+        const buffer = Buffer.from(await photoFile.arrayBuffer());
 
         this.logger.info(
-          {requestId, size: photoFile.size, mimeType: photoFile.type},
+          { requestId, size: photoFile.size, mimeType: photoFile.type },
           "📸 Photo received successfully, resolving promise",
-        )
+        );
 
         // Deliver photo data to the original requester
         pending.resolve({
@@ -981,18 +992,18 @@ export class AppServer extends Hono<{Variables: AuthVariables}> {
           requestId,
           size: photoFile.size,
           timestamp: new Date(),
-        })
+        });
 
         return c.json({
           success: true,
           requestId,
           message: "Photo received successfully",
-        })
+        });
       } catch (error) {
-        this.logger.error(error, "❌ Error handling photo response")
-        return c.json({success: false, error: "Internal server error processing photo response"}, 500)
+        this.logger.error(error, "❌ Error handling photo response");
+        return c.json({ success: false, error: "Internal server error processing photo response" }, 500);
       }
-    })
+    });
   }
 
   /**
@@ -1001,10 +1012,10 @@ export class AppServer extends Hono<{Variables: AuthVariables}> {
    */
   private setupMentraAuthRedirect(): void {
     this.get("/mentra-auth", (c) => {
-      const authUrl = `https://account.mentra.glass/auth?packagename=${encodeURIComponent(this.config.packageName)}`
-      this.logger.info(`🔐 Redirecting to MentraOS OAuth flow: ${authUrl}`)
-      return c.redirect(authUrl, 302)
-    })
+      const authUrl = `https://account.mentra.glass/auth?packagename=${encodeURIComponent(this.config.packageName)}`;
+      this.logger.info(`🔐 Redirecting to MentraOS OAuth flow: ${authUrl}`);
+      return c.redirect(authUrl, 302);
+    });
   }
 }
 
@@ -1012,7 +1023,7 @@ export class AppServer extends Hono<{Variables: AuthVariables}> {
  * @deprecated Use `AppServerConfig` instead. `TpaServerConfig` is deprecated and will be removed in a future version.
  * This is an alias for backward compatibility only.
  */
-export type TpaServerConfig = AppServerConfig
+export type TpaServerConfig = AppServerConfig;
 
 /**
  * @deprecated Use `AppServer` instead. `TpaServer` is deprecated and will be removed in a future version.
@@ -1020,11 +1031,11 @@ export type TpaServerConfig = AppServerConfig
  */
 export class TpaServer extends AppServer {
   constructor(config: TpaServerConfig) {
-    super(config)
+    super(config);
     console.warn(
       "⚠️  DEPRECATION WARNING: TpaServer is deprecated and will be removed in a future version. " +
         "Please use AppServer instead. " +
         'Simply replace "TpaServer" with "AppServer" in your code.',
-    )
+    );
   }
 }
