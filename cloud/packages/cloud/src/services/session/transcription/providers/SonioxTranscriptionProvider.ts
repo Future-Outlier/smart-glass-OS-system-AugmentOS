@@ -1,11 +1,20 @@
 /**
  * @fileoverview Soniox provider implementation using WebSocket API
+ *
+ * When SONIOX_USE_SDK=true, streams use the official Soniox Node SDK
+ * (`@soniox/node`) via SonioxSdkStream. Otherwise falls back to the
+ * legacy raw-WebSocket SonioxTranscriptionStream.
+ *
+ * See: cloud/issues/041-soniox-sdk/ for migration context.
  */
 
 import { Logger } from "pino";
 import WebSocket from "ws";
+import { SonioxNodeClient } from "@soniox/node";
 
 import { StreamType, getLanguageInfo, parseLanguageStream, TranscriptionData, SonioxToken } from "@mentra/sdk";
+
+import { SonioxSdkStream } from "./SonioxSdkStream";
 
 import {
   TranscriptionProvider,
@@ -69,11 +78,16 @@ export class SonioxTranscriptionProvider implements TranscriptionProvider {
   private failureCount = 0;
   private lastFailureTime = 0;
 
+  /** Soniox Node SDK client — initialized when SONIOX_USE_SDK=true */
+  private sdkClient: SonioxNodeClient | null = null;
+  private readonly useSdk: boolean;
+
   constructor(
     private config: SonioxProviderConfig,
     parentLogger: Logger,
   ) {
     this.logger = parentLogger.child({ provider: this.name });
+    this.useSdk = process.env.SONIOX_USE_SDK !== "false";
 
     this.healthStatus = {
       isHealthy: true,
@@ -85,31 +99,40 @@ export class SonioxTranscriptionProvider implements TranscriptionProvider {
       {
         supportedLanguages: SONIOX_SUPPORTED_LANGUAGES.length,
         languages: SONIOX_SUPPORTED_LANGUAGES,
+        useSdk: this.useSdk,
       },
-      `Soniox provider initialized with ${SONIOX_SUPPORTED_LANGUAGES.length} supported languages`,
+      `Soniox provider initialized with ${SONIOX_SUPPORTED_LANGUAGES.length} supported languages (SDK mode: ${this.useSdk})`,
     );
   }
 
   async initialize(): Promise<void> {
-    this.logger.info("Initializing Soniox provider");
+    this.logger.info({ useSdk: this.useSdk }, "Initializing Soniox provider");
 
     if (!this.config.apiKey) {
       throw new Error("Soniox API key is required");
     }
 
-    // TODO: Initialize actual Soniox client when implementing
+    // Initialize SDK client if enabled
+    if (this.useSdk) {
+      this.sdkClient = new SonioxNodeClient({
+        api_key: this.config.apiKey,
+      });
+      this.logger.info("✅ Soniox SDK client initialized");
+    }
+
     this.logger.info(
       {
         endpoint: this.config.endpoint,
         keyLength: this.config.apiKey.length,
+        useSdk: this.useSdk,
       },
-      "Soniox provider initialized (stub)",
+      "Soniox provider initialized",
     );
   }
 
   async dispose(): Promise<void> {
     this.logger.info("Disposing Soniox provider");
-    // TODO: Cleanup Soniox client when implementing
+    this.sdkClient = null;
   }
 
   async createTranscriptionStream(language: string, options: StreamOptions): Promise<StreamInstance> {
@@ -117,6 +140,7 @@ export class SonioxTranscriptionProvider implements TranscriptionProvider {
       {
         language,
         streamId: options.streamId,
+        useSdk: this.useSdk,
       },
       "Creating Soniox transcription stream",
     );
@@ -125,7 +149,25 @@ export class SonioxTranscriptionProvider implements TranscriptionProvider {
       throw new SonioxProviderError(`Language ${language} not supported by Soniox`, 400);
     }
 
-    // Create real Soniox WebSocket stream
+    // Use SDK-based stream when enabled
+    if (this.useSdk && this.sdkClient) {
+      const stream = new SonioxSdkStream(
+        options.streamId,
+        options.subscription,
+        this,
+        language,
+        undefined,
+        options.callbacks,
+        this.logger.child({ streamId: options.streamId, provider: "soniox-sdk" }),
+        this.config,
+        this.sdkClient,
+      );
+
+      await stream.initialize();
+      return stream;
+    }
+
+    // Fall back to legacy raw-WebSocket stream
     const stream = new SonioxTranscriptionStream(
       options.streamId,
       options.subscription,
