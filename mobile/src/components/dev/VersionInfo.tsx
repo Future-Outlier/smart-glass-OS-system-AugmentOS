@@ -58,6 +58,8 @@ export const VersionInfo = () => {
     }
 
     lastPressTime.current = currentTime
+    
+    copyVersionInfo()
 
     // Clear existing timeout
     if (pressTimeout.current) {
@@ -89,7 +91,7 @@ export const VersionInfo = () => {
     }, maxTimeDiff)
   }
 
-  const handlePress = async () => {
+  const copyVersionInfo = async () => {
     const res = await mentraAuth.getUser()
     let user = null
     if (res.is_ok()) {
@@ -113,7 +115,7 @@ export const VersionInfo = () => {
     await Clipboard.setStringAsync(info.join("\n"))
     Toast.show({
       type: "info",
-      text1: "Version info copied to clipboard",
+      text1: translate("dev:versionInfoCopied"),
       position: "bottom",
       topOffset: 80,
       visibilityTime: 1000,
@@ -139,7 +141,7 @@ export const VersionInfo = () => {
     if (longPressTimer.current) {
       clearTimeout(longPressTimer.current)
       longPressTimer.current = null
-      handlePress()
+      copyVersionInfo()
     }
   }
 
