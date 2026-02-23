@@ -58,7 +58,7 @@ export const VersionInfo = () => {
     }
 
     lastPressTime.current = currentTime
-    
+
     copyVersionInfo()
 
     // Clear existing timeout
@@ -113,13 +113,15 @@ export const VersionInfo = () => {
     }
 
     await Clipboard.setStringAsync(info.join("\n"))
-    Toast.show({
-      type: "info",
-      text1: translate("dev:versionInfoCopied"),
-      position: "bottom",
-      topOffset: 80,
-      visibilityTime: 1000,
-    })
+    if (devMode) {
+      Toast.show({
+        type: "info",
+        text1: translate("dev:versionInfoCopied"),
+        position: "bottom",
+        topOffset: 80,
+        visibilityTime: 1000,
+      })
+    }
   }
 
   const handlePressIn = () => {
