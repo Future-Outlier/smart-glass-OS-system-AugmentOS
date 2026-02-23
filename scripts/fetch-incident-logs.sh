@@ -6,7 +6,7 @@
 set -e
 
 INCIDENT_ID=$1
-API_HOST="${MENTRA_API_HOST:-https://cloud.mentra.glass}"
+API_HOST="${MENTRA_API_HOST:-https://api.mentra.glass}"
 
 if [ -z "$INCIDENT_ID" ]; then
   echo "Usage: ./scripts/fetch-incident-logs.sh <incidentId>"
@@ -16,7 +16,7 @@ if [ -z "$INCIDENT_ID" ]; then
   echo "  MENTRA_AGENT_API_KEY - API key for agent access"
   echo ""
   echo "Optional environment variables:"
-  echo "  MENTRA_API_HOST - API host (default: https://cloud.mentra.glass)"
+  echo "  MENTRA_API_HOST - API host (default: https://api.mentra.glass)"
   exit 1
 fi
 
