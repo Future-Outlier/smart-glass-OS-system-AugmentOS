@@ -146,12 +146,18 @@ async function processIncident(incidentId: string, userId: string): Promise<void
       } catch (err) {
         logger.warn({ incidentId, err }, "Failed to generate bug summary");
         errors.push("LLM summary failed");
-        // Fallback summary
+        // Fallback summary - preserve user feedback even when LLM fails
+        const feedback = incidentLogs.feedback as Record<string, unknown> | undefined;
+        const systemInfo = feedback?.systemInfo as BugSummary["systemInfo"] | undefined;
         summary = {
           title: "Bug report (auto-summary failed)",
           description: "See logs for details",
           affectedComponents: [],
           severity: "medium",
+          expectedBehavior: feedback?.expectedBehavior as string | undefined,
+          actualBehavior: feedback?.actualBehavior as string | undefined,
+          userSeverityRating: feedback?.severityRating as number | undefined,
+          systemInfo,
         };
       }
     }

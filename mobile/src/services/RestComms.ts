@@ -422,11 +422,11 @@ class RestComms {
     incidentId: string,
     images: Array<{uri: string; fileName?: string | null; mimeType?: string | null}>,
   ): AsyncResult<{uploaded: number; errors: number}, Error> {
-    return AsyncResult.fromPromise(
-      (async () => {
+    const uploadPromise = async (): Promise<Result<{uploaded: number; errors: number}, Error>> => {
+      try {
         const coreToken = this.getCoreToken()
         if (!coreToken) {
-          throw new Error("Not authenticated")
+          return Res.error(new Error("Not authenticated"))
         }
 
         const baseUrl = useSettingsStore.getState().getRestUrl()
@@ -462,12 +462,16 @@ class RestComms {
           errors?: Array<{filename: string; error: string}>
         }
 
-        return {
+        return Res.ok({
           uploaded: data.uploaded?.length || 0,
           errors: data.errors?.length || 0,
-        }
-      })(),
-    )
+        })
+      } catch (err) {
+        return Res.error(err instanceof Error ? err : new Error(String(err)))
+      }
+    }
+
+    return new AsyncResult(uploadPromise())
   }
 
   public writeUserSettings(settings: any): AsyncResult<void, Error> {

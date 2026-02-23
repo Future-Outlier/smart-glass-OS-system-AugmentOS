@@ -13,8 +13,9 @@ const ANTHROPIC_API_KEY = process.env.ANTHROPIC_API_KEY || "";
 // LLM Configuration
 export enum LLMModel {
   // OpenAI / Azure models
-  GPT5 = 'gpt-5',
-  GPT5_MINI = 'gpt-5-mini',
+  GPT5_2 = 'gpt-5.2',
+  GPT4_1 = 'gpt-4.1',
+  GPT4_1_MINI = 'gpt-4.1-mini',
   GPT4O = 'gpt-4o',
   GPT4O_MINI = 'gpt-4o-mini',
   O3 = 'o3',
@@ -37,14 +38,15 @@ export enum LLMService {
   GOOGLE = 'google',
 }
 
-export const LLM_MODEL = process.env.LLM_MODEL || LLMModel.GPT4;
-export const LLM_PROVIDER = process.env.LLM_PROVIDER || LLMService.AZURE;
+export const LLM_MODEL = process.env.LLM_MODEL || LLMModel.GPT5_2;
+export const LLM_PROVIDER = process.env.LLM_PROVIDER || LLMService.OPENAI;
 
 export class LLMProvider {
   static getLLM(options?: { temperature?: number; maxTokens?: number; [key: string]: any }) {
     const supportedAzureModels = [
-      LLMModel.GPT5,
-      LLMModel.GPT5_MINI,
+      LLMModel.GPT5_2,
+      LLMModel.GPT4_1,
+      LLMModel.GPT4_1_MINI,
       LLMModel.GPT4O,
       LLMModel.GPT4O_MINI,
       LLMModel.O3,
@@ -52,8 +54,9 @@ export class LLMProvider {
       LLMModel.O4_MINI,
     ]
     const supportedOpenAIModels = [
-      LLMModel.GPT5,
-      LLMModel.GPT5_MINI,
+      LLMModel.GPT5_2,
+      LLMModel.GPT4_1,
+      LLMModel.GPT4_1_MINI,
       LLMModel.GPT4O,
       LLMModel.GPT4O_MINI,
       LLMModel.O3,

@@ -42,8 +42,40 @@ class IncidentStorageService {
   private bucketName: string;
   private initialized = false;
 
+  // Per-incident locks to prevent concurrent read-modify-write race conditions
+  private locks: Map<string, Promise<void>> = new Map();
+
   constructor() {
     this.bucketName = process.env.R2_INCIDENTS_BUCKET || "mentra-incidents";
+  }
+
+  /**
+   * Execute a function with a per-incident lock.
+   * Operations on the same incident are queued and executed sequentially.
+   */
+  private async withLock<T>(incidentId: string, fn: () => Promise<T>): Promise<T> {
+    // Wait for any previous operation on this incident to complete
+    const previous = this.locks.get(incidentId) ?? Promise.resolve();
+
+    // Create a new promise that will resolve when our operation completes
+    let resolve: () => void;
+    const current = new Promise<void>((r) => {
+      resolve = r;
+    });
+    this.locks.set(incidentId, current);
+
+    // Wait for previous operation
+    await previous;
+
+    try {
+      return await fn();
+    } finally {
+      resolve!();
+      // Clean up if this is still the latest operation (prevents memory leak)
+      if (this.locks.get(incidentId) === current) {
+        this.locks.delete(incidentId);
+      }
+    }
   }
 
   /**
@@ -184,6 +216,7 @@ class IncidentStorageService {
 
   /**
    * Append logs to a specific category in an existing incident.
+   * Uses per-incident locking to prevent race conditions.
    */
   async appendLogs(
     incidentId: string,
@@ -191,31 +224,33 @@ class IncidentStorageService {
     logs: LogEntry[],
     source?: string,
   ): Promise<void> {
-    // Fetch existing logs
-    const existing = await this.getIncidentLogs(incidentId);
+    return this.withLock(incidentId, async () => {
+      // Fetch existing logs
+      const existing = await this.getIncidentLogs(incidentId);
 
-    // Tag logs with source if provided
-    const taggedLogs = source
-      ? logs.map((log) => ({
-          ...log,
-          source: log.source ? `${source}:${log.source}` : source,
-        }))
-      : logs;
+      // Tag logs with source if provided
+      const taggedLogs = source
+        ? logs.map((log) => ({
+            ...log,
+            source: log.source ? `${source}:${log.source}` : source,
+          }))
+        : logs;
 
-    // Append to the appropriate category
-    existing[category] = [...(existing[category] || []), ...taggedLogs];
+      // Append to the appropriate category
+      existing[category] = [...(existing[category] || []), ...taggedLogs];
 
-    // Store back to R2
-    await this.storeIncidentLogs(incidentId, existing);
+      // Store back to R2
+      await this.storeIncidentLogs(incidentId, existing);
 
-    logger.info(
-      {
-        incidentId,
-        category,
-        count: taggedLogs.length,
-      },
-      "Appended logs to incident",
-    );
+      logger.info(
+        {
+          incidentId,
+          category,
+          count: taggedLogs.length,
+        },
+        "Appended logs to incident",
+      );
+    });
   }
 
   /**
@@ -345,22 +380,25 @@ class IncidentStorageService {
 
   /**
    * Add attachment metadata to an incident's logs.
+   * Uses per-incident locking to prevent race conditions.
    */
   async appendAttachment(incidentId: string, attachment: AttachmentMetadata): Promise<void> {
-    const existing = await this.getIncidentLogs(incidentId);
+    return this.withLock(incidentId, async () => {
+      const existing = await this.getIncidentLogs(incidentId);
 
-    existing.attachments = [...(existing.attachments || []), attachment];
+      existing.attachments = [...(existing.attachments || []), attachment];
 
-    await this.storeIncidentLogs(incidentId, existing);
+      await this.storeIncidentLogs(incidentId, existing);
 
-    logger.info(
-      {
-        incidentId,
-        filename: attachment.filename,
-        totalAttachments: existing.attachments.length,
-      },
-      "Appended attachment metadata to incident",
-    );
+      logger.info(
+        {
+          incidentId,
+          filename: attachment.filename,
+          totalAttachments: existing.attachments.length,
+        },
+        "Appended attachment metadata to incident",
+      );
+    });
   }
 }
 

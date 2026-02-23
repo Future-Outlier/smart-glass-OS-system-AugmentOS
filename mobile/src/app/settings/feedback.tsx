@@ -236,9 +236,11 @@ export default function FeedbackPage() {
     // Bug reports use the incidents endpoint, feature requests use feedback endpoint
     if (feedbackType === "bug") {
       // Collect phone state snapshot from stores
+      // Only send installed package names for applets (not full details - that's public info we can query)
+      const appletState = useAppletStatusStore.getState()
       const phoneState = {
         glasses: useGlassesStore.getState(),
-        applets: useAppletStatusStore.getState(),
+        installedApplets: appletState.apps.map((app) => app.packageName),
         settings: useSettingsStore.getState(),
       }
 
@@ -496,7 +498,7 @@ export default function FeedbackPage() {
             </>
           )}
         </View>
-        <View className="flex-1" />
+        <View className="flex-1 min-h-6" />
         <Button
           text={
             isSubmitting ? "" : feedbackType === "bug" ? translate("feedback:continue") : translate("feedback:submit")

@@ -20,6 +20,19 @@ export interface BugSummary {
   description: string;
   affectedComponents: string[];
   severity: "low" | "medium" | "high" | "critical";
+  // Original user feedback (preserved for Linear tickets)
+  expectedBehavior?: string;
+  actualBehavior?: string;
+  userSeverityRating?: number;
+  // System info snapshot
+  systemInfo?: {
+    appVersion?: string;
+    platform?: string;
+    deviceName?: string;
+    osVersion?: string;
+    glassesConnected?: boolean;
+    defaultWearable?: string;
+  };
 }
 
 /**
@@ -137,10 +150,22 @@ Description: [root cause analysis]
 Components: [comma-separated list]
 Severity: [low/medium/high/critical]`;
 
+  // Extract system info from feedback
+  const systemInfo = feedback?.systemInfo as BugSummary["systemInfo"] | undefined;
+
   try {
     const response = await llm.invoke(prompt);
     const content = typeof response.content === "string" ? response.content : JSON.stringify(response.content);
-    return parseBugSummary(content);
+    const parsed = parseBugSummary(content);
+
+    // Preserve original user feedback in the summary
+    return {
+      ...parsed,
+      expectedBehavior: feedback?.expectedBehavior as string | undefined,
+      actualBehavior: feedback?.actualBehavior as string | undefined,
+      userSeverityRating: feedback?.severityRating as number | undefined,
+      systemInfo,
+    };
   } catch (err) {
     logger.warn({ error: err }, "LLM summary generation failed, using fallback");
     return {
@@ -148,6 +173,10 @@ Severity: [low/medium/high/critical]`;
       description: (feedback?.actualBehavior as string) || "See logs for details",
       affectedComponents: [],
       severity: "medium",
+      expectedBehavior: feedback?.expectedBehavior as string | undefined,
+      actualBehavior: feedback?.actualBehavior as string | undefined,
+      userSeverityRating: feedback?.severityRating as number | undefined,
+      systemInfo,
     };
   }
 }
@@ -244,6 +273,12 @@ export async function createOrUpdateLinearIssue(
     const similarIssue = await findSimilarLinearIssue(linear, summary);
 
     if (similarIssue) {
+      // Build system info line for comment
+      const sys = summary.systemInfo;
+      const systemInfoLine = sys
+        ? `App: ${sys.appVersion || "?"} | Platform: ${sys.platform || "?"} | Device: ${sys.deviceName || "?"} | Glasses: ${sys.glassesConnected ? "Connected" : "Disconnected"}`
+        : null;
+
       // Add comment to existing issue
       await linear.createComment({
         issueId: similarIssue.id,
@@ -251,9 +286,11 @@ export async function createOrUpdateLinearIssue(
 
 Incident ID: \`${incidentId}\`
 
-[View incident logs](${consoleUrl})
+**Expected:** ${summary.expectedBehavior || "Not specified"}
+**Actual:** ${summary.actualBehavior || "Not specified"}
+${systemInfoLine ? `**System:** ${systemInfoLine}` : ""}
 
-Summary: ${summary.description}`,
+[View incident logs](${consoleUrl})`,
       });
 
       logger.info(
@@ -272,17 +309,32 @@ Summary: ${summary.description}`,
       };
     }
 
+    // Build system info line
+    const sys = summary.systemInfo;
+    const systemInfoLine = sys
+      ? `App: ${sys.appVersion || "?"} | Platform: ${sys.platform || "?"} | Device: ${sys.deviceName || "?"} | OS: ${sys.osVersion || "?"} | Glasses: ${sys.glassesConnected ? "Connected" : "Disconnected"} | Wearable: ${sys.defaultWearable || "?"}`
+      : null;
+
     // Create new issue
     const issue = await linear.createIssue({
       teamId: LINEAR_TEAM_ID,
       title: summary.title,
       description: `${summary.description}
 
+## User Report
+
+**Expected:** ${summary.expectedBehavior || "Not specified"}
+
+**Actual:** ${summary.actualBehavior || "Not specified"}
+
+**User Severity:** ${summary.userSeverityRating !== undefined ? `${summary.userSeverityRating}/5` : "Not rated"}
+
 ## Details
 
 - **Incident ID:** \`${incidentId}\`
 - **Components:** ${summary.affectedComponents.join(", ") || "Unknown"}
 - **Severity:** ${summary.severity}
+${systemInfoLine ? `- **System Info:** ${systemInfoLine}` : ""}
 
 [View incident logs](${consoleUrl})`,
       priority: severityToPriority(summary.severity),
