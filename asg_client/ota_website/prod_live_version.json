@@ -21,8 +21,8 @@
     }
   ],
   "bes_firmware": {
-    "version": "17.26.02.05",
-    "url": "https://github.com/Mentra-Community/MentraOS/releases/download/asg-client/bes_firmware_17.26.02.05.bin",
-    "sha256": "7ed6adbc66bd64f793a5e662c8618069a2a328d4c21f98d619242d15d12559f0"
+    "version": "17.26.02.23",
+    "url": "https://github.com/Mentra-Community/MentraOS/releases/download/asg-client/bes_firmware_17.26.02.23.bin",
+    "sha256": "b1ea846babec719438fc0b3fa7f39e12b79dacc722e38c1409857e724bc26e1d"
   }
 }
