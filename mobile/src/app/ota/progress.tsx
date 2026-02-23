@@ -48,6 +48,8 @@ export default function OtaProgressScreen() {
   const [retryCount, setRetryCount] = useState(0)
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
   const [continueButtonDisabled, setContinueButtonDisabled] = useState(false)
+  const [timeEstimation, setTimeEstimation] = useState<string | null>(null)
+  const [elapsedTime, setElapsedTime] = useState<string>("")
 
   // Track the full update sequence and current position
   const updateSequenceRef = useRef<string[]>([])
@@ -88,6 +90,7 @@ export default function OtaProgressScreen() {
   const simulationTimerRef = useRef<number | null>(null)
   const stallDetectionRef = useRef<number | null>(null)
   const lastRealProgressRef = useRef<number>(0)
+  const timeEstimationStartTimeRef = useRef<number>(0)
 
   focusEffectPreventBack()
 
@@ -289,11 +292,27 @@ export default function OtaProgressScreen() {
     [completedUpdates],
   )
 
+  useEffect(() => {
+    if (!timeEstimationStartTimeRef.current) return;
+  
+    const interval = setInterval(() => {
+      const diff = Date.now() - timeEstimationStartTimeRef.current;
+      const totalSeconds = Math.floor(diff / 1000);
+      // const h = String(Math.floor(totalSeconds / 3600)).padStart(2, "0");
+      const m = String(Math.floor((totalSeconds % 3600) / 60)).padStart(2, "0");
+      const s = String(totalSeconds % 60).padStart(2, "0");
+      setElapsedTime(`${m}:${s}`);
+    }, 1000);
+  
+    return () => clearInterval(interval);
+  }, [timeEstimationStartTimeRef.current]);
+
   // Send OTA start command with retry logic
   const sendOtaStartCommand = useCallback(async () => {
     try {
       console.log(`OTA: Sending start command to glasses (attempt ${retryCount + 1}/${MAX_RETRIES})`)
       await CoreModule.sendOtaStart()
+      timeEstimationStartTimeRef.current = Date.now()
 
       // Set up timeout to check if we received progress
       retryTimeoutRef.current = setTimeout(() => {
@@ -765,7 +784,7 @@ export default function OtaProgressScreen() {
       return "Update"
     }
     const index = currentUpdateIndex + 1
-    return `Update ${index} of ${sequence.length}`
+    return `Step ${index} of ${sequence.length}`
   }
 
   // Get next update position string like "update 2 of 3"
@@ -773,9 +792,9 @@ export default function OtaProgressScreen() {
     const sequence = updateSequenceRef.current
     const nextIndex = currentUpdateIndex + 1
     if (nextIndex >= sequence.length) {
-      return "next update"
+      return "next step"
     }
-    return `update ${nextIndex + 1} of ${sequence.length}`
+    return `step ${nextIndex + 1} of ${sequence.length}`
   }
 
   // DEBUG: Log render values
@@ -789,6 +808,22 @@ export default function OtaProgressScreen() {
     "index:",
     currentUpdateIndex,
   )
+
+  const renderTimeEstimation = () => {
+    return (
+      <View className="bg-primary-foreground rounded-2xl px-6 w-full py-2 mt-12 gap-3 items-center justify-center">
+        <View className="flex-row items-center justify-between w-full">
+          <Text text="Elapsed time:" className="text-sm text-center" />
+          {/* current time - time estimation start time */}
+          <Text text={`${elapsedTime ?? "00:00"}`} className="text-sm text-center" />
+        </View>
+        <View className="flex-row items-center justify-between w-full">
+          <Text text={`Estimated time remaining:`} className="text-sm text-center" />
+          <Text text="~4min" className="text-sm text-center" />
+        </View>
+      </View>
+    )
+  }
 
   const renderContent = () => {
     console.log(
@@ -813,6 +848,7 @@ export default function OtaProgressScreen() {
           <ActivityIndicator size="large" color={theme.colors.foreground} />
           <View className="h-4" />
           <Text tx="ota:doNotDisconnect" className="text-sm text-center text-secondary-foreground" />
+          {renderTimeEstimation()}
         </View>
       )
     }
@@ -833,6 +869,7 @@ export default function OtaProgressScreen() {
             className="text-sm text-center"
             style={{color: theme.colors.textDim}}
           />
+          {renderTimeEstimation()}
         </View>
       )
     }
@@ -847,9 +884,8 @@ export default function OtaProgressScreen() {
           <View className="h-4" />
           <Text text={`${displayProgress}%`} className="text-3xl font-bold" style={{color: theme.colors.primary}} />
           <View className="h-4" />
-          <ActivityIndicator size="large" color={theme.colors.foreground} />
-          <View className="h-4" />
           <Text tx="ota:doNotDisconnect" className="text-sm text-center" style={{color: theme.colors.textDim}} />
+          {renderTimeEstimation()}
         </View>
       )
     }
@@ -871,7 +907,6 @@ export default function OtaProgressScreen() {
               <View className="h-4" />
             </>
           )}
-          <ActivityIndicator size="large" color={theme.colors.foreground} />
           <View className="h-4" />
           {isMtk ? (
             <Text
@@ -882,6 +917,7 @@ export default function OtaProgressScreen() {
           ) : (
             <Text tx="ota:doNotDisconnect" className="text-sm text-center" style={{color: theme.colors.textDim}} />
           )}
+          {renderTimeEstimation()}
         </View>
       )
     }
@@ -954,8 +990,8 @@ export default function OtaProgressScreen() {
             />
           </View>
 
-          <View className="gap-3 pb-2">
-            <Button preset="primary" tx="Retry" flexContainer onPress={handleRetry} />
+          <View className="gap-3">
+            <Button preset="primary" text="Retry" flexContainer onPress={handleRetry} />
             {superMode && <Button preset="secondary" text="Skip (super)" onPress={handleContinue} />}
           </View>
         </>
@@ -977,7 +1013,7 @@ export default function OtaProgressScreen() {
             />
           </View>
 
-          <View className="gap-3 pb-2">
+          <View className="gap-3">
             <Button preset="primary" tx="common:continue" flexContainer onPress={() => push("/wifi/scan")} />
           </View>
         </>
@@ -1004,8 +1040,8 @@ export default function OtaProgressScreen() {
           />
         </View>
 
-        <View className="gap-3 pb-2">
-          <Button preset="primary" tx="Retry" flexContainer onPress={() => replace("/ota/check-for-updates")} />
+        <View className="gap-3">
+          <Button preset="primary" text="Retry" flexContainer onPress={() => replace("/ota/check-for-updates")} />
           <Button preset="secondary" text="Change WiFi" flexContainer onPress={() => push("/wifi/scan")} />
         </View>
       </>
