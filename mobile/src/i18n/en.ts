@@ -838,6 +838,16 @@ const en = {
     uninstallMiniAppError: "Error uninstalling mini app: {{error}}",
     uninstallMiniAppSuccess: "{{appName}} has been uninstalled successfully",
   },
+  dev: {
+    developerMode: "Developer mode",
+    developerModeEnabled: "Developer mode enabled!",
+    developerModeMoreTaps: "{{number}} more taps to enable developer mode",
+    superMode: "Super mode",
+    superModeActivated: "Super mode activated! 🚀",
+    superModeDeactivated: "Super mode deactivated",
+    versionInfo: "Version info",
+    versionInfoCopied: "Version info copied to clipboard",
+  }
 }
 
 export default en
