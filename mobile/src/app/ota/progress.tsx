@@ -27,6 +27,7 @@ type ProgressState =
 const MAX_RETRIES = 3
 const RETRY_INTERVAL_MS = 5000 // 5 seconds between retries
 const PROGRESS_TIMEOUT_MS = 120000 // 120 seconds - for APK/BES updates with regular progress
+const DOWNLOAD_STUCK_TIMEOUT_MS = 70000
 const MTK_INSTALL_TIMEOUT_MS = 300000 // 5 minutes - MTK system install takes much longer with no progress updates
 const TRANSITION_TIMEOUT_MS = 30000 // 30 seconds max wait for next update to start
 const OTA_COVER_VIDEO_URL = "https://mentra-videos-cdn.mentraglass.com/onboarding/ota/ota_video_2.mp4"
@@ -63,9 +64,10 @@ export default function OtaProgressScreen() {
 
   // Track if we've received any progress from glasses
   const hasReceivedProgress = useRef(false)
-  const retryTimeoutRef = useRef<NodeJS.Timeout | null>(null)
-  const progressTimeoutRef = useRef<NodeJS.Timeout | null>(null)
-  const transitionTimeoutRef = useRef<NodeJS.Timeout | null>(null)
+  const retryTimeoutRef = useRef<number | null>(null)
+  const stuckTimeoutRef = useRef<number | null>(null)
+  const progressTimeoutRef = useRef<number | null>(null)
+  const transitionTimeoutRef = useRef<number | null>(null)
 
   // Track initial build number to detect successful install
   const initialBuildNumber = useRef<string | null>(null)
@@ -83,8 +85,8 @@ export default function OtaProgressScreen() {
   // Uses timeout-based stall detection: when no real progress for 20s in the 45-55% zone,
   // start incrementing by 1% every 15s to keep user informed (caps at 60%)
   const [simulatedProgress, setSimulatedProgress] = useState<number | null>(null)
-  const simulationTimerRef = useRef<NodeJS.Timeout | null>(null)
-  const stallDetectionRef = useRef<NodeJS.Timeout | null>(null)
+  const simulationTimerRef = useRef<number | null>(null)
+  const stallDetectionRef = useRef<number | null>(null)
   const lastRealProgressRef = useRef<number>(0)
 
   focusEffectPreventBack()
@@ -306,6 +308,19 @@ export default function OtaProgressScreen() {
           }
         }
       }, RETRY_INTERVAL_MS)
+      // if after 30 seconds we have received progress, but the progress is still 0, (detect if we're stuck at 0%):
+      stuckTimeoutRef.current = setTimeout(() => {
+        if (otaProgress?.progress === 0) {
+          // cancel the retry timeout
+          if (retryTimeoutRef.current) {
+            clearTimeout(retryTimeoutRef.current)
+            retryTimeoutRef.current = null
+          }
+          console.log("OTA: Stuck at 0% - showing failed")
+          setErrorMessage("Update may have failed. Ensure glasses have internet access and try again.")
+          setProgressState("failed")
+        }
+      }, DOWNLOAD_STUCK_TIMEOUT_MS)
     } catch (error) {
       console.error("OTA: Failed to send start command:", error)
       if (retryCount < MAX_RETRIES - 1) {
@@ -363,13 +378,7 @@ export default function OtaProgressScreen() {
 
   // Watch for WiFi disconnection during active download/install
   useEffect(() => {
-    if (
-      !wifiConnected &&
-      (progressState === "downloading" || progressState === "starting") &&
-      progressState !== "wifi_disconnected" &&
-      progressState !== "failed" &&
-      progressState !== "completed"
-    ) {
+    if (!wifiConnected && (progressState === "downloading" || progressState === "starting")) {
       console.log("OTA: WiFi disconnected during download - showing WiFi disconnected state")
       if (retryTimeoutRef.current) {
         clearTimeout(retryTimeoutRef.current)
@@ -479,7 +488,9 @@ export default function OtaProgressScreen() {
           let target = prev !== null ? Math.max(prev, stalledAt + 1) : stalledAt + 1
           target = Math.max(target, 51)
           console.log(
-            `🎯 OTA SIMULATION: Stall detected at ${stalledAt}%, ${prev !== null ? `resuming from ${prev}%` : `starting at ${target}% (min 51%)`}`,
+            `🎯 OTA SIMULATION: Stall detected at ${stalledAt}%, ${
+              prev !== null ? `resuming from ${prev}%` : `starting at ${target}% (min 51%)`
+            }`,
           )
           return target
         })
@@ -1035,8 +1046,8 @@ export default function OtaProgressScreen() {
         ? `active (${simulatedProgress}%)`
         : `holding (${simulatedProgress}%)`
       : stallDetectionRef.current
-        ? "detecting stall..."
-        : "none"
+      ? "detecting stall..."
+      : "none"
 
     const info = `progressState: ${progressState}
 currentUpdate: ${currentUpdate || "null"}
