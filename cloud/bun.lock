@@ -165,6 +165,7 @@
         "@mentra/utils": "workspace:*",
         "@sentry/bun": "^9.1.0",
         "@sentry/cli": "^2.42.1",
+        "@soniox/node": "^1.1.1",
         "@supabase/supabase-js": "^2.49.1",
         "@types/ali-oss": "^6.16.11",
         "ali-oss": "^6.23.0",
@@ -1588,6 +1589,8 @@
     "@smithy/uuid": ["@smithy/uuid@1.1.1", "", { "dependencies": { "tslib": "^2.6.2" } }, "sha512-dSfDCeihDmZlV2oyr0yWPTUfh07suS+R5OB+FZGiv/hHyK3hrFBW5rR1UYjfa57vBsrP9lciFkRPzebaV1Qujw=="],
 
     "@so-ric/colorspace": ["@so-ric/colorspace@1.1.6", "", { "dependencies": { "color": "^5.0.2", "text-hex": "1.0.x" } }, "sha512-/KiKkpHNOBgkFJwu9sh48LkHSMYGyuTcSFK/qMBdnOAlrRJzRSXAOFB5qwzaVQuDl8wAvHVMkaASQDReTahxuw=="],
+
+    "@soniox/node": ["@soniox/node@1.1.1", "", {}, "sha512-m4SYLSavueqxZqXE90LtaDEo3XJsdxf0iDEB54Scd0yBz4DSj+ElxdmDHaT2B5X0vbHyHXSnHaZ7R9DMAM/GQA=="],
 
     "@standard-schema/utils": ["@standard-schema/utils@0.3.0", "", {}, "sha512-e7Mew686owMaPJVNNLs55PUvgz371nKgwsc4vxE49zsODpJEnxgxRo2y/OKrqueavXgZNMDVj3DdHFlaSAeU8g=="],
 
