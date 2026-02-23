@@ -70,7 +70,7 @@ export const DUMMY_APPLET: ClientAppletInterface = {
  */
 
 export const cameraPackageName = "com.mentra.camera"
-export const captionsPackageName = "com.mentra.captions"
+export const captionsPackageName = "com.mentra.offline_captions"
 export const galleryPackageName = "com.mentra.gallery"
 export const settingsPackageName = "com.mentra.settings"
 export const storePackageName = "com.mentra.store"
@@ -125,9 +125,6 @@ export const getPackageNamePriority = (a: ClientAppletInterface, b: ClientApplet
 
 // get offline applets:
 const getOfflineApplets = async (): Promise<ClientAppletInterface[]> => {
-  // const offlineCameraRunning = await useSettingsStore.getState().getSetting(SETTINGS.offline_camera_running.key)
-  // const offlineCaptionsRunning = await useSettingsStore.getState().getSetting(SETTINGS.offline_captions_running.key)
-
   let miniApps: ClientAppletInterface[] = [
     {
       packageName: cameraPackageName,
@@ -148,19 +145,23 @@ const getOfflineApplets = async (): Promise<ClientAppletInterface[]> => {
       onStart: (): AsyncResult<void, Error> => {
         return Res.try_async(async () => {
           await storage.save(`${cameraPackageName}_running`, true)
+          // tell the core:
+          await useSettingsStore.getState().setSetting(SETTINGS.offline_camera_running.key, true)
           return undefined
         })
       },
       onStop: (): AsyncResult<void, Error> => {
         return Res.try_async(async () => {
           await storage.save(`${cameraPackageName}_running`, false)
+          // tell the core:
+          await useSettingsStore.getState().setSetting(SETTINGS.offline_camera_running.key, false)
           return undefined
         })
       },
     },
     {
       packageName: captionsPackageName,
-      name: translate("miniApps:liveCaptions"),
+      name: translate("miniApps:offlineCaptions"),
       type: "standard", // Foreground app (only one at a time)
       offline: true, // Works without internet connection
       // logoUrl: getCaptionsIcon(isDark),
@@ -179,6 +180,8 @@ const getOfflineApplets = async (): Promise<ClientAppletInterface[]> => {
           const modelAvailable = await STTModelManager.isModelAvailable()
           if (modelAvailable) {
             await storage.save(`${captionsPackageName}_running`, true)
+            // tell the core:
+            await useSettingsStore.getState().setSetting(SETTINGS.offline_captions_running.key, true)
             return undefined
           }
 
@@ -198,6 +201,8 @@ const getOfflineApplets = async (): Promise<ClientAppletInterface[]> => {
       onStop: (): AsyncResult<void, Error> => {
         return Res.try_async(async () => {
           await storage.save(`${captionsPackageName}_running`, false)
+          // tell the core:
+          await useSettingsStore.getState().setSetting(SETTINGS.offline_captions_running.key, false)
           return undefined
         })
       },
@@ -363,18 +368,18 @@ const startStopOfflineApplet = (applet: ClientAppletInterface, status: boolean):
       }
     }
 
-    // Captions app special handling
-    if (packageName === captionsPackageName) {
-      console.log(`APPLET: Captions app ${status ? "started" : "stopped"}`)
-      await useSettingsStore.getState().setSetting(SETTINGS.offline_captions_running.key, status)
-    }
+    // // Captions app special handling
+    // if (packageName === captionsPackageName) {
+    //   console.log(`APPLET: Captions app ${status ? "started" : "stopped"}`)
+    //   await useSettingsStore.getState().setSetting(SETTINGS.offline_captions_running.key, status)
+    // }
 
-    // Camera app special handling - track running state separately from gallery_mode
-    if (packageName === cameraPackageName) {
-      console.log(`APPLET: Camera app ${status ? "started" : "stopped"}`)
-      await useSettingsStore.getState().setSetting(SETTINGS.offline_camera_running.key, status)
-      // Note: GalleryModeSync will detect this change and update gallery_mode accordingly
-    }
+    // // Camera app special handling - track running state separately from gallery_mode
+    // if (packageName === cameraPackageName) {
+    //   console.log(`APPLET: Camera app ${status ? "started" : "stopped"}`)
+    //   await useSettingsStore.getState().setSetting(SETTINGS.offline_camera_running.key, status)
+    //   // Note: GalleryModeSync will detect this change and update gallery_mode accordingly
+    // }
   })
 }
 
