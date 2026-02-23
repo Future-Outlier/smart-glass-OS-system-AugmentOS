@@ -2,7 +2,7 @@
 
 ## Status
 
-**Active** — investigating, not yet specced.
+**Specced** — see [spec.md](./spec.md) for implementation plan.
 
 ## Problem
 
@@ -255,29 +255,26 @@ This reduces the SDK's dependency footprint for devs who don't need verbose logg
 
 ---
 
+## Decisions
+
+### BetterStack transport stays as-is (silent, undocumented)
+
+The SDK activates the BetterStack pino transport when `BETTERSTACK_SOURCE_TOKEN` is set. This stays. Rationale:
+
+- **Mentra's own apps** set this env var to route logs to Mentra's BetterStack instance for internal observability. We want this to keep working.
+- **Third-party devs** don't know about it — it's undocumented and hidden. They never see it, so it's zero DX burden.
+- **If a third-party dev did set it**, their logs would go to _their_ BetterStack account, not Mentra's. No data leak, no confusion. It's a benign hidden feature.
+- The **clean logging mode** (default) must not produce any output that references or hints at BetterStack. The transport runs silently in the background if the env var is present.
+
+No changes needed here. Not a DX concern.
+
 ## Open Questions
 
 1. **Should `logLevel` default to `'warn'` or `'error'`?** — `'warn'` catches deprecation warnings and non-fatal issues. `'error'` is quieter. Leaning `'warn'`.
 
 2. **Custom logger injection?** — Some devs may want to pipe SDK logs into their own logging system (winston, bunyan, etc.). Do we support `logger?: Logger` in config? This is a nice-to-have but adds complexity. Could defer to v3.1.
 
-3. **BetterStack transport for SDK consumers?** — Currently the SDK sends logs to BetterStack if `BETTERSTACK_SOURCE_TOKEN` is set. Should third-party apps' logs go to Mentra's BetterStack? Probably not by default. Consider making this opt-in or removing it from the SDK logger entirely (keep it cloud-side only).
-
-4. **Breaking change or additive?** — Adding `logLevel`/`verbose` to config is additive (non-breaking). Changing error classes from `Error` to `MentraAuthError` etc. could break `catch` blocks that check `error.constructor === Error`. In practice this is unlikely but worth noting. Since we're targeting SDK v3, we can make this breaking.
-
----
-
-## Effort Estimate
-
-| Task                                          | Effort        |
-| --------------------------------------------- | ------------- |
-| Logger refactor (two modes, config, env vars) | ~1 day        |
-| Error classes + error path audit/dedup        | ~1 day        |
-| Decouple pino-pretty                          | ~0.5 day      |
-| Update all 168 log sites with correct levels  | ~1 day        |
-| Tests                                         | ~0.5 day      |
-| Docs / migration guide                        | ~0.5 day      |
-| **Total**                                     | **~4.5 days** |
+3. **Breaking change or additive?** — Adding `logLevel`/`verbose` to config is additive (non-breaking). Changing error classes from `Error` to `MentraAuthError` etc. could break `catch` blocks that check `error.constructor === Error`. In practice this is unlikely but worth noting. Since we're targeting SDK v3, we can make this breaking.
 
 ---
 
