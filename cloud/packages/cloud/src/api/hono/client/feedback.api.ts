@@ -27,12 +27,12 @@ app.post("/", clientAuth, submitFeedback);
 
 /**
  * POST /api/client/feedback
- * Submit user feedback.
+ * Submit user feedback (feature requests and legacy bug reports).
  * Accepts either:
  * - Legacy format: { feedback: "string" }
  * - New structured format: { feedback: { type: "bug" | "feature", ... }, phoneState?: {...} }
  *
- * For bug reports, returns incidentId for subsequent log upload.
+ * Note: For bug reports with full incident tracking, use POST /api/incidents instead.
  */
 async function submitFeedback(c: AppContext) {
   const email = c.get("email")!;
@@ -72,7 +72,6 @@ async function submitFeedback(c: AppContext) {
 
     return c.json({
       success: result.success,
-      incidentId: result.incidentId,
       timestamp: new Date(),
     });
   } catch (error) {

@@ -154,7 +154,7 @@ async function getAttachment(c: AppContext) {
   try {
     const { buffer, mimeType } = await incidentStorage.getAttachment(incidentId, filename);
 
-    return new Response(buffer, {
+    return new Response(new Uint8Array(buffer), {
       headers: {
         "Content-Type": mimeType,
         "Content-Length": buffer.length.toString(),
