@@ -1216,12 +1216,6 @@ class MentraLive: NSObject, SGCManager {
                 "B": enableString,
             ]
 
-            // Send this 5 times to ensure this gets through, since we don't get ACK from BES.
-            // Kind of hacky but works for now.
-            sendRawK900Command(command)
-            sendRawK900Command(command)
-            sendRawK900Command(command)
-            sendRawK900Command(command)
             if sendRawK900Command(command) {
                 Bridge.log("LIVE: Sent enable_custom_audio_tx via queue (BES-handled command)")
             } else {
