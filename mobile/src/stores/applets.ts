@@ -102,6 +102,27 @@ export const getLastOpenTime = (packageName: string): AsyncResult<number, Error>
   })
 }
 
+const getRawPackageNamePriority = (pkg: string) => {
+  switch (pkg) {
+    case cameraPackageName:
+      return 0
+    case galleryPackageName:
+      return 2
+    case settingsPackageName:
+      return 3
+    case storePackageName:
+      return 4
+    default:
+      return 1
+  }
+}
+export const getPackageNamePriority = (a: ClientAppletInterface, b: ClientAppletInterface): number => {
+  const pa = getRawPackageNamePriority(a.packageName)
+  const pb = getRawPackageNamePriority(b.packageName)
+  if (pa !== pb) return pa - pb
+  return a.name.localeCompare(b.name)
+}
+
 // get offline applets:
 const getOfflineApplets = async (): Promise<ClientAppletInterface[]> => {
   // const offlineCameraRunning = await useSettingsStore.getState().getSetting(SETTINGS.offline_camera_running.key)
@@ -417,7 +438,11 @@ export const useAppletStatusStore = create<AppStatusState>((set, get) => ({
     }
 
     // merge in the offline apps:
-    let applets: ClientAppletInterface[] = [...onlineApps, ...(await getOfflineApplets()), ...(await composer.getLocalApplets())]
+    let applets: ClientAppletInterface[] = [
+      ...onlineApps,
+      ...(await getOfflineApplets()),
+      ...(await composer.getLocalApplets()),
+    ]
     const offlineMode = useSettingsStore.getState().getSetting(SETTINGS.offline_mode.key)
 
     // remove duplicates and keep the online versions:

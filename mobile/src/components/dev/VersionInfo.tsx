@@ -1,6 +1,6 @@
 import * as Clipboard from "expo-clipboard"
 import {useEffect, useRef, useState} from "react"
-import {TextStyle, TouchableOpacity, View, ViewStyle} from "react-native"
+import {TextStyle, TouchableOpacity, View} from "react-native"
 import Toast from "react-native-toast-message"
 
 import {Text} from "@/components/ignite"
@@ -15,7 +15,7 @@ import mentraAuth from "@/utils/auth/authClient"
 export const VersionInfo = () => {
   const {themed} = useAppTheme()
   const [devMode, setDevMode] = useSetting(SETTINGS.dev_mode.key)
-  const [superMode, setSuperMode] = useSetting(SETTINGS.super_mode.key)
+  const [_superMode, setSuperMode] = useSetting(SETTINGS.super_mode.key)
   const [storeUrl] = useSetting(SETTINGS.store_url.key)
   const [backendUrl] = useSetting(SETTINGS.backend_url.key)
   const [audioTransport, setAudioTransport] = useState<string>("websocket")
