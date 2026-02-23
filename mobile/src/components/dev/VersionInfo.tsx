@@ -1,25 +1,22 @@
 import * as Clipboard from "expo-clipboard"
-import {useEffect, useRef, useState} from "react"
-import {TextStyle, TouchableOpacity, View, ViewStyle} from "react-native"
+import { useEffect, useRef, useState } from "react"
+import { TouchableOpacity, View } from "react-native"
 import Toast from "react-native-toast-message"
 
-import {Text} from "@/components/ignite"
-import {useAppTheme} from "@/contexts/ThemeContext"
-import {translate} from "@/i18n"
+import { Text } from "@/components/ignite"
+import { translate } from "@/i18n"
 import udp from "@/services/UdpManager"
-import {SETTINGS, useSetting} from "@/stores/settings"
-import {ThemedStyle} from "@/theme"
+import { SETTINGS, useSetting } from "@/stores/settings"
 import showAlert from "@/utils/AlertUtils"
 import mentraAuth from "@/utils/auth/authClient"
 
 export const VersionInfo = () => {
-  const {theme, themed} = useAppTheme()
   const [devMode, setDevMode] = useSetting(SETTINGS.dev_mode.key)
+  const [superMode, setSuperMode] = useSetting(SETTINGS.super_mode.key)
   const [storeUrl] = useSetting(SETTINGS.store_url.key)
   const [backendUrl] = useSetting(SETTINGS.backend_url.key)
-  const [audioTransport, setAudioTransport] = useState<string>("websocket")
+  const [audioTransport, setAudioTransport] = useState("websocket")
 
-  // Update audio transport info periodically (since it can change)
   useEffect(() => {
     if (!devMode) return
 
@@ -40,6 +37,29 @@ export const VersionInfo = () => {
   const pressCount = useRef(0)
   const lastPressTime = useRef(0)
   const pressTimeout = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const longPressTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  const handlePressIn = () => {
+    longPressTimer.current = setTimeout(() => {
+      setSuperMode(true)
+      showAlert("Super Mode", "Super mode enabled! 🚀", [
+        { text: translate("common:ok") },
+      ])
+      Toast.show({
+        type: "success",
+        text1: "Super Mode Activated",
+        position: "top",
+        visibilityTime: 2000,
+      })
+    }, 10000)
+  }
+
+  const handlePressOut = () => {
+    if (longPressTimer.current) {
+      clearTimeout(longPressTimer.current)
+      longPressTimer.current = null
+    }
+  }
 
   const handleQuickPress = () => {
     const currentTime = Date.now()
@@ -48,7 +68,6 @@ export const VersionInfo = () => {
     const maxPressCount = 10
     const showAlertAtPressCount = 5
 
-    // Reset counter if too much time has passed
     if (timeDiff > maxTimeDiff) {
       pressCount.current = 1
     } else {
@@ -57,14 +76,14 @@ export const VersionInfo = () => {
 
     lastPressTime.current = currentTime
 
-    // Clear existing timeout
     if (pressTimeout.current) {
       clearTimeout(pressTimeout.current)
     }
 
-    // Handle different press counts
     if (pressCount.current === maxPressCount) {
-      showAlert("Developer Mode", "Developer mode enabled!", [{text: translate("common:ok")}])
+      showAlert("Developer Mode", "Developer mode enabled!", [
+        { text: translate("common:ok") },
+      ])
       setDevMode(true)
       pressCount.current = 0
     } else if (pressCount.current >= showAlertAtPressCount) {
@@ -79,7 +98,6 @@ export const VersionInfo = () => {
       })
     }
 
-    // Reset counter after 2 seconds of no activity
     pressTimeout.current = setTimeout(() => {
       pressCount.current = 0
     }, maxTimeDiff)
@@ -91,6 +109,7 @@ export const VersionInfo = () => {
     if (res.is_ok()) {
       user = res.value
     }
+
     const info = [
       `version: ${process.env.EXPO_PUBLIC_MENTRAOS_VERSION}`,
       `branch: ${process.env.EXPO_PUBLIC_BUILD_BRANCH}`,
@@ -99,6 +118,7 @@ export const VersionInfo = () => {
       `store_url: ${storeUrl}`,
       `backend_url: ${backendUrl}`,
       `audio: ${audioTransport}`,
+      ...(superMode ? [`super_mode: enabled`] : []),
     ]
 
     if (user) {
@@ -118,57 +138,41 @@ export const VersionInfo = () => {
 
   if (devMode) {
     return (
-      <TouchableOpacity onPress={handlePress}>
-        <View style={themed($versionContainer)}>
-          <View className="flex-row gap-2">
-            <Text
-              style={themed($buildInfo)}
-              text={translate("common:version", {number: process.env.EXPO_PUBLIC_MENTRAOS_VERSION})}
-            />
-            <Text style={themed($buildInfo)} text={`${process.env.EXPO_PUBLIC_BUILD_BRANCH}`} />
-          </View>
-          <View className="flex-row gap-2">
-            <Text style={themed($buildInfo)} text={`${process.env.EXPO_PUBLIC_BUILD_TIME}`} />
-            <Text style={themed($buildInfo)} text={`${process.env.EXPO_PUBLIC_BUILD_COMMIT}`} />
-          </View>
-          <View className="flex-row gap-2">
-            <Text style={themed($buildInfo)} text={storeUrl} />
-          </View>
-          <View className="flex-row gap-2">
-            <Text style={themed($buildInfo)} text={`${backendUrl}`} />
-          </View>
-          <View className="flex-row gap-2">
-            <Text style={themed($buildInfo)} text={`audio: ${audioTransport}`} />
-          </View>
-        </View>
+      <TouchableOpacity
+        onPress={handlePress}
+        onPressIn={handlePressIn}
+        onPressOut={handlePressOut}
+        className="items-center w-full py-2 rounded-2xl mt-16 mb-2"
+      >
+        <Text className="text-[13px] text-neutral-400">
+          v{process.env.EXPO_PUBLIC_MENTRAOS_VERSION} ({process.env.EXPO_PUBLIC_BUILD_BRANCH})
+        </Text>
+        <Text className="text-[13px] text-neutral-400">
+          {process.env.EXPO_PUBLIC_BUILD_TIME} @ {process.env.EXPO_PUBLIC_BUILD_COMMIT}
+        </Text>
+        <Text className="text-[13px] text-neutral-400">
+          {storeUrl} | {backendUrl} | {audioTransport}
+        </Text>
+        {superMode && (
+          <Text className="text-[13px] text-yellow-400 mt-1">🚀 Super Mode</Text>
+        )}
       </TouchableOpacity>
     )
   }
 
   return (
-    <TouchableOpacity onPress={handleQuickPress}>
-      <View style={themed($versionContainer)}>
-        <View style={{flexDirection: "row", gap: theme.spacing.s2}}>
-          <Text
-            style={themed($buildInfo)}
-            text={translate("common:version", {number: process.env.EXPO_PUBLIC_MENTRAOS_VERSION})}
-          />
-        </View>
-      </View>
+    <TouchableOpacity
+      onPress={handleQuickPress}
+      onPressIn={handlePressIn}
+      onPressOut={handlePressOut}
+      className="items-center w-full py-2 rounded-2xl mt-16 mb-2"
+    >
+      <Text className="text-[13px] text-neutral-400">
+        v{process.env.EXPO_PUBLIC_MENTRAOS_VERSION}
+      </Text>
+      {superMode && (
+        <Text className="text-[13px] text-yellow-400 mt-1">🚀 Super Mode</Text>
+      )}
     </TouchableOpacity>
   )
 }
-
-const $versionContainer: ThemedStyle<ViewStyle> = ({spacing}) => ({
-  alignItems: "center",
-  bottom: spacing.s2,
-  width: "100%",
-  paddingVertical: spacing.s2,
-  borderRadius: spacing.s4,
-  marginTop: spacing.s16,
-})
-
-const $buildInfo: ThemedStyle<TextStyle> = ({colors}) => ({
-  color: colors.textDim,
-  fontSize: 13,
-})
