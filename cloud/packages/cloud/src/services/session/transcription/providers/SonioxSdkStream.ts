@@ -107,10 +107,14 @@ export class SonioxSdkStream implements StreamInstance {
   // the interim from shrinking, we accumulate finalized-token text into
   // `stablePrefixText` ourselves. Each result's interim is then:
   //   stablePrefixText + (non-final tokens' text)
-  // `lastFinalEndMs` tracks the latest end_ms we've already saved so
-  // we never double-count a finalized token.
+  //
+  // `prevWindowFinalLen` tracks the *character length* of joined final-
+  // token text from the previous result. When the window grows (new
+  // tokens finalized), we append only the delta. When it shrinks
+  // (compaction), we leave stablePrefixText alone (it already has the
+  // pruned text) and reset the tracker to the new smaller length.
   private stablePrefixText = "";
-  private lastFinalEndMs = 0;
+  private prevWindowFinalLen = 0;
 
   constructor(
     public readonly id: string,
@@ -378,23 +382,26 @@ export class SonioxSdkStream implements StreamInstance {
     if (result.tokens.length === 0) return;
 
     // ── Accumulate newly-finalized tokens into stablePrefixText ─────
-    // Finalized tokens have monotonically increasing end_ms. We only
-    // append tokens whose end_ms exceeds our high-water mark, so we
-    // never double-count even when the window still includes them.
+    // Separate final vs non-final tokens, then compare the joined final
+    // text against the previous result to detect new content.
+    const finalTokens: RealtimeToken[] = [];
     const nonFinalTokens: RealtimeToken[] = [];
     for (const token of result.tokens) {
-      if (token.is_final) {
-        const tokenEndMs = token.end_ms ?? 0;
-        if (tokenEndMs > this.lastFinalEndMs) {
-          this.stablePrefixText += token.text;
-          this.lastFinalEndMs = tokenEndMs;
-        }
-        // If tokenEndMs <= lastFinalEndMs, we already have this token
-        // in stablePrefixText — skip it.
-      } else {
-        nonFinalTokens.push(token);
-      }
+      if (token.is_final) finalTokens.push(token);
+      else nonFinalTokens.push(token);
     }
+
+    const currentFinalText = finalTokens.map((t) => t.text).join("");
+
+    if (currentFinalText.length > this.prevWindowFinalLen) {
+      // Window's final portion grew — new tokens were finalized.
+      // Append only the delta (the new characters at the end).
+      this.stablePrefixText += currentFinalText.substring(this.prevWindowFinalLen);
+    }
+    // If it shrunk (compaction) or stayed the same, stablePrefixText
+    // already contains the text — nothing to append.
+
+    this.prevWindowFinalLen = currentFinalText.length;
 
     // ── Build interim = stable prefix + non-final tail ──────────────
     const tailText = nonFinalTokens.map((t) => t.text).join("");
@@ -484,7 +491,7 @@ export class SonioxSdkStream implements StreamInstance {
     this.currentLanguage = undefined;
     this.lastEmittedInterimText = "";
     this.stablePrefixText = "";
-    this.lastFinalEndMs = 0;
+    this.prevWindowFinalLen = 0;
 
     // Reset utterance buffer for the next utterance
     this.utteranceBuffer.reset();
@@ -516,7 +523,7 @@ export class SonioxSdkStream implements StreamInstance {
     this.currentLanguage = undefined;
     this.lastEmittedInterimText = "";
     this.stablePrefixText = "";
-    this.lastFinalEndMs = 0;
+    this.prevWindowFinalLen = 0;
     this.utteranceBuffer.reset();
 
     this.logger.debug({ streamId: this.id }, "🎙️ SONIOX SDK: finalization complete (VAD stop)");
@@ -532,7 +539,7 @@ export class SonioxSdkStream implements StreamInstance {
       this.emitFinal(this.lastEmittedInterimText, this.currentSpeakerId, this.currentLanguage, undefined);
       this.lastEmittedInterimText = "";
       this.stablePrefixText = "";
-      this.lastFinalEndMs = 0;
+      this.prevWindowFinalLen = 0;
       this.currentUtteranceId = null;
     }
   }
