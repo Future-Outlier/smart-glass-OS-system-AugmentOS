@@ -942,6 +942,7 @@ export interface Incident {
   incidentId: string;
   userId: string;
   status: "processing" | "complete" | "partial" | "failed";
+  summary?: string;
   linearIssueId?: string;
   linearIssueUrl?: string;
   errorMessage?: string;

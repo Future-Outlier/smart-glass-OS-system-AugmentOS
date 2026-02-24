@@ -310,6 +310,7 @@ export class SlackNotificationService {
     incidentId: string,
     userId: string,
     ticketUrl: string,
+    consoleUrl: string,
     summary?: string,
     isNewIssue?: boolean,
     feedback?: Record<string, unknown>,
@@ -330,6 +331,7 @@ export class SlackNotificationService {
     const expectedBehavior = feedback?.expectedBehavior as string | undefined;
     const actualBehavior = feedback?.actualBehavior as string | undefined;
     const severityRating = feedback?.severityRating as number | undefined;
+    const systemInfo = feedback?.systemInfo as Record<string, unknown> | undefined;
 
     // Build feedback fields if available
     const feedbackBlocks: SlackBlock[] = [];
@@ -364,6 +366,29 @@ export class SlackNotificationService {
           text: `*Severity:* ${severityEmoji} ${severityRating}/5`,
         },
       });
+    }
+
+    // System info block
+    const systemInfoBlock: SlackBlock[] = [];
+    if (systemInfo) {
+      const sysInfoParts: string[] = [];
+      if (systemInfo.appVersion) sysInfoParts.push(`App: ${this.escapeSlackText(String(systemInfo.appVersion))}`);
+      if (systemInfo.platform) sysInfoParts.push(`Platform: ${this.escapeSlackText(String(systemInfo.platform))}`);
+      if (systemInfo.deviceName) sysInfoParts.push(`Device: ${this.escapeSlackText(String(systemInfo.deviceName))}`);
+      if (systemInfo.osVersion) sysInfoParts.push(`OS: ${this.escapeSlackText(String(systemInfo.osVersion))}`);
+      if (systemInfo.glassesConnected !== undefined) sysInfoParts.push(`Glasses: ${systemInfo.glassesConnected ? "Connected" : "Not connected"}`);
+      if (systemInfo.defaultWearable) sysInfoParts.push(`Wearable: ${this.escapeSlackText(String(systemInfo.defaultWearable))}`);
+      if (systemInfo.backendUrl) sysInfoParts.push(`Backend: ${this.escapeSlackText(String(systemInfo.backendUrl))}`);
+
+      if (sysInfoParts.length > 0) {
+        systemInfoBlock.push({
+          type: "section",
+          text: {
+            type: "mrkdwn",
+            text: `*System:* ${sysInfoParts.join(" | ")}`,
+          },
+        });
+      }
     }
 
     const message: SlackMessage = {
@@ -405,6 +430,7 @@ export class SlackNotificationService {
         },
         ...feedbackBlocks,
         ...severityBlock,
+        ...systemInfoBlock,
         {
           type: "section",
           text: {
@@ -415,14 +441,27 @@ export class SlackNotificationService {
         {
           type: "actions",
           elements: [
+            ...(isLinearUrl
+              ? [
+                  {
+                    type: "button",
+                    text: {
+                      type: "plain_text",
+                      text: "View in Linear",
+                      emoji: true,
+                    },
+                    url: ticketUrl,
+                  },
+                ]
+              : []),
             {
               type: "button",
               text: {
                 type: "plain_text",
-                text: isLinearUrl ? "View in Linear" : "View Incident",
+                text: "View Logs",
                 emoji: true,
               },
-              url: ticketUrl,
+              url: consoleUrl,
             },
           ],
         },

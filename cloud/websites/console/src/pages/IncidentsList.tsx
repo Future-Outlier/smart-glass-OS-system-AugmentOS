@@ -182,18 +182,26 @@ const IncidentsList: React.FC = () => {
                         navigate(`/admin/incidents/${incident.incidentId}`)
                       }
                     >
-                      <div className="flex items-center gap-4">
-                        <div className="flex flex-col">
-                          <span className="font-mono text-sm text-gray-500">
-                            {incident.incidentId.slice(0, 8)}...
-                          </span>
-                          <span className="text-sm text-gray-600">
-                            {incident.userId}
-                          </span>
+                      <div className="flex items-center gap-4 flex-1 min-w-0">
+                        <div className="flex flex-col min-w-0">
+                          <div className="flex items-center gap-2">
+                            <span className="font-mono text-sm text-gray-500">
+                              {incident.incidentId.slice(0, 8)}...
+                            </span>
+                            <span className="text-sm text-gray-400">·</span>
+                            <span className="text-sm text-gray-600 truncate">
+                              {incident.userId}
+                            </span>
+                          </div>
+                          {incident.summary && (
+                            <span className="text-sm font-medium text-gray-800 truncate mt-1">
+                              {incident.summary}
+                            </span>
+                          )}
                         </div>
                       </div>
 
-                      <div className="flex items-center gap-4">
+                      <div className="flex items-center gap-4 flex-shrink-0">
                         <span className="text-sm text-gray-500">
                           {formatDate(incident.createdAt)}
                         </span>

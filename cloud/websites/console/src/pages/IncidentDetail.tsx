@@ -241,11 +241,14 @@ const IncidentDetail: React.FC = () => {
             <div>
               <div className="flex items-center gap-3">
                 <Bug className="h-5 w-5 text-red-500" />
-                <h1 className="text-xl font-bold">Incident {incidentId?.slice(0, 8)}...</h1>
+                <h1 className="text-xl font-bold">
+                  {incident.summary || `Incident ${incidentId?.slice(0, 8)}...`}
+                </h1>
                 {getStatusBadge(incident.status)}
               </div>
               <p className="text-sm text-gray-500 mt-1">
-                Reported by {incident.userId} on {formatDate(incident.createdAt)}
+                <span className="font-mono">{incidentId?.slice(0, 8)}...</span>
+                {" · "}Reported by {incident.userId} on {formatDate(incident.createdAt)}
               </p>
             </div>
           </div>

@@ -190,7 +190,7 @@ async function processIncident(incidentId: string, userId: string): Promise<void
 
     // Slack notification (fire-and-forget)
     slackService
-      .sendIncidentNotification(incidentId, userId, notificationUrl, summary?.title, isNewIssue, incidentLogs?.feedback)
+      .sendIncidentNotification(incidentId, userId, notificationUrl, consoleUrl, summary?.title, isNewIssue, incidentLogs?.feedback)
       .catch((err) => {
         logger.warn({ incidentId, err }, "Slack notification failed");
         errors.push("Slack notification failed");
@@ -210,13 +210,14 @@ async function processIncident(incidentId: string, userId: string): Promise<void
       errors.push("Email notification failed");
     }
 
-    // 7. Update incident status with Linear info
+    // 7. Update incident status with Linear info and summary
     const finalStatus = errors.length === 0 ? "complete" : "partial";
     await Incident.updateOne(
       { incidentId },
       {
         $set: {
           status: finalStatus,
+          summary: summary?.title,
           linearIssueId,
           linearIssueUrl,
           errorMessage: errors.length > 0 ? errors.join(", ") : undefined,

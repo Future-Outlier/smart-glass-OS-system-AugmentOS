@@ -238,10 +238,18 @@ export default function FeedbackPage() {
       // Collect phone state snapshot from stores
       // Only send installed package names for applets (not full details - that's public info we can query)
       const appletState = useAppletStatusStore.getState()
+
+      // Get settings but filter out sensitive keys (tokens, credentials)
+      const settingsState = useSettingsStore.getState()
+      const SENSITIVE_KEYS = ["core_token", "auth_token", "auth_email"]
+      const filteredSettings = Object.fromEntries(
+        Object.entries(settingsState.settings || {}).filter(([key]) => !SENSITIVE_KEYS.includes(key)),
+      )
+
       const phoneState = {
         glasses: useGlassesStore.getState(),
         installedApplets: appletState.apps.map((app) => app.packageName),
-        settings: useSettingsStore.getState(),
+        settings: filteredSettings,
       }
 
       // Create incident for bug report

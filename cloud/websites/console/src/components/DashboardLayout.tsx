@@ -201,7 +201,7 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
                       : "text-muted-foreground hover:bg-secondary hover:text-foreground"
                   }`}>
                   <AlertTriangle className="mr-3 h-5 w-5" />
-                  Bug Reports
+                  Incidents
                 </Link>
               </>
             )}

@@ -6,6 +6,7 @@ export interface IncidentI extends Document {
   incidentId: string;
   userId: string;
   status: "processing" | "complete" | "partial" | "failed";
+  summary?: string;
   linearIssueId?: string;
   linearIssueUrl?: string;
   errorMessage?: string;
@@ -30,6 +31,9 @@ const IncidentSchema = new Schema<IncidentI>(
       type: Schema.Types.String,
       enum: ["processing", "complete", "partial", "failed"],
       default: "processing",
+    },
+    summary: {
+      type: Schema.Types.String,
     },
     linearIssueId: {
       type: Schema.Types.String,

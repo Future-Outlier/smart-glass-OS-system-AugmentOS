@@ -71,7 +71,7 @@ async function listIncidents(c: AppContext) {
       .sort({ createdAt: -1 })
       .skip(offset)
       .limit(limit)
-      .select("incidentId userId status linearIssueId linearIssueUrl errorMessage createdAt updatedAt")
+      .select("incidentId userId status summary linearIssueId linearIssueUrl errorMessage createdAt updatedAt")
       .lean();
 
     const total = await Incident.countDocuments();

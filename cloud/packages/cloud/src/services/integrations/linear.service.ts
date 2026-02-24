@@ -32,6 +32,7 @@ export interface BugSummary {
     osVersion?: string;
     glassesConnected?: boolean;
     defaultWearable?: string;
+    backendUrl?: string;
   };
 }
 
@@ -219,7 +220,7 @@ Does it describe the SAME underlying issue as any of these existing tickets?
 Only match if it's clearly the same root cause, not just similar symptoms.
 
 Existing tickets:
-${recentIssues.nodes.map((i, idx) => `${idx + 1}. [${i.identifier}] ${i.title}`).join("\n")}
+${recentIssues.nodes.map((i, idx) => `${idx + 1}. [${i.identifier}] ${i.title}\n   ${i.description?.slice(0, 600) || ""}`).join("\n\n")}
 
 Reply with ONLY the ticket identifier (e.g., "MEN-123") if there's a clear match, or "NONE" if this is a new/different issue.`;
 
@@ -275,9 +276,15 @@ export async function createOrUpdateLinearIssue(
     if (similarIssue) {
       // Build system info line for comment
       const sys = summary.systemInfo;
-      const systemInfoLine = sys
-        ? `App: ${sys.appVersion || "?"} | Platform: ${sys.platform || "?"} | Device: ${sys.deviceName || "?"} | Glasses: ${sys.glassesConnected ? "Connected" : "Disconnected"}`
-        : null;
+      const commentSysInfoParts: string[] = [];
+      if (sys) {
+        if (sys.appVersion) commentSysInfoParts.push(`App: ${sys.appVersion}`);
+        if (sys.platform) commentSysInfoParts.push(`Platform: ${sys.platform}`);
+        if (sys.deviceName) commentSysInfoParts.push(`Device: ${sys.deviceName}`);
+        commentSysInfoParts.push(`Glasses: ${sys.glassesConnected ? "Connected" : "Disconnected"}`);
+        if (sys.backendUrl) commentSysInfoParts.push(`Backend: ${sys.backendUrl}`);
+      }
+      const systemInfoLine = commentSysInfoParts.length > 0 ? commentSysInfoParts.join(" | ") : null;
 
       // Add comment to existing issue
       await linear.createComment({
@@ -311,9 +318,17 @@ ${systemInfoLine ? `**System:** ${systemInfoLine}` : ""}
 
     // Build system info line
     const sys = summary.systemInfo;
-    const systemInfoLine = sys
-      ? `App: ${sys.appVersion || "?"} | Platform: ${sys.platform || "?"} | Device: ${sys.deviceName || "?"} | OS: ${sys.osVersion || "?"} | Glasses: ${sys.glassesConnected ? "Connected" : "Disconnected"} | Wearable: ${sys.defaultWearable || "?"}`
-      : null;
+    const systemInfoParts: string[] = [];
+    if (sys) {
+      if (sys.appVersion) systemInfoParts.push(`App: ${sys.appVersion}`);
+      if (sys.platform) systemInfoParts.push(`Platform: ${sys.platform}`);
+      if (sys.deviceName) systemInfoParts.push(`Device: ${sys.deviceName}`);
+      if (sys.osVersion) systemInfoParts.push(`OS: ${sys.osVersion}`);
+      systemInfoParts.push(`Glasses: ${sys.glassesConnected ? "Connected" : "Disconnected"}`);
+      if (sys.defaultWearable) systemInfoParts.push(`Wearable: ${sys.defaultWearable}`);
+      if (sys.backendUrl) systemInfoParts.push(`Backend: ${sys.backendUrl}`);
+    }
+    const systemInfoLine = systemInfoParts.length > 0 ? systemInfoParts.join(" | ") : null;
 
     // Create new issue
     const issue = await linear.createIssue({
@@ -332,8 +347,6 @@ ${systemInfoLine ? `**System:** ${systemInfoLine}` : ""}
 ## Details
 
 - **Incident ID:** \`${incidentId}\`
-- **Components:** ${summary.affectedComponents.join(", ") || "Unknown"}
-- **Severity:** ${summary.severity}
 ${systemInfoLine ? `- **System Info:** ${systemInfoLine}` : ""}
 
 [View incident logs](${consoleUrl})`,
