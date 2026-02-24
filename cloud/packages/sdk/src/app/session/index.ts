@@ -255,19 +255,14 @@ export class AppSession {
           // Fix URLs with incorrect protocol (e.g., 'ws://http://host')
           const fixedUrl = this.config.mentraOSWebsocketUrl.replace(/^ws:\/\/http:\/\//, "ws://");
           this.config.mentraOSWebsocketUrl = fixedUrl;
-          this.logger.warn(`⚠️ [${this.config.packageName}] Fixed malformed WebSocket URL: ${fixedUrl}`);
+          this.logger.warn(`Fixed malformed WebSocket URL: ${fixedUrl}`);
         }
       } catch (error) {
-        this.logger.error(
-          error,
-          `⚠️ [${this.config.packageName}] Invalid WebSocket URL format: ${this.config.mentraOSWebsocketUrl}`,
-        );
+        this.logger.error(error, `Invalid WebSocket URL format: ${this.config.mentraOSWebsocketUrl}`);
       }
     }
 
-    // Log initialization
-    this.logger.debug(`🚀 [${this.config.packageName}] App Session initialized`);
-    this.logger.debug(`🚀 [${this.config.packageName}] WebSocket URL: ${this.config.mentraOSWebsocketUrl}`);
+    this.logger.debug("App session initialized");
 
     // Validate URL format - give early warning for obvious issues
     // Check URL format but handle undefined case
@@ -277,7 +272,7 @@ export class AppSession {
         if (!["ws:", "wss:"].includes(url.protocol)) {
           this.logger.error(
             { config: this.config },
-            `⚠️ [${this.config.packageName}] Invalid WebSocket URL protocol: ${url.protocol}. Should be ws: or wss:`,
+            `Invalid WebSocket URL protocol: ${url.protocol}. Should be ws: or wss:`,
           );
         }
       } catch (error) {
@@ -650,10 +645,7 @@ export class AppSession {
           return;
         }
 
-        // Add debug logging for connection attempts
-        this.logger.info(
-          `🔌🔌🔌 [${this.config.packageName}] Attempting to connect to: ${this.config.mentraOSWebsocketUrl} for session ${this.sessionId}`,
-        );
+        this.logger.debug(`Connecting to ${this.config.mentraOSWebsocketUrl}`);
 
         // Create connection with error handling
         this.ws = new WebSocket(this.config.mentraOSWebsocketUrl);
@@ -790,34 +782,24 @@ export class AppSession {
           const isManualStop = reason && reason.includes("App stopped");
           const isUserSessionEnded = reason && reason.includes("User session ended");
 
-          // Log closure details for diagnostics
-          this.logger.debug(`🔌 [${this.config.packageName}] WebSocket closed with code ${code}${reasonStr}`);
-          this.logger.debug(
-            `🔌 [${this.config.packageName}] isNormalClosure: ${isNormalClosure}, isManualStop: ${isManualStop}, isUserSessionEnded: ${isUserSessionEnded}`,
-          );
+          this.logger.debug(`WebSocket closed (code: ${code}${reasonStr})`);
 
           // If user session ended, mark as terminated to prevent any future reconnection
           if (isUserSessionEnded) {
             this.terminated = true;
-            this.logger.info(
-              `🛑 [${this.config.packageName}] User session ended - marking as terminated, no reconnection allowed`,
-            );
+            this.logger.debug("User session ended — marked as terminated, no reconnection");
           }
 
           if (!isNormalClosure && !isManualStop && !this.terminated) {
-            this.logger.warn(`🔌 [${this.config.packageName}] Abnormal closure detected, attempting reconnection`);
+            this.logger.debug("Abnormal closure detected, attempting reconnection");
             this.handleReconnection();
           } else {
-            this.logger.debug(
-              `🔌 [${this.config.packageName}] Normal/terminated closure detected, not attempting reconnection (terminated: ${this.terminated})`,
-            );
+            this.logger.debug("Normal closure, not reconnecting");
           }
 
           // if user session ended, then trigger onStop.
           if (isUserSessionEnded) {
-            this.logger.info(
-              `🛑 [${this.config.packageName}] User session ended - emitting disconnected event with sessionEnded flag`,
-            );
+            this.logger.debug("User session ended — emitting disconnected event");
             // Emit a disconnected event with a special flag to indicate session end
             // This will be caught by AppServer which will call the onStop callback
             const disconnectInfo = {
@@ -847,25 +829,7 @@ export class AppSession {
           this.events.emit("error", new MentraConnectionError(error.message));
         };
 
-        // Enhanced error handler with detailed logging
         this.ws.on("error", (error: Error) => {
-          this.logger.error(
-            error,
-            `⛔️⛔️⛔️ [${this.config.packageName}] WebSocket connection error: ${error.message}`,
-          );
-
-          // Try to provide more context
-          const errMsg = error.message || "";
-          if (errMsg.includes("ECONNREFUSED")) {
-            this.logger.error(
-              `⛔️⛔️⛔️ [${this.config.packageName}] Connection refused - Check if the server is running at the specified URL`,
-            );
-          } else if (errMsg.includes("ETIMEDOUT")) {
-            this.logger.error(
-              `⛔️⛔️⛔️ [${this.config.packageName}] Connection timed out - Check network connectivity and firewall rules`,
-            );
-          }
-
           errorHandler(error);
         });
 
@@ -892,7 +856,7 @@ export class AppSession {
               sessionId: this.sessionId,
               timeoutMs,
             },
-            `⏱️⏱️⏱️ [${this.config.packageName}] Connection timeout after ${timeoutMs}ms`,
+            `Connection timeout after ${timeoutMs}ms`,
           );
 
           const err = new MentraTimeoutError(`Connection timeout after ${timeoutMs}ms`);
@@ -1785,7 +1749,7 @@ export class AppSession {
     // Check if we've exceeded the maximum attempts
     const maxAttempts = this.config.maxReconnectAttempts || 3;
     if (this.reconnectAttempts >= maxAttempts) {
-      this.logger.info(`🔄 Maximum reconnection attempts (${maxAttempts}) reached, giving up`);
+      this.logger.warn(`Reconnection failed after ${maxAttempts} attempts, giving up`);
 
       // Emit a permanent disconnection event to trigger onStop in the App server
       this.events.emit("disconnected", {
@@ -1804,9 +1768,7 @@ export class AppSession {
     const delay = baseDelay * Math.pow(2, this.reconnectAttempts);
     this.reconnectAttempts++;
 
-    this.logger.debug(
-      `🔄 [${this.config.packageName}] Reconnection attempt ${this.reconnectAttempts}/${maxAttempts} in ${delay}ms`,
-    );
+    this.logger.warn(`Connection lost, reconnecting (${this.reconnectAttempts}/${maxAttempts})...`);
 
     // Use the resource tracker for the timeout
     await new Promise<void>((resolve) => {
@@ -1814,20 +1776,17 @@ export class AppSession {
     });
 
     try {
-      this.logger.debug(`🔄 [${this.config.packageName}] Attempting to reconnect...`);
       await this.connect(this.sessionId);
-      this.logger.debug(`✅ [${this.config.packageName}] Reconnection successful!`);
+      this.logger.info("Reconnected successfully");
       this.reconnectAttempts = 0;
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : String(error);
-      this.logger.error(error, `❌ [${this.config.packageName}] Reconnection failed for user ${this.userId}`);
+      this.logger.debug(error, "Reconnection attempt failed");
       this.events.emit("error", new Error(`Reconnection failed: ${errorMessage}`));
 
       // Check if this was the last attempt
       if (this.reconnectAttempts >= maxAttempts) {
-        this.logger.debug(
-          `🔄 [${this.config.packageName}] Final reconnection attempt failed, emitting permanent disconnection`,
-        );
+        this.logger.debug("Final reconnection attempt failed, emitting permanent disconnection");
 
         // Emit permanent disconnection event after the last failed attempt
         this.events.emit("disconnected", {
