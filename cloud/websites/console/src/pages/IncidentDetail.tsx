@@ -40,6 +40,7 @@ const IncidentDetail: React.FC = () => {
   const [activeTab, setActiveTab] = useState<"feedback" | "phone" | "cloud" | "glasses" | "telemetry" | "attachments">("feedback");
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
+  const [selectedApp, setSelectedApp] = useState<string | null>(null);
 
   useEffect(() => {
     if (incidentId) {
@@ -174,12 +175,19 @@ const IncidentDetail: React.FC = () => {
     );
   };
 
+  // Get app package names from telemetry logs
+  const appPackages = logs?.appTelemetryLogs ? Object.keys(logs.appTelemetryLogs) : [];
+  const totalTelemetryLogs = appPackages.reduce(
+    (sum, pkg) => sum + (logs?.appTelemetryLogs?.[pkg]?.length || 0),
+    0
+  );
+
   const tabs = [
     { id: "feedback", label: "Feedback", icon: Bug, count: null },
     { id: "phone", label: "Phone Logs", icon: Smartphone, count: logs?.phoneLogs?.length || 0 },
     { id: "cloud", label: "Cloud Logs", icon: Cloud, count: logs?.cloudLogs?.length || 0 },
     { id: "glasses", label: "Glasses Logs", icon: Glasses, count: logs?.glassesLogs?.length || 0 },
-    { id: "telemetry", label: "App Telemetry", icon: Activity, count: logs?.appTelemetryLogs?.length || 0 },
+    { id: "telemetry", label: "App Telemetry", icon: Activity, count: totalTelemetryLogs },
     { id: "attachments", label: "Screenshots", icon: ImageIcon, count: logs?.attachments?.length || 0 },
   ] as const;
 
@@ -412,7 +420,63 @@ const IncidentDetail: React.FC = () => {
             {activeTab === "phone" && renderLogEntries(logs?.phoneLogs || [], "No phone logs collected")}
             {activeTab === "cloud" && renderLogEntries(logs?.cloudLogs || [], "No cloud logs collected")}
             {activeTab === "glasses" && renderLogEntries(logs?.glassesLogs || [], "No glasses logs collected")}
-            {activeTab === "telemetry" && renderLogEntries(logs?.appTelemetryLogs || [], "No app telemetry logs collected")}
+            {activeTab === "telemetry" && (
+              <div>
+                {appPackages.length === 0 ? (
+                  <div className="text-center py-8 text-gray-500">
+                    <Activity className="h-12 w-12 mx-auto mb-2 text-gray-400" />
+                    <p>No app telemetry logs collected</p>
+                  </div>
+                ) : appPackages.length === 1 ? (
+                  // Single app - show directly without sub-tabs
+                  <div>
+                    <p className="text-xs text-gray-500 mb-2 font-mono">{appPackages[0]}</p>
+                    {renderLogEntries(
+                      logs?.appTelemetryLogs?.[appPackages[0]] || [],
+                      "No logs from this app"
+                    )}
+                  </div>
+                ) : (
+                  // Multiple apps - show sub-tabs
+                  <div>
+                    {/* App sub-tabs */}
+                    <div className="flex gap-2 mb-4 flex-wrap">
+                      {appPackages.map((pkg) => (
+                        <button
+                          key={pkg}
+                          onClick={() => setSelectedApp(selectedApp === pkg ? null : pkg)}
+                          className={`px-3 py-1.5 text-sm rounded-full transition-colors ${
+                            selectedApp === pkg
+                              ? "bg-blue-100 text-blue-700 border border-blue-300"
+                              : "bg-gray-100 text-gray-600 hover:bg-gray-200 border border-transparent"
+                          }`}
+                        >
+                          {pkg.split(".").pop()}
+                          <span className="ml-1.5 text-xs opacity-70">
+                            ({logs?.appTelemetryLogs?.[pkg]?.length || 0})
+                          </span>
+                        </button>
+                      ))}
+                    </div>
+
+                    {/* Show selected app's logs or prompt to select */}
+                    {selectedApp ? (
+                      <div>
+                        <p className="text-xs text-gray-500 mb-2 font-mono">{selectedApp}</p>
+                        {renderLogEntries(
+                          logs?.appTelemetryLogs?.[selectedApp] || [],
+                          "No logs from this app"
+                        )}
+                      </div>
+                    ) : (
+                      <div className="text-center py-8 text-gray-500">
+                        <p>Select an app above to view its logs</p>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+            )}
 
             {activeTab === "attachments" && (
               <div>

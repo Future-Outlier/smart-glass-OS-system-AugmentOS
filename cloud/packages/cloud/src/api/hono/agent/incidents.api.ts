@@ -1,35 +1,33 @@
 /**
- * @fileoverview Admin incidents API for viewing bug report logs.
- * Provides access to incident details stored in R2.
- * Console auth only (humans). For agent access, use /api/agent/incidents.
- * Mounted at: /api/console/admin/incidents
+ * @fileoverview Agent incidents API for coding agents to fetch bug report logs.
+ * Uses X-Agent-Key authentication for automated access.
+ * Mounted at: /api/agent/incidents
  */
 
 import { Hono } from "hono";
-import { isMentraAdmin } from "../../../services/core/admin.utils";
 import { incidentStorage } from "../../../services/storage/incident-storage.service";
 import { Incident } from "../../../models/incident.model";
 import { logger as rootLogger } from "../../../services/logging/pino-logger";
 import type { AppEnv, AppContext } from "../../../types/hono";
 
-const logger = rootLogger.child({ service: "incidents.api" });
+const logger = rootLogger.child({ service: "agent-incidents.api" });
 
 const app = new Hono<AppEnv>();
 
 /**
- * Middleware to check admin access.
- * Console auth is applied by the parent router.
+ * Middleware to check agent API key.
  */
 app.use("*", async (c, next) => {
-  const consoleAuth = c.get("console");
-  const email = consoleAuth?.email;
+  const agentKey = c.req.header("X-Agent-Key");
+  const expectedAgentKey = process.env.MENTRA_AGENT_API_KEY;
 
-  if (!email) {
-    return c.json({ error: "Unauthorized", message: "Authentication required" }, 401);
+  if (!expectedAgentKey) {
+    logger.error("MENTRA_AGENT_API_KEY not configured");
+    return c.json({ error: "Agent API not configured" }, 500);
   }
 
-  if (!isMentraAdmin(email)) {
-    return c.json({ error: "Forbidden", message: "Admin access required" }, 403);
+  if (!agentKey || agentKey !== expectedAgentKey) {
+    return c.json({ error: "Unauthorized", message: "Valid X-Agent-Key required" }, 401);
   }
 
   return next();
@@ -42,14 +40,13 @@ app.use("*", async (c, next) => {
 app.get("/", listIncidents);
 app.get("/:incidentId", getIncident);
 app.get("/:incidentId/logs", getIncidentLogs);
-app.get("/:incidentId/attachments/:filename", getAttachment);
 
 // ============================================================================
 // Handlers
 // ============================================================================
 
 /**
- * GET /api/console/admin/incidents
+ * GET /api/agent/incidents
  * List recent incidents.
  */
 async function listIncidents(c: AppContext) {
@@ -83,7 +80,7 @@ async function listIncidents(c: AppContext) {
 }
 
 /**
- * GET /api/console/admin/incidents/:incidentId
+ * GET /api/agent/incidents/:incidentId
  * Get incident metadata (from MongoDB).
  */
 async function getIncident(c: AppContext) {
@@ -107,7 +104,7 @@ async function getIncident(c: AppContext) {
 }
 
 /**
- * GET /api/console/admin/incidents/:incidentId/logs
+ * GET /api/agent/incidents/:incidentId/logs
  * Get full incident logs from R2 storage.
  */
 async function getIncidentLogs(c: AppContext) {
@@ -129,37 +126,6 @@ async function getIncidentLogs(c: AppContext) {
 
     logger.error({ error: err, incidentId }, "Failed to get incident logs");
     return c.json({ error: "Failed to get incident logs" }, 500);
-  }
-}
-
-/**
- * GET /api/console/admin/incidents/:incidentId/attachments/:filename
- * Proxy attachment image from R2 storage.
- * Returns the raw image with appropriate content-type header.
- */
-async function getAttachment(c: AppContext) {
-  const incidentId = c.req.param("incidentId");
-  const filename = c.req.param("filename");
-
-  try {
-    const { buffer, mimeType } = await incidentStorage.getAttachment(incidentId, filename);
-
-    return new Response(new Uint8Array(buffer), {
-      headers: {
-        "Content-Type": mimeType,
-        "Content-Length": buffer.length.toString(),
-        "Cache-Control": "private, max-age=3600",
-      },
-    });
-  } catch (err) {
-    const errorMessage = err instanceof Error ? err.message : String(err);
-
-    if (errorMessage.includes("not found") || errorMessage.includes("NoSuchKey")) {
-      return c.json({ error: "Attachment not found" }, 404);
-    }
-
-    logger.error({ error: err, incidentId, filename }, "Failed to get attachment");
-    return c.json({ error: "Failed to get attachment" }, 500);
   }
 }
 

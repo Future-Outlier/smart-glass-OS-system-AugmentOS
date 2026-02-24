@@ -598,6 +598,9 @@ export class AppServer {
 
         // Clean up any pending photo requests for this session
         this.cleanupPhotoRequestsForSession(sessionId);
+
+        // Clean up telemetry buffer to prevent memory leak
+        this.clearTelemetryBuffer(userId);
       } else {
         // Temporary disconnect - session stays in maps for reconnection
         // Photo requests remain pending and can still be fulfilled

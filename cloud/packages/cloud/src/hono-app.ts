@@ -44,6 +44,8 @@ import {
   consoleAppsApi,
   cliKeysApi,
   consoleIncidentsApi,
+  // Agent APIs (coding agents)
+  agentIncidentsApi,
   // Store APIs (MentraOS Store website)
   storeAppsApi,
   storeAuthApi,
@@ -298,6 +300,12 @@ consoleRouter.route("/apps", consoleAppsApi);
 consoleRouter.route("/cli-keys", cliKeysApi);
 consoleRouter.route("/admin/incidents", consoleIncidentsApi);
 app.route("/api/console", consoleRouter);
+
+// ============================================================================
+// Agent API Routes (for coding agents with X-Agent-Key auth)
+// ============================================================================
+
+app.route("/api/agent/incidents", agentIncidentsApi);
 
 // ============================================================================
 // CLI API Routes (with CLI auth middleware, reusing console handlers)

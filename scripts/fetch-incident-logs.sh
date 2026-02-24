@@ -32,4 +32,4 @@ echo "Fetching incident logs for: $INCIDENT_ID" >&2
 echo "API host: $API_HOST" >&2
 
 curl -s -H "X-Agent-Key: $MENTRA_AGENT_API_KEY" \
-  "$API_HOST/api/console/admin/incidents/$INCIDENT_ID/logs" | jq .
+  "$API_HOST/api/agent/incidents/$INCIDENT_ID/logs" | jq .

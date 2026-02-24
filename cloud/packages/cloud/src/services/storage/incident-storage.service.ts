@@ -29,7 +29,8 @@ export interface IncidentLogs {
   phoneLogs: LogEntry[];
   cloudLogs: LogEntry[];
   glassesLogs: LogEntry[];
-  appTelemetryLogs: LogEntry[];
+  /** App telemetry logs organized by package name */
+  appTelemetryLogs: Record<string, LogEntry[]>;
   attachments?: AttachmentMetadata[];
 }
 
@@ -220,7 +221,7 @@ class IncidentStorageService {
    */
   async appendLogs(
     incidentId: string,
-    category: "phoneLogs" | "cloudLogs" | "glassesLogs" | "appTelemetryLogs",
+    category: "phoneLogs" | "cloudLogs" | "glassesLogs",
     logs: LogEntry[],
     source?: string,
   ): Promise<void> {
@@ -249,6 +250,45 @@ class IncidentStorageService {
           count: taggedLogs.length,
         },
         "Appended logs to incident",
+      );
+    });
+  }
+
+  /**
+   * Append app telemetry logs for a specific app.
+   * Logs are organized by package name.
+   * Uses per-incident locking to prevent race conditions.
+   */
+  async appendAppTelemetry(
+    incidentId: string,
+    packageName: string,
+    logs: LogEntry[],
+  ): Promise<void> {
+    return this.withLock(incidentId, async () => {
+      // Fetch existing logs
+      const existing = await this.getIncidentLogs(incidentId);
+
+      // Initialize appTelemetryLogs if needed
+      if (!existing.appTelemetryLogs) {
+        existing.appTelemetryLogs = {};
+      }
+
+      // Append to the app's log array
+      existing.appTelemetryLogs[packageName] = [
+        ...(existing.appTelemetryLogs[packageName] || []),
+        ...logs,
+      ];
+
+      // Store back to R2
+      await this.storeIncidentLogs(incidentId, existing);
+
+      logger.info(
+        {
+          incidentId,
+          packageName,
+          count: logs.length,
+        },
+        "Appended app telemetry to incident",
       );
     });
   }

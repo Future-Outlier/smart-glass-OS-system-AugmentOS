@@ -89,7 +89,7 @@ app.post("/", async (c) => {
       phoneLogs: [], // Populated via POST /api/incidents/:id/logs
       cloudLogs: [], // Populated by background job
       glassesLogs: [], // Populated async via same endpoint
-      appTelemetryLogs: [], // Populated via same endpoint
+      appTelemetryLogs: {}, // Populated via same endpoint, keyed by package name
     });
 
     // Create incident record in MongoDB
@@ -132,7 +132,8 @@ app.post("/", async (c) => {
 app.post("/:incidentId/logs", async (c) => {
   const incidentId = c.req.param("incidentId");
   let source: string;
-  let logCategory: "phoneLogs" | "glassesLogs" | "appTelemetryLogs";
+  let logCategory: "phoneLogs" | "glassesLogs" | null = null;
+  let appPackageName: string | null = null;
 
   // Parse body first
   let body: { source?: string; logs: LogEntry[] };
@@ -176,8 +177,8 @@ app.post("/:incidentId/logs", async (c) => {
     if (!isValid) {
       return c.json({ success: false, message: "Invalid app credentials" }, 401);
     }
-    source = `app:${packageName}`;
-    logCategory = "appTelemetryLogs";
+    source = packageName;
+    appPackageName = packageName;
   }
 
   // Check if incident exists
@@ -188,13 +189,20 @@ app.post("/:incidentId/logs", async (c) => {
 
   // Append logs to R2
   try {
-    await incidentStorage.appendLogs(incidentId, logCategory, body.logs, source);
+    if (appPackageName) {
+      // App telemetry - use dedicated method that organizes by package name
+      await incidentStorage.appendAppTelemetry(incidentId, appPackageName, body.logs);
+    } else if (logCategory) {
+      // Phone or glasses logs
+      await incidentStorage.appendLogs(incidentId, logCategory, body.logs, source);
+    }
 
     logger.info(
       {
         incidentId,
         source,
-        logCategory,
+        logCategory: logCategory || "appTelemetry",
+        packageName: appPackageName,
         count: body.logs.length,
       },
       "Logs uploaded to incident",

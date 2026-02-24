@@ -974,7 +974,8 @@ export interface IncidentLogs {
   phoneLogs: IncidentLogEntry[];
   cloudLogs: IncidentLogEntry[];
   glassesLogs: IncidentLogEntry[];
-  appTelemetryLogs: IncidentLogEntry[];
+  /** App telemetry logs organized by package name */
+  appTelemetryLogs: Record<string, IncidentLogEntry[]>;
   attachments?: IncidentAttachment[];
 }
 
