@@ -220,13 +220,6 @@ export default function AppWebView() {
         <MiniAppDualButtonHeader
           packageName={packageName}
           viewShotRef={viewShotRef}
-          onEllipsisPress={() => {
-            push("/applet/settings", {
-              packageName: packageName as string,
-              appName: appName as string,
-              fromWebView: "true",
-            })
-          }}
         />
       )}
       {!appSwitcherUi && (

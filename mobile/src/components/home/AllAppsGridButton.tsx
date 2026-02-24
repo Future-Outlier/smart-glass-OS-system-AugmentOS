@@ -2,7 +2,7 @@ import AppIcon from "@/components/home/AppIcon"
 import {useCallback, useMemo, useRef} from "react"
 import {TouchableOpacity, View} from "react-native"
 import {Button, Icon, Text} from "@/components/ignite"
-import {ClientAppletInterface, DUMMY_APPLET, useApplets, useIncompatibleApps} from "@/stores/applets"
+import {ClientAppletInterface, DUMMY_APPLET, useApplets} from "@/stores/applets"
 import {useAppTheme} from "@/contexts/ThemeContext"
 import {BottomSheetBackdrop, BottomSheetFlatList, BottomSheetModal} from "@gorhom/bottom-sheet"
 
@@ -12,7 +12,6 @@ export default function AllAppsGridButton() {
   const {theme} = useAppTheme()
   const apps = useApplets()
   const bottomSheetRef = useRef<BottomSheetModal>(null)
-  // const {bottom} = useSafeAreaInsets()
 
   const snapPoints = useMemo(() => ["50%", "75%"], [])
 

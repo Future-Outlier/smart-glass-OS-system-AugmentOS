@@ -21,7 +21,6 @@ import {
   ViewStyle,
 } from "react-native"
 import * as RNFS from "@dr.pogodin/react-native-fs"
-import {useSafeAreaInsets} from "react-native-safe-area-context"
 import {createShimmerPlaceholder} from "react-native-shimmer-placeholder"
 import {useShallow} from "zustand/react/shallow"
 
@@ -43,6 +42,7 @@ import showAlert from "@/utils/AlertUtils"
 // import {shareFile} from "@/utils/FileUtils"
 import {MediaLibraryPermissions} from "@/utils/permissions/MediaLibraryPermissions"
 import {ENABLE_TEST_GALLERY_DATA, TEST_GALLERY_ITEMS} from "@/utils/testGalleryData"
+import { useSaferAreaInsets } from "@/contexts/SaferAreaContext"
 
 // @ts-ignore
 const ShimmerPlaceholder = createShimmerPlaceholder(LinearGradient)
@@ -64,7 +64,7 @@ interface GalleryItem {
 export function GalleryScreen() {
   const {goBack, push} = useNavigationHistory()
   const {theme, themed} = useAppTheme()
-  const insets = useSafeAreaInsets()
+  const insets = useSaferAreaInsets()
 
   // Column calculation - 3 per row like Google Photos / Apple Photos
   const screenWidth = Dimensions.get("window").width

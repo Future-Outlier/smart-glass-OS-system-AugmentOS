@@ -830,6 +830,11 @@ const en = {
     store: "Get more apps",
     lmaInstaller: "Local Store",
   },
+  appInfo: {
+    share: "Share",
+    addToHome: "Add to Home",
+    uninstall: "Uninstall",
+  },
   lmaInstaller: {
     installedVersions: "Installed versions",
     miniAppInstaller: "Mini App Installer",

@@ -24,7 +24,7 @@ import {
 } from "@/stores/applets"
 import AppIcon from "@/components/home/AppIcon"
 import {useNavigationHistory} from "@/contexts/NavigationHistoryContext"
-import {useSafeAreaInsets} from "react-native-safe-area-context"
+import {useSaferAreaInsets} from "@/contexts/SaferAreaContext"
 import {SETTINGS, useSetting} from "@/stores/settings"
 import {BlurView} from "expo-blur"
 
@@ -224,7 +224,7 @@ export default function AppSwitcher({swipeProgress}: AppSwitcherProps) {
   const prevTranslationX = useSharedValue(0)
   const openX = useSharedValue(-1)
   const {push} = useNavigationHistory()
-  const insets = useSafeAreaInsets()
+  const insets = useSaferAreaInsets()
   let directApps = useActiveApps()
   let [apps, setApps] = useState<ClientAppletInterface[]>([])
   const prevAppsLength = useRef(0)
