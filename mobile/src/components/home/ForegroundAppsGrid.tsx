@@ -42,12 +42,12 @@ export const ForegroundAppsGrid: React.FC = () => {
 
     // Add empty placeholders to align items to the left
     for (let i = 0; i < emptySlots; i++) {
-      filteredApps.push(DUMMY_APPLET)
+      filteredApps.push({...DUMMY_APPLET, packageName: `__empty_${filteredApps.length}`})
     }
 
     // ensure we have at least 20 apps to make sure we can scroll
     while (filteredApps.length < 20) {
-      filteredApps.push(DUMMY_APPLET)
+      filteredApps.push({...DUMMY_APPLET, packageName: `__empty_${filteredApps.length}`})
     }
 
     return filteredApps

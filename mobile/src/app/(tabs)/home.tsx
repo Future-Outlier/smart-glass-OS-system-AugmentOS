@@ -119,6 +119,8 @@ export default function Homepage() {
         {renderContent()}
         <View className="h-4" />
         {!appSwitcherUi && <IncompatibleApps />}
+        {/* spacer for scrolling to the bottom of the screen */}
+        {appSwitcherUi && <View className="h-15" />}
       </ScrollView>
       {appSwitcherUi && <AppSwitcherButton swipeProgress={swipeProgress} />}
       {appSwitcherUi && <AppSwitcher swipeProgress={swipeProgress} />}

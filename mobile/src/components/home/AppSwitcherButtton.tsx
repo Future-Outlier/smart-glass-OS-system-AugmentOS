@@ -11,6 +11,8 @@ import * as Haptics from "expo-haptics"
 import {useEffect, useRef, useState} from "react"
 import {scheduleOnRN} from "react-native-worklets"
 import AllAppsGridButton from "@/components/home/AllAppsGridButton"
+import {BlurView} from "expo-blur"
+import {LinearGradient} from "expo-linear-gradient"
 
 interface AppSwitcherButtonProps {
   swipeProgress: SharedValue<number>
@@ -113,57 +115,82 @@ export default function AppSwitcherButton({swipeProgress}: AppSwitcherButtonProp
   if (appsCount === 0) {
     // Show placeholder when no active app
     return (
-      <View className="bg-primary-foreground py-1.5 pl-3 min-h-15 rounded-2xl flex-row justify-between items-center mt-0 mb-8 pr-2">
-        <GestureDetector gesture={composedGesture}>
-          <View className="flex-row items-center justify-center flex-1">
-            <Text className="text-muted-foreground text-md" tx="home:appletPlaceholder2" />
-          </View>
-        </GestureDetector>
-        <AllAppsGridButton />
+      <View className="w-full flex-row justify-between items-center gap-4 mb-8 bottom-0 h-15 absolute">
+        <View className="bg-primary-foreground flex-1 py-1.5 pl-3 min-h-15 rounded-2xl flex-row justify-between items-center">
+          <GestureDetector gesture={composedGesture}>
+            <View className="flex-row items-center justify-center flex-1">
+              <Text className="text-muted-foreground text-md" tx="home:appletPlaceholder2" />
+            </View>
+          </GestureDetector>
+        </View>
+        <View className="bg-primary-foreground items-center p-2 rounded-2xl">
+          <AllAppsGridButton />
+        </View>
       </View>
     )
   }
 
+  // base 15 height
+  let bgAlpha = `${theme.colors.background}00`
   return (
-    <View className="bg-primary-foreground py-1.5 pl-3 rounded-2xl flex-row justify-between items-center mt-0 mb-8">
-      <View className="flex-row items-center gap-3 flex-1 px-2">
-        <GestureDetector gesture={composedGesture}>
-          <View className="flex-row flex-1">
-            <View className="flex-col gap-1 flex-1">
-              <Text
-                text={translate("home:running").toUpperCase()}
-                className="font-semibold text-secondary-foreground text-sm"
-              />
-              {/* {appsCount > 0 && <Badge text={`${translate("home:appsCount", {count: appsCount})}`} />} */}
-              {appsCount > 0 && (
+    <View className="w-screen flex-row justify-between items-center gap-4 pb-6 pt-4 bottom-0 h-25 -ml-6 px-6 absolute">
+      {/* <BlurView intensity={20} className="absolute inset-0" /> */}
+      <LinearGradient
+        colors={[bgAlpha, bgAlpha, bgAlpha, theme.colors.background]}
+        locations={[0, 0, 0, 1]}
+        start={{x: 0, y: 0}}
+        end={{x: 0, y: 1}}
+        style={{
+          position: "absolute",
+          left: 0,
+          right: 0,
+          top: 0,
+          bottom: 0,
+        }}
+        pointerEvents="none"
+      />
+      <View className="bg-primary-foreground flex-1 py-1.5 pl-3 rounded-2xl flex-row justify-between items-center">
+        <View className="flex-row items-center gap-3 flex-1 px-2">
+          <GestureDetector gesture={composedGesture}>
+            <View className="flex-row flex-1">
+              <View className="flex-col gap-1 flex-1">
                 <Text
-                  text={translate("home:appsCount", {count: appsCount})}
-                  className="text-secondary-foreground text-xs"
+                  text={translate("home:running").toUpperCase()}
+                  className="font-semibold text-secondary-foreground text-sm"
                 />
-              )}
-            </View>
+                {/* {appsCount > 0 && <Badge text={`${translate("home:appsCount", {count: appsCount})}`} />} */}
+                {appsCount > 0 && (
+                  <Text
+                    text={translate("home:appsCount", {count: appsCount})}
+                    className="text-secondary-foreground text-xs"
+                  />
+                )}
+              </View>
 
-            <View className="flex-row items-center">
-              {appsList.slice(0, 9).map((app, index) => (
-                <View
-                  key={app.packageName}
-                  style={{
-                    zIndex: index,
-                    marginLeft: index > 0 ? -theme.spacing.s8 : 0,
-                  }}>
-                  <AppIcon app={app} className="w-12 h-12" />
-                </View>
-              ))}
+              <View className="flex-row items-center">
+                {appsList.slice(0, 9).map((app, index) => (
+                  <View
+                    key={app.packageName}
+                    style={{
+                      zIndex: index,
+                      marginLeft: index > 0 ? -theme.spacing.s8 : 0,
+                    }}>
+                    <AppIcon app={app} className="w-12 h-12" />
+                  </View>
+                ))}
+              </View>
             </View>
-          </View>
-        </GestureDetector>
-        {/* {
+          </GestureDetector>
+          {/* {
             foregroundApp && (
               // <View className="border-2 border-primary rounded-2xl p-0.5">
               <AppIcon app={foregroundApp} className="w-12 h-12" />
               )
             // </View>
           } */}
+        </View>
+      </View>
+      <View className="bg-primary-foreground items-center p-2 rounded-2xl">
         <AllAppsGridButton />
       </View>
     </View>

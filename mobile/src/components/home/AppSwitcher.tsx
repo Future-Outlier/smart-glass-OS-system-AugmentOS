@@ -11,6 +11,7 @@ import Animated, {
   useDerivedValue,
   SharedValue,
   useAnimatedReaction,
+  useAnimatedProps,
 } from "react-native-reanimated"
 import {Gesture, GestureDetector} from "react-native-gesture-handler"
 import {runOnJS, scheduleOnRN} from "react-native-worklets"
@@ -25,6 +26,7 @@ import AppIcon from "@/components/home/AppIcon"
 import {useNavigationHistory} from "@/contexts/NavigationHistoryContext"
 import {useSafeAreaInsets} from "react-native-safe-area-context"
 import {SETTINGS, useSetting} from "@/stores/settings"
+import {BlurView} from "expo-blur"
 
 const {width: SCREEN_WIDTH, height: SCREEN_HEIGHT} = Dimensions.get("window")
 const CARD_WIDTH = SCREEN_WIDTH * 0.67
@@ -226,6 +228,7 @@ export default function AppSwitcher({swipeProgress}: AppSwitcherProps) {
   let directApps = useActiveApps()
   let [apps, setApps] = useState<ClientAppletInterface[]>([])
   const prevAppsLength = useRef(0)
+  const [blurPointerEvents, setBlurPointerEvents] = useState<"auto" | "none">("none")
 
   // for testing:
   //   apps = [...DUMMY_APPS, ...apps]
@@ -277,6 +280,11 @@ export default function AppSwitcher({swipeProgress}: AppSwitcherProps) {
     opacity: swipeProgress.value,
   }))
 
+  const AnimatedBlurView = Animated.createAnimatedComponent(BlurView)
+  const blurAnimatedProps = useAnimatedProps(() => ({
+    intensity: interpolate(swipeProgress.value, [0, 1], [0, 20], Extrapolation.CLAMP),
+  }))
+
   const containerStyle = useAnimatedStyle(() => {
     return {
       transform: [{translateY: 100 * (1 - swipeProgress.value)}],
@@ -294,11 +302,28 @@ export default function AppSwitcher({swipeProgress}: AppSwitcherProps) {
   const parentContainerStyle = useAnimatedStyle(() => {
     if (Platform.OS === "android") {
       return {
-        pointerEvents: swipeProgress.value == 1 ? "auto" : "none",
+        pointerEvents: swipeProgress.value > 0.98 ? "auto" : "none",
       }
     }
     return {}
   })
+
+  const blurStyle = useAnimatedStyle(() => {
+    return {
+      pointerEvents: swipeProgress.value > 0.98 ? "auto" : "none",
+    }
+  })
+
+  // useAnimatedReaction(
+  //   () => swipeProgress.value > 0.99,
+  //   (isOpen, wasOpen) => {
+  //     if (isOpen !== wasOpen) {
+  //       setTimeout(() => {
+  //         runOnJS(setBlurPointerEvents)(isOpen ? "auto" : "none")
+  //       }, 250)
+  //     }
+  //   },
+  // )
 
   const panGesture = Gesture.Pan()
     .activeOffsetX([-10, 10])
@@ -531,9 +556,12 @@ export default function AppSwitcher({swipeProgress}: AppSwitcherProps) {
       pointerEvents="box-none"
       style={[{paddingBottom: insets.bottom}, parentContainerStyle]}>
       {/* Blurred Backdrop */}
-      <Animated.View className="absolute inset-0 bg-black/70" style={backdropStyle}>
+      {/* <Animated.View className="absolute inset-0 bg-black/70" style={backdropStyle}> */}
+      {/* <AnimatedBlurView animatedProps={blurAnimatedProps} className="absolute inset-0" style={[{pointerEvents: blurPointerEvents}]}> */}
+      {/* <AnimatedBlurView animatedProps={blurAnimatedProps} className="absolute inset-0" style={[blurStyle, {pointerEvents: blurPointerEvents}]}> */}
+      <AnimatedBlurView animatedProps={blurAnimatedProps} className="absolute inset-0" style={blurStyle}>
         <Pressable className="flex-1" onPress={handleClose} />
-      </Animated.View>
+      </AnimatedBlurView>
 
       {/* Main Container */}
       <Animated.View className="flex-1 justify-center" style={containerStyle}>
@@ -543,8 +571,8 @@ export default function AppSwitcher({swipeProgress}: AppSwitcherProps) {
 
         {apps.length == 0 && (
           <View className="flex-1 items-center justify-center">
-            <Text className="text-white text-[22px] font-semibold mb-2" tx="appSwitcher:noAppsOpen" />
-            <Text className="text-white/50 text-base" tx="appSwitcher:yourRecentlyUsedAppsWillAppearHere" />
+            <Text className="text-foreground text-[22px] font-semibold mb-2" tx="appSwitcher:noAppsOpen" />
+            <Text className="text-muted-foreground text-base" tx="appSwitcher:yourRecentlyUsedAppsWillAppearHere" />
           </View>
         )}
 
@@ -617,7 +645,7 @@ function PageDot({index, activeIndex}: {index: number; activeIndex: SharedValue<
     }
   })
 
-  return <Animated.View className="h-2 rounded-full bg-white" style={dotStyle} />
+  return <Animated.View className="h-2 rounded-full bg-foreground" style={dotStyle} />
 }
 
 export type {AppCard}
