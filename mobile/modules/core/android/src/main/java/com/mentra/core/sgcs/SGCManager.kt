@@ -131,6 +131,9 @@ abstract class SGCManager {
     val micEnabled: Boolean
         get() = GlassesStore.get("glasses", "micEnabled") as? Boolean ?: false
 
+    val vadEnabled: Boolean
+        get() = GlassesStore.get("glasses", "vadEnabled") as? Boolean ?: false
+
     val batteryLevel: Int
         get() = GlassesStore.get("glasses", "batteryLevel") as? Int ?: -1
 

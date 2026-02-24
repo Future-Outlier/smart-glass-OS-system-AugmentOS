@@ -4,7 +4,7 @@ on:
   workflow_dispatch: # Manual trigger fallback
   push:
     branches:
-      - cloud/ws-liveness-detection
+      - cloud/soniox-sdk
     paths:
       - "cloud/**"
       - ".github/workflows/porter-debug.yml"

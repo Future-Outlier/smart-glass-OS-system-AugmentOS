@@ -5,6 +5,7 @@ import {useAppTheme} from "@/contexts/ThemeContext"
 import {useNavigationHistory} from "@/contexts/NavigationHistoryContext"
 import {useGlassesStore} from "@/stores/glasses"
 import {translate} from "@/i18n"
+import {BackgroundTimer} from "@/utils/timers"
 
 const CANCEL_BUTTON_DELAY_MS = 10000 // 10 seconds before enabling cancel button
 
@@ -37,7 +38,7 @@ export function ConnectionOverlay({
       setShowOverlay(true)
       setCancelButtonEnabled(false)
       // Start timer to enable cancel button after delay
-      cancelButtonTimerRef.current = setTimeout(() => {
+      cancelButtonTimerRef.current = BackgroundTimer.setTimeout(() => {
         setCancelButtonEnabled(true)
       }, CANCEL_BUTTON_DELAY_MS)
     } else {
@@ -45,14 +46,14 @@ export function ConnectionOverlay({
       setCancelButtonEnabled(false)
       // Clear timer if connection succeeds
       if (cancelButtonTimerRef.current) {
-        clearTimeout(cancelButtonTimerRef.current)
+        BackgroundTimer.clearTimeout(cancelButtonTimerRef.current)
         cancelButtonTimerRef.current = null
       }
     }
 
     return () => {
       if (cancelButtonTimerRef.current) {
-        clearTimeout(cancelButtonTimerRef.current)
+        BackgroundTimer.clearTimeout(cancelButtonTimerRef.current)
         cancelButtonTimerRef.current = null
       }
     }

@@ -3,7 +3,8 @@ import "@/utils/polyfills/event" // Must be before any livekit imports
 import {registerGlobals} from "@livekit/react-native-webrtc"
 import * as Sentry from "@sentry/react-native"
 import {useFonts} from "expo-font"
-import {SplashScreen, useNavigationContainerRef} from "expo-router"
+import {useNavigationContainerRef} from "expo-router"
+import * as SplashScreen from "expo-splash-screen"
 import {useEffect, useState} from "react"
 import {LogBox} from "react-native"
 
@@ -24,6 +25,8 @@ const IGNORED_LOGS = [
   /Attempted to import the module/,
   /The action 'RESET' with payload/,
   /The action 'POP_TO_TOP' was not handled/,
+  /socket-0 binding/,
+  /socket-0 bound to/,
 ]
 
 LogBox.ignoreLogs(IGNORED_LOGS)
@@ -52,6 +55,10 @@ useSettingsStore.getState().loadAllSettings()
 
 // Prevent the splash screen from auto-hiding before asset loading is complete.
 SplashScreen.preventAutoHideAsync()
+SplashScreen.setOptions({
+  duration: 1000,
+  fade: true,
+})
 
 function Root() {
   const [_fontsLoaded, fontError] = useFonts(customFontsToLoad)

@@ -6,14 +6,14 @@ import {Reconnect} from "@/effects/Reconnect"
 import {ConsoleLogger} from "@/utils/debug/console"
 import {OtaUpdateChecker} from "@/effects/OtaUpdateChecker"
 import {BtClassicPairing} from "@/effects/BtClassicPairing"
-import {LocalMiniApps} from "@/effects/LocalMiniApps"
+import Compositor from "@/effects/Compositor"
 
 export const AllEffects = () => {
   return (
     <>
       <Reconnect />
       <BtClassicPairing />
-      <LocalMiniApps />
+      <Compositor />
       <MtkUpdateAlert />
       <OtaUpdateChecker />
       <NetworkMonitoring />

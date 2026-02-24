@@ -58,7 +58,7 @@ export const customCardStyleInterpolator = ({current, next, layouts}: any) => {
 
   return {
     cardStyle: {
-      // transform: [{translateX}, {translateY}, {scale}],
+      transform: [{scale}],
       opacity,
     },
     overlayStyle: {

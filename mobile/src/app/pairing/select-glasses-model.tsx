@@ -36,6 +36,7 @@ export default function SelectGlassesModelScreen() {
   const getManufacturerLogo = (deviceModel: string) => {
     switch (deviceModel) {
       case DeviceTypes.G1:
+      case DeviceTypes.G2:
         return <EvenRealitiesLogo color={theme.colors.text} />
       case DeviceTypes.LIVE:
       case DeviceTypes.NEX:
@@ -54,20 +55,22 @@ export default function SelectGlassesModelScreen() {
       ? [
           // {deviceModel: DeviceTypes.SIMULATED, key: DeviceTypes.SIMULATED},
           {deviceModel: DeviceTypes.G1, key: "evenrealities_g1"},
+          // {deviceModel: DeviceTypes.G2, key: "evenrealities_g2"},
           {deviceModel: DeviceTypes.LIVE, key: "mentra_live"},
           {deviceModel: DeviceTypes.MACH1, key: "mentra_mach1"},
           {deviceModel: DeviceTypes.Z100, key: "vuzix-z100"},
-          devMode && {deviceModel: DeviceTypes.NEX, key: "mentra_nex"},
+          {deviceModel: DeviceTypes.NEX, key: "mentra_nex"},
           //{deviceModel: "Brilliant Labs Frame", key: "frame"},
         ]
       : [
           // Android:
           // {deviceModel: DeviceTypes.SIMULATED, key: DeviceTypes.SIMULATED},
           {deviceModel: DeviceTypes.G1, key: "evenrealities_g1"},
+          // {deviceModel: DeviceTypes.G2, key: "evenrealities_g2"},
           {deviceModel: DeviceTypes.LIVE, key: "mentra_live"},
           {deviceModel: DeviceTypes.MACH1, key: "mentra_mach1"},
           {deviceModel: DeviceTypes.Z100, key: "vuzix-z100"},
-          devMode && {deviceModel: DeviceTypes.NEX, key: "mentra_nex"},
+          {deviceModel: DeviceTypes.NEX, key: "mentra_nex"},
           // {deviceModel: "Brilliant Labs Frame", key: "frame"},
         ]
 
@@ -86,17 +89,20 @@ export default function SelectGlassesModelScreen() {
         RightActionComponent={<MentraLogoStandalone />}
       />
       <Spacer className="h-4" />
-      <ScrollView style={{marginRight: -theme.spacing.s4, paddingRight: theme.spacing.s4}}>
-        <View style={{flexDirection: "column", gap: theme.spacing.s4}}>
+      <ScrollView className="-mr-4 pr-4 pt-6">
+        <View className="flex-col gap-4 pb-8">
           {glassesOptions.map((glasses) => (
             <TouchableOpacity
               key={glasses.key}
-              style={themed($settingItem)}
+              className="flex-col items-center justify-center h-[190px] bg-primary-foreground rounded-2xl overflow-hidden"
               onPress={() => triggerGlassesPairingGuide(glasses.deviceModel)}>
-              <View style={themed($cardContent)}>
-                <View style={themed($manufacturerLogo)}>{getManufacturerLogo(glasses.deviceModel)}</View>
-                <Image source={getGlassesImage(glasses.deviceModel)} style={themed($glassesImage)} />
-                <Text style={[themed($label)]}>{glasses.deviceModel}</Text>
+              <View className="flex-col items-center justify-center gap-3 w-full">
+                <View className="items-center justify-center min-h-6">{getManufacturerLogo(glasses.deviceModel)}</View>
+                <Image
+                  source={getGlassesImage(glasses.deviceModel)}
+                  className="w-[180px] max-h-[80px] object-contain"
+                />
+                <Text className="text-[16px] text-foreground" text={glasses.deviceModel} />
               </View>
             </TouchableOpacity>
           ))}
@@ -106,40 +112,3 @@ export default function SelectGlassesModelScreen() {
     </Screen>
   )
 }
-
-const $settingItem: ThemedStyle<ViewStyle> = ({colors, spacing}) => ({
-  flexDirection: "column",
-  alignItems: "center",
-  justifyContent: "center",
-  height: 190,
-  borderRadius: spacing.s4,
-  backgroundColor: colors.primary_foreground,
-  overflow: "hidden",
-})
-
-const $cardContent: ThemedStyle<ViewStyle> = ({spacing}) => ({
-  flexDirection: "column",
-  alignItems: "center",
-  justifyContent: "center",
-  gap: spacing.s3,
-  width: "100%",
-})
-
-const $manufacturerLogo: ThemedStyle<ViewStyle> = () => ({
-  alignItems: "center",
-  justifyContent: "center",
-  minHeight: 24,
-})
-
-const $glassesImage: ThemedStyle<ImageStyle> = () => ({
-  width: 180,
-  maxHeight: 80,
-  resizeMode: "contain",
-})
-
-const $label: ThemedStyle<TextStyle> = ({colors, spacing}) => ({
-  fontSize: spacing.s4,
-  fontWeight: "600",
-  flexWrap: "wrap",
-  color: colors.text,
-})

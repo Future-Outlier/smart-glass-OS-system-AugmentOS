@@ -26,6 +26,7 @@ class CoreModule : Module() {
             "wifi_status_change",
             "hotspot_status_change",
             "hotspot_error",
+            "photo_response",
             "gallery_status",
             "compatible_glasses_search_stop",
             "heartbeat_sent",

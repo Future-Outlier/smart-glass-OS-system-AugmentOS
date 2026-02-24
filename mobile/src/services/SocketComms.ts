@@ -13,6 +13,7 @@ import {useSettingsStore, SETTINGS} from "@/stores/settings"
 import {showAlert} from "@/utils/AlertUtils"
 import restComms from "@/services/RestComms"
 import {checkFeaturePermissions, PermissionFeatures} from "@/utils/PermissionsUtils"
+import { throttle } from "@/utils/timers"
 
 class SocketComms {
   private static instance: SocketComms | null = null
@@ -402,9 +403,14 @@ class SocketComms {
     )
   }
 
+  private refreshAppletsThrottled = throttle(() => {
+    useAppletStatusStore.getState().refreshApplets()
+  }, 500)
+
   private handle_app_state_change(msg: any) {
     console.log("SOCKET: app_state_change", msg)
-    useAppletStatusStore.getState().refreshApplets()
+    // throttle so we don't call more than once in 500ms
+    this.refreshAppletsThrottled()
   }
 
   private handle_connection_error(msg: any) {

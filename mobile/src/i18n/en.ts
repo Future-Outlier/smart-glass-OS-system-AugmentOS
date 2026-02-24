@@ -331,6 +331,7 @@ const en = {
       "{{app}} requires hardware that is not available on your connected glasses: {{missing}}",
     incompatibleApps: "Incompatible Apps",
     incompatibleAppsCount: "{{count}} Incompatible Apps",
+    activeAppsCount: "{{count}} Apps active",
     incompatibleAppsDescription:
       "The following apps require specific hardware that is currently not available on your connected glasses.",
     incompatible: "Incompatible",
@@ -344,9 +345,12 @@ const en = {
     activeBackgroundApps: "Active Background Apps",
     inactiveBackgroundApps: "Inactive Background Apps",
     appletPlaceholder: "Tap an app below to activate it",
+    appletPlaceholder2: "Tap an app above to activate it",
     simulatedGlasses: "Simulated glasses",
     glassesMirror: "Glasses Mirror",
     stopTrying: "Stop trying",
+    running: "Running",
+    appsCount: "{{count}} Apps",
   },
   permissions: {
     backgroundLocationPermissionRequiredMessage:
@@ -354,7 +358,7 @@ const en = {
     openSettings: "Open Settings",
     permissionRequired: "Permission Required",
     permissionRequiredMessage:
-      "{{name}} permission is required but has been denied previously. Please enable it in your device settings.",
+      "{{name}} permission is required but has been denied. Please enable it in your device settings.",
   },
   glasses: {
     title: "Glasses",
@@ -670,6 +674,8 @@ const en = {
     no: "No",
     cancel: "Cancel",
     back: "Back",
+    done: "Done",
+    close: "Close",
     or: "OR",
     logOut: "Log Out",
     error: "Error",
@@ -735,6 +741,11 @@ const en = {
     mirror: "Mirror",
     store: "Store",
     account: "Account",
+  },
+  appSwitcher: {
+    swipeUpToClose: "Swipe up to close apps",
+    noAppsOpen: "No Apps Open",
+    yourRecentlyUsedAppsWillAppearHere: "Your recently used apps will appear here",
   },
   feedback: {
     thankYou: "Thank You!",
@@ -807,6 +818,16 @@ const en = {
     select: "Select...",
     search: "Search",
     noOptionsFound: "No options found",
+  },
+  miniApps: {
+    gallery: "Gallery",
+    camera: "Camera",
+    settings: "Settings",
+    liveCaptions: "Live Captions",
+    mirror: "Glasses Mirror",
+    simulated: "Simulated Glasses",
+    store: "Get more apps",
+    lmaInstaller: "Local Store",
   },
 }
 

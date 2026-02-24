@@ -44,6 +44,7 @@ class AudioPlaybackService {
       await setAudioModeAsync({
         shouldPlayInBackground: true,
         playsInSilentMode: true,
+        interruptionMode: "duckOthers",
       })
       this.audioModeConfigured = true
       console.log("AUDIO: Audio mode configured for background playback")
