@@ -15,6 +15,7 @@ import {captureRef} from "react-native-view-shot"
 import {useAppletStatusStore} from "@/stores/applets"
 import {DualButton, MiniAppDualButtonHeader} from "@/components/miniapps/DualButton"
 import {Image} from "expo-image"
+import AppIcon from "@/components/home/AppIcon"
 
 export default function AppWebView() {
   const {webviewURL, appName, packageName} = useLocalSearchParams()
@@ -168,13 +169,43 @@ export default function AppWebView() {
   }
 
   const renderLoadingOverlay = () => {
+    const app = useAppletStatusStore.getState().apps.find((a) => a.packageName === packageName)
+
     const screenshot = screenshotComponent()
+    if (screenshot) {
+      return (
+        <Animated.View
+          className="absolute top-0 left-0 right-0 bottom-0 z-10"
+          style={[loadingAnimatedStyle]}
+          pointerEvents={isWebViewReady ? "none" : "auto"}>
+          {screenshot}
+        </Animated.View>
+      )
+    }
+
+    if (!app) {
+      return (
+        <Animated.View
+          className="absolute top-0 left-0 right-0 bottom-0 z-10"
+          style={[loadingAnimatedStyle]}
+          pointerEvents={isWebViewReady ? "none" : "auto"}>
+          <LoadingOverlay message={`Loading ${appName}...`} />
+        </Animated.View>
+      )
+    }
+
     return (
       <Animated.View
         className="absolute top-0 left-0 right-0 bottom-0 z-10"
         style={[loadingAnimatedStyle]}
         pointerEvents={isWebViewReady ? "none" : "auto"}>
-        {screenshot || <LoadingOverlay message={`Loading ${appName}...`} />}
+        {/* show the app icon and app name */}
+        <View className="flex-1 flex-row items-center justify-center">
+          <View className="flex-col">
+            <AppIcon app={app} className="w-48 h-48" />
+            <Text text={appName} className="text-foreground text-2xl font-medium text-center" numberOfLines={1} />
+          </View>
+        </View>
       </Animated.View>
     )
   }
@@ -216,12 +247,7 @@ export default function AppWebView() {
       safeAreaEdges={[appSwitcherUi && "top"]}
       KeyboardAvoidingViewProps={{enabled: true}}
       ref={viewShotRef}>
-      {appSwitcherUi && (
-        <MiniAppDualButtonHeader
-          packageName={packageName}
-          viewShotRef={viewShotRef}
-        />
-      )}
+      {appSwitcherUi && <MiniAppDualButtonHeader packageName={packageName} viewShotRef={viewShotRef} />}
       {!appSwitcherUi && (
         <Header
           leftIcon="chevron-left"
