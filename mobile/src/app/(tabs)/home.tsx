@@ -23,7 +23,7 @@ import AppSwitcherButton from "@/components/home/AppSwitcherButtton"
 import AppSwitcher from "@/components/home/AppSwitcher"
 import {DeviceStatus} from "@/components/home/DeviceStatus"
 import {attemptReconnectToDefaultWearable} from "@/effects/Reconnect"
-import {useSafeAreaInsets} from "react-native-safe-area-context"
+import {useSaferAreaInsets} from "@/contexts/SaferAreaContext"
 
 export default function Homepage() {
   const refreshApplets = useRefreshApplets()
@@ -35,7 +35,7 @@ export default function Homepage() {
   const hasAttemptedInitialConnect = useRef(false)
   const [appSwitcherUi] = useSetting(SETTINGS.app_switcher_ui.key)
   const swipeProgress = useSharedValue(0)
-  const insets = useSafeAreaInsets()
+  const insets = useSaferAreaInsets()
 
   useFocusEffect(
     useCallback(() => {
@@ -119,6 +119,8 @@ export default function Homepage() {
         {renderContent()}
         <View className="h-4" />
         {!appSwitcherUi && <IncompatibleApps />}
+        {/* spacer for scrolling to the bottom of the screen */}
+        {appSwitcherUi && <View className="h-25" />}
       </ScrollView>
       {appSwitcherUi && <AppSwitcherButton swipeProgress={swipeProgress} />}
       {appSwitcherUi && <AppSwitcher swipeProgress={swipeProgress} />}

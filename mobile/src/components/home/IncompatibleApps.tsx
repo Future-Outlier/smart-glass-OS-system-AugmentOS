@@ -1,7 +1,6 @@
 import {BottomSheetBackdrop, BottomSheetFlatList, BottomSheetModal, BottomSheetView} from "@gorhom/bottom-sheet"
 import {useCallback, useMemo, useRef} from "react"
 import {TouchableOpacity, View} from "react-native"
-import {useSafeAreaInsets} from "react-native-safe-area-context"
 
 import {Text} from "@/components/ignite"
 import AppIcon from "@/components/home/AppIcon"
@@ -17,7 +16,6 @@ export const IncompatibleApps: React.FC = () => {
   const {theme} = useAppTheme()
   const incompatibleApps = useIncompatibleApps()
   const bottomSheetRef = useRef<BottomSheetModal>(null)
-  // const {bottom} = useSafeAreaInsets()
 
   const snapPoints = useMemo(() => ["50%", "75%"], [])
 
