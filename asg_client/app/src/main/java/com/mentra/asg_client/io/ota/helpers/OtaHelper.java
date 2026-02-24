@@ -876,6 +876,8 @@ public class OtaHelper {
         // Download new APK file
         URL url = new URL(urlStr);
         HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+        conn.setConnectTimeout(OtaConstants.CONNECT_TIMEOUT_MS);
+        conn.setReadTimeout(OtaConstants.READ_TIMEOUT_MS);
         conn.connect();
 
         InputStream in = conn.getInputStream();
@@ -1514,10 +1516,12 @@ public class OtaHelper {
             }
             
             Log.d(TAG, "Downloading BES firmware from: " + firmwareUrl);
-            
+
             // Download firmware file
             URL url = new URL(firmwareUrl);
             HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+            conn.setConnectTimeout(OtaConstants.CONNECT_TIMEOUT_MS);
+            conn.setReadTimeout(OtaConstants.READ_TIMEOUT_MS);
             conn.connect();
             
             long fileSize = conn.getContentLength();
@@ -1760,10 +1764,12 @@ public class OtaHelper {
             }
             
             Log.d(TAG, "Downloading MTK firmware from: " + firmwareUrl);
-            
+
             // Download firmware file
             URL url = new URL(firmwareUrl);
             HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+            conn.setConnectTimeout(OtaConstants.CONNECT_TIMEOUT_MS);
+            conn.setReadTimeout(OtaConstants.READ_TIMEOUT_MS);
             conn.connect();
             
             long fileSize = conn.getContentLength();
