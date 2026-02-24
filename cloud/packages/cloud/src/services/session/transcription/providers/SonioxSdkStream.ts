@@ -99,10 +99,18 @@ export class SonioxSdkStream implements StreamInstance {
   private currentLanguage: string | undefined;
 
   // Track last emitted interim text to avoid duplicate callbacks.
-  // Each `result` event contains the current token window. After an
-  // endpoint the SDK prunes old tokens internally, so we can use
-  // result.tokens directly without manual offset tracking.
   private lastEmittedInterimText = "";
+
+  // ── Stable-prefix accumulation ──────────────────────────────────────
+  // The SDK's rolling window compacts (prunes) finalized tokens mid-
+  // utterance, causing result.tokens to lose earlier text. To prevent
+  // the interim from shrinking, we accumulate finalized-token text into
+  // `stablePrefixText` ourselves. Each result's interim is then:
+  //   stablePrefixText + (non-final tokens' text)
+  // `lastFinalEndMs` tracks the latest end_ms we've already saved so
+  // we never double-count a finalized token.
+  private stablePrefixText = "";
+  private lastFinalEndMs = 0;
 
   constructor(
     public readonly id: string,
@@ -329,14 +337,17 @@ export class SonioxSdkStream implements StreamInstance {
   /**
    * Fires on every WebSocket message with parsed tokens.
    *
-   * The SDK manages the rolling token window internally. After an
-   * `endpoint` event the SDK prunes finalized tokens, so
-   * `result.tokens` already contains only the current utterance's
-   * tokens — no manual offset tracking needed.
+   * IMPORTANT: The SDK's rolling window compacts finalized tokens mid-
+   * utterance — `result.tokens` can shrink as old finals are pruned.
+   * To prevent the interim from losing its beginning, we accumulate
+   * finalized-token text into `stablePrefixText` and only read the
+   * non-final tail from each result. The interim is always:
    *
-   *  - Emit the full token text as an interim with a STABLE utteranceId.
-   *    The frontend replaces the card content (keyed by utteranceId) on
-   *    each update — no duplicates.
+   *     stablePrefixText + (non-final tokens' text)
+   *
+   * This survives window compaction because the pruned finals are
+   * already stored in stablePrefixText.
+   *
    *  - Feed the result into the utterance buffer for clean finals on
    *    `endpoint`.
    *  - Speaker attribution uses the LAST token's speaker field.
@@ -364,14 +375,31 @@ export class SonioxSdkStream implements StreamInstance {
     // ── Feed utterance buffer (for finals on endpoint) ──────────────
     this.utteranceBuffer.addResult(result);
 
-    // ── Emit interim from the current token window ──────────────────
-    // The SDK prunes old tokens after endpoints, so result.tokens
-    // contains only the current utterance. Join all tokens and emit as
-    // an interim — the frontend replaces the card (same utteranceId)
-    // on every update for smooth word-by-word growth.
     if (result.tokens.length === 0) return;
 
-    const fullText = result.tokens.map((t) => t.text).join("");
+    // ── Accumulate newly-finalized tokens into stablePrefixText ─────
+    // Finalized tokens have monotonically increasing end_ms. We only
+    // append tokens whose end_ms exceeds our high-water mark, so we
+    // never double-count even when the window still includes them.
+    const nonFinalTokens: RealtimeToken[] = [];
+    for (const token of result.tokens) {
+      if (token.is_final) {
+        const tokenEndMs = token.end_ms ?? 0;
+        if (tokenEndMs > this.lastFinalEndMs) {
+          this.stablePrefixText += token.text;
+          this.lastFinalEndMs = tokenEndMs;
+        }
+        // If tokenEndMs <= lastFinalEndMs, we already have this token
+        // in stablePrefixText — skip it.
+      } else {
+        nonFinalTokens.push(token);
+      }
+    }
+
+    // ── Build interim = stable prefix + non-final tail ──────────────
+    const tailText = nonFinalTokens.map((t) => t.text).join("");
+    const fullText = (this.stablePrefixText + tailText).trim();
+
     if (!fullText || fullText === this.lastEmittedInterimText) return;
 
     // Use the last token for speaker/language — it's the most recent
@@ -413,6 +441,8 @@ export class SonioxSdkStream implements StreamInstance {
         utteranceId: this.currentUtteranceId,
         speakerId: this.currentSpeakerId,
         tokenCount: result.tokens.length,
+        prefixLen: this.stablePrefixText.length,
+        tailTokens: nonFinalTokens.length,
         finalAudioMs: result.final_audio_proc_ms,
         totalAudioMs: result.total_audio_proc_ms,
       },
@@ -448,11 +478,13 @@ export class SonioxSdkStream implements StreamInstance {
       }
     }
 
-    // Rotate utterance ID for the next speech segment
+    // Rotate utterance ID and reset prefix for the next speech segment
     this.currentUtteranceId = null;
     this.currentSpeakerId = undefined;
     this.currentLanguage = undefined;
     this.lastEmittedInterimText = "";
+    this.stablePrefixText = "";
+    this.lastFinalEndMs = 0;
 
     // Reset utterance buffer for the next utterance
     this.utteranceBuffer.reset();
@@ -483,6 +515,8 @@ export class SonioxSdkStream implements StreamInstance {
     this.currentSpeakerId = undefined;
     this.currentLanguage = undefined;
     this.lastEmittedInterimText = "";
+    this.stablePrefixText = "";
+    this.lastFinalEndMs = 0;
     this.utteranceBuffer.reset();
 
     this.logger.debug({ streamId: this.id }, "🎙️ SONIOX SDK: finalization complete (VAD stop)");
@@ -497,6 +531,8 @@ export class SonioxSdkStream implements StreamInstance {
     if (this.lastEmittedInterimText.trim()) {
       this.emitFinal(this.lastEmittedInterimText, this.currentSpeakerId, this.currentLanguage, undefined);
       this.lastEmittedInterimText = "";
+      this.stablePrefixText = "";
+      this.lastFinalEndMs = 0;
       this.currentUtteranceId = null;
     }
   }
