@@ -139,7 +139,7 @@ export default function AppSwitcherButton({swipeProgress}: AppSwitcherButtonProp
       //   pointerEvents="none"
       // /> */}
       <MaskedView
-        style={{position: "absolute", left: 0, right: 0, top: 0, bottom: 0}}
+        style={{position: "absolute", left: 0, right: 0, top: 0, bottom: 0, pointerEvents: "none"}}
         maskElement={
           <LinearGradient
             colors={[theme.colors.background, bgAlpha]}
@@ -172,7 +172,7 @@ export default function AppSwitcherButton({swipeProgress}: AppSwitcherButtonProp
 
   if (appsCount === 0) {
     return (
-      <View className="w-full flex-row justify-between items-center gap-4 bottom-0 h-15 absolute pt-16">
+      <View className="w-screen flex-row justify-between items-center gap-4 bottom-0 -ml-6 px-6 absolute pt-20">
         {renderBackground()}
         <GestureDetector gesture={composedGesture}>
           <View className="flex-1" style={{paddingBottom: bottomPadding}}>

@@ -560,7 +560,11 @@ export default function AppSwitcher({swipeProgress}: AppSwitcherProps) {
       )
     }
     return (
-      <AnimatedBlurView animatedProps={blurAnimatedProps} className="absolute inset-0" style={blurStyle} experimentalBlurMethod="dimezisBlurView">
+      <AnimatedBlurView
+        animatedProps={blurAnimatedProps}
+        className="absolute inset-0"
+        style={blurStyle}
+        experimentalBlurMethod="dimezisBlurView">
         <Pressable className="flex-1" onPress={handleClose} />
       </AnimatedBlurView>
     )
@@ -612,7 +616,7 @@ export default function AppSwitcher({swipeProgress}: AppSwitcherProps) {
         </GestureDetector>
 
         {apps.length > 0 && (
-          <View className="flex-row justify-center items-center gap-1.5 mb-5">
+          <View className="mb-5 px-4 py-2 rounded-full mx-auto bg-black/30 items-center justify-center gap-1.5 flex-row">
             {apps.map((_, index) => (
               <PageDot key={index} index={index} activeIndex={activeIndex} />
             ))}
@@ -659,7 +663,7 @@ function PageDot({index, activeIndex}: {index: number; activeIndex: SharedValue<
     }
   })
 
-  return <Animated.View className="h-2 rounded-full bg-foreground" style={dotStyle} />
+  return <Animated.View className="h-2 rounded-full bg-white" style={dotStyle} />
 }
 
 export type {AppCard}
