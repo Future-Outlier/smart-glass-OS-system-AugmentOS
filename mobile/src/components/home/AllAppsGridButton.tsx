@@ -46,7 +46,7 @@ export default function AllAppsGridButton() {
         className="flex-1 items-center my-3 px-2"
         //   onPress={() => handleAppPress(item)}
         // activeOpacity={0.7}>
-        >
+      >
         <View className="relative w-16 h-16">
           <AppIcon app={item as any} className="w-16 h-16 rounded-xl" />
         </View>
@@ -61,8 +61,15 @@ export default function AllAppsGridButton() {
 
   return (
     <>
-      <Button compactIcon preset="secondary" onPress={handleOpenSheet} hitSlop={10} style={{borderWidth: 0}}>
-        <Icon name="grid-3x3" color={theme.colors.foreground} />
+      <Button
+        compactIcon
+        preset="secondary"
+        onPress={handleOpenSheet}
+        hitSlop={10}
+        className="flex-1 border-0 px-0 py-0 rounded-none"
+        // style={{borderWidth: 0, borderRadius: 0, paddingHorizontal: 0, paddingVertical: 0, backgroundColor: "red", flex: 1}}
+        >
+        <Icon name="grid-3x3" color={theme.colors.foreground} size={32} />
       </Button>
       <BottomSheetModal
         ref={bottomSheetRef}

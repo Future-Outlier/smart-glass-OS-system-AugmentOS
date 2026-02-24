@@ -228,7 +228,8 @@ export default function AppSwitcher({swipeProgress}: AppSwitcherProps) {
   let directApps = useActiveApps()
   let [apps, setApps] = useState<ClientAppletInterface[]>([])
   const prevAppsLength = useRef(0)
-  const [blurPointerEvents, setBlurPointerEvents] = useState<"auto" | "none">("none")
+  // const [blurPointerEvents, setBlurPointerEvents] = useState<"auto" | "none">("none")
+  const [androidBlur] = useSetting(SETTINGS.android_blur.key)
 
   // for testing:
   //   apps = [...DUMMY_APPS, ...apps]
@@ -550,6 +551,21 @@ export default function AppSwitcher({swipeProgress}: AppSwitcherProps) {
     },
   )
 
+  const renderBackground = () => {
+    if (Platform.OS === "android" && !androidBlur) {
+      return (
+        <Animated.View className="absolute inset-0 bg-black/70" style={backdropStyle}>
+          <Pressable className="flex-1" onPress={handleClose} />
+        </Animated.View>
+      )
+    }
+    return (
+      <AnimatedBlurView animatedProps={blurAnimatedProps} className="absolute inset-0" style={blurStyle} experimentalBlurMethod="dimezisBlurView">
+        <Pressable className="flex-1" onPress={handleClose} />
+      </AnimatedBlurView>
+    )
+  }
+
   return (
     <Animated.View
       className="absolute -mx-6 inset-0"
@@ -559,9 +575,7 @@ export default function AppSwitcher({swipeProgress}: AppSwitcherProps) {
       {/* <Animated.View className="absolute inset-0 bg-black/70" style={backdropStyle}> */}
       {/* <AnimatedBlurView animatedProps={blurAnimatedProps} className="absolute inset-0" style={[{pointerEvents: blurPointerEvents}]}> */}
       {/* <AnimatedBlurView animatedProps={blurAnimatedProps} className="absolute inset-0" style={[blurStyle, {pointerEvents: blurPointerEvents}]}> */}
-      <AnimatedBlurView animatedProps={blurAnimatedProps} className="absolute inset-0" style={blurStyle}>
-        <Pressable className="flex-1" onPress={handleClose} />
-      </AnimatedBlurView>
+      {renderBackground()}
 
       {/* Main Container */}
       <Animated.View className="flex-1 justify-center" style={containerStyle}>

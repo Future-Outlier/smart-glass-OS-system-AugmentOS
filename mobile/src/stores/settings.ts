@@ -38,6 +38,13 @@ export const SETTINGS: Record<string, Setting> = {
     saveOnServer: true,
     persist: true,
   },
+  android_blur: {
+    key: "android_blur",
+    defaultValue: () => false,
+    writable: true,
+    saveOnServer: true,
+    persist: true,
+  },
   debug_console: {
     key: "debug_console",
     defaultValue: () => false,
