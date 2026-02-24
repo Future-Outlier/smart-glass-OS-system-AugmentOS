@@ -7,28 +7,37 @@
 
 @MainActor
 class Simulated: SGCManager {
+    init() {
+        GlassesStore.shared.apply("glasses", "fullyBooted", true)
+        GlassesStore.shared.apply("glasses", "connected", true)
+        GlassesStore.shared.apply("glasses", "connectionState", ConnTypes.CONNECTED)
+        GlassesStore.shared.apply("glasses", "micEnabled", false)
+        GlassesStore.shared.apply("glasses", "vadEnabled", false)
+        GlassesStore.shared.apply("glasses", "btcConnected", false)
+    }
+
     // MARK: - Device Information
 
     var type: String = DeviceTypes.SIMULATED
     var ready: Bool = true
     var connectionState: String = ConnTypes.CONNECTED
 
-    var glassesAppVersion: String = ""
-    var glassesBuildNumber: String = ""
-    var glassesDeviceModel: String = ""
-    var glassesAndroidVersion: String = ""
-    var glassesOtaVersionUrl: String = ""
-    var glassesFirmwareVersion: String = ""
-    var glassesBtMacAddress: String = ""
-    var glassesSerialNumber: String = ""
-    var glassesStyle: String = ""
-    var glassesColor: String = ""
+    var appVersion: String = ""
+    var buildNumber: String = ""
+    var deviceModel: String = ""
+    var androidVersion: String = ""
+    var otaVersionUrl: String = ""
+    var firmwareVersion: String = ""
+    var btMacAddress: String = ""
+    var serialNumber: String = ""
+    var style: String = ""
+    var color: String = ""
 
     // MARK: - Hardware Status
 
     var hasMic: Bool = false
     var batteryLevel: Int = 100
-    var isHeadUp: Bool = false
+    var headUp: Bool = false
     var micEnabled: Bool = false
 
     // MARK: - Case Status
@@ -43,7 +52,7 @@ class Simulated: SGCManager {
     var wifiSsid: String = ""
     var wifiConnected: Bool = false
     var wifiLocalIp: String = ""
-    var isHotspotEnabled: Bool = false
+    var hotspotEnabled: Bool = false
     var hotspotSsid: String = ""
     var hotspotPassword: String = ""
     var hotspotGatewayIp: String = ""
@@ -171,6 +180,14 @@ class Simulated: SGCManager {
         Bridge.log("exit")
     }
 
+    func sendShutdown() {
+        Bridge.log("sendShutdown - not supported on Simulated")
+    }
+
+    func sendReboot() {
+        Bridge.log("sendReboot - not supported on Simulated")
+    }
+
     func sendRgbLedControl(requestId: String, packageName _: String?, action _: String, color _: String?, ontime _: Int, offtime _: Int, count _: Int) {
         Bridge.log("sendRgbLedControl - not supported on Simulated")
         Bridge.sendRgbLedControlResponse(requestId: requestId, success: false, error: "device_not_supported")
@@ -191,11 +208,10 @@ class Simulated: SGCManager {
     }
 
     func connectById(_: String) {
-        CoreManager.shared.handleConnectionStateChanged()
+        Bridge.log("connectById")
     }
 
     func getConnectedBluetoothName() -> String? {
-        Bridge.log("getConnectedBluetoothName")
         return nil
     }
 
@@ -225,6 +241,10 @@ class Simulated: SGCManager {
         Bridge.log("sendUserEmailToGlasses: \(email)")
     }
 
+    func sendOtaStart() {
+        Bridge.log("sendOtaStart")
+    }
+
     // MARK: - Gallery
 
     func queryGalleryStatus() {
@@ -233,5 +253,11 @@ class Simulated: SGCManager {
 
     func sendGalleryMode() {
         Bridge.log("sendGalleryMode")
+    }
+
+    // MARK: - Version Info
+
+    func requestVersionInfo() {
+        Bridge.log("requestVersionInfo - not supported on Simulated")
     }
 }

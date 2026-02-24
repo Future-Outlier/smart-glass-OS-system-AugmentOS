@@ -7,9 +7,16 @@ public class OtaConstants {
     public static final String TAG = "ASGClientOTA";
 
     // URLs
-    //test url: dev.mentraos-ota-site.pages.dev
-    public static final String VERSION_JSON_URL = "https://ota.mentraglass.com/live_version.json";
-    //public static final String VERSION_JSON_URL = "https://dev.mentraos-ota-site.pages.dev/versiondev.json";
+    // Production OTA version JSON URL
+    public static final String VERSION_JSON_URL = "https://ota.mentraglass.com/prod_live_version.json";
+
+    // Test URLs (uncomment to use for testing)
+    // public static final String VERSION_JSON_URL = "https://github.com/Mentra-Community/MentraOS/releases/download/asg-client/live_version_test_non_production.json";
+    // public static final String VERSION_JSON_URL = "https://dev.mentraos-ota-site.pages.dev/versiondev.json";
+    
+    // Local file path option (for testing - uncomment to use local file instead of URL)
+    // Note: File must be accessible from the device (e.g., pushed via ADB to /storage/emulated/0/asg/live_version.json)
+    //public static final String VERSION_JSON_URL = "/storage/emulated/0/asg/live_version.json";
 
     // Update actions
     public static final String ACTION_UPDATE_COMPLETED = "com.mentra.asg_client.ACTION_UPDATE_COMPLETED";

@@ -13,6 +13,7 @@ import path from "path";
 
 import { CORS_ORIGINS } from "./config/cors";
 import { logger as rootLogger } from "./services/logging/pino-logger";
+import { metricsService } from "./services/metrics";
 import UserSession from "./services/session/UserSession";
 import { udpAudioServer } from "./services/udp/UdpAudioServer";
 import type { AppEnv } from "./types/hono";
@@ -29,6 +30,7 @@ import {
   calendarApi,
   locationApi,
   notificationsApi,
+  photoApi,
   deviceStateApi,
   // SDK APIs (third-party apps)
   sdkVersionApi,
@@ -44,6 +46,8 @@ import {
   storeAppsApi,
   storeAuthApi,
   storeUserApi,
+  // System App APIs (app management with API key auth)
+  systemAppApi,
 } from "./api/hono";
 
 // Hono Legacy routes (migrated from Express)
@@ -55,7 +59,7 @@ import onboardingRoutes from "./api/hono/routes/onboarding.routes";
 import permissionsRoutes from "./api/hono/routes/permissions.routes";
 import photosRoutes from "./api/hono/routes/photos.routes";
 import galleryRoutes from "./api/hono/routes/gallery.routes";
-import userDataRoutes from "./api/hono/routes/user-data.routes";
+
 import streamsRoutes from "./api/hono/routes/streams.routes";
 import hardwareRoutes from "./api/hono/routes/hardware.routes";
 import toolsRoutes from "./api/hono/routes/tools.routes";
@@ -135,6 +139,9 @@ app.use(async (c, next) => {
   const status = c.res.status;
   const responseContentType = c.res.headers.get("content-type");
 
+  // Track HTTP request metrics for Prometheus / Porter dashboard
+  metricsService.incrementHttpRequests(status);
+
   // Capture userId from auth middleware (populated during next())
   // This enables filtering by user in Better Stack
   const userId = c.get("email") || c.get("console")?.email || undefined;
@@ -194,16 +201,19 @@ app.use(async (c, next) => {
 app.get("/health", (c) => {
   try {
     const activeSessions = UserSession.getAllSessions();
-    const udpStatus = udpAudioServer.getStatus();
+
+    // Update session gauges so metrics are fresh
+    let miniappCount = 0;
+    for (const session of activeSessions) {
+      miniappCount += session.appWebsockets.size;
+    }
+    metricsService.setUserSessions(activeSessions.length);
+    metricsService.setMiniappSessions(miniappCount);
 
     return c.json({
       status: "ok",
       timestamp: new Date().toISOString(),
-      sessions: {
-        activeCount: activeSessions.length,
-      },
-      udp: udpStatus,
-      uptime: process.uptime(),
+      ...metricsService.toJSON(),
     });
   } catch (error) {
     logger.error(error, "Health check error");
@@ -219,6 +229,30 @@ app.get("/health", (c) => {
 });
 
 // ============================================================================
+// Prometheus Metrics Endpoint (for Porter dashboard + custom autoscaling)
+// ============================================================================
+
+app.get("/metrics", (c) => {
+  try {
+    // Update session gauges before generating output
+    const activeSessions = UserSession.getAllSessions();
+    let miniappCount = 0;
+    for (const session of activeSessions) {
+      miniappCount += session.appWebsockets.size;
+    }
+    metricsService.setUserSessions(activeSessions.length);
+    metricsService.setMiniappSessions(miniappCount);
+
+    return c.text(metricsService.toPrometheus(), 200, {
+      "Content-Type": "text/plain; version=0.0.4; charset=utf-8",
+    });
+  } catch (error) {
+    logger.error(error, "Metrics endpoint error");
+    return c.text("# error generating metrics\n", 500);
+  }
+});
+
+// ============================================================================
 // Client API Routes (Hono native)
 // ============================================================================
 
@@ -230,6 +264,7 @@ app.route("/api/client/feedback", feedbackApi);
 app.route("/api/client/calendar", calendarApi);
 app.route("/api/client/location", locationApi);
 app.route("/api/client/notifications", notificationsApi);
+app.route("/api/client/photo", photoApi);
 app.route("/api/client/device/state", deviceStateApi);
 app.route("/api/client/audio/configure", audioConfigApi);
 
@@ -281,6 +316,12 @@ app.route("/api/store/auth", storeAuthApi);
 app.route("/api/store/user", storeUserApi);
 
 // ============================================================================
+// System App API Routes (app management with API key auth)
+// ============================================================================
+
+app.route("/api/sdk/system-app", systemAppApi);
+
+// ============================================================================
 // Legacy Routes (migrated from Express)
 // ============================================================================
 
@@ -310,9 +351,6 @@ app.route("/api/photos", photosRoutes);
 
 // Gallery routes
 app.route("/api/gallery", galleryRoutes);
-
-// User data routes
-app.route("/api/user-data", userDataRoutes);
 
 // Streams routes
 app.route("/api/streams", streamsRoutes);

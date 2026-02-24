@@ -49,6 +49,9 @@ export const CORS_ORIGINS = [
   // ngrok development tunnels
   "https://webview.ngrok.dev",
   "https://mentra-cloud-server.ngrok.app",
+  "https://israelovtpa.ngrok.app",
+  "https://israelovpuddle.ngrok.app",
+  "https://isaiah-store.ngrok.app",
 
   // mentra.glass API
   "https://mentra.glass",
@@ -115,4 +118,8 @@ export const CORS_ORIGINS = [
   "https://console.mentraglass.cn",
   "https://account.mentraglass.cn",
   "https://store.mentraglass.cn",
+
+  "https://dev-console.mentraglass.cn",
+  "https://dev-account.mentraglass.cn",
+  "https://dev-store.mentraglass.cn",
 ];

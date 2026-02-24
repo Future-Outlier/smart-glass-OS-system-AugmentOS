@@ -5,6 +5,7 @@ import {AsyncResult, Result, result as Res} from "typesafe-ts"
 import {GlassesInfo} from "@/stores/glasses"
 import {SETTINGS, useSettingsStore} from "@/stores/settings"
 import GlobalEventEmitter from "@/utils/GlobalEventEmitter"
+import {PhotoResponseEvent} from "core"
 
 interface RequestConfig {
   method: "GET" | "POST" | "DELETE"
@@ -469,6 +470,20 @@ class RestComms {
     return res.map(() => undefined)
   }
 
+  public sendPhotoResponse(data: PhotoResponseEvent): AsyncResult<any, Error> {
+    const config: RequestConfig = {
+      method: "POST",
+      endpoint: "/api/client/photo/response",
+      data: data,
+    }
+    interface Response {
+      success: boolean
+      data: any
+    }
+    const res = this.authenticatedRequest<Response>(config)
+    return res.map(() => undefined)
+  }
+
   public goodbye(): AsyncResult<void, Error> {
     const config: RequestConfig = {
       method: "POST",
@@ -477,6 +492,23 @@ class RestComms {
     interface Response {
       success: boolean
       data: any
+    }
+    const res = this.authenticatedRequest<Response>(config)
+    return res.map(() => undefined)
+  }
+
+  public configureAudioFormat(
+    format: string,
+    lc3Config: {
+      sampleRate: number
+      frameDurationMs: number
+      frameSizeBytes: number
+    },
+  ): AsyncResult<void, Error> {
+    const config: RequestConfig = {
+      method: "POST",
+      endpoint: "/api/client/audio/configure",
+      data: {format, lc3Config},
     }
     const res = this.authenticatedRequest<Response>(config)
     return res.map(() => undefined)
