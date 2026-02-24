@@ -45,13 +45,14 @@ export default function AllAppsGridButton() {
       <TouchableOpacity
         className="flex-1 items-center my-3 px-2"
         //   onPress={() => handleAppPress(item)}
-        activeOpacity={0.7}>
+        // activeOpacity={0.7}>
+        >
         <View className="relative w-16 h-16">
-          <AppIcon app={item as any} className="w-16 h-16 rounded-xl opacity-40" />
+          <AppIcon app={item as any} className="w-16 h-16 rounded-xl" />
         </View>
         <Text
           text={item.name}
-          className="text-xs text-muted-foreground text-center mt-1 leading-[14px] opacity-60"
+          className="text-xs text-muted-foreground text-center mt-1 leading-[14px]"
           numberOfLines={2}
         />
       </TouchableOpacity>
