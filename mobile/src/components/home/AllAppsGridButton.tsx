@@ -52,7 +52,7 @@ export default function AllAppsGridButton() {
         </View>
         <Text
           text={item.name}
-          className="text-xs text-muted-foreground text-center mt-1 leading-[14px]"
+          className="text-xs text-foreground text-center mt-1 leading-[14px]"
           numberOfLines={2}
         />
       </TouchableOpacity>

@@ -228,7 +228,7 @@ export default function AppSwitcher({swipeProgress}: AppSwitcherProps) {
   let directApps = useActiveApps()
   let [apps, setApps] = useState<ClientAppletInterface[]>([])
   const prevAppsLength = useRef(0)
-  // const [blurPointerEvents, setBlurPointerEvents] = useState<"auto" | "none">("none")
+  const [blurPointerEvents, setBlurPointerEvents] = useState<"auto" | "none">("none")
   const [androidBlur] = useSetting(SETTINGS.android_blur.key)
 
   // for testing:
@@ -254,6 +254,10 @@ export default function AppSwitcher({swipeProgress}: AppSwitcherProps) {
         })
         .map((entry) => entry.app)
       setApps(sortedApps)
+      // let index = apps.length - 1
+      // setTimeout(() => {
+      //   runOnJS(goToIndex)(index)
+      // }, 100)
       // setApps(directApps)
     }
     sortApps()
@@ -280,6 +284,11 @@ export default function AppSwitcher({swipeProgress}: AppSwitcherProps) {
   const backdropStyle = useAnimatedStyle(() => ({
     opacity: swipeProgress.value,
   }))
+
+  const testing = useAnimatedStyle(() => {
+    console.log("translateX.value", translateX.value)
+    return {}
+  })
 
   const AnimatedBlurView = Animated.createAnimatedComponent(BlurView)
   const blurAnimatedProps = useAnimatedProps(() => ({
@@ -442,22 +451,44 @@ export default function AppSwitcher({swipeProgress}: AppSwitcherProps) {
       })
     })
 
+  // useEffect(() => {
+  //   let sub = setInterval(() => {
+  //     console.log("springing!!!@!!!")
+  //     let cardWidth = CARD_WIDTH + CARD_SPACING
+  //     let newTarget = Math.round(-translateX.value / cardWidth) - 1
+  //     translateX.value = withSpring(-newTarget * cardWidth, {
+  //       damping: 4000,
+  //       stiffness: 200,
+  //     })
+  //     // openX.value = withSpring(0, {damping: 200, stiffness: 500, overshootClamping: false})
+  //     // console.log("translateX.value", translateX.value)
+  //   }, 4000)
+  //   return () => clearInterval(sub)
+  // }, [])
+
   const handleDismiss = useCallback(
     (packageName: string) => {
       let lastApp = apps[apps.length - 1]
       // Adjust if we were on the last card
       if (lastApp.packageName === packageName) {
-        let index = apps.length - 2
-        setTimeout(() => {
-          runOnJS(goToIndex)(index)
-        }, 150)
-      }
+        // let cardWidth = CARD_WIDTH + CARD_SPACING
+        // let newTarget = Math.round(-translateX.value / cardWidth) - 1
+        // // console.log("newTarget", newTarget)
+        // console.log("newTarget", -newTarget * cardWidth)
+        // translateX.value = withSpring(-newTarget * cardWidth, {
+        //   damping: 1000,
+        //   stiffness: 350,
+        //   overshootClamping: true,
+        // })
 
+        let index = apps.length - 2
+        goToIndex(index)
+      }
       // setTimeout(() => {
       useAppletStatusStore.getState().stopApplet(packageName)
       // }, 100)
     },
-    [apps.length],
+    [apps.length, translateX.value, apps],
   )
 
   const goToIndex = useCallback(
@@ -524,9 +555,10 @@ export default function AppSwitcher({swipeProgress}: AppSwitcherProps) {
     // reset the translateX:
     swipeProgress.value = withSpring(0, {damping: 20, stiffness: 300, overshootClamping: true})
     // do after we have closed the swipe progress:
-    // setTimeout(() => {
-    //   goToIndex(apps.length - 1, true)
-    // }, 250)
+    setTimeout(() => {
+      swipeProgress.value = 0
+      // goToIndex(apps.length - 1, true)
+    }, 250)
   }, [apps.length])
 
   useAnimatedReaction(
@@ -545,8 +577,13 @@ export default function AppSwitcher({swipeProgress}: AppSwitcherProps) {
         // scheduleOnRN(() => {setIsOpen(false)})
       }
       if (previous !== null && current > 0 && previous == 0) {
-        // just opened:
+        // console.log("just opened")
         runOnJS(goToIndex)(apps.length - 1, true)
+        runOnJS(setBlurPointerEvents)("auto")
+      }
+      if (previous !== null && current == 0 && previous > 0) {
+        // console.log("just closed")
+        runOnJS(setBlurPointerEvents)("none")
       }
     },
   )
@@ -562,6 +599,8 @@ export default function AppSwitcher({swipeProgress}: AppSwitcherProps) {
     return (
       <AnimatedBlurView
         animatedProps={blurAnimatedProps}
+        // pointerEvents={blurPointerEvents}
+        pointerEvents={blurPointerEvents}
         className="absolute inset-0"
         style={blurStyle}
         experimentalBlurMethod="dimezisBlurView">
