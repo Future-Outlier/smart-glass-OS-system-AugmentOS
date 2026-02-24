@@ -128,7 +128,7 @@ export default function NotificationSettingsScreen() {
             height: 36,
             marginRight: theme.spacing.s4,
             borderRadius: 8,
-            backgroundColor: theme.colors.backgroundAlt,
+            backgroundColor: theme.colors.primary_foreground,
             alignItems: "center",
             justifyContent: "center",
             overflow: "hidden",

@@ -88,7 +88,7 @@ const BrightnessSetting: React.FC<BrightnessSettingProps> = ({
 
 const $outerContainer: ThemedStyle<ViewStyle> = ({colors, spacing}) => ({
   width: "100%",
-  backgroundColor: colors.backgroundAlt,
+  backgroundColor: colors.primary_foreground,
   borderRadius: spacing.s4,
   overflow: "hidden",
 })

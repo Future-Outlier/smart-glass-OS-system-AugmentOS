@@ -63,12 +63,9 @@ export default function AllAppsGridButton() {
     <>
       <Button
         compactIcon
-        preset="secondary"
         onPress={handleOpenSheet}
         hitSlop={10}
-        className="flex-1 border-0 px-0 py-0 rounded-none"
-        // style={{borderWidth: 0, borderRadius: 0, paddingHorizontal: 0, paddingVertical: 0, backgroundColor: "red", flex: 1}}
-        >
+        className="flex-1 border-0 px-0 py-0 rounded-none bg-transparent">
         <Icon name="grid-3x3" color={theme.colors.foreground} size={32} />
       </Button>
       <BottomSheetModal

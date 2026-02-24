@@ -127,7 +127,7 @@ export function RouteButton({
 }
 
 const $settingsGroup: ThemedStyle<ViewStyle> = ({colors, spacing}) => ({
-  backgroundColor: colors.backgroundAlt,
+  backgroundColor: colors.primary_foreground,
   paddingVertical: spacing.s3,
   paddingHorizontal: spacing.s4,
   borderRadius: spacing.s4,
@@ -159,7 +159,7 @@ const $label: ThemedStyle<TextStyle> = ({colors}) => ({
 })
 
 const $subtitle: ThemedStyle<TextStyle> = ({colors}) => ({
-  color: colors.textDim,
+  color: colors.muted_foreground,
   fontSize: 12,
   lineHeight: 14,
 })
