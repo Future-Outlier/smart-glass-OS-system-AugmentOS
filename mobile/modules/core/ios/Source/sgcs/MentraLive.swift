@@ -594,6 +594,7 @@ extension MentraLive: CBCentralManagerDelegate {
         if let name = peripheral.name {
             UserDefaults.standard.set(name, forKey: PREFS_DEVICE_NAME)
             Bridge.log("Saved device name for future reconnection: \(name)")
+            GlassesStore.shared.apply("glasses", "bluetoothName", name)
         }
 
         // Audio Pairing: Setup Bluetooth audio after BLE connection

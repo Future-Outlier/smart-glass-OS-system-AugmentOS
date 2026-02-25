@@ -506,6 +506,7 @@ interface SettingsState {
   getRestUrl: () => string
   getWsUrl: () => string
   getCoreSettings: () => Record<string, any>
+  resetAllSettingsLocally: () => void
 }
 
 const getDefaultSettings = () =>
@@ -691,6 +692,12 @@ export const useSettingsStore = create<SettingsState>()(
         }
       })
       return coreSettings
+    },
+    resetAllSettingsLocally: () => {
+      set((state) => ({
+        settings: getDefaultSettings(),
+        isInitialized: true,
+      }))
     },
   })),
 )

@@ -79,7 +79,7 @@ const AppPopover: React.FC<{
               {actions.map((action, index) => (
                 <View key={action.label}>
                   <Pressable
-                    className="flex-row items-center gap-3 px-4 py-3 active:bg-white/10"
+                    className="flex-row items-center gap-3 px-4 py-3 active:bg-foreground/10"
                     onPress={() => {
                       onClose()
                       action.onPress()
