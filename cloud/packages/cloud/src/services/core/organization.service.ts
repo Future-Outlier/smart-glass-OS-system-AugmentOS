@@ -93,6 +93,26 @@ export class OrganizationService {
       });
 
       await org.save();
+
+      // Post-save dedup: if a concurrent call also created an org for this
+      // user (both passed the pre-check before either saved, and got different
+      // suffixed slugs so no E11000), deterministically keep the oldest
+      // (lowest _id — ObjectIds are monotonically increasing) and delete extras.
+      const allUserOrgs = await Organization.find({ "members.user": user._id }).sort({ _id: 1 }).lean();
+
+      if (allUserOrgs.length > 1) {
+        const winner = allUserOrgs[0];
+        const losers = allUserOrgs.slice(1);
+        const loserIds = losers.map((o) => o._id);
+
+        await Organization.deleteMany({ _id: { $in: loserIds } });
+
+        // Clean stale references from the user document
+        await User.updateOne({ _id: user._id }, { $pull: { organizations: { $in: loserIds } } });
+
+        return winner._id as Types.ObjectId;
+      }
+
       return org._id;
     } catch (error: any) {
       // Handle duplicate slug race condition: if another concurrent call already
