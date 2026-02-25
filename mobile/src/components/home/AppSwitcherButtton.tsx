@@ -170,7 +170,7 @@ export default function AppSwitcherButton({swipeProgress}: AppSwitcherButtonProp
     )
   }
 
-  let paddingTop = Platform.OS === "android" ? theme.spacing.s10 : theme.spacing.s20
+  let paddingTop = Platform.OS === "android" ? theme.spacing.s10 : theme.spacing.s16
 
   if (appsCount === 0) {
     return (

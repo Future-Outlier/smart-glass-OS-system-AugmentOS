@@ -74,7 +74,7 @@ const AppPopover: React.FC<{
             top: top,
             width: POPOVER_WIDTH,
           }}>
-          <BlurView intensity={80} tint="systemChromeMaterialDark" className="rounded-2xl overflow-hidden">
+          <BlurView intensity={80} tint="default" className="rounded-2xl overflow-hidden">
             <View className="py-1">
               {actions.map((action, index) => (
                 <View key={action.label}>
@@ -87,10 +87,10 @@ const AppPopover: React.FC<{
                     <Icon
                       name={action.icon as any}
                       size={24}
-                      color={action.destructive ? theme.colors.destructive : theme.colors.secondary_foreground}
+                      color={action.destructive ? theme.colors.destructive : theme.colors.foreground}
                     />
                     <Text
-                      className={`text-[15px] ${action.destructive ? "text-destructive" : "text-white"}`}
+                      className={`text-[15px] ${action.destructive ? "text-destructive" : "text-foreground"}`}
                       text={action.label}
                     />
                   </Pressable>

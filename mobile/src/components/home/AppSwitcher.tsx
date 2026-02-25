@@ -287,7 +287,7 @@ export default function AppSwitcher({swipeProgress}: AppSwitcherProps) {
 
   const AnimatedBlurView = Animated.createAnimatedComponent(BlurView)
   const blurAnimatedProps = useAnimatedProps(() => ({
-    intensity: interpolate(swipeProgress.value, [0, 1], [0, 20], Extrapolation.CLAMP),
+    intensity: interpolate(swipeProgress.value, [0, 1], [0, 50], Extrapolation.CLAMP),
   }))
 
   const containerStyle = useAnimatedStyle(() => {
