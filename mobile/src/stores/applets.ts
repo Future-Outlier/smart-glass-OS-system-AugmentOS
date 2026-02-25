@@ -117,9 +117,9 @@ const getRawPackageNamePriority = (pkg: string) => {
   }
 }
 export const getPackageNamePriority = (a: ClientAppletInterface, b: ClientAppletInterface): number => {
-  const pa = getRawPackageNamePriority(a.packageName)
-  const pb = getRawPackageNamePriority(b.packageName)
-  if (pa !== pb) return pa - pb
+  // const pa = getRawPackageNamePriority(a.packageName)
+  // const pb = getRawPackageNamePriority(b.packageName)
+  // if (pa !== pb) return pa - pb
   return a.name.localeCompare(b.name)
 }
 

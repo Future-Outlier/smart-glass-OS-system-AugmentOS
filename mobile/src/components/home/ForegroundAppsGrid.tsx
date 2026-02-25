@@ -1,5 +1,6 @@
-import {useCallback, useMemo} from "react"
-import {FlatList, TouchableOpacity, View} from "react-native"
+import {useCallback, useEffect, useMemo, useRef, useState} from "react"
+import {TouchableOpacity, View} from "react-native"
+import {DraggableMasonryList} from "react-native-draggable-masonry"
 
 import {Text} from "@/components/ignite"
 import AppIcon from "@/components/home/AppIcon"
@@ -13,8 +14,15 @@ import {
 } from "@/stores/applets"
 import {askPermissionsUI} from "@/utils/PermissionsUtils"
 import {SETTINGS, useSetting} from "@/stores/settings"
+import {MiniAppMoreActionsSheet} from "@/components/miniapps/DualButton"
+import {BottomSheetModal} from "@gorhom/bottom-sheet"
+import {storage} from "@/utils/storage"
 
 const GRID_COLUMNS = 4
+const APP_ORDER_KEY = "foreground_apps_order"
+
+type MasonryAppItem = ClientAppletInterface & {id: string; height: number}
+type OrderMap = Record<string, number>
 
 export const ForegroundAppsGrid: React.FC = () => {
   const {themed, theme} = useAppTheme()
@@ -22,75 +30,92 @@ export const ForegroundAppsGrid: React.FC = () => {
   const startApplet = useStartApplet()
   const [appSwitcherUi] = useSetting(SETTINGS.app_switcher_ui.key)
   const apps = useForegroundApps()
+  const bottomSheetRef = useRef<BottomSheetModal>(null)
+  const [packageName, setPackageName] = useState<string | null>(null)
+  const [orderMap, setOrderMap] = useState<OrderMap | null>(null)
 
-  const gridData = useMemo(() => {
-    // Filter out incompatible apps and running apps
+  useEffect(() => {
+    const result = storage.load<OrderMap>(APP_ORDER_KEY)
+    if (result.is_ok()) {
+      setOrderMap(result.value)
+    }
+  }, [])
+
+  const gridData: MasonryAppItem[] = useMemo(() => {
     let filteredApps = apps.filter((app) => {
-      // Exclude running apps
       if (app.running && !appSwitcherUi) return false
       if (!app.compatibility?.isCompatible) return false
       return true
     })
 
-    // sort by package name priority
-    filteredApps.sort(getPackageNamePriority)
+    if (orderMap) {
+      filteredApps.sort((a, b) => {
+        const aIndex = orderMap[a.packageName]
+        const bIndex = orderMap[b.packageName]
+        if (aIndex === undefined && bIndex === undefined) {
+          return getPackageNamePriority(a, b)
+        }
+        if (aIndex === undefined) return 1
+        if (bIndex === undefined) return -1
+        return aIndex - bIndex
+      })
+    } else {
+      filteredApps.sort(getPackageNamePriority)
+    }
 
-    // Calculate how many empty placeholders we need to fill the last row
+    // make sure the number of apps is a multiple of the number of columns + GRID_COLUMNS:
     const totalItems = filteredApps.length
     const remainder = totalItems % GRID_COLUMNS
-    const emptySlots = remainder === 0 ? 0 : GRID_COLUMNS - remainder
-
-    // Add empty placeholders to align items to the left
+    const emptySlots = GRID_COLUMNS + remainder
+    console.log("emptySlots", emptySlots)
     for (let i = 0; i < emptySlots; i++) {
       filteredApps.push({...DUMMY_APPLET, packageName: `__empty_${filteredApps.length}`})
     }
 
-    // ensure we have at least 20 apps to make sure we can scroll
-    while (filteredApps.length < 20) {
-      filteredApps.push({...DUMMY_APPLET, packageName: `__empty_${filteredApps.length}`})
-    }
-
-    return filteredApps
-  }, [apps, appSwitcherUi])
+    return filteredApps.map((app) => ({
+      ...app,
+      id: app.packageName,
+      height: 100,
+    }))
+  }, [apps, appSwitcherUi, orderMap])
 
   const handlePress = async (app: ClientAppletInterface) => {
     const result = await askPermissionsUI(app, theme)
-    if (result !== 1) {
-      return
-    }
-
+    if (result !== 1) return
     startApplet(app.packageName)
   }
 
+  const handleLongPress = (app: ClientAppletInterface) => {
+    setPackageName(app.packageName)
+    bottomSheetRef.current?.present()
+  }
+
+  const handleDragEnd = ({data}: {data: MasonryAppItem[]}) => {
+    const newOrderMap: OrderMap = {}
+    data.forEach((item, index) => {
+      newOrderMap[item.packageName] = index
+    })
+    setOrderMap(newOrderMap)
+    storage.save(APP_ORDER_KEY, newOrderMap)
+  }
+
   const renderItem = useCallback(
-    ({item}: {item: ClientAppletInterface}) => {
-      // Don't render empty placeholders
-      if (!item.name) {
-        return <View className="flex-1 items-center my-3" />
-      }
-
-      // small hack to help with some long app names:
-      // const numberOfLines = item.name.split(" ").length > 1 ? 2 : 1
-
+    ({item}: {item: MasonryAppItem}) => {
       return (
-        <TouchableOpacity className="flex-1 items-center" onPress={() => handlePress(item)} activeOpacity={0.7}>
+        <TouchableOpacity
+          className="items-center py-3"
+          onPress={() => handlePress(item)}
+          onLongPress={() => handleLongPress(item)}
+          activeOpacity={0.7}>
           <AppIcon app={item} className="w-16 h-16" />
-          <View className="w-full h-7 my-1 items-center justify-start w-full h-9">
+          {/* <View className="w-16 h-16 bg-red-500"/> */}
+          <View className="w-full h-9 my-1 items-center justify-start">
             <Text
               className="text-secondary-foreground text-center mt-1 text-[12px] shrink"
               numberOfLines={2}
               ellipsizeMode="tail"
               text={item.name}
             />
-            {/* <AutoSizeText
-              className="text-secondary-foreground text-wrap text-center mt-1"
-              numberOfLines={numberOfLines}
-              ellipsizeMode="tail"
-              minimumFontScale={1}
-              fontSize={12}
-              mode={ResizeTextMode.max_lines}>
-              {item.name}
-            </AutoSizeText> */}
           </View>
         </TouchableOpacity>
       )
@@ -105,15 +130,14 @@ export const ForegroundAppsGrid: React.FC = () => {
           <Text tx="home:inactiveApps" className="font-semibold text-xl text-secondary-foreground" />
         </View>
       )}
-      <FlatList
+      <DraggableMasonryList
         data={gridData}
         renderItem={renderItem}
-        keyExtractor={(item) => item.packageName}
-        numColumns={GRID_COLUMNS}
-        scrollEnabled={false}
-        showsVerticalScrollIndicator={false}
-        contentContainerClassName="pb-4"
+        columns={GRID_COLUMNS}
+        onDragEnd={handleDragEnd}
+        overDrag="none"
       />
+      <MiniAppMoreActionsSheet ref={bottomSheetRef} packageName={packageName} />
     </View>
   )
 }

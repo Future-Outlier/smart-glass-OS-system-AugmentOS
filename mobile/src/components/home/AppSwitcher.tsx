@@ -285,11 +285,6 @@ export default function AppSwitcher({swipeProgress}: AppSwitcherProps) {
     opacity: swipeProgress.value,
   }))
 
-  const testing = useAnimatedStyle(() => {
-    console.log("translateX.value", translateX.value)
-    return {}
-  })
-
   const AnimatedBlurView = Animated.createAnimatedComponent(BlurView)
   const blurAnimatedProps = useAnimatedProps(() => ({
     intensity: interpolate(swipeProgress.value, [0, 1], [0, 20], Extrapolation.CLAMP),
