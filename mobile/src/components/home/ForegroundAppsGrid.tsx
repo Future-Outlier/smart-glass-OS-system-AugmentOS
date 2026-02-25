@@ -1,5 +1,5 @@
 import {useCallback, useEffect, useMemo, useRef, useState} from "react"
-import {Dimensions, Modal, Pressable, TouchableOpacity, View} from "react-native"
+import {Dimensions, Pressable, StyleSheet, TouchableOpacity, View} from "react-native"
 import {DraggableMasonryList} from "react-native-draggable-masonry"
 import {BlurView} from "expo-blur"
 
@@ -47,33 +47,31 @@ const AppPopover: React.FC<{
   const {theme} = useAppTheme()
   const {width: screenWidth, height: screenHeight} = Dimensions.get("window")
 
-  // Calculate popover position, keeping it on screen
-  const popoverHeight = actions.length * 44 + 16 // approx
-  let left = position.x - POPOVER_WIDTH / 2
-  let top = position.y
+  if (!visible) return null
 
-  // Clamp horizontal
-  if (left < SCREEN_PADDING) left = SCREEN_PADDING
+  // const popoverHeight = actions.length * 44 + 16
+  let left = position.x
+  let top = position.y
+  // let left = position.x - POPOVER_WIDTH / 2
+  // let top = position.y
+  // if (left < SCREEN_PADDING) left = SCREEN_PADDING
   if (left + POPOVER_WIDTH > screenWidth - SCREEN_PADDING) {
     left = screenWidth - SCREEN_PADDING - POPOVER_WIDTH
   }
+  // const showAbove = top + popoverHeight > screenHeight - 40
+  // if (showAbove) {
+  //   top = position.y - popoverHeight - 8
+  // }
 
-  // If popover would go off bottom, show above
-  const showAbove = top + popoverHeight > screenHeight - 40
-  if (showAbove) {
-    top = position.y - popoverHeight - 8
-  }
-
-  if (!visible) return null
 
   return (
-    <Modal transparent animationType="fade" visible={visible} onRequestClose={onClose}>
-      <Pressable className="flex-1" onPress={onClose}>
+    <View style={StyleSheet.absoluteFill} pointerEvents="box-none">
+      <Pressable style={StyleSheet.absoluteFill} onPress={onClose}>
         <View
           style={{
             position: "absolute",
-            left,
-            top,
+            left: left,
+            top: top,
             width: POPOVER_WIDTH,
           }}>
           <BlurView intensity={80} tint="systemChromeMaterialDark" className="rounded-2xl overflow-hidden">
@@ -86,14 +84,15 @@ const AppPopover: React.FC<{
                       onClose()
                       action.onPress()
                     }}>
-                    <Icon name={action.icon as any} size={24} color={action.destructive ? theme.colors.destructive : theme.colors.secondary_foreground} />
+                    <Icon
+                      name={action.icon as any}
+                      size={24}
+                      color={action.destructive ? theme.colors.destructive : theme.colors.secondary_foreground}
+                    />
                     <Text
                       className={`text-[15px] ${action.destructive ? "text-destructive" : "text-white"}`}
                       text={action.label}
                     />
-                    {/* <Text
-                      className={`text-[15px] ${action.destructive ? "text-red-500" : "text-white/60"}`}
-                      /> */}
                   </Pressable>
                   {index < actions.length - 1 && <View className="h-px bg-white/10 mx-4" />}
                 </View>
@@ -102,7 +101,7 @@ const AppPopover: React.FC<{
           </BlurView>
         </View>
       </Pressable>
-    </Modal>
+    </View>
   )
 }
 
@@ -187,7 +186,6 @@ export const ForegroundAppsGrid: React.FC = () => {
             packageName: selectedApp?.packageName,
             appName: selectedApp?.name,
           })
-          // TODO: navigate to app settings
         },
       },
       {
@@ -218,20 +216,39 @@ export const ForegroundAppsGrid: React.FC = () => {
   const showPopover = useCallback(
     (key: string, ref?: View | null) => {
       const app = gridData.find((a) => a.packageName === key)
+      // get the index of the app
+      const index = gridData.findIndex((a) => a.packageName === key)
       if (!app?.name) return
 
       setSelectedApp(app)
 
+      // if (ref) {
+      //   ref.measureInWindow((x, y, width, height) => {
+      //     setPopoverPosition({
+      //       x: x + width / 2,
+      //       y: y + height + 8,
+      //     })
+      //     setPopoverVisible(true)
+      //   })
+      // } else {
+      //   const {width} = Dimensions.get("window")
+      //   setPopoverPosition({x: width / 2, y: 300})
+      //   setPopoverVisible(true)
+      // }
+
       if (ref) {
         ref.measureInWindow((x, y, width, height) => {
+          // console.log("x", x, "y", y, "width", width, "height", height)
+          console.log("index", Math.floor(index / 4))
+          let yOffset = (Math.floor(index / GRID_COLUMNS)) * 100
+          // console.log("yOffset", yOffset)
           setPopoverPosition({
-            x: x + width / 2,
-            y: y + height + 8,
+            x: x,
+            y: yOffset,
           })
           setPopoverVisible(true)
         })
       } else {
-        // Fallback: center of screen
         const {width} = Dimensions.get("window")
         setPopoverPosition({x: width / 2, y: 300})
         setPopoverVisible(true)
@@ -241,13 +258,13 @@ export const ForegroundAppsGrid: React.FC = () => {
   )
 
   const handleDragStart = ({key}: {key: string; fromIndex: number}) => {
-    // console.log("handleDragStart", key)
     isMovingRef.current = false
-    showPopover(key)
+    // showPopover(key)
+    const ref = itemRefs.current[key]
+    showPopover(key, ref)
   }
 
   const handleDragChange = ({key, x, y, index}: {key: string; x: number; y: number; index: number}) => {
-    // console.log("handleDragChange", key, x, y, index)
     if (!isMovingRef.current) {
       isMovingRef.current = true
       draggingIndexRef.current = index
@@ -259,7 +276,6 @@ export const ForegroundAppsGrid: React.FC = () => {
   }
 
   const handleDragEnd = ({data}: {data: MasonryAppItem[]}) => {
-    // console.log("handleDragEnd")
     isMovingRef.current = false
 
     const newOrderMap: OrderMap = {}
@@ -270,11 +286,18 @@ export const ForegroundAppsGrid: React.FC = () => {
     storage.save(APP_ORDER_KEY, newOrderMap)
   }
 
+  const itemRefs = useRef<Record<string, View | null>>({})
+
   const renderItem = useCallback(
     ({item}: {item: MasonryAppItem}) => {
       return (
         <TouchableOpacity className="items-center py-3" onPress={() => handlePress(item)} activeOpacity={0.7}>
-          <AppIcon app={item} className="w-16 h-16" />
+          <View
+            ref={(ref) => {
+              itemRefs.current[item.packageName] = ref
+            }}>
+            <AppIcon app={item} className="w-16 h-16" />
+          </View>
           <View className="w-full h-9 my-1 items-center justify-start">
             <Text
               className="text-secondary-foreground text-center mt-1 text-[12px] shrink"
