@@ -134,9 +134,10 @@ app.post("/:incidentId/logs", async (c) => {
   let source: string;
   let logCategory: "phoneLogs" | "glassesLogs" | null = null;
   let appPackageName: string | null = null;
+  let userEmail: string | null = null;
 
   // Parse body first
-  let body: { source?: string; logs: LogEntry[] };
+  let body: { source?: string; logs: LogEntry[]; uploadToken?: string };
   try {
     body = await c.req.json();
   } catch {
@@ -148,7 +149,7 @@ app.post("/:incidentId/logs", async (c) => {
     return c.json({ success: false, message: "Invalid payload: logs array required" }, 400);
   }
 
-  // Check auth - try coreToken first, then app auth
+  // Check auth - try coreToken first, then app auth with uploadToken
   const authHeader = c.req.header("Authorization");
   const coreToken = authHeader?.replace("Bearer ", "");
 
@@ -159,13 +160,14 @@ app.post("/:incidentId/logs", async (c) => {
       if (!decoded || !decoded.email) {
         return c.json({ success: false, message: "Invalid token" }, 401);
       }
+      userEmail = decoded.email;
       source = body.source || "phone";
       logCategory = source === "glasses" ? "glassesLogs" : "phoneLogs";
     } catch {
       return c.json({ success: false, message: "Invalid token" }, 401);
     }
   } else {
-    // Check app auth (apiKey)
+    // Check app auth (apiKey + uploadToken)
     const apiKey = c.req.header("X-App-Api-Key");
     const packageName = c.req.header("X-App-Package");
 
@@ -177,14 +179,35 @@ app.post("/:incidentId/logs", async (c) => {
     if (!isValid) {
       return c.json({ success: false, message: "Invalid app credentials" }, 401);
     }
+
+    // Validate uploadToken for app telemetry uploads
+    if (!body.uploadToken) {
+      return c.json({ success: false, message: "Missing uploadToken for app telemetry" }, 401);
+    }
+
+    try {
+      const tokenData = jwt.verify(body.uploadToken, AUGMENTOS_AUTH_JWT_SECRET) as jwt.JwtPayload;
+      if (!tokenData || tokenData.incidentId !== incidentId || tokenData.packageName !== packageName) {
+        return c.json({ success: false, message: "Invalid uploadToken" }, 401);
+      }
+      userEmail = tokenData.userId;
+    } catch {
+      return c.json({ success: false, message: "Invalid or expired uploadToken" }, 401);
+    }
+
     source = packageName;
     appPackageName = packageName;
   }
 
-  // Check if incident exists
+  // Check if incident exists and verify ownership
   const incident = await Incident.findOne({ incidentId });
   if (!incident) {
     return c.json({ success: false, message: "Incident not found" }, 404);
+  }
+
+  // Verify the authenticated user owns this incident
+  if (incident.userId !== userEmail) {
+    return c.json({ success: false, message: "Forbidden" }, 403);
   }
 
   // Append logs to R2
@@ -242,19 +265,25 @@ app.post("/:incidentId/attachments", async (c) => {
     return c.json({ success: false, message: "Missing authentication" }, 401);
   }
 
+  let userEmail: string;
   try {
     const decoded = jwt.verify(coreToken, AUGMENTOS_AUTH_JWT_SECRET) as jwt.JwtPayload;
     if (!decoded || !decoded.email) {
       return c.json({ success: false, message: "Invalid token" }, 401);
     }
+    userEmail = decoded.email;
   } catch {
     return c.json({ success: false, message: "Invalid token" }, 401);
   }
 
-  // Check if incident exists
+  // Check if incident exists and verify ownership
   const incident = await Incident.findOne({ incidentId });
   if (!incident) {
     return c.json({ success: false, message: "Incident not found" }, 404);
+  }
+
+  if (incident.userId !== userEmail) {
+    return c.json({ success: false, message: "Forbidden" }, 403);
   }
 
   // Check existing attachment count
@@ -267,10 +296,7 @@ app.post("/:incidentId/attachments", async (c) => {
 
   const existingCount = existingLogs.attachments?.length || 0;
   if (existingCount >= MAX_ATTACHMENTS) {
-    return c.json(
-      { success: false, message: `Maximum ${MAX_ATTACHMENTS} attachments allowed` },
-      400,
-    );
+    return c.json({ success: false, message: `Maximum ${MAX_ATTACHMENTS} attachments allowed` }, 400);
   }
 
   // Parse multipart form data
@@ -340,12 +366,7 @@ app.post("/:incidentId/attachments", async (c) => {
       }
 
       // Store to R2
-      const metadata = await incidentStorage.storeAttachment(
-        incidentId,
-        file.name,
-        buffer,
-        file.type,
-      );
+      const metadata = await incidentStorage.storeAttachment(incidentId, file.name, buffer, file.type);
 
       // Append metadata to incident
       await incidentStorage.appendAttachment(incidentId, metadata);

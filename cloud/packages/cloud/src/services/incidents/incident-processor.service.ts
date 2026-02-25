@@ -1,19 +1,21 @@
 // services/incidents/incident-processor.service.ts
 // Background job for processing incidents: fetching cloud logs, LLM analysis, Linear ticket creation
 
+import jwt from "jsonwebtoken";
 import { logger as rootLogger } from "../logging/pino-logger";
 import { queryBetterStackLogs } from "../logging/betterstack-query.service";
 import { incidentStorage } from "../storage/incident-storage.service";
 import { Incident } from "../../models/incident.model";
 import { slackService } from "../notifications/slack.service";
 import { emailService } from "../email/resend.service";
-import {
-  generateBugSummary,
-  createOrUpdateLinearIssue,
-  type BugSummary,
-} from "../integrations/linear.service";
+import { generateBugSummary, createOrUpdateLinearIssue, type BugSummary } from "../integrations/linear.service";
 import { UserSession } from "../session/UserSession";
 import { CloudToAppMessageType } from "@mentra/sdk";
+
+const AUGMENTOS_AUTH_JWT_SECRET = process.env.AUGMENTOS_AUTH_JWT_SECRET || "";
+
+// Upload token expiry (5 minutes - enough time for apps to gather and upload logs)
+const UPLOAD_TOKEN_EXPIRY_SECONDS = 5 * 60;
 
 const logger = rootLogger.child({ service: "incident-processor" });
 
@@ -61,14 +63,26 @@ function requestAppTelemetry(incidentId: string, userId: string): void {
     "Sending REQUEST_TELEMETRY to connected apps",
   );
 
-  // Send REQUEST_TELEMETRY to each connected app
+  // Send REQUEST_TELEMETRY to each connected app with a signed upload token
   for (const [packageName, ws] of appWebsockets) {
     try {
       if (ws.readyState === 1) {
         // WebSocket.OPEN
+        // Generate a signed upload token for this app to use when uploading logs
+        const uploadToken = jwt.sign(
+          {
+            incidentId,
+            userId,
+            packageName,
+          },
+          AUGMENTOS_AUTH_JWT_SECRET,
+          { expiresIn: UPLOAD_TOKEN_EXPIRY_SECONDS },
+        );
+
         const message = {
           type: CloudToAppMessageType.REQUEST_TELEMETRY,
           incidentId,
+          uploadToken,
           windowMs: LOG_WINDOW_MS,
           timestamp: new Date().toISOString(),
         };
@@ -174,10 +188,7 @@ async function processIncident(incidentId: string, userId: string): Promise<void
           linearIssueId = linearResult.issueId;
           linearIssueUrl = linearResult.issueUrl;
           isNewIssue = linearResult.isNewIssue;
-          logger.info(
-            { incidentId, linearIssueId, isNewIssue },
-            "Linear ticket created/updated",
-          );
+          logger.info({ incidentId, linearIssueId, isNewIssue }, "Linear ticket created/updated");
         }
       } catch (err) {
         logger.error({ incidentId, err }, "Failed to create Linear ticket");
@@ -190,7 +201,15 @@ async function processIncident(incidentId: string, userId: string): Promise<void
 
     // Slack notification (fire-and-forget)
     slackService
-      .sendIncidentNotification(incidentId, userId, notificationUrl, consoleUrl, summary?.title, isNewIssue, incidentLogs?.feedback)
+      .sendIncidentNotification(
+        incidentId,
+        userId,
+        notificationUrl,
+        consoleUrl,
+        summary?.title,
+        isNewIssue,
+        incidentLogs?.feedback,
+      )
       .catch((err) => {
         logger.warn({ incidentId, err }, "Slack notification failed");
         errors.push("Slack notification failed");
@@ -198,13 +217,7 @@ async function processIncident(incidentId: string, userId: string): Promise<void
 
     // Email notification
     try {
-      await emailService.sendIncidentNotification(
-        userId,
-        incidentId,
-        notificationUrl,
-        incidentLogs?.feedback,
-        admins,
-      );
+      await emailService.sendIncidentNotification(userId, incidentId, notificationUrl, incidentLogs?.feedback, admins);
     } catch (err) {
       logger.warn({ incidentId, err }, "Email notification failed");
       errors.push("Email notification failed");

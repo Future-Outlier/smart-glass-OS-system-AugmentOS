@@ -61,7 +61,7 @@ function parseBugSummary(response: string): BugSummary {
   const lines = response.split("\n").filter(Boolean);
 
   // Extract title from first line
-  let title =
+  const title =
     lines[0]
       ?.replace(/^(title:|1\.|#|\*\*title\*\*:?)/i, "")
       .trim()
@@ -87,12 +87,14 @@ function parseBugSummary(response: string): BugSummary {
   }
 
   // Build description from remaining lines
-  const descriptionLines = lines.slice(1).filter(
-    (line) =>
-      !line.toLowerCase().includes("severity") &&
-      !line.toLowerCase().includes("component") &&
-      !line.toLowerCase().startsWith("title"),
-  );
+  const descriptionLines = lines
+    .slice(1)
+    .filter(
+      (line) =>
+        !line.toLowerCase().includes("severity") &&
+        !line.toLowerCase().includes("component") &&
+        !line.toLowerCase().startsWith("title"),
+    );
   const description = descriptionLines.join(" ").trim() || "See logs for details";
 
   return {
@@ -137,7 +139,7 @@ User severity rating: ${feedback?.severityRating || "Not specified"}/5
 
 Phone state at time of report:
 - Glasses connected: ${incident.phoneState?.glasses ? "Yes" : "No"}
-- Running apps: ${JSON.stringify((incident.phoneState as Record<string, unknown>)?.applets || {})}
+- Running apps: ${JSON.stringify((feedback?.systemInfo as Record<string, unknown>)?.runningApps || [])}
 
 Recent phone errors/warnings:
 ${phoneErrors || "(none)"}
@@ -185,10 +187,7 @@ Severity: [low/medium/high/critical]`;
 /**
  * Find a similar existing Linear issue using LLM matching.
  */
-export async function findSimilarLinearIssue(
-  linear: LinearClient,
-  summary: BugSummary,
-): Promise<Issue | null> {
+export async function findSimilarLinearIssue(linear: LinearClient, summary: BugSummary): Promise<Issue | null> {
   if (!LINEAR_TEAM_ID) {
     logger.warn("LINEAR_TEAM_ID not configured");
     return null;
@@ -233,9 +232,7 @@ Reply with ONLY the ticket identifier (e.g., "MEN-123") if there's a clear match
     }
 
     // Find the matching issue
-    const matchedIssue = recentIssues.nodes.find(
-      (i) => i.identifier.toUpperCase() === match,
-    );
+    const matchedIssue = recentIssues.nodes.find((i) => i.identifier.toUpperCase() === match);
 
     if (matchedIssue) {
       logger.info({ identifier: matchedIssue.identifier }, "Found similar existing issue");

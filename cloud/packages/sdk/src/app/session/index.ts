@@ -1,5 +1,3 @@
- 
-
 /**
  * 🎯 App Session Module
  *
@@ -1646,7 +1644,13 @@ export class AppSession {
    * The SDK responds by POSTing its buffered logs to the incident logs endpoint.
    */
   private async handleTelemetryRequest(message: RequestTelemetry): Promise<void> {
-    const { incidentId, windowMs } = message;
+    const { incidentId, uploadToken, windowMs } = message;
+
+    // uploadToken is required for secure telemetry uploads
+    if (!uploadToken) {
+      this.logger.warn({ incidentId }, "📊 No uploadToken provided - skipping telemetry upload");
+      return;
+    }
 
     // Get telemetry logs from AppServer's buffer
     const logs = this.appServer.getTelemetryLogs(this.userId, windowMs || 10 * 60 * 1000);
@@ -1664,8 +1668,7 @@ export class AppSession {
         `${cloudHost}/api/incidents/${incidentId}/logs`,
         {
           logs,
-          source: "app",
-          packageName: this.config.packageName,
+          uploadToken,
         },
         {
           headers: {
@@ -1677,10 +1680,7 @@ export class AppSession {
         },
       );
 
-      this.logger.info(
-        { incidentId, count: logs.length, status: response.status },
-        "📊 Telemetry logs sent to cloud",
-      );
+      this.logger.info({ incidentId, count: logs.length, status: response.status }, "📊 Telemetry logs sent to cloud");
     } catch (err) {
       this.logger.warn({ incidentId, err }, "📊 Failed to send telemetry logs");
     }
