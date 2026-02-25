@@ -1,5 +1,20 @@
 # Audio Output Streaming — Architecture
 
+## Decision
+
+**SDK-side encoding. Cloud is a dumb pipe (zero transcoding). Future microservice for cloud-side encoding if needed.**
+
+```
+SDK App (developer's server)          Cloud Relay                    Phone
+   |                                    |                              |
+   | AI gives PCM/Opus                  |                              |
+   | SDK encodes → MP3 locally          |                              |
+   | pushes MP3 frames ──────────────>  | pipes bytes straight through |
+   |                                    | (zero CPU, just pipe()) ──>  | ExoPlayer/AVPlayer plays
+```
+
+Rationale: We don't want transcoding on the cloud — it could freeze the server under load. MP3 encoding runs on the developer's server (their CPU). The cloud relay is just a buffer + pipe. If we later need cloud-side transcoding (for developers who can't encode), we add a separate microservice that scales independently.
+
 ## Current System
 
 Audio output from SDK apps follows a one-shot URL-based pattern:
@@ -59,71 +74,114 @@ SDK App --POST chunks--> Cloud relay --chunked HTTP GET--> Phone (ExoPlayer/AVPl
 8. Phone plays audio as it arrives (progressive download / streaming)
 9. SDK calls `stream.end()` → cloud closes the HTTP response → playback finishes naturally
 
-#### Sub-variant A1: Cloud transcodes PCM → MP3
+#### Format: Why MP3
 
-SDK sends raw PCM. Cloud transcodes to MP3 frames on the fly and serves `Content-Type: audio/mpeg` HTTP stream.
+Opus is a better codec, but it has a **container problem on iOS**:
 
-- **Pros**: Simplest SDK API (just push PCM bytes). MP3 streaming is the most battle-tested format for progressive HTTP playback (internet radio). ExoPlayer and AVPlayer both handle it natively with no config.
-- **Cons**: Cloud needs an MP3 encoder (lame/libmp3lame). Adds ~26ms latency per MP3 frame (1152 samples / 44100Hz, or smaller at lower sample rates). Cloud CPU cost for transcoding.
-- **MP3 frame math**: At 24kHz input, one MP3 frame = 1152 samples = 48ms. At 16kHz = 72ms per frame. This is the minimum granularity — audio can't start playing until at least one complete frame arrives.
+| Container | Android (ExoPlayer) | iOS (AVPlayer) | HTTP streaming? |
+|---|---|---|---|
+| OGG/Opus | ✅ | ❌ Not supported | ✅ |
+| WebM/Opus | ✅ | ❌ Not supported | ✅ |
+| CAF/Opus | ❌ | ✅ iOS 11+ | Awkward |
+| MP4/Opus | ✅ ExoPlayer 2.14+ | ⚠️ iOS 17+ only | Needs fMP4 |
 
-#### Sub-variant A2: Cloud transcodes PCM → OGG/Opus
+No single Opus container works on both platforms. We'd need per-platform container wrapping, which is complexity for zero benefit.
 
-SDK sends raw PCM. Cloud transcodes to Opus in OGG container. Serves `Content-Type: audio/ogg; codecs=opus`.
+MP3 frames are self-describing — no container needed. You concatenate frames and any player on any platform plays them. This is how internet radio has worked since 1998.
 
-- **Pros**: Lower latency per frame (Opus supports 2.5ms–60ms frames). Better audio quality at low bitrates. Lower bandwidth.
-- **Cons**: ExoPlayer supports OGG/Opus natively. AVPlayer (iOS) has limited OGG support — may need to use `audio/opus` with a raw Opus stream instead. Less battle-tested for HTTP progressive streaming compared to MP3.
+| Format | Android | iOS | Container needed? | HTTP streaming? |
+|---|---|---|---|---|
+| **MP3 frames** | ✅ | ✅ | No — frames are self-contained | ✅ Battle-tested |
+| **AAC-ADTS** | ✅ | ✅ | Minimal ADTS header per frame | ✅ |
+| **Opus** | ⚠️ Needs OGG/WebM | ⚠️ Needs CAF/MP4 | Yes — platform-specific | Complicated |
+| **Raw PCM/WAV** | ✅ | ✅ | WAV header, but no framing | Poor (buffer issues) |
 
-#### Sub-variant A3: SDK transcodes, cloud passes through
+**Decision: MP3 is the wire format.** Universally supported, zero container overhead, streaming-native.
 
-SDK transcodes PCM → MP3 frames (or Opus) locally before sending. Cloud just pipes bytes to the HTTP response without touching them.
+#### Encoding: SDK-side, not cloud-side
 
-- **Pros**: Zero CPU on cloud for transcoding. Cloud relay is trivial (just a buffer + pipe). SDK developer could even choose their own codec.
-- **Cons**: SDK needs an encoder dependency. More complex SDK implementation. Format mismatch risk (SDK sends format that phone can't play).
+The SDK app runs on the developer's server. MP3 encoding runs there — their CPU, not ours.
 
-#### Sub-variant A4: Cloud serves raw PCM as WAV
+Why not cloud-side:
+- Cloud transcoding at ~4% CPU per core per stream is fine at small scale
+- But at 50+ concurrent streams it competes with WebSocket handling, transcription relay, session management
+- If the transcoder has a bug or pegs CPU, the entire cloud goes down
+- We don't want that failure mode
 
-SDK sends raw PCM. Cloud wraps in a WAV header (44 bytes) with unknown length, then streams PCM data.
+Why SDK-side works:
+- Developer servers are typically under-utilized (handling webhooks, not streaming)
+- MP3 encoding at 24kHz mono is trivial — lamejs does it in 2-5ms per frame in pure JS
+- The SDK ships a helper so developers don't need to figure out MP3 encoding themselves
+- If a developer's server is slow, only their app is affected, not our cloud
 
-- **Pros**: No transcoding at all. WAV is trivially simple.
-- **Cons**: ExoPlayer can play WAV but may buffer more aggressively before starting playback (it often waits for Content-Length or a significant buffer). AVPlayer similar. WAV has no framing — player can't seek or recover from dropped bytes. Bandwidth is 5-10x higher than compressed formats. **Likely won't work well for low-latency streaming.**
+```
+// SDK helper encodes PCM → MP3 internally
+const stream = await session.audio.createOutputStream({
+  sampleRate: 24000,  // PCM input sample rate
+  encoding: 'pcm16',  // SDK encodes to MP3 before sending
+})
+stream.write(pcmBuffer)  // PCM goes in, MP3 comes out over the wire
+
+// Developer already has MP3 (ElevenLabs, Cartesia, Azure)
+const stream = await session.audio.createOutputStream({
+  format: 'mp3',  // pass-through, no encoding
+})
+stream.write(mp3Bytes)  // MP3 goes straight to cloud relay
+```
+
+Most real-world use cases won't need encoding at all:
+
+| Provider | Can output MP3 directly? |
+|---|---|
+| ElevenLabs | ✅ `output_format: "mp3_44100_128"` |
+| Cartesia | ✅ MP3 output option |
+| Azure Speech | ✅ `Audio48Khz96KBitRateMonoMp3` etc. |
+| OpenAI TTS | ✅ MP3 is default format |
+| Gemini Live | ❌ PCM or Opus only — needs SDK-side encoding |
+
+Gemini Live is the main case that needs the SDK encoder helper.
 
 #### Cloud relay implementation
 
-The relay is essentially a per-stream FIFO buffer with an HTTP reader and writer:
+The relay is a dumb pipe — no transcoding, no format awareness. It receives bytes and forwards them.
 
 ```
 Cloud relay internals:
 
   Map<streamId, {
-    buffer: Ring buffer or async queue of encoded audio chunks
+    buffer: Async queue of byte chunks (already-encoded MP3)
     httpResponse: HTTP Response object (held open, chunked transfer encoding)
-    metadata: {sampleRate, encoding, createdAt, sessionId}
+    metadata: {contentType, createdAt, sessionId}
+    lastActivity: timestamp (for inactivity timeout)
   }>
 
-  POST /audio-relay/{streamId}/push  ← SDK sends chunks here
+  SDK pushes chunks via existing WebSocket (binary frames tagged with streamId)
     → append to buffer
     → if httpResponse is connected, flush buffer to response
 
   GET /audio-relay/{streamId}        ← Phone connects here
-    → set Content-Type: audio/mpeg
+    → set Content-Type: audio/mpeg  (or whatever SDK declared)
     → set Transfer-Encoding: chunked
     → pipe buffer to response as data arrives
-    → close response when stream ends
+    → close response when stream ends or inactivity timeout (10s)
 ```
 
-Memory budget: At 128kbps MP3, one minute of buffered audio = ~960KB. A 5-second jitter buffer = ~80KB. Manageable.
+Cloud CPU per stream: **~0%** (just copying bytes between a WebSocket and an HTTP response).
 
-#### Latency breakdown (A1: PCM → MP3)
+Memory budget: At 128kbps MP3, a 5-second jitter buffer = ~80KB per stream. 100 concurrent streams = 8MB. Negligible.
+
+#### Latency breakdown
 
 | Hop | Latency |
 |---|---|
-| SDK → Cloud (WS binary frame) | ~5-50ms (depends on SDK server location) |
-| Cloud MP3 encode (one frame) | ~1ms compute + 48ms frame duration (at 24kHz) |
+| AI generates audio chunk | 20-100ms (depends on provider) |
+| SDK encodes PCM → MP3 (one frame, if needed) | ~2-5ms (lamejs) or 0ms (if MP3 from provider) |
+| SDK → Cloud (HTTP POST or WS binary) | ~5-50ms |
+| Cloud pipes to HTTP response | ~0ms (just write()) |
 | Cloud → Phone (HTTP chunk) | ~5-50ms |
 | ExoPlayer buffer before play | ~100-500ms (configurable, default can be high) |
 | Phone → Glasses (BLE) | ~20-50ms |
-| **Total first-byte** | **~180-700ms** |
+| **Total first-byte** | **~130-650ms** |
 
 The ExoPlayer buffer is the wildcard. Default `DefaultLoadControl` buffers 2.5s before starting. This can be tuned down to ~100ms with custom `LoadControl` — but requires a mobile code change.
 
@@ -225,31 +283,48 @@ This is the lowest possible latency. No transcoding, no HTTP buffering, no file 
 
 ## Recommendation
 
-**Start with Option A1 (HTTP streaming relay, cloud transcodes PCM → MP3).**
+**Option A with SDK-side encoding. Cloud is a zero-CPU dumb pipe.**
 
 Rationale:
 
-1. **Minimal mobile changes.** ExoPlayer and AVPlayer already support MP3 streaming over HTTP. The only mobile change is likely tuning the buffer config to reduce initial buffering latency from ~2.5s default down to ~200ms. That's a one-line config change, not a new native module.
+1. **Cloud safety.** No transcoding on the cloud means no CPU risk, no freezing, no failure mode that takes down the whole system. The relay is just `pipe()`.
 
-2. **Uses existing playback path.** From the phone's perspective, `playAudio(streamUrl)` looks identical to `playAudio(fileUrl)`. The `AudioPlaybackService` doesn't need to know or care that the URL is a stream.
+2. **Minimal mobile changes.** ExoPlayer and AVPlayer already support MP3 streaming over HTTP. The only mobile change is likely tuning the buffer config to reduce initial buffering latency from ~2.5s default down to ~200ms. That's a one-line config change, not a new native module.
 
-3. **Clean SDK API.** Developer pushes PCM chunks. Cloud handles the encoding complexity. This matches how audio input works (cloud handles decoding/routing).
+3. **Uses existing playback path.** From the phone's perspective, `playAudio(streamUrl)` looks identical to `playAudio(fileUrl)`. The `AudioPlaybackService` doesn't need to know or care that the URL is a stream.
 
-4. **Upgrade path to C.** If latency testing shows that HTTP buffering is too much for conversational AI, we can add Option C later as a "low-latency mode" behind a flag. The SDK API (`createOutputStream` / `write` / `end` / `flush`) stays the same — only the transport changes.
+4. **Most developers won't encode at all.** ElevenLabs, Cartesia, Azure, OpenAI all output MP3 natively. The SDK just passes MP3 bytes through. Only Gemini Live (PCM output) needs the SDK-side encoder helper.
 
-5. **Option B is a fallback** if A turns out to be harder than expected. Chunked playback is dead simple but the gaps may be unacceptable for voice. Worth prototyping as a quick POC.
+5. **Upgrade path.** If latency testing shows that HTTP buffering is too much for conversational AI, we can evaluate Option C (native audio module) as a "low-latency mode." The SDK API (`createOutputStream` / `write` / `end` / `flush`) stays the same — only the transport changes.
+
+6. **Option B is a fallback** if A turns out to be harder than expected. Chunked playback is dead simple but the gaps may be unacceptable for voice.
+
+### Future: transcoding microservice
+
+If we later want to support cloud-side encoding (so developers can send raw PCM without encoding):
+
+```
+SDK App ── PCM ──> Transcoding µservice ── MP3 ──> Cloud relay ──> Phone
+                   (separate container/process)
+                   (auto-scales independently of main cloud)
+                   (if it crashes, main cloud is unaffected)
+                   (only exists for devs who need it)
+```
+
+This would be a small stateless service: receives PCM via HTTP/WS, encodes with ffmpeg/lame, outputs MP3 frames. Horizontally scalable. But this is NOT needed for v1 — only build it if demand exists.
 
 ### Phased approach
 
 **Phase 1: Prove it works (1-2 days)**
-- Cloud: bare-minimum relay endpoint that accepts PCM chunks and serves MP3 stream
-- SDK: `createOutputStream()` → `write()` → `end()` with hardcoded cloud relay
+- Cloud: bare-minimum relay endpoint (receive MP3 bytes, serve HTTP stream)
+- SDK: `createOutputStream()` → `write()` → `end()` with MP3 pass-through
 - Mobile: test that `playAudio(streamUrl)` works with a chunked HTTP MP3 response
 - Benchmark first-byte latency and find ExoPlayer's minimum viable buffer config
 
 **Phase 2: Production implementation (3-5 days)**
 - Cloud: proper relay with per-session stream management, cleanup, backpressure
-- SDK: full `AudioOutputStream` class with error handling, flush/interrupt, events
+- SDK: full `AudioOutputStream` class with MP3 pass-through + PCM encoder helper
+- SDK: ship `lamejs` or similar as optional dep for PCM→MP3 encoding
 - Mobile: ExoPlayer buffer tuning, handle stream interruption gracefully
 - Message types: `AUDIO_STREAM_START`, `AUDIO_STREAM_STOP`, or reuse existing `AUDIO_PLAY_REQUEST` with stream URL
 
@@ -261,7 +336,7 @@ Rationale:
 
 **If Phase 1 shows >700ms first-byte latency that can't be tuned down:**
 - Fall back to Option B for a quick win
-- Build Option C for production-quality low-latency streaming
+- Evaluate Option C (native audio module) for production low-latency
 
 ## Open Questions
 
@@ -275,16 +350,16 @@ Rationale:
    - May need `AVPlayerItem.preferredForwardBufferDuration` tuning
    - **Need to benchmark on a real device.**
 
-3. **Cloud transcoding library?**
-   - Bun/Node options: `@ffmpeg/ffmpeg` (WASM), native `ffmpeg` subprocess, `lame` bindings
-   - WASM ffmpeg adds ~10MB to cloud. Subprocess is simpler but has IPC overhead.
-   - Pure JS MP3 encoder (`lamejs`) exists but is slow — fine for real-time at 1x but no headroom.
-   - **Decision**: Start with subprocess ffmpeg (already available on most cloud hosts), evaluate lamejs for a zero-dependency option.
+3. **SDK-side MP3 encoder choice?**
+   - `lamejs` (pure JS): ~2-5ms per frame at 24kHz mono. Zero native deps. ~50KB package size. Fine for real-time.
+   - `@ffmpeg/ffmpeg` (WASM): more capable but adds ~10MB. Overkill for MP3 encoding.
+   - Native `lame` bindings: fastest but requires native compilation on developer's machine.
+   - **Leaning**: Ship `lamejs` as the built-in helper. It's pure JS, works everywhere Bun/Node runs, fast enough for real-time mono audio. Make it an optional dependency so developers who send MP3 directly don't pay the cost.
 
-4. **How does the SDK push chunks to the cloud relay?**
-   - **Option 4a**: Send PCM as WS binary frames on the existing app↔cloud WebSocket (tag with streamId header). Cloud demuxes and routes to the relay.
+4. **How does the SDK push MP3 chunks to the cloud relay?**
+   - **Option 4a**: Send MP3 as WS binary frames on the existing app↔cloud WebSocket (tag with streamId header). Cloud demuxes and routes to the relay.
    - **Option 4b**: SDK opens a separate HTTP POST with chunked transfer encoding to the relay endpoint. Keeps audio traffic off the main WebSocket.
-   - **Leaning**: 4a (WS binary) is simpler and avoids authentication complexity for a new HTTP endpoint. Audio input already uses WS binary frames — symmetric.
+   - **Leaning**: 4a (WS binary on existing connection) is simpler and avoids authentication complexity for a new HTTP endpoint. Audio input already uses WS binary frames in the other direction — symmetric.
 
 5. **Stream lifecycle if SDK crashes mid-stream?**
    - Cloud needs a timeout: if no chunks arrive for N seconds, close the HTTP response and clean up.
@@ -294,3 +369,10 @@ Rationale:
 6. **Max concurrent streams per session?**
    - One active output stream per track ID? Or allow multiple?
    - **Start with**: one stream at a time. Starting a new stream auto-ends the previous one (same as `playAudio` with `stopOtherAudio: true`).
+
+7. **When to build the transcoding microservice?**
+   - Not needed for v1. Only build it if:
+     - Multiple developers request cloud-side PCM encoding
+     - Gemini Live becomes a primary use case and devs don't want to run lamejs
+   - Architecture: stateless HTTP service, receives PCM, outputs MP3 frames, horizontally scalable
+   - Runs in a separate container so it can't affect the main cloud
