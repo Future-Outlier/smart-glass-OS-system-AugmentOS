@@ -832,8 +832,11 @@ const en = {
   },
   appInfo: {
     share: "Share",
-    addToHome: "Add to Home",
+    addToHome: "Add to home",
+    open: "Open",
     uninstall: "Uninstall",
+    remove: "Remove",
+    settings: "Settings",
   },
   lmaInstaller: {
     installedVersions: "Installed versions",

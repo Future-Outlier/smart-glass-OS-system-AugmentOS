@@ -3528,6 +3528,11 @@ public class MentraLive extends SGCManager {
 
     }
 
+    public void ping() {
+        Bridge.log("LIVE: ping()");
+        keepAwake();
+    }
+
     public boolean displayBitmap(String base64) {
         return false;
     }
@@ -4587,6 +4592,20 @@ public class MentraLive extends SGCManager {
             queueData(packedData);
         } catch (JSONException e) {
             Log.e(TAG, "Error creating video command", e);
+        }
+    }
+
+    public void keepAwake(){
+        try{
+            JSONObject cmdObject = new JSONObject();
+            cmdObject.put("C", "keep_awake"); // Video command
+            cmdObject.put("W", 1);        // Wake up MTK system
+            cmdObject.put("B", "");       // Add the body
+            String jsonStr = cmdObject.toString();
+            byte[] packedData = K900ProtocolUtils.packDataToK900(jsonStr.getBytes(StandardCharsets.UTF_8), K900ProtocolUtils.CMD_TYPE_STRING);
+            queueData(packedData);
+        } catch (JSONException e) {
+            Log.e(TAG, "Error creating keep_awake command", e);
         }
     }
 

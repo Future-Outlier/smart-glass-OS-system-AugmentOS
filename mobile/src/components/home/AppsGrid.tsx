@@ -10,6 +10,7 @@ import {
   ClientAppletInterface,
   DUMMY_APPLET,
   getPackageNamePriority,
+  useAppletStatusStore,
   useForegroundApps,
   useStartApplet,
 } from "@/stores/applets"
@@ -17,6 +18,7 @@ import {askPermissionsUI} from "@/utils/PermissionsUtils"
 import {SETTINGS, useSetting} from "@/stores/settings"
 import {storage} from "@/utils/storage"
 import {useNavigationHistory} from "@/contexts/NavigationHistoryContext"
+import {translate} from "@/i18n"
 
 const GRID_COLUMNS = 4
 const APP_ORDER_KEY = "foreground_apps_order"
@@ -145,6 +147,7 @@ export function AppsGrid({showAllApps = false, onOpenApp}: AppsGridProps) {
   const gridData: MasonryAppItem[] = useMemo(() => {
     let filteredApps = apps.filter((app) => {
       if (showAllApps) return true
+      if (app.hidden) return false
       if (app.running && !appSwitcherUi) return false
       if (!app.compatibility?.isCompatible) return false
       return true
@@ -185,46 +188,58 @@ export function AppsGrid({showAllApps = false, onOpenApp}: AppsGridProps) {
   }, [])
 
   const popoverActions: PopoverAction[] = useMemo(
-    () => [
-      {
-        label: "Open",
-        icon: "external-link",
-        onPress: () => {
-          if (selectedApp) {
-            startApplet(selectedApp.packageName)
-            if (onOpenApp) {
-              onOpenApp?.(selectedApp)
+    () =>
+      [
+        {
+          label: translate("appInfo:open"),
+          icon: "external-link",
+          onPress: () => {
+            if (selectedApp) {
+              startApplet(selectedApp.packageName)
+              if (onOpenApp) {
+                onOpenApp?.(selectedApp)
+              }
             }
-          }
+          },
         },
-      },
-      {
-        label: "Settings",
-        icon: "cog",
-        onPress: () => {
-          push("/applet/settings", {
-            packageName: selectedApp?.packageName,
-            appName: selectedApp?.name,
-          })
+        {
+          label: translate("appInfo:settings"),
+          icon: "cog",
+          onPress: () => {
+            push("/applet/settings", {
+              packageName: selectedApp?.packageName,
+              appName: selectedApp?.name,
+            })
+          },
         },
-      },
-      {
-        label: "Remove",
-        icon: "minus",
-        onPress: () => {
-          // TODO: remove from grid
+        !showAllApps && {
+          label: translate("appInfo:remove"),
+          icon: "minus",
+          onPress: () => {
+            if (selectedApp) {
+              useAppletStatusStore.getState().setHiddenStatus(selectedApp.packageName, true)
+              // useAppletStatusStore.getState().refreshApplets()
+            }
+          },
         },
-      },
-      {
-        label: "Uninstall",
-        icon: "trash",
-        destructive: true,
-        onPress: () => {
-          // TODO: uninstall app
+        showAllApps &&
+          selectedApp?.hidden && {
+            label: translate("appInfo:addToHome"),
+            icon: "home",
+            onPress: () => {
+              useAppletStatusStore.getState().setHiddenStatus(selectedApp.packageName, false)
+            },
+          },
+        {
+          label: translate("appInfo:uninstall"),
+          icon: "trash",
+          destructive: true,
+          onPress: () => {
+            // TODO: uninstall app
+          },
         },
-      },
-    ],
-    [selectedApp, startApplet],
+      ].filter(Boolean) as PopoverAction[],
+    [selectedApp, startApplet, showAllApps],
   )
 
   const handlePress = async (app: ClientAppletInterface) => {

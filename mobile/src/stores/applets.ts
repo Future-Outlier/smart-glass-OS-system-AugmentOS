@@ -6,7 +6,7 @@ import {
   HardwareType,
 } from "@/../../cloud/packages/types/src"
 import {useMemo} from "react"
-import {AsyncResult, result as Res} from "typesafe-ts"
+import {AsyncResult, result as Res, Result} from "typesafe-ts"
 import {create} from "zustand"
 import * as Sentry from "@sentry/react-native"
 
@@ -28,6 +28,7 @@ export interface ClientAppletInterface extends AppletInterface {
   compatibility?: CompatibilityResult
   loading: boolean
   local: boolean
+  hidden: boolean
   onStart?: () => AsyncResult<void, Error>
   onStop?: () => AsyncResult<void, Error>
   screenshot?: string
@@ -44,6 +45,7 @@ interface AppStatusState {
   stopAllApplets: () => AsyncResult<void, Error>
   saveScreenshot: (packageName: string, screenshot: string) => Promise<void>
   setInstalledLmas: (installedLmas: ClientAppletInterface[]) => void
+  setHiddenStatus: (packageName: string, status: boolean) => void
 }
 
 export const DUMMY_APPLET: ClientAppletInterface = {
@@ -60,6 +62,7 @@ export const DUMMY_APPLET: ClientAppletInterface = {
   offline: true,
   offlineRoute: "",
   local: false,
+  hidden: false,
 }
 
 /**
@@ -77,6 +80,14 @@ export const storePackageName = "com.mentra.store"
 export const simulatedPackageName = "com.mentra.simulated"
 export const mirrorPackageName = "com.mentra.mirror"
 export const lmaInstallerPackageName = "com.mentra.lma_installer"
+
+const getHiddenStatus = (packageName: string): boolean => {
+  const hidden = storage.load<boolean>(`${packageName}_hidden`)
+  if (hidden.is_ok()) {
+    return hidden.value
+  }
+  return false
+}
 
 export const saveLocalAppRunningState = (packageName: string, status: boolean): AsyncResult<void, Error> => {
   return Res.try_async(async () => {
@@ -141,6 +152,7 @@ const getOfflineApplets = async (): Promise<ClientAppletInterface[]> => {
       running: false,
       loading: false,
       healthy: true,
+      hidden: false,
       hardwareRequirements: [{type: HardwareType.CAMERA, level: HardwareRequirementLevel.REQUIRED}],
       onStart: (): AsyncResult<void, Error> => {
         return Res.try_async(async () => {
@@ -169,6 +181,7 @@ const getOfflineApplets = async (): Promise<ClientAppletInterface[]> => {
       // description: "Live captions for your mentra glasses.",
       webviewUrl: "",
       healthy: true,
+      hidden: false,
       permissions: [],
       offlineRoute: "",
       running: false,
@@ -217,6 +230,7 @@ const getOfflineApplets = async (): Promise<ClientAppletInterface[]> => {
       running: false,
       loading: false,
       healthy: true,
+      hidden: false,
       permissions: [],
       offlineRoute: "/asg/gallery",
       webviewUrl: "",
@@ -234,6 +248,7 @@ const getOfflineApplets = async (): Promise<ClientAppletInterface[]> => {
       running: false,
       loading: false,
       healthy: true,
+      hidden: false,
       permissions: [],
       offlineRoute: "/settings/account",
       webviewUrl: "",
@@ -247,6 +262,7 @@ const getOfflineApplets = async (): Promise<ClientAppletInterface[]> => {
       offlineRoute: "/miniapps/store/store",
       webviewUrl: "",
       healthy: true,
+      hidden: false,
       permissions: [],
       offline: true,
       running: false,
@@ -264,6 +280,7 @@ const getOfflineApplets = async (): Promise<ClientAppletInterface[]> => {
       offlineRoute: "/miniapps/mirror/mirror",
       webviewUrl: "",
       healthy: true,
+      hidden: false,
       permissions: [],
       offline: true,
       running: false,
@@ -309,6 +326,7 @@ const getOfflineApplets = async (): Promise<ClientAppletInterface[]> => {
       running: false,
       loading: false,
       healthy: true,
+      hidden: false,
       hardwareRequirements: [],
       logoUrl: require("@assets/applet-icons/store.png"),
       onStart: () => saveLocalAppRunningState(lmaInstallerPackageName, true),
@@ -439,6 +457,7 @@ export const useAppletStatusStore = create<AppStatusState>((set, get) => ({
         offline: false,
         offlineRoute: "",
         local: false,
+        hidden: false,
       }))
     }
 
@@ -481,6 +500,11 @@ export const useAppletStatusStore = create<AppStatusState>((set, get) => ({
       let result = HardwareCompatibility.checkCompatibility(applet.hardwareRequirements, capabilities)
       applet.compatibility = result
     }
+
+    for (const applet of applets) {
+      applet.hidden = getHiddenStatus(applet.packageName)
+    }
+    
     set({apps: applets})
   },
 
@@ -586,6 +610,13 @@ export const useAppletStatusStore = create<AppStatusState>((set, get) => ({
     }))
 
     startStopApplet(applet, false)
+  },
+
+  setHiddenStatus: (packageName: string, status: boolean) => {
+    set((state) => ({
+      apps: state.apps.map((a) => (a.packageName === packageName ? {...a, hidden: status} : a)),
+    }))
+    storage.save(`${packageName}_hidden`, status)
   },
 
   stopAllApplets: (): AsyncResult<void, Error> => {
