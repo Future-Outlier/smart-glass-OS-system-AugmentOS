@@ -7,7 +7,7 @@ import {MentraLogoStandalone} from "@/components/brands/MentraLogoStandalone"
 import {ActiveForegroundApp} from "@/components/home/ActiveForegroundApp"
 import {BackgroundAppsLink} from "@/components/home/BackgroundAppsLink"
 import {CompactDeviceStatus} from "@/components/home/CompactDeviceStatus"
-import {ForegroundAppsGrid} from "@/components/home/ForegroundAppsGrid"
+import {AppsGrid} from "@/components/home/AppsGrid"
 import {IncompatibleApps} from "@/components/home/IncompatibleApps"
 import {PairGlassesCard} from "@/components/home/PairGlassesCard"
 import {Header, Screen} from "@/components/ignite"
@@ -80,7 +80,7 @@ export default function Homepage() {
         </Group>
         <View className="h-2" />
         {!appSwitcherUi && <ActiveForegroundApp />}
-        <ForegroundAppsGrid />
+        <AppsGrid />
       </>
     )
   }

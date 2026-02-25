@@ -113,7 +113,11 @@ const AppPopover: React.FC<{
   )
 }
 
-export const ForegroundAppsGrid: React.FC = () => {
+interface AppsGridProps {
+  showAllApps?: boolean
+}
+
+export function AppsGrid({showAllApps = false}: AppsGridProps) {
   const {themed, theme} = useAppTheme()
 
   const startApplet = useStartApplet()
@@ -139,6 +143,7 @@ export const ForegroundAppsGrid: React.FC = () => {
 
   const gridData: MasonryAppItem[] = useMemo(() => {
     let filteredApps = apps.filter((app) => {
+      if (showAllApps) return true
       if (app.running && !appSwitcherUi) return false
       if (!app.compatibility?.isCompatible) return false
       return true
@@ -223,12 +228,13 @@ export const ForegroundAppsGrid: React.FC = () => {
   }
 
   const showPopover = useCallback(
-    (key: string, ref?: View | null) => {
+    (key: string) => {
       const app = gridData.find((a) => a.packageName === key)
       // get the index of the app
-      const index = gridData.findIndex((a) => a.packageName === key)
+      // const index = gridData.findIndex((a) => a.packageName === key)
       if (!app?.name) return
 
+      const ref = itemRefs.current[app.packageName]
       setSelectedApp(app)
 
       // if (ref) {
@@ -271,9 +277,7 @@ export const ForegroundAppsGrid: React.FC = () => {
 
   const handleDragStart = ({key}: {key: string; fromIndex: number}) => {
     isMovingRef.current = false
-    // showPopover(key)
-    const ref = itemRefs.current[key]
-    showPopover(key, ref)
+    showPopover(key)
   }
 
   const handleDragChange = ({key, x, y, index}: {key: string; x: number; y: number; index: number}) => {
@@ -308,7 +312,19 @@ export const ForegroundAppsGrid: React.FC = () => {
             itemRefs.current[item.packageName] = ref
           }}
           className="flex-1 items-center justify-center pt-3"
-          onPress={() => handlePress(item)}
+          onPress={() => {
+            if (showAllApps) {
+              showPopover(item.packageName)
+              return
+            }
+            handlePress(item)
+          }}
+          onLongPress={() => {
+            if (showAllApps) {
+              showPopover(item.packageName)
+              return
+            }
+          }}
           activeOpacity={0.7}>
           <AppIcon app={item} className="w-16 h-16" />
           <View className="w-full h-9 my-1 items-center justify-start">
@@ -342,6 +358,7 @@ export const ForegroundAppsGrid: React.FC = () => {
           onDragChange={handleDragChange}
           overDrag="none"
           showDropIndicator={true}
+          sortEnabled={!showAllApps}
           dropIndicatorStyle={{backgroundColor: theme.colors.primary_foreground, borderWidth: 0}}
         />
       </View>
