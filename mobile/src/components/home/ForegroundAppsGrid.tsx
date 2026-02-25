@@ -34,6 +34,9 @@ export const ForegroundAppsGrid: React.FC = () => {
   const [packageName, setPackageName] = useState<string | null>(null)
   const [orderMap, setOrderMap] = useState<OrderMap | null>(null)
 
+  const isMovingRef = useRef(false)
+  const draggingIndexRef = useRef(0)
+
   useEffect(() => {
     const result = storage.load<OrderMap>(APP_ORDER_KEY)
     if (result.is_ok()) {
@@ -63,11 +66,9 @@ export const ForegroundAppsGrid: React.FC = () => {
       filteredApps.sort(getPackageNamePriority)
     }
 
-    // make sure the number of apps is a multiple of the number of columns + GRID_COLUMNS:
     const totalItems = filteredApps.length
     const remainder = totalItems % GRID_COLUMNS
     const emptySlots = GRID_COLUMNS + remainder
-    console.log("emptySlots", emptySlots)
     for (let i = 0; i < emptySlots; i++) {
       filteredApps.push({...DUMMY_APPLET, packageName: `__empty_${filteredApps.length}`})
     }
@@ -85,30 +86,68 @@ export const ForegroundAppsGrid: React.FC = () => {
     startApplet(app.packageName)
   }
 
-  const handleLongPress = (app: ClientAppletInterface) => {
-    setPackageName(app.packageName)
-    bottomSheetRef.current?.present()
+  const handleDragStart = ({key}: {key: string; fromIndex: number}) => {
+    console.log("handleDragStart", key)
+    // dragActiveRef.current = true
+    // isMovingRef.current = false
+
+    // Show menu on long-press activation
+    const app = gridData.find((a) => a.packageName === key)
+    if (app?.name) {
+      setPackageName(app.packageName)
+      bottomSheetRef.current?.present()
+    }
+  }
+
+  const handleOrderChange = ({key, fromIndex, toIndex}: {key: string; fromIndex: number; toIndex: number}) => {
+    // console.log("handleOrderChange", key, fromIndex, toIndex)
+  }
+
+  const handleDragChange = ({key, x, y, index}: {key: string; x: number; y: number; index: number}) => {
+    console.log("handleDragChange", key, index)
+
+    if (!isMovingRef.current) {
+      isMovingRef.current = true
+      draggingIndexRef.current = index
+    }
+
+    // if we're already moving, and the index is different from the dragging index, dismiss the menu
+    if (isMovingRef.current && draggingIndexRef.current !== index) {
+      bottomSheetRef.current?.dismiss()
+    }
   }
 
   const handleDragEnd = ({data}: {data: MasonryAppItem[]}) => {
+    isMovingRef.current = false
+    // dragActiveRef.current = false
+
+    console.log("handleDragEnd")
+
+    // save to storage:
     const newOrderMap: OrderMap = {}
     data.forEach((item, index) => {
       newOrderMap[item.packageName] = index
     })
     setOrderMap(newOrderMap)
     storage.save(APP_ORDER_KEY, newOrderMap)
+
+    // // Only persist if user actually reordered
+    // if (didMoveRef.current) {
+    //   const newOrderMap: OrderMap = {}
+    //   data.forEach((item, index) => {
+    //     newOrderMap[item.packageName] = index
+    //   })
+    //   setOrderMap(newOrderMap)
+    //   storage.save(APP_ORDER_KEY, newOrderMap)
+    // }
+    // didMoveRef.current = false
   }
 
   const renderItem = useCallback(
     ({item}: {item: MasonryAppItem}) => {
       return (
-        <TouchableOpacity
-          className="items-center py-3"
-          onPress={() => handlePress(item)}
-          onLongPress={() => handleLongPress(item)}
-          activeOpacity={0.7}>
+        <TouchableOpacity className="items-center py-3" onPress={() => handlePress(item)} activeOpacity={0.7}>
           <AppIcon app={item} className="w-16 h-16" />
-          {/* <View className="w-16 h-16 bg-red-500"/> */}
           <View className="w-full h-9 my-1 items-center justify-start">
             <Text
               className="text-secondary-foreground text-center mt-1 text-[12px] shrink"
@@ -134,7 +173,10 @@ export const ForegroundAppsGrid: React.FC = () => {
         data={gridData}
         renderItem={renderItem}
         columns={GRID_COLUMNS}
+        onDragStart={handleDragStart}
         onDragEnd={handleDragEnd}
+        onOrderChange={handleOrderChange}
+        onDragChange={handleDragChange}
         overDrag="none"
       />
       <MiniAppMoreActionsSheet ref={bottomSheetRef} packageName={packageName} />
