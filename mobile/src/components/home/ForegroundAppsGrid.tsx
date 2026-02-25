@@ -20,7 +20,7 @@ import {useNavigationHistory} from "@/contexts/NavigationHistoryContext"
 
 const GRID_COLUMNS = 4
 const APP_ORDER_KEY = "foreground_apps_order"
-const POPOVER_WIDTH = 200
+const POPOVER_WIDTH = 180
 const SCREEN_PADDING = 12
 
 type MasonryAppItem = ClientAppletInterface & {id: string; height: number}
@@ -81,19 +81,19 @@ const AppPopover: React.FC<{
               {actions.map((action, index) => (
                 <View key={action.label}>
                   <Pressable
-                    className="flex-row items-center justify-between px-4 py-3 active:bg-white/10"
+                    className="flex-row items-center gap-3 px-4 py-3 active:bg-white/10"
                     onPress={() => {
                       onClose()
                       action.onPress()
                     }}>
+                    <Icon name={action.icon as any} size={24} color={action.destructive ? theme.colors.destructive : theme.colors.secondary_foreground} />
                     <Text
-                      className={`text-[15px] ${action.destructive ? "text-red-500" : "text-white"}`}
+                      className={`text-[15px] ${action.destructive ? "text-destructive" : "text-white"}`}
                       text={action.label}
                     />
                     {/* <Text
                       className={`text-[15px] ${action.destructive ? "text-red-500" : "text-white/60"}`}
                       /> */}
-                    <Icon name={action.icon as any} size={24} color={theme.colors.secondary_foreground} />
                   </Pressable>
                   {index < actions.length - 1 && <View className="h-px bg-white/10 mx-4" />}
                 </View>
