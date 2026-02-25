@@ -115,9 +115,10 @@ const AppPopover: React.FC<{
 
 interface AppsGridProps {
   showAllApps?: boolean
+  onOpenApp?: (app: ClientAppletInterface) => void
 }
 
-export function AppsGrid({showAllApps = false}: AppsGridProps) {
+export function AppsGrid({showAllApps = false, onOpenApp}: AppsGridProps) {
   const {themed, theme} = useAppTheme()
 
   const startApplet = useStartApplet()
@@ -149,7 +150,7 @@ export function AppsGrid({showAllApps = false}: AppsGridProps) {
       return true
     })
 
-    if (orderMap) {
+    if (orderMap && !showAllApps) {
       filteredApps.sort((a, b) => {
         const aIndex = orderMap[a.packageName]
         const bIndex = orderMap[b.packageName]
@@ -189,7 +190,12 @@ export function AppsGrid({showAllApps = false}: AppsGridProps) {
         label: "Open",
         icon: "external-link",
         onPress: () => {
-          if (selectedApp) startApplet(selectedApp.packageName)
+          if (selectedApp) {
+            startApplet(selectedApp.packageName)
+            if (onOpenApp) {
+              onOpenApp?.(selectedApp)
+            }
+          }
         },
       },
       {
@@ -222,9 +228,13 @@ export function AppsGrid({showAllApps = false}: AppsGridProps) {
   )
 
   const handlePress = async (app: ClientAppletInterface) => {
+    if (app.packageName.includes("__empty")) return // ignore dummy apps
     const result = await askPermissionsUI(app, theme)
     if (result !== 1) return
     startApplet(app.packageName)
+    if (onOpenApp) {
+      onOpenApp?.(app)
+    }
   }
 
   const showPopover = useCallback(
@@ -313,10 +323,10 @@ export function AppsGrid({showAllApps = false}: AppsGridProps) {
           }}
           className="flex-1 items-center justify-center pt-3"
           onPress={() => {
-            if (showAllApps) {
-              showPopover(item.packageName)
-              return
-            }
+            // if (showAllApps) {
+            //   showPopover(item.packageName)
+            //   return
+            // }
             handlePress(item)
           }}
           onLongPress={() => {
