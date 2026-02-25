@@ -1,7 +1,7 @@
-import React, { createContext, useContext, useEffect, useState } from 'react';
-import api, { Organization } from '../services/api.service';
-import { useAuth } from '@mentra/shared'
-import { toast } from 'sonner';
+import React, { createContext, useContext, useEffect, useState, useCallback, useRef } from "react";
+import api, { Organization } from "../services/api.service";
+import { useAuth } from "@mentra/shared";
+import { toast } from "sonner";
 
 /**
  * Organization context type definition
@@ -27,7 +27,7 @@ interface OrganizationContextType {
 const OrganizationContext = createContext<OrganizationContextType | undefined>(undefined);
 
 // Local storage key for persisting the current organization
-const CURRENT_ORG_STORAGE_KEY = 'mentraos_current_org';
+const CURRENT_ORG_STORAGE_KEY = "mentraos_current_org";
 
 /**
  * Provider component that wraps the app and makes organization data available
@@ -42,12 +42,25 @@ export function OrganizationProvider({ children }: { children: React.ReactNode }
   // Use isLoading from Auth context; alias to authLoading for clarity
   const { user, isLoading: authLoading, refreshUser, tokenReady } = useAuth();
 
+  // Ref-based mutex to prevent concurrent ensurePersonalOrg calls.
+  // Using a ref instead of state so that concurrent callers see the
+  // same value immediately without waiting for a re-render cycle.
+  const creatingOrgRef = useRef(false);
+
   /**
-   * Creates a personal organization for the user if none exists
-   * @returns Promise that resolves when the personal organization is created
+   * Creates a personal organization for the user if none exists.
+   *
+   * This function is memoized with useCallback so that its reference
+   * remains stable across renders. A ref-based mutex prevents multiple
+   * concurrent callers (e.g. OrganizationContext.loadOrganizations and
+   * OrganizationSettings.useEffect) from racing to create duplicate orgs.
    */
-  const ensurePersonalOrg = async (): Promise<void> => {
+  const ensurePersonalOrg = useCallback(async (): Promise<void> => {
     if (!user || !user.email) return;
+
+    // Mutex: if another call is already in-flight, bail out.
+    if (creatingOrgRef.current) return;
+    creatingOrgRef.current = true;
 
     try {
       setLoading(true);
@@ -70,7 +83,7 @@ export function OrganizationProvider({ children }: { children: React.ReactNode }
       }
 
       // Only create a new organization if the user has none
-      const emailLocalPart = user.email.split('@')[0] || 'User';
+      const emailLocalPart = user.email.split("@")[0] || "User";
       const personalOrgName = `${emailLocalPart}'s Organization`;
       const newOrg = await api.orgs.create(personalOrgName);
 
@@ -86,18 +99,37 @@ export function OrganizationProvider({ children }: { children: React.ReactNode }
         await refreshUser();
       }
     } catch (err) {
-      console.error('Error creating personal organization:', err);
-      setError(err instanceof Error ? err : new Error('Failed to create personal organization'));
-      toast.error('Failed to create organization');
+      // The create call failed — but a concurrent backend path (e.g.
+      // getConsoleAccount or findOrCreateUser) may have already created
+      // an org for us. Re-list before giving up.
+      try {
+        const retryOrgs = await api.orgs.list();
+        if (retryOrgs.length > 0) {
+          setOrgs(retryOrgs);
+          setCurrentOrgState(retryOrgs[0]);
+          localStorage.setItem(CURRENT_ORG_STORAGE_KEY, retryOrgs[0].id);
+          // Org exists — swallow the create error, no toast needed.
+          return;
+        }
+      } catch {
+        // Re-list also failed; fall through to the error reporting below.
+      }
+
+      console.error("Error creating personal organization:", err);
+      setError(err instanceof Error ? err : new Error("Failed to create personal organization"));
+      toast.error("Failed to create organization");
     } finally {
       setLoading(false);
+      creatingOrgRef.current = false;
     }
-  };
+  }, [user?.email, user?.id, refreshUser]);
+  // Note: currentOrg is intentionally excluded from deps to avoid re-creating
+  // the callback on every org change. The function reads it only for a guard check.
 
   /**
    * Loads the list of organizations from the API
    */
-  const loadOrganizations = async () => {
+  const loadOrganizations = useCallback(async () => {
     if (!user) return;
 
     try {
@@ -118,7 +150,7 @@ export function OrganizationProvider({ children }: { children: React.ReactNode }
       const storedOrgId = localStorage.getItem(CURRENT_ORG_STORAGE_KEY);
 
       if (storedOrgId && organizations.length > 0) {
-        const storedOrg = organizations.find(org => org.id === storedOrgId);
+        const storedOrg = organizations.find((org) => org.id === storedOrgId);
         if (storedOrg) {
           setCurrentOrgState(storedOrg);
         } else {
@@ -138,27 +170,27 @@ export function OrganizationProvider({ children }: { children: React.ReactNode }
       // will refresh user info periodically, so this extra call is not
       // necessary and leads to infinite re-renders.
     } catch (err) {
-      console.error('Error loading organizations:', err);
-      setError(err instanceof Error ? err : new Error('Failed to load organizations'));
+      console.error("Error loading organizations:", err);
+      setError(err instanceof Error ? err : new Error("Failed to load organizations"));
     } finally {
       setLoading(false);
     }
-  };
+  }, [user?.id, ensurePersonalOrg]);
 
   /**
    * Updates the current organization and persists to localStorage
    */
-  const setCurrentOrg = (org: Organization) => {
+  const setCurrentOrg = useCallback((org: Organization) => {
     setCurrentOrgState(org);
     localStorage.setItem(CURRENT_ORG_STORAGE_KEY, org.id);
-  };
+  }, []);
 
   /**
    * Refreshes the list of organizations
    */
-  const refreshOrgs = async () => {
+  const refreshOrgs = useCallback(async () => {
     await loadOrganizations();
-  };
+  }, [loadOrganizations]);
 
   // Load organizations when the user changes or auth loading completes
   useEffect(() => {
@@ -166,6 +198,8 @@ export function OrganizationProvider({ children }: { children: React.ReactNode }
       loadOrganizations();
     }
   }, [user?.id, authLoading, tokenReady]);
+  // Note: loadOrganizations intentionally excluded to avoid re-triggering
+  // on every callback recreation. The effect should only fire when auth state changes.
 
   // Context value that will be provided to consumers
   const contextValue: OrganizationContextType = {
@@ -175,14 +209,10 @@ export function OrganizationProvider({ children }: { children: React.ReactNode }
     refreshOrgs,
     loading,
     error,
-    ensurePersonalOrg
+    ensurePersonalOrg,
   };
 
-  return (
-    <OrganizationContext.Provider value={contextValue}>
-      {children}
-    </OrganizationContext.Provider>
-  );
+  return <OrganizationContext.Provider value={contextValue}>{children}</OrganizationContext.Provider>;
 }
 
 /**
@@ -194,7 +224,7 @@ export function useOrganization() {
   const context = useContext(OrganizationContext);
 
   if (context === undefined) {
-    throw new Error('useOrganization must be used within an OrganizationProvider');
+    throw new Error("useOrganization must be used within an OrganizationProvider");
   }
 
   return context;
