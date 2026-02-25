@@ -690,6 +690,11 @@ public class MentraLive extends SGCManager {
                                     return;
                                 }
                             }
+                            // Clear the reconnection latch before scheduling the next attempt.
+                            // Otherwise handleReconnection() immediately aborts with "already reconnecting".
+                            isReconnecting = false;
+                            Log.i(TAG, "🔌 ⏰ Reconnect scan timed out - scheduling next reconnect attempt");
+                            Bridge.log("LIVE: 🔌 ⏰ Reconnect scan timed out - scheduling next reconnect attempt");
                             handleReconnection();
                         }
                     }
@@ -786,6 +791,11 @@ public class MentraLive extends SGCManager {
         public void onScanFailed(int errorCode) {
             Log.e(TAG, "BLE scan failed with error: " + errorCode);
             isScanning = false;
+            if (isReconnecting && !isKilled) {
+                isReconnecting = false;
+                Bridge.log("LIVE: 🔌 ❌ Reconnect scan failed - scheduling next reconnect attempt");
+                handleReconnection();
+            }
         }
     };
 
