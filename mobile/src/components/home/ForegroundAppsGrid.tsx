@@ -63,7 +63,6 @@ const AppPopover: React.FC<{
   //   top = position.y - popoverHeight - 8
   // }
 
-
   return (
     <View style={StyleSheet.absoluteFill} pointerEvents="box-none">
       <Pressable style={StyleSheet.absoluteFill} onPress={onClose}>
@@ -160,7 +159,7 @@ export const ForegroundAppsGrid: React.FC = () => {
     return filteredApps.map((app) => ({
       ...app,
       id: app.packageName,
-      height: 100,
+      height: 110,
     }))
   }, [apps, appSwitcherUi, orderMap])
 
@@ -240,7 +239,7 @@ export const ForegroundAppsGrid: React.FC = () => {
         ref.measureInWindow((x, y, width, height) => {
           // console.log("x", x, "y", y, "width", width, "height", height)
           console.log("index", Math.floor(index / 4))
-          let yOffset = (Math.floor(index / GRID_COLUMNS)) * 100
+          let yOffset = Math.floor(index / GRID_COLUMNS) * 100
           // console.log("yOffset", yOffset)
           setPopoverPosition({
             x: x,
@@ -291,7 +290,11 @@ export const ForegroundAppsGrid: React.FC = () => {
   const renderItem = useCallback(
     ({item}: {item: MasonryAppItem}) => {
       return (
-        <TouchableOpacity className="items-center py-3" onPress={() => handlePress(item)} activeOpacity={0.7}>
+        <TouchableOpacity
+          className="flex-1 items-center justify-center pt-3"
+          onPress={() => handlePress(item)}
+          activeOpacity={0.7}>
+          {/* <View className="bg-blue-500 h-4 w-full z-10 flex-1" /> */}
           <View
             ref={(ref) => {
               itemRefs.current[item.packageName] = ref
@@ -306,6 +309,7 @@ export const ForegroundAppsGrid: React.FC = () => {
               text={item.name}
             />
           </View>
+          {/* <View className="bg-blue-500 h-4 w-full z-10 flex-1" /> */}
         </TouchableOpacity>
       )
     },
