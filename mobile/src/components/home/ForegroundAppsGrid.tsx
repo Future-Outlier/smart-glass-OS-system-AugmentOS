@@ -63,7 +63,7 @@ const AppPopover: React.FC<{
   if (left < 0) {
     left = 0
   }
-  
+
   if (position.screenY > screenHeight / 2) {
     top = position.y - 210
   }
@@ -122,7 +122,7 @@ export const ForegroundAppsGrid: React.FC = () => {
 
   const [orderMap, setOrderMap] = useState<OrderMap | null>(null)
   const [popoverVisible, setPopoverVisible] = useState(false)
-  const [popoverPosition, setPopoverPosition] = useState<PopoverPosition>({x: 0, y: 0})
+  const [popoverPosition, setPopoverPosition] = useState<PopoverPosition>({x: 0, y: 0, screenX: 0, screenY: 0})
   const [selectedApp, setSelectedApp] = useState<ClientAppletInterface | null>(null)
   const {push} = useNavigationHistory()
 
@@ -245,24 +245,26 @@ export const ForegroundAppsGrid: React.FC = () => {
       //   setPopoverVisible(true)
       // }
 
-      if (ref) {
-        ref.measureLayout(
-          containerRef.current as any,
-          (x, y, cWidth, cHeight) => {
-            // console.log("x", x, "y", y, "width", width, "height", height)
-            ref.measureInWindow((screenX, screenY, width, height) => {
-              setPopoverPosition({x, y, screenX, screenY})
-              setPopoverVisible(true)
-            })
-          },
-          () => console.warn("measureLayout failed"),
-        )
-      } else {
-        // fallback to center of screen:
-        const {width} = Dimensions.get("window")
-        setPopoverPosition({x: width / 2, y: 300, screenX: width / 2, screenY: 300})
+      if (!ref) {
+        // fallback to 0, 0
+        let left = 0
+        let top = 0
+        setPopoverPosition({x: left, y: top, screenX: left, screenY: 0})
         setPopoverVisible(true)
+        return
       }
+
+      ref.measureLayout(
+        containerRef.current as any,
+        (x, y, _cWidth, _cHeight) => {
+          // console.log("x", x, "y", y, "width", width, "height", height)
+          ref.measureInWindow((screenX, screenY, _width, _height) => {
+            setPopoverPosition({x, y, screenX, screenY})
+            setPopoverVisible(true)
+          })
+        },
+        () => console.warn("measureLayout failed"),
+      )
     },
     [gridData],
   )
@@ -308,7 +310,6 @@ export const ForegroundAppsGrid: React.FC = () => {
           className="flex-1 items-center justify-center pt-3"
           onPress={() => handlePress(item)}
           activeOpacity={0.7}>
-          {/* <View className="bg-blue-500 h-4 w-full z-10 flex-1" /> */}
           <AppIcon app={item} className="w-16 h-16" />
           <View className="w-full h-9 my-1 items-center justify-start">
             <Text
@@ -318,7 +319,6 @@ export const ForegroundAppsGrid: React.FC = () => {
               text={item.name}
             />
           </View>
-          {/* <View className="bg-blue-500 h-4 w-full z-10 flex-1" /> */}
         </TouchableOpacity>
       )
     },
