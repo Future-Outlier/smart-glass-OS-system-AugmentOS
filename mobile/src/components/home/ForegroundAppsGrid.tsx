@@ -1,8 +1,9 @@
 import {useCallback, useEffect, useMemo, useRef, useState} from "react"
-import {TouchableOpacity, View} from "react-native"
+import {Dimensions, Modal, Pressable, TouchableOpacity, View} from "react-native"
 import {DraggableMasonryList} from "react-native-draggable-masonry"
+import {BlurView} from "expo-blur"
 
-import {Text} from "@/components/ignite"
+import {Icon, Text} from "@/components/ignite"
 import AppIcon from "@/components/home/AppIcon"
 import {useAppTheme} from "@/contexts/ThemeContext"
 import {
@@ -14,15 +15,96 @@ import {
 } from "@/stores/applets"
 import {askPermissionsUI} from "@/utils/PermissionsUtils"
 import {SETTINGS, useSetting} from "@/stores/settings"
-import {MiniAppMoreActionsSheet} from "@/components/miniapps/DualButton"
-import {BottomSheetModal} from "@gorhom/bottom-sheet"
 import {storage} from "@/utils/storage"
+import {useNavigationHistory} from "@/contexts/NavigationHistoryContext"
 
 const GRID_COLUMNS = 4
 const APP_ORDER_KEY = "foreground_apps_order"
+const POPOVER_WIDTH = 200
+const SCREEN_PADDING = 12
 
 type MasonryAppItem = ClientAppletInterface & {id: string; height: number}
 type OrderMap = Record<string, number>
+
+interface PopoverAction {
+  label: string
+  icon: string
+  destructive?: boolean
+  onPress: () => void
+}
+
+interface PopoverPosition {
+  x: number
+  y: number
+}
+
+const AppPopover: React.FC<{
+  visible: boolean
+  position: PopoverPosition
+  actions: PopoverAction[]
+  onClose: () => void
+}> = ({visible, position, actions, onClose}) => {
+  const {theme} = useAppTheme()
+  const {width: screenWidth, height: screenHeight} = Dimensions.get("window")
+
+  // Calculate popover position, keeping it on screen
+  const popoverHeight = actions.length * 44 + 16 // approx
+  let left = position.x - POPOVER_WIDTH / 2
+  let top = position.y
+
+  // Clamp horizontal
+  if (left < SCREEN_PADDING) left = SCREEN_PADDING
+  if (left + POPOVER_WIDTH > screenWidth - SCREEN_PADDING) {
+    left = screenWidth - SCREEN_PADDING - POPOVER_WIDTH
+  }
+
+  // If popover would go off bottom, show above
+  const showAbove = top + popoverHeight > screenHeight - 40
+  if (showAbove) {
+    top = position.y - popoverHeight - 8
+  }
+
+  if (!visible) return null
+
+  return (
+    <Modal transparent animationType="fade" visible={visible} onRequestClose={onClose}>
+      <Pressable className="flex-1" onPress={onClose}>
+        <View
+          style={{
+            position: "absolute",
+            left,
+            top,
+            width: POPOVER_WIDTH,
+          }}>
+          <BlurView intensity={80} tint="systemChromeMaterialDark" className="rounded-2xl overflow-hidden">
+            <View className="py-1">
+              {actions.map((action, index) => (
+                <View key={action.label}>
+                  <Pressable
+                    className="flex-row items-center justify-between px-4 py-3 active:bg-white/10"
+                    onPress={() => {
+                      onClose()
+                      action.onPress()
+                    }}>
+                    <Text
+                      className={`text-[15px] ${action.destructive ? "text-red-500" : "text-white"}`}
+                      text={action.label}
+                    />
+                    {/* <Text
+                      className={`text-[15px] ${action.destructive ? "text-red-500" : "text-white/60"}`}
+                      /> */}
+                    <Icon name={action.icon as any} size={24} color={theme.colors.secondary_foreground} />
+                  </Pressable>
+                  {index < actions.length - 1 && <View className="h-px bg-white/10 mx-4" />}
+                </View>
+              ))}
+            </View>
+          </BlurView>
+        </View>
+      </Pressable>
+    </Modal>
+  )
+}
 
 export const ForegroundAppsGrid: React.FC = () => {
   const {themed, theme} = useAppTheme()
@@ -30,9 +112,12 @@ export const ForegroundAppsGrid: React.FC = () => {
   const startApplet = useStartApplet()
   const [appSwitcherUi] = useSetting(SETTINGS.app_switcher_ui.key)
   const apps = useForegroundApps()
-  const bottomSheetRef = useRef<BottomSheetModal>(null)
-  const [packageName, setPackageName] = useState<string | null>(null)
+
   const [orderMap, setOrderMap] = useState<OrderMap | null>(null)
+  const [popoverVisible, setPopoverVisible] = useState(false)
+  const [popoverPosition, setPopoverPosition] = useState<PopoverPosition>({x: 0, y: 0})
+  const [selectedApp, setSelectedApp] = useState<ClientAppletInterface | null>(null)
+  const {push} = useNavigationHistory()
 
   const isMovingRef = useRef(false)
   const draggingIndexRef = useRef(0)
@@ -80,67 +165,109 @@ export const ForegroundAppsGrid: React.FC = () => {
     }))
   }, [apps, appSwitcherUi, orderMap])
 
+  const dismissPopover = useCallback(() => {
+    setPopoverVisible(false)
+    setSelectedApp(null)
+  }, [])
+
+  const popoverActions: PopoverAction[] = useMemo(
+    () => [
+      {
+        label: "Open",
+        icon: "external-link",
+        onPress: () => {
+          if (selectedApp) startApplet(selectedApp.packageName)
+        },
+      },
+      {
+        label: "Settings",
+        icon: "cog",
+        onPress: () => {
+          push("/applet/settings", {
+            packageName: selectedApp?.packageName,
+            appName: selectedApp?.name,
+          })
+          // TODO: navigate to app settings
+        },
+      },
+      {
+        label: "Remove",
+        icon: "minus",
+        onPress: () => {
+          // TODO: remove from grid
+        },
+      },
+      {
+        label: "Uninstall",
+        icon: "trash",
+        destructive: true,
+        onPress: () => {
+          // TODO: uninstall app
+        },
+      },
+    ],
+    [selectedApp, startApplet],
+  )
+
   const handlePress = async (app: ClientAppletInterface) => {
     const result = await askPermissionsUI(app, theme)
     if (result !== 1) return
     startApplet(app.packageName)
   }
 
+  const showPopover = useCallback(
+    (key: string, ref?: View | null) => {
+      const app = gridData.find((a) => a.packageName === key)
+      if (!app?.name) return
+
+      setSelectedApp(app)
+
+      if (ref) {
+        ref.measureInWindow((x, y, width, height) => {
+          setPopoverPosition({
+            x: x + width / 2,
+            y: y + height + 8,
+          })
+          setPopoverVisible(true)
+        })
+      } else {
+        // Fallback: center of screen
+        const {width} = Dimensions.get("window")
+        setPopoverPosition({x: width / 2, y: 300})
+        setPopoverVisible(true)
+      }
+    },
+    [gridData],
+  )
+
   const handleDragStart = ({key}: {key: string; fromIndex: number}) => {
-    console.log("handleDragStart", key)
-    // dragActiveRef.current = true
-    // isMovingRef.current = false
-
-    // Show menu on long-press activation
-    const app = gridData.find((a) => a.packageName === key)
-    if (app?.name) {
-      setPackageName(app.packageName)
-      bottomSheetRef.current?.present()
-    }
-  }
-
-  const handleOrderChange = ({key, fromIndex, toIndex}: {key: string; fromIndex: number; toIndex: number}) => {
-    // console.log("handleOrderChange", key, fromIndex, toIndex)
+    // console.log("handleDragStart", key)
+    isMovingRef.current = false
+    showPopover(key)
   }
 
   const handleDragChange = ({key, x, y, index}: {key: string; x: number; y: number; index: number}) => {
-    console.log("handleDragChange", key, index)
-
+    // console.log("handleDragChange", key, x, y, index)
     if (!isMovingRef.current) {
       isMovingRef.current = true
       draggingIndexRef.current = index
     }
 
-    // if we're already moving, and the index is different from the dragging index, dismiss the menu
     if (isMovingRef.current && draggingIndexRef.current !== index) {
-      bottomSheetRef.current?.dismiss()
+      dismissPopover()
     }
   }
 
   const handleDragEnd = ({data}: {data: MasonryAppItem[]}) => {
+    // console.log("handleDragEnd")
     isMovingRef.current = false
-    // dragActiveRef.current = false
 
-    console.log("handleDragEnd")
-
-    // save to storage:
     const newOrderMap: OrderMap = {}
     data.forEach((item, index) => {
       newOrderMap[item.packageName] = index
     })
     setOrderMap(newOrderMap)
     storage.save(APP_ORDER_KEY, newOrderMap)
-
-    // // Only persist if user actually reordered
-    // if (didMoveRef.current) {
-    //   const newOrderMap: OrderMap = {}
-    //   data.forEach((item, index) => {
-    //     newOrderMap[item.packageName] = index
-    //   })
-    //   setOrderMap(newOrderMap)
-    //   storage.save(APP_ORDER_KEY, newOrderMap)
-    // }
-    // didMoveRef.current = false
   }
 
   const renderItem = useCallback(
@@ -175,11 +302,17 @@ export const ForegroundAppsGrid: React.FC = () => {
         columns={GRID_COLUMNS}
         onDragStart={handleDragStart}
         onDragEnd={handleDragEnd}
-        onOrderChange={handleOrderChange}
         onDragChange={handleDragChange}
         overDrag="none"
+        showDropIndicator={true}
+        dropIndicatorStyle={{backgroundColor: theme.colors.primary_foreground, borderWidth: 0}}
       />
-      <MiniAppMoreActionsSheet ref={bottomSheetRef} packageName={packageName} />
+      <AppPopover
+        visible={popoverVisible}
+        position={popoverPosition}
+        actions={popoverActions}
+        onClose={dismissPopover}
+      />
     </View>
   )
 }
