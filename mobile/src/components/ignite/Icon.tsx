@@ -166,6 +166,7 @@ const tablerIcons = {
   "chevron-up": 1,
   "alert-triangle": 1,
   "plus": 1,
+  "search": 1,
 }
 
 /**

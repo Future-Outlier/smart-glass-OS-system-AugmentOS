@@ -118,9 +118,10 @@ const AppPopover: React.FC<{
 interface AppsGridProps {
   showAllApps?: boolean
   onOpenApp?: (app: ClientAppletInterface) => void
+  searchQuery?: string
 }
 
-export function AppsGrid({showAllApps = false, onOpenApp}: AppsGridProps) {
+export function AppsGrid({showAllApps = false, onOpenApp, searchQuery}: AppsGridProps) {
   const {themed, theme} = useAppTheme()
 
   const startApplet = useStartApplet()
@@ -153,6 +154,15 @@ export function AppsGrid({showAllApps = false, onOpenApp}: AppsGridProps) {
       return true
     })
 
+    // Apply search filter if searchQuery exists
+    if (searchQuery && searchQuery.trim() !== "") {
+      const query = searchQuery.toLowerCase().trim()
+      filteredApps = filteredApps.filter((app) =>
+        app.name?.toLowerCase().includes(query) ||
+        app.packageName?.toLowerCase().includes(query)
+      )
+    }
+
     if (orderMap && !showAllApps) {
       filteredApps.sort((a, b) => {
         const aIndex = orderMap[a.packageName]
@@ -180,7 +190,7 @@ export function AppsGrid({showAllApps = false, onOpenApp}: AppsGridProps) {
       id: app.packageName,
       height: 110,
     }))
-  }, [apps, appSwitcherUi, orderMap])
+  }, [apps, appSwitcherUi, orderMap, showAllApps, searchQuery])
 
   const dismissPopover = useCallback(() => {
     setPopoverVisible(false)
