@@ -51,7 +51,7 @@ const AppPopover: React.FC<{
 
   // const popoverHeight = actions.length * 44 + 16
   let left = position.x
-  let top = position.y
+  let top = position.y + 110
   // let left = position.x - POPOVER_WIDTH / 2
   // let top = position.y
   // if (left < SCREEN_PADDING) left = SCREEN_PADDING
@@ -117,6 +117,7 @@ export const ForegroundAppsGrid: React.FC = () => {
   const [selectedApp, setSelectedApp] = useState<ClientAppletInterface | null>(null)
   const {push} = useNavigationHistory()
 
+  const containerRef = useRef<View>(null)
   const isMovingRef = useRef(false)
   const draggingIndexRef = useRef(0)
 
@@ -236,18 +237,17 @@ export const ForegroundAppsGrid: React.FC = () => {
       // }
 
       if (ref) {
-        ref.measureInWindow((x, y, width, height) => {
-          // console.log("x", x, "y", y, "width", width, "height", height)
-          console.log("index", Math.floor(index / 4))
-          let yOffset = Math.floor(index / GRID_COLUMNS) * 100
-          // console.log("yOffset", yOffset)
-          setPopoverPosition({
-            x: x,
-            y: yOffset,
-          })
-          setPopoverVisible(true)
-        })
+        ref.measureLayout(
+          containerRef.current as any,
+          (x, y, width, height) => {
+            // console.log("x", x, "y", y, "width", width, "height", height)
+            setPopoverPosition({x, y})
+            setPopoverVisible(true)
+          },
+          () => console.warn("measureLayout failed"),
+        )
       } else {
+        // fallback to center of screen:
         const {width} = Dimensions.get("window")
         setPopoverPosition({x: width / 2, y: 300})
         setPopoverVisible(true)
@@ -291,16 +291,14 @@ export const ForegroundAppsGrid: React.FC = () => {
     ({item}: {item: MasonryAppItem}) => {
       return (
         <TouchableOpacity
+          ref={(ref) => {
+            itemRefs.current[item.packageName] = ref
+          }}
           className="flex-1 items-center justify-center pt-3"
           onPress={() => handlePress(item)}
           activeOpacity={0.7}>
           {/* <View className="bg-blue-500 h-4 w-full z-10 flex-1" /> */}
-          <View
-            ref={(ref) => {
-              itemRefs.current[item.packageName] = ref
-            }}>
-            <AppIcon app={item} className="w-16 h-16" />
-          </View>
+          <AppIcon app={item} className="w-16 h-16" />
           <View className="w-full h-9 my-1 items-center justify-start">
             <Text
               className="text-secondary-foreground text-center mt-1 text-[12px] shrink"
@@ -323,17 +321,19 @@ export const ForegroundAppsGrid: React.FC = () => {
           <Text tx="home:inactiveApps" className="font-semibold text-xl text-secondary-foreground" />
         </View>
       )}
-      <DraggableMasonryList
-        data={gridData}
-        renderItem={renderItem}
-        columns={GRID_COLUMNS}
-        onDragStart={handleDragStart}
-        onDragEnd={handleDragEnd}
-        onDragChange={handleDragChange}
-        overDrag="none"
-        showDropIndicator={true}
-        dropIndicatorStyle={{backgroundColor: theme.colors.primary_foreground, borderWidth: 0}}
-      />
+      <View ref={containerRef}>
+        <DraggableMasonryList
+          data={gridData}
+          renderItem={renderItem}
+          columns={GRID_COLUMNS}
+          onDragStart={handleDragStart}
+          onDragEnd={handleDragEnd}
+          onDragChange={handleDragChange}
+          overDrag="none"
+          showDropIndicator={true}
+          dropIndicatorStyle={{backgroundColor: theme.colors.primary_foreground, borderWidth: 0}}
+        />
+      </View>
       <AppPopover
         visible={popoverVisible}
         position={popoverPosition}

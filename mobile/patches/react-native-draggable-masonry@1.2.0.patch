@@ -1,0 +1,55 @@
+diff --git a/src/DraggableMasonryList.tsx b/src/DraggableMasonryList.tsx
+index b1d22c66381324f52352690793a370b13bdc20a5..4658607dce68f558638120642bfb5f59e3012729 100644
+--- a/src/DraggableMasonryList.tsx
++++ b/src/DraggableMasonryList.tsx
+@@ -250,6 +250,7 @@ function DraggableMasonryList<T extends MasonryItemType>({
+     onDragStart,
+     onDragEnd,
+     onOrderChange,
++    onDragChange,
+     contentContainerStyle,
+ }: DraggableMasonryListProps<T>) {
+     const [containerWidth, setContainerWidth] = useState(0);
+@@ -692,6 +693,11 @@ function DraggableMasonryList<T extends MasonryItemType>({
+             setTargetInsertIndex(newTargetIndex);
+             // ドロップインジケータの位置更新はuseEffect内で行う（他のアイテムと同じタイミングで）
+         }
++
++        if (onDragChange) {
++            onDragChange({ key: id, x, y, index: newTargetIndex });
++        }
++        
+     }, [containerWidth, numColumns, rowGap, columnGap, keyExtractor, targetInsertIndex, sortEnabled]);
+ 
+     return (
+diff --git a/src/types.ts b/src/types.ts
+index 336567fcafd15d11b6efbbfab667eb63c0a45935..9f852a7947466a364fd71a8ac7b6971e4ed1ba3e 100644
+--- a/src/types.ts
++++ b/src/types.ts
+@@ -48,9 +48,17 @@ export interface OrderChangeParams {
+     toIndex: number;
+ }
+ 
++export interface DragChangeParams {
++    key: string;
++    x: number;
++    y: number;
++    index: number;
++}
++
+ export type DragStartCallback = (params: DragStartParams) => void;
+ export type DragEndCallback<T extends MasonryItem> = (params: DragEndParams<T>) => void;
+ export type OrderChangeCallback = (params: OrderChangeParams) => void;
++export type DragChangeCallback = (params: DragChangeParams) => void;
+ 
+ // ============================================================================
+ // Component Props
+@@ -142,6 +150,8 @@ export interface DraggableMasonryListProps<T extends MasonryItem> {
+     onDragEnd?: DragEndCallback<T>;
+     /** Called when order changes during drag */
+     onOrderChange?: OrderChangeCallback;
++    /** Called when drag changes */
++    onDragChange?: DragChangeCallback;
+ 
+     // ========== Style ==========
+     /** Style for the scroll view content container */

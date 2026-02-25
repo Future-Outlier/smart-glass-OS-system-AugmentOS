@@ -161,7 +161,8 @@
     }
   },
   "patchedDependencies": {
-    "expo-localization@16.0.1": "patches/expo-localization@16.0.1.patch"
+    "expo-localization@16.0.1": "patches/expo-localization@16.0.1.patch",
+    "react-native-draggable-masonry@1.2.0": "patches/react-native-draggable-masonry@1.2.0.patch"
   },
   "resolutions": {
     "@react-navigation/core": "7.12.4",
