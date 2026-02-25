@@ -824,11 +824,36 @@ const en = {
     camera: "Camera",
     settings: "Settings",
     liveCaptions: "Live Captions",
+    offlineCaptions: "Offline Captions",
     mirror: "Glasses Mirror",
     simulated: "Simulated Glasses",
     store: "Get more apps",
     lmaInstaller: "Local Store",
   },
+  appInfo: {
+    share: "Share",
+    addToHome: "Add to Home",
+    uninstall: "Uninstall",
+  },
+  lmaInstaller: {
+    installedVersions: "Installed versions",
+    miniAppInstaller: "Mini App Installer",
+    installMiniApp: "Install Mini App",
+    uninstallMiniApp: "Uninstall Mini App",
+    uninstallMiniAppConfirm: "Are you sure you want to uninstall {{appName}}?",
+    uninstallMiniAppError: "Error uninstalling mini app: {{error}}",
+    uninstallMiniAppSuccess: "{{appName}} has been uninstalled successfully",
+  },
+  dev: {
+    developerMode: "Developer mode",
+    developerModeEnabled: "Developer mode enabled!",
+    developerModeMoreTaps: "{{number}} more taps to enable developer mode",
+    superMode: "Super mode",
+    superModeActivated: "Super mode activated! 🚀",
+    superModeDeactivated: "Super mode deactivated",
+    versionInfo: "Version info",
+    versionInfoCopied: "Version info copied to clipboard",
+  }
 }
 
 export default en

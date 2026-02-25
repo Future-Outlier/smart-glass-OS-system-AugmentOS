@@ -15,6 +15,8 @@ import {
   UserRound,
   Wifi,
   WifiOff,
+  Grid3X3,
+  Share,
 } from "lucide-react-native"
 import {
   Image,
@@ -121,6 +123,8 @@ const lucideIcons = {
   "house-filled": HomeIcon,
   "ellipsis": Ellipsis,
   "minus": Minus,
+  "grid-3x3": Grid3X3,
+  "share": Share,
 }
 
 const tablerIcons = {
@@ -157,6 +161,7 @@ const tablerIcons = {
   "chevron-down": 1,
   "chevron-up": 1,
   "alert-triangle": 1,
+  "plus": 1,
 }
 
 /**

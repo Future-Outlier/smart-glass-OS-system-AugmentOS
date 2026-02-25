@@ -234,7 +234,7 @@ export default function CameraSettingsScreen() {
 }
 
 const $settingsGroup: ThemedStyle<ViewStyle> = ({colors, spacing}) => ({
-  backgroundColor: colors.backgroundAlt,
+  backgroundColor: colors.primary_foreground,
   paddingVertical: 14,
   paddingHorizontal: 16,
   borderRadius: spacing.s4,

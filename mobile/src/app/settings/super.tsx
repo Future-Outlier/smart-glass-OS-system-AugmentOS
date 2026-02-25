@@ -5,7 +5,7 @@ import ToggleSetting from "@/components/settings/ToggleSetting"
 import {Group} from "@/components/ui/Group"
 import {useNavigationHistory} from "@/contexts/NavigationHistoryContext"
 import {SETTINGS, useSetting} from "@/stores/settings"
-import { RouteButton } from "@/components/ui/RouteButton"
+import {RouteButton} from "@/components/ui/RouteButton"
 
 export default function SuperSettingsScreen() {
   const {goBack} = useNavigationHistory()
@@ -15,6 +15,7 @@ export default function SuperSettingsScreen() {
   )
   const [debugCoreStatusBarEnabled, setDebugCoreStatusBarEnabled] = useSetting(SETTINGS.debug_core_status_bar.key)
   const [appSwitcherUi, setAppSwitcherUi] = useSetting(SETTINGS.app_switcher_ui.key)
+  const [androidBlur, setAndroidBlur] = useSetting(SETTINGS.android_blur.key)
   const {push} = useNavigationHistory()
 
   return (
@@ -48,18 +49,13 @@ export default function SuperSettingsScreen() {
               value={appSwitcherUi}
               onValueChange={(value) => setAppSwitcherUi(value)}
             />
+            <ToggleSetting label="Android Blur" value={androidBlur} onValueChange={(value) => setAndroidBlur(value)} />
           </Group>
 
           <Group title="Mini Apps">
-            <RouteButton
-              label="Local Captions Example"
-              onPress={() => push("/miniapps/dev/local-captions")}
-            />
+            <RouteButton label="Local Captions Example" onPress={() => push("/miniapps/dev/local-captions")} />
 
-            <RouteButton
-              label="Local Mini App installer"
-              onPress={() => push("/miniapps/dev/mini-app-installer")}
-            />
+            <RouteButton label="Local Mini App installer" onPress={() => push("/miniapps/dev/mini-app-installer")} />
           </Group>
         </View>
       </ScrollView>

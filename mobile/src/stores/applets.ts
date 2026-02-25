@@ -70,7 +70,7 @@ export const DUMMY_APPLET: ClientAppletInterface = {
  */
 
 export const cameraPackageName = "com.mentra.camera"
-export const captionsPackageName = "com.mentra.captions"
+export const captionsPackageName = "com.mentra.offline_captions"
 export const galleryPackageName = "com.mentra.gallery"
 export const settingsPackageName = "com.mentra.settings"
 export const storePackageName = "com.mentra.store"
@@ -102,11 +102,29 @@ export const getLastOpenTime = (packageName: string): AsyncResult<number, Error>
   })
 }
 
+const getRawPackageNamePriority = (pkg: string) => {
+  switch (pkg) {
+    case cameraPackageName:
+      return 0
+    case galleryPackageName:
+      return 2
+    case settingsPackageName:
+      return 3
+    case storePackageName:
+      return 4
+    default:
+      return 1
+  }
+}
+export const getPackageNamePriority = (a: ClientAppletInterface, b: ClientAppletInterface): number => {
+  const pa = getRawPackageNamePriority(a.packageName)
+  const pb = getRawPackageNamePriority(b.packageName)
+  if (pa !== pb) return pa - pb
+  return a.name.localeCompare(b.name)
+}
+
 // get offline applets:
 const getOfflineApplets = async (): Promise<ClientAppletInterface[]> => {
-  // const offlineCameraRunning = await useSettingsStore.getState().getSetting(SETTINGS.offline_camera_running.key)
-  // const offlineCaptionsRunning = await useSettingsStore.getState().getSetting(SETTINGS.offline_captions_running.key)
-
   let miniApps: ClientAppletInterface[] = [
     {
       packageName: cameraPackageName,
@@ -127,19 +145,23 @@ const getOfflineApplets = async (): Promise<ClientAppletInterface[]> => {
       onStart: (): AsyncResult<void, Error> => {
         return Res.try_async(async () => {
           await storage.save(`${cameraPackageName}_running`, true)
+          // tell the core:
+          await useSettingsStore.getState().setSetting(SETTINGS.offline_camera_running.key, true)
           return undefined
         })
       },
       onStop: (): AsyncResult<void, Error> => {
         return Res.try_async(async () => {
           await storage.save(`${cameraPackageName}_running`, false)
+          // tell the core:
+          await useSettingsStore.getState().setSetting(SETTINGS.offline_camera_running.key, false)
           return undefined
         })
       },
     },
     {
       packageName: captionsPackageName,
-      name: translate("miniApps:liveCaptions"),
+      name: translate("miniApps:offlineCaptions"),
       type: "standard", // Foreground app (only one at a time)
       offline: true, // Works without internet connection
       // logoUrl: getCaptionsIcon(isDark),
@@ -158,6 +180,8 @@ const getOfflineApplets = async (): Promise<ClientAppletInterface[]> => {
           const modelAvailable = await STTModelManager.isModelAvailable()
           if (modelAvailable) {
             await storage.save(`${captionsPackageName}_running`, true)
+            // tell the core:
+            await useSettingsStore.getState().setSetting(SETTINGS.offline_captions_running.key, true)
             return undefined
           }
 
@@ -177,6 +201,8 @@ const getOfflineApplets = async (): Promise<ClientAppletInterface[]> => {
       onStop: (): AsyncResult<void, Error> => {
         return Res.try_async(async () => {
           await storage.save(`${captionsPackageName}_running`, false)
+          // tell the core:
+          await useSettingsStore.getState().setSetting(SETTINGS.offline_captions_running.key, false)
           return undefined
         })
       },
@@ -342,18 +368,18 @@ const startStopOfflineApplet = (applet: ClientAppletInterface, status: boolean):
       }
     }
 
-    // Captions app special handling
-    if (packageName === captionsPackageName) {
-      console.log(`APPLET: Captions app ${status ? "started" : "stopped"}`)
-      await useSettingsStore.getState().setSetting(SETTINGS.offline_captions_running.key, status)
-    }
+    // // Captions app special handling
+    // if (packageName === captionsPackageName) {
+    //   console.log(`APPLET: Captions app ${status ? "started" : "stopped"}`)
+    //   await useSettingsStore.getState().setSetting(SETTINGS.offline_captions_running.key, status)
+    // }
 
-    // Camera app special handling - track running state separately from gallery_mode
-    if (packageName === cameraPackageName) {
-      console.log(`APPLET: Camera app ${status ? "started" : "stopped"}`)
-      await useSettingsStore.getState().setSetting(SETTINGS.offline_camera_running.key, status)
-      // Note: GalleryModeSync will detect this change and update gallery_mode accordingly
-    }
+    // // Camera app special handling - track running state separately from gallery_mode
+    // if (packageName === cameraPackageName) {
+    //   console.log(`APPLET: Camera app ${status ? "started" : "stopped"}`)
+    //   await useSettingsStore.getState().setSetting(SETTINGS.offline_camera_running.key, status)
+    //   // Note: GalleryModeSync will detect this change and update gallery_mode accordingly
+    // }
   })
 }
 
@@ -417,7 +443,11 @@ export const useAppletStatusStore = create<AppStatusState>((set, get) => ({
     }
 
     // merge in the offline apps:
-    let applets: ClientAppletInterface[] = [...onlineApps, ...(await getOfflineApplets()), ...(await composer.getLocalApplets())]
+    let applets: ClientAppletInterface[] = [
+      ...onlineApps,
+      ...(await getOfflineApplets()),
+      ...(await composer.getLocalApplets()),
+    ]
     const offlineMode = useSettingsStore.getState().getSetting(SETTINGS.offline_mode.key)
 
     // remove duplicates and keep the online versions:

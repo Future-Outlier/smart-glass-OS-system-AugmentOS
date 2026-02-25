@@ -261,7 +261,7 @@ public class AsgClientServiceManager {
                 try {
                     ComManager comManager = k900Manager.getComManager();
                     if (comManager != null) {
-                        besOtaManager = new BesOtaManager(comManager);
+                        besOtaManager = new BesOtaManager(comManager, context);
                         BesOtaManager.setInstance(besOtaManager);
                         comManager.registerOtaListener(besOtaManager);
                         Log.i(TAG, "✅ BES OTA Manager initialized and registered");

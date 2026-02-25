@@ -1,12 +1,16 @@
 import {useCallback, useMemo} from "react"
-import {FlatList, TextStyle, TouchableOpacity, View} from "react-native"
-import {AutoSizeText, ResizeTextMode} from "react-native-auto-size-text"
+import {FlatList, TouchableOpacity, View} from "react-native"
 
 import {Text} from "@/components/ignite"
 import AppIcon from "@/components/home/AppIcon"
 import {useAppTheme} from "@/contexts/ThemeContext"
-import {ClientAppletInterface, DUMMY_APPLET, useForegroundApps, useStartApplet} from "@/stores/applets"
-import {ThemedStyle} from "@/theme"
+import {
+  ClientAppletInterface,
+  DUMMY_APPLET,
+  getPackageNamePriority,
+  useForegroundApps,
+  useStartApplet,
+} from "@/stores/applets"
 import {askPermissionsUI} from "@/utils/PermissionsUtils"
 import {SETTINGS, useSetting} from "@/stores/settings"
 
@@ -28,20 +32,8 @@ export const ForegroundAppsGrid: React.FC = () => {
       return true
     })
 
-    // Sort to put Camera app first, then alphabetical
-    filteredApps.sort((a, b) => {
-      const priority = (pkg: string) => {
-        if (pkg === "com.mentra.camera") return 0
-        if (pkg === "com.mentra.gallery") return 2
-        if (pkg === "com.mentra.settings") return 3
-        if (pkg === "com.mentra.store") return 4
-        return 1
-      }
-      const pa = priority(a.packageName)
-      const pb = priority(b.packageName)
-      if (pa !== pb) return pa - pb
-      return a.name.localeCompare(b.name)
-    })
+    // sort by package name priority
+    filteredApps.sort(getPackageNamePriority)
 
     // Calculate how many empty placeholders we need to fill the last row
     const totalItems = filteredApps.length
@@ -50,7 +42,12 @@ export const ForegroundAppsGrid: React.FC = () => {
 
     // Add empty placeholders to align items to the left
     for (let i = 0; i < emptySlots; i++) {
-      filteredApps.push(DUMMY_APPLET)
+      filteredApps.push({...DUMMY_APPLET, packageName: `__empty_${filteredApps.length}`})
+    }
+
+    // ensure we have at least 20 apps to make sure we can scroll
+    while (filteredApps.length < 20) {
+      filteredApps.push({...DUMMY_APPLET, packageName: `__empty_${filteredApps.length}`})
     }
 
     return filteredApps
@@ -73,7 +70,7 @@ export const ForegroundAppsGrid: React.FC = () => {
       }
 
       // small hack to help with some long app names:
-      const numberOfLines = item.name.split(" ").length > 1 ? 2 : 1
+      // const numberOfLines = item.name.split(" ").length > 1 ? 2 : 1
 
       return (
         <TouchableOpacity className="flex-1 items-center" onPress={() => handlePress(item)} activeOpacity={0.7}>
