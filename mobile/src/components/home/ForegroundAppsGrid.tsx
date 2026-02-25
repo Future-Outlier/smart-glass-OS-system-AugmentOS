@@ -21,7 +21,7 @@ import {useNavigationHistory} from "@/contexts/NavigationHistoryContext"
 const GRID_COLUMNS = 4
 const APP_ORDER_KEY = "foreground_apps_order"
 const POPOVER_WIDTH = 180
-const SCREEN_PADDING = 12
+const SCREEN_PADDING = 4*6
 
 type MasonryAppItem = ClientAppletInterface & {id: string; height: number}
 type OrderMap = Record<string, number>
@@ -56,7 +56,7 @@ const AppPopover: React.FC<{
   // let top = position.y
   // if (left < SCREEN_PADDING) left = SCREEN_PADDING
   if (left + POPOVER_WIDTH > screenWidth - SCREEN_PADDING) {
-    left = screenWidth - SCREEN_PADDING - POPOVER_WIDTH
+    left = (screenWidth - SCREEN_PADDING) - POPOVER_WIDTH
   }
   // const showAbove = top + popoverHeight > screenHeight - 40
   // if (showAbove) {
