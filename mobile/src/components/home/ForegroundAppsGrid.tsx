@@ -21,7 +21,7 @@ import {useNavigationHistory} from "@/contexts/NavigationHistoryContext"
 const GRID_COLUMNS = 4
 const APP_ORDER_KEY = "foreground_apps_order"
 const POPOVER_WIDTH = 180
-const SCREEN_PADDING = 4*6
+const SCREEN_PADDING = 4 * 12
 
 type MasonryAppItem = ClientAppletInterface & {id: string; height: number}
 type OrderMap = Record<string, number>
@@ -36,6 +36,8 @@ interface PopoverAction {
 interface PopoverPosition {
   x: number
   y: number
+  screenX: number
+  screenY: number
 }
 
 const AppPopover: React.FC<{
@@ -50,13 +52,20 @@ const AppPopover: React.FC<{
   if (!visible) return null
 
   // const popoverHeight = actions.length * 44 + 16
-  let left = position.x
+  let left = position.x - POPOVER_WIDTH / 4
   let top = position.y + 110
   // let left = position.x - POPOVER_WIDTH / 2
   // let top = position.y
   // if (left < SCREEN_PADDING) left = SCREEN_PADDING
   if (left + POPOVER_WIDTH > screenWidth - SCREEN_PADDING) {
-    left = (screenWidth - SCREEN_PADDING) - POPOVER_WIDTH
+    left = screenWidth - SCREEN_PADDING - POPOVER_WIDTH
+  }
+  if (left < 0) {
+    left = 0
+  }
+  
+  if (position.screenY > screenHeight / 2) {
+    top = position.y - 210
   }
   // const showAbove = top + popoverHeight > screenHeight - 40
   // if (showAbove) {
@@ -239,17 +248,19 @@ export const ForegroundAppsGrid: React.FC = () => {
       if (ref) {
         ref.measureLayout(
           containerRef.current as any,
-          (x, y, width, height) => {
+          (x, y, cWidth, cHeight) => {
             // console.log("x", x, "y", y, "width", width, "height", height)
-            setPopoverPosition({x, y})
-            setPopoverVisible(true)
+            ref.measureInWindow((screenX, screenY, width, height) => {
+              setPopoverPosition({x, y, screenX, screenY})
+              setPopoverVisible(true)
+            })
           },
           () => console.warn("measureLayout failed"),
         )
       } else {
         // fallback to center of screen:
         const {width} = Dimensions.get("window")
-        setPopoverPosition({x: width / 2, y: 300})
+        setPopoverPosition({x: width / 2, y: 300, screenX: width / 2, screenY: 300})
         setPopoverVisible(true)
       }
     },
