@@ -67,61 +67,67 @@ export class OrganizationService {
     }
 
     const personalOrgName = `${user.profile?.company || user.email.split("@")[0]}'s Org`;
-    const slug = await generateSlug(personalOrgName);
+
+    // Build slug inline instead of calling generateSlug() — we need a
+    // deterministic suffix derived from the user's _id so that concurrent
+    // createPersonalOrg calls for the SAME user produce the same slug.
+    // Same slug → E11000 on the unique index → caught below.
+    // Different users get different suffixes (different ObjectIds).
+    const baseSlug =
+      personalOrgName
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, "-")
+        .replace(/^-|-$/g, "") || "org";
+
+    const userSuffix = user._id.toString().slice(-8);
+    let slug = baseSlug;
+
+    const existingSlug = await Organization.findOne({ slug }).lean();
+    if (existingSlug) {
+      slug = `${baseSlug}-${userSuffix}`;
+    }
 
     // Create personal organization with user as owner
-    try {
-      const org = new Organization({
-        name: personalOrgName,
-        slug,
-        profile: {
-          contactEmail: user.email,
-          // Copy any existing profile info from user if available
-          ...(user.profile && {
-            website: user.profile.website,
-            description: user.profile.description,
-            logo: user.profile.logo,
-          }),
+    const org = new Organization({
+      name: personalOrgName,
+      slug,
+      profile: {
+        contactEmail: user.email,
+        // Copy any existing profile info from user if available
+        ...(user.profile && {
+          website: user.profile.website,
+          description: user.profile.description,
+          logo: user.profile.logo,
+        }),
+      },
+      members: [
+        {
+          user: user._id,
+          role: "admin",
+          joinedAt: new Date(),
         },
-        members: [
-          {
-            user: user._id,
-            role: "admin",
-            joinedAt: new Date(),
-          },
-        ],
-      });
+      ],
+    });
 
+    try {
       await org.save();
-
-      // Post-save dedup: if a concurrent call also created an org for this
-      // user (both passed the pre-check before either saved, and got different
-      // suffixed slugs so no E11000), deterministically keep the oldest
-      // (lowest _id — ObjectIds are monotonically increasing) and delete extras.
-      const allUserOrgs = await Organization.find({ "members.user": user._id }).sort({ _id: 1 }).lean();
-
-      if (allUserOrgs.length > 1) {
-        const winner = allUserOrgs[0];
-        const losers = allUserOrgs.slice(1);
-        const loserIds = losers.map((o) => o._id);
-
-        await Organization.deleteMany({ _id: { $in: loserIds } });
-
-        // Clean stale references from the user document
-        await User.updateOne({ _id: user._id }, { $pull: { organizations: { $in: loserIds } } });
-
-        return winner._id as Types.ObjectId;
-      }
-
       return org._id;
     } catch (error: any) {
-      // Handle duplicate slug race condition: if another concurrent call already
-      // created the org between our check and insert, look it up and return it.
       if (error?.code === 11000) {
+        // Case 1: Same-user race — a concurrent call created the org with
+        // the same deterministic slug. Look it up by membership and return it.
         const raceOrg = await Organization.findOne({ "members.user": user._id }).lean();
         if (raceOrg) {
           return raceOrg._id as Types.ObjectId;
         }
+
+        // Case 2: Different-user hash collision — two different users whose
+        // ObjectId last-8-chars match AND who share the same name prefix
+        // (≈1 in 4 billion). Fall back to a random suffix.
+        const randomSuffix = Math.random().toString(36).slice(2, 8);
+        org.slug = `${baseSlug}-${userSuffix}-${randomSuffix}`;
+        await org.save();
+        return org._id;
       }
       throw error;
     }
