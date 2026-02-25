@@ -48,6 +48,7 @@ export async function getConsoleAccount(email: string): Promise<ConsoleAccount> 
 
   // 2) Bootstrap a personal org if the user has none
   const hasOrgs = Array.isArray(user.organizations) && user.organizations.length > 0;
+  let bootstrapFailed = false;
 
   if (!hasOrgs) {
     try {
@@ -73,8 +74,11 @@ export async function getConsoleAccount(email: string): Promise<ConsoleAccount> 
         user = refreshed;
       }
     } catch (orgError) {
-      // Log but don't crash — the user may still have orgs from a
-      // concurrent path that succeeded, so we continue to the list step.
+      // Log and flag — the user may still have orgs from a concurrent
+      // path that succeeded, so we continue to the list step. But if orgs
+      // are still empty after listing, we surface the error instead of
+      // returning a broken empty account.
+      bootstrapFailed = true;
       logger.error(
         {
           error: orgError instanceof Error ? orgError.message : String(orgError),
@@ -87,6 +91,14 @@ export async function getConsoleAccount(email: string): Promise<ConsoleAccount> 
 
   // 3) List organizations for the user
   const orgs = await OrganizationService.listUserOrgs(user._id);
+
+  // If bootstrap was attempted and failed, and the user still has no orgs
+  // (meaning no concurrent path saved them), surface the error. Returning
+  // 200 with empty orgs and blank defaultOrgId masks real DB failures and
+  // leaves the console in a broken no-org state.
+  if (bootstrapFailed && orgs.length === 0) {
+    throw new ApiError(500, "Failed to create organization for user");
+  }
 
   // 4) Ensure a defaultOrgId exists (prefer user.defaultOrg; else first org)
   let defaultOrgId: string | null = user.defaultOrg ? String(user.defaultOrg) : null;

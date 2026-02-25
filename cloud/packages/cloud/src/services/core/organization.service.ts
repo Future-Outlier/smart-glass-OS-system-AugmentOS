@@ -57,11 +57,14 @@ export class OrganizationService {
    * @returns The ID of the created organization
    */
   public static async createPersonalOrg(user: UserI): Promise<Types.ObjectId> {
-    // Idempotency check: if the user already belongs to an organization, return it
-    // instead of creating a duplicate. This prevents race conditions when multiple
-    // code paths (findOrCreateUser, getConsoleAccount, frontend ensurePersonalOrg,
-    // validateSupabaseToken) all try to bootstrap a personal org concurrently.
-    const existingOrg = await Organization.findOne({ "members.user": user._id }).lean();
+    // Idempotency check: if the user already admins at least one org, return it.
+    // We check for admin role specifically — being a regular member of someone
+    // else's org doesn't mean the user can create apps there (they'd get 403s).
+    // This also correctly handles personal orgs after the user invites others
+    // (the user is still an admin regardless of member count).
+    const existingOrg = await Organization.findOne({
+      members: { $elemMatch: { user: user._id, role: "admin" } },
+    }).lean();
     if (existingOrg) {
       return existingOrg._id as Types.ObjectId;
     }
@@ -115,8 +118,10 @@ export class OrganizationService {
     } catch (error: any) {
       if (error?.code === 11000) {
         // Case 1: Same-user race — a concurrent call created the org with
-        // the same deterministic slug. Look it up by membership and return it.
-        const raceOrg = await Organization.findOne({ "members.user": user._id }).lean();
+        // the same deterministic slug. Look it up by admin membership and return it.
+        const raceOrg = await Organization.findOne({
+          members: { $elemMatch: { user: user._id, role: "admin" } },
+        }).lean();
         if (raceOrg) {
           return raceOrg._id as Types.ObjectId;
         }

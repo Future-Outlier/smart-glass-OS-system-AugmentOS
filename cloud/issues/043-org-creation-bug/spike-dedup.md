@@ -117,13 +117,41 @@ Two users whose last 8 hex chars of `_id` happen to match (1 in 4 billion).
 
 If `alex-s-org` doesn't exist at all (first alex user ever), no suffix is appended. Slug is just `alex-s-org`. Same behavior as before.
 
+### PR review findings (addressed in same commit)
+
+**Idempotency check returns wrong org (P2):**
+
+The original pre-check was `findOne({ "members.user": user._id })` — returns the first org where the user is a member. Could be a team org where they're a regular `member`, not `admin`. If `createPersonalOrg` returns that org's ID and downstream code like `resolveOrgForWrite` uses it as the default, the user gets 403s on app creation because they don't admin that org.
+
+Fix: check for admin role specifically:
+
+```ts
+const existingOrg = await Organization.findOne({
+  members: {$elemMatch: {user: user._id, role: "admin"}},
+}).lean()
+```
+
+This answers the right question: "does this user already have at least one org where they can actually create apps?" Being a regular member of someone else's org doesn't count. And it handles personal orgs correctly even after inviting others — the user is still an admin regardless of member count. No need for a "personal org" concept in the schema.
+
+**`getConsoleAccount` swallows bootstrap failures (P2):**
+
+The catch block around `createPersonalOrg` in `getConsoleAccount` logged the error but always continued, meaning a real DB failure would return 200 with empty orgs and blank `defaultOrgId`. The frontend would see no orgs and show a vague "Failed to load organizations" instead of a proper error.
+
+Fix: track whether the catch block fired (`bootstrapFailed` flag). After listing orgs, if `bootstrapFailed && orgs.length === 0`, throw `ApiError(500)` instead of returning a broken empty account. If orgs ARE found (concurrent path succeeded), the flag is harmless and we return normally.
+
 ### What changes
 
 **`organization.service.ts` — `createPersonalOrg` only:**
 
-1. Build slug inline instead of calling `generateSlug()` — need the user's `_id` for the suffix, which `generateSlug` doesn't have access to
-2. On base slug collision: append `user._id.toString().slice(-8)` instead of `Math.random().toString(36).slice(2, 8)`
-3. In E11000 catch: after the existing same-user lookup fails (meaning it's a different-user hash collision), retry with a random suffix as fallback
+1. Idempotency check: `$elemMatch` for `{ user: user._id, role: "admin" }` instead of just `{ "members.user": user._id }`
+2. Build slug inline instead of calling `generateSlug()` — need the user's `_id` for the suffix, which `generateSlug` doesn't have access to
+3. On base slug collision: append `user._id.toString().slice(-8)` instead of `Math.random().toString(36).slice(2, 8)`
+4. In E11000 catch: same `$elemMatch` admin lookup for consistency; after that fails (different-user hash collision), retry with random suffix
+
+**`console.account.service.ts` — `getConsoleAccount` only:**
+
+1. `bootstrapFailed` flag set in catch block
+2. After `listUserOrgs`, if `bootstrapFailed && orgs.length === 0` → throw `ApiError(500)` instead of returning empty
 
 No changes to `generateSlug()` itself — it's used by `createOrg` (manual creation) where random suffixes are correct.
 
