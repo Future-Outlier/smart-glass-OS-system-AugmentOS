@@ -1,9 +1,9 @@
-import { AppSession } from "@mentra/sdk"
-import { PhotoManager } from "./managers/PhotoManager"
-import { TranscriptionManager } from "./managers/TranscriptionManager"
-import { AudioManager } from "./managers/AudioManager"
-import { StorageManager } from "./managers/StorageManager"
-import { InputManager } from "./managers/InputManager"
+import {AppSession} from "@mentra/sdk"
+import {PhotoManager} from "./managers/PhotoManager"
+import {TranscriptionManager} from "./managers/TranscriptionManager"
+import {AudioManager} from "./managers/AudioManager"
+import {StorageManager} from "./managers/StorageManager"
+import {InputManager} from "./managers/InputManager"
 
 /**
  * UserSession — per-user state container.
@@ -11,8 +11,53 @@ import { InputManager } from "./managers/InputManager"
  * Composes all managers and holds the glasses AppSession.
  * Created when a user connects (glasses or webview) and
  * destroyed when the session is cleaned up.
+ *
+ * Use static methods for session lookup:
+ *   UserSession.getOrCreate(userId)
+ *   UserSession.get(userId)
+ *   UserSession.remove(userId)
+ *
+ * The sessions Map lives on globalThis to prevent the duplicate-module bug:
+ * if this file gets imported via different paths (e.g., "../UserSession" vs
+ * "@/backend/UserSession"), Bun treats them as separate modules — each with
+ * its own static fields. globalThis is process-wide, so no matter how many
+ * times the module loads, everyone shares the same Map.
  */
+
+// Single process-wide sessions store — survives duplicate module loads
+const SESSIONS_KEY = Symbol.for("mentra.mini-app.sessions")
+;(globalThis as any)[SESSIONS_KEY] ??= new Map<string, UserSession>()
+
 export class UserSession {
+  /** All active sessions by userId (process-wide singleton via globalThis) */
+  private static get sessions(): Map<string, UserSession> {
+    return (globalThis as any)[SESSIONS_KEY]
+  }
+
+  /** Get an existing session or create a new one */
+  static getOrCreate(userId: string): UserSession {
+    let session = UserSession.sessions.get(userId)
+    if (!session) {
+      session = new UserSession(userId)
+      UserSession.sessions.set(userId, session)
+    }
+    return session
+  }
+
+  /** Get an existing session (undefined if not found) */
+  static get(userId: string): UserSession | undefined {
+    return UserSession.sessions.get(userId)
+  }
+
+  /** Clean up and remove a session */
+  static remove(userId: string): void {
+    const session = UserSession.sessions.get(userId)
+    if (session) {
+      session.cleanup()
+      UserSession.sessions.delete(userId)
+    }
+  }
+
   /** Active glasses connection, null when webview-only */
   appSession: AppSession | null = null
 
@@ -57,29 +102,5 @@ export class UserSession {
     this.transcription.destroy()
     this.photo.destroy()
     this.appSession = null
-  }
-}
-
-// ─── Session store (replaces SessionManager class) ───────────────────────────
-
-/** Plain Map — import this wherever you need to look up sessions */
-export const sessions = new Map<string, UserSession>()
-
-/** Get an existing session or create a new one */
-export function getOrCreateSession(userId: string): UserSession {
-  let session = sessions.get(userId)
-  if (!session) {
-    session = new UserSession(userId)
-    sessions.set(userId, session)
-  }
-  return session
-}
-
-/** Clean up and remove a session */
-export function removeSession(userId: string): void {
-  const session = sessions.get(userId)
-  if (session) {
-    session.cleanup()
-    sessions.delete(userId)
   }
 }

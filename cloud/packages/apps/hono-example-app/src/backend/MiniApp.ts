@@ -5,8 +5,8 @@
  * All per-user state is managed by the UserSession class.
  */
 
-import { AppServer, AppSession } from "@mentra/sdk"
-import { getOrCreateSession, removeSession } from "./UserSession"
+import {AppServer, AppSession} from "@mentra/sdk"
+import {UserSession} from "./UserSession"
 
 export interface MiniAppConfig {
   packageName: string
@@ -26,21 +26,13 @@ export class MiniApp extends AppServer {
   }
 
   /** Called when a user launches the app on their glasses */
-  protected async onSession(
-    session: AppSession,
-    sessionId: string,
-    userId: string,
-  ): Promise<void> {
-    const userSession = getOrCreateSession(userId)
+  protected async onSession(session: AppSession, sessionId: string, userId: string): Promise<void> {
+    const userSession = UserSession.getOrCreate(userId)
     userSession.setAppSession(session)
   }
 
   /** Called when a user closes the app or disconnects */
-  protected async onStop(
-    sessionId: string,
-    userId: string,
-    reason: string,
-  ): Promise<void> {
-    removeSession(userId)
+  protected async onStop(sessionId: string, userId: string, reason: string): Promise<void> {
+    UserSession.remove(userId)
   }
 }
