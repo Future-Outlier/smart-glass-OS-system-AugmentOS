@@ -1,8 +1,9 @@
 import mantle from "./MantleManager"
 import CoreModule from "core"
 
+type MiniAppMessageType = "core_fn" | "request_mic" | "request_transcription" | "display_event" | "button_click" | "page_ready" | "custom_action"
 export interface MiniAppMessage {
-  type: string
+  type: MiniAppMessageType
   payload?: any
   timestamp?: number
 }

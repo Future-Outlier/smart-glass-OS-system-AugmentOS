@@ -289,6 +289,7 @@ class Composer {
         healthy: true,
         loading: false,
         offline: false,
+        hidden: false,
         offlineRoute: "",
         name: versionInfo.name,
         webviewUrl: "",
