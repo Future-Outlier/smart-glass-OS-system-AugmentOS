@@ -190,6 +190,7 @@ export const SYSTEM_APPS = [
   storePackageName,
   simulatedPackageName,
   mirrorPackageName,
+  "com.mentra.captions",
 ]
 
 // get offline applets:

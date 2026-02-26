@@ -239,17 +239,16 @@ export function AppsGrid({showAllApps = false, onOpenApp, onAddToHome, searchQue
             })
           },
         },
-        !showAllApps &&
-          !SYSTEM_APPS.includes(selectedApp?.packageName || "") && {
-            label: translate("appInfo:remove"),
-            icon: "minus",
-            onPress: () => {
-              if (selectedApp) {
-                useAppletStatusStore.getState().setHiddenStatus(selectedApp.packageName, true)
-                // useAppletStatusStore.getState().refreshApplets()
-              }
-            },
+        !showAllApps && {
+          label: translate("appInfo:remove"),
+          icon: "minus",
+          onPress: () => {
+            if (selectedApp) {
+              useAppletStatusStore.getState().setHiddenStatus(selectedApp.packageName, true)
+              // useAppletStatusStore.getState().refreshApplets()
+            }
           },
+        },
         showAllApps &&
           selectedApp?.hidden && {
             label: translate("appInfo:addToHome"),
@@ -378,6 +377,9 @@ export function AppsGrid({showAllApps = false, onOpenApp, onAddToHome, searchQue
             handlePress(item)
           }}
           onLongPress={() => {
+            if (!appSwitcherUi) {
+              return
+            }
             if (showAllApps) {
               showPopover(item.packageName)
               return
