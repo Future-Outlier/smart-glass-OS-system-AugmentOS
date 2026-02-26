@@ -42,7 +42,8 @@ The phone's audio player (`expo-audio` `AudioPlayer`) only accepts URIs. Any str
 ## Constraints
 
 - **No LiveKit.** LiveKit was removed from the mobile app. Not an option for transport.
-- **No raw WebSocket audio path to mobile.** The phone ↔ cloud WebSocket carries JSON messages. Binary audio frames are only used on the glasses ↔ cloud path and the cloud ↔ SDK app path. Adding binary audio to the phone WebSocket would require mobile-side changes to demux and play raw audio.
+- **No WebSocket for audio output.** WS audio streaming had too many issues historically — banned for this direction. The phone ↔ cloud WebSocket carries JSON messages only. Audio output goes through HTTP (cloud relay serves a streaming URL that the phone plays).
+- **WS is OK for SDK → cloud push.** The SDK ↔ cloud WebSocket already carries binary audio frames (mic input direction). We can reuse this for pushing MP3 frames from SDK to cloud relay. The ban is on WS audio to the phone, not on the SDK→cloud leg.
 - **expo-audio is the mobile audio player.** The phone uses `expo-audio`'s `AudioPlayer` (ExoPlayer on Android, AVPlayer on iOS). ExoPlayer supports HTTP progressive streaming (MP3, AAC, OGG) natively — it can start playing before the full file downloads. AVPlayer also supports progressive HTTP streaming.
 - **BLE bandwidth to glasses is limited.** Audio sent from phone to glasses over BLE is already bandwidth-constrained. The glasses speaker is mono, low sample rate.
 - **SDK apps run on developer's servers.** They're not directly reachable from the phone — all communication goes through the cloud.
@@ -80,54 +81,59 @@ Developer generates audio programmatically (sonification, alerts, generative mus
 ## SDK API Surface (draft)
 
 ```typescript
-// Start a stream — tells cloud + mobile to prepare for incoming audio
+// Option 1: Developer already has MP3 (ElevenLabs, OpenAI, Cartesia, Azure)
+// Most common case — no encoding needed, just pass MP3 bytes through
+const stream = await session.audio.createOutputStream({ format: 'mp3' })
+elevenlabs.onChunk((mp3Bytes) => stream.write(mp3Bytes))
+stream.end()
+
+// Option 2: Developer has raw PCM (Gemini Live)
+// SDK encodes PCM → MP3 on the developer's server before sending
 const stream = await session.audio.createOutputStream({
-  sampleRate: 24000,       // PCM sample rate (Gemini outputs 24kHz)
-  encoding: 'pcm16',       // 16-bit signed PCM, little-endian
+  sampleRate: 24000,       // PCM input sample rate
+  encoding: 'pcm16',       // SDK auto-encodes to MP3 before sending
   channels: 1,             // mono
 })
-
-// Push audio data as it arrives
-stream.write(pcmBuffer)    // Buffer of PCM bytes
-stream.write(pcmBuffer2)   // keep pushing...
+stream.write(pcmBuffer)    // PCM goes in, MP3 comes out over the wire
+stream.end()
 
 // Flush/interrupt (user started talking, discard buffered audio)
 stream.flush()
-
-// End the stream cleanly
-stream.end()
 
 // Events
 stream.on('error', (err) => { ... })
 stream.on('drain', () => { ... })  // backpressure signal
 ```
 
+## Decisions Made
+
+1. **Transport: Option A — HTTP streaming relay on cloud.**
+   SDK pushes MP3 frames to cloud (via existing WS binary frames). Cloud holds an HTTP response open. Phone plays the stream URL via ExoPlayer/AVPlayer. No WS audio to the phone.
+
+2. **Encoding: SDK-side.** Cloud does zero transcoding (just `pipe()` bytes). SDK encodes PCM → MP3 on the developer's server if needed. Most providers output MP3 natively — no encoding needed. SDK ships `lamejs` as optional helper for Gemini Live (PCM-only) use case.
+
+3. **Wire format: MP3.** Universal cross-platform support. Self-framing (no container needed). Opus ruled out due to iOS container incompatibility (no single container works on both Android and iOS).
+
+4. **No cloud CPU risk.** If cloud-side encoding is needed in the future, it runs as a separate microservice that scales independently and can't freeze the main cloud.
+
 ## Open Questions
 
-1. **Transport: how do chunks get from SDK → cloud → phone?**
-   - Option A: HTTP streaming relay on cloud (SDK POSTs chunks, phone GETs a stream URL)
-   - Option B: SDK hosts HTTP stream endpoint, cloud proxies it
-   - Option C: Chunks sent over existing WebSocket, new message type
-   - See architecture doc for full evaluation
+1. **Does ExoPlayer/AVPlayer reliably start playing HTTP progressive MP3 streams with <500ms buffering?**
+   - ExoPlayer default `DefaultLoadControl`: minBufferMs=2500. Can we tune to ~100ms for streaming sources?
+   - AVPlayer may need `preferredForwardBufferDuration` tuning
+   - **Need to benchmark on a real device — this is the Phase 1 gate.**
 
-2. **Encoding: who transcodes PCM → streamable format?**
-   - SDK transcodes before sending (simpler cloud, more SDK work)
-   - Cloud transcodes on relay (simpler SDK API, cloud does more)
-   - No transcoding — send raw PCM (simplest, but needs custom mobile player)
+2. **How does interruption work end-to-end?**
+   - SDK calls `stream.flush()` → cloud closes the HTTP response → ExoPlayer stops playback
+   - Is closing the HTTP response enough? Or need an explicit stop signal via WS?
+   - **Need to test.**
 
-3. **Does ExoPlayer/AVPlayer reliably start playing HTTP progressive streams with <500ms buffering?**
-   - Need to benchmark with MP3 and OGG/Opus chunked HTTP responses
-   - ExoPlayer's default buffer config may add seconds of latency — may need tuning
-
-4. **How does interruption work end-to-end?**
-   - SDK calls `stream.flush()` → cloud needs to signal phone → phone stops playback
-   - Is closing the HTTP response enough? Or need an explicit stop signal?
-
-5. **Multiple concurrent streams?**
+3. **Multiple concurrent streams?**
    - Can a developer stream audio while another app uses `playAudio(url)`?
    - Track ID system already exists (0=speaker, 1=app_audio, 2=tts) — extend it?
+   - **Start with**: one stream at a time, auto-ends previous.
 
-6. **What happens on bad network?**
+4. **What happens on bad network?**
    - Phone buffers run dry → audio stutters
    - SDK sends faster than phone can play → cloud buffer grows unbounded
-   - Need backpressure or max buffer policy
+   - Need backpressure or max buffer policy (cap relay buffer at ~5s of audio)

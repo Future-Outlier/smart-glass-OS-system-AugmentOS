@@ -233,57 +233,35 @@ Gaps between segments are the main problem. Even with gapless playback via ExoPl
 
 ---
 
-### Option C: WebSocket Binary Frames to Phone
+### Option C: WebSocket Binary Frames to Phone ❌ RULED OUT
 
-Add a new binary audio output path on the phone ↔ cloud WebSocket. The phone receives raw PCM frames and plays them using a custom native audio module (bypassing expo-audio).
+~~Add a new binary audio output path on the phone ↔ cloud WebSocket.~~
 
-```
-SDK App --WS binary--> Cloud --WS binary--> Phone (custom native AudioTrack/AVAudioEngine)
-```
+**Banned.** WS audio streaming to the phone had too many reliability issues historically. The phone ↔ cloud WebSocket carries JSON only. This option is documented for completeness but is not a viable path.
 
-#### How it works
-
-1. SDK calls `session.audio.createOutputStream({sampleRate: 24000})`
-2. SDK sends PCM chunks as WS binary frames to cloud
-3. Cloud relays binary frames to phone's WebSocket (new message type / binary channel)
-4. Phone native module receives PCM bytes, writes to AudioTrack (Android) / AVAudioEngine (iOS)
-5. AudioTrack/AVAudioEngine plays immediately with minimal buffering
-
-#### Latency analysis
-
-| Hop | Latency |
-|---|---|
-| SDK → Cloud (WS binary) | ~5-50ms |
-| Cloud → Phone (WS binary) | ~5-50ms |
-| AudioTrack/AVAudioEngine buffer | ~20-60ms (configurable) |
-| Phone → Glasses (BLE) | ~20-50ms |
-| **Total first-byte** | **~50-210ms** |
-
-This is the lowest possible latency. No transcoding, no HTTP buffering, no file downloads.
-
-- **Pros**: Lowest latency. Simplest data path (just relay binary frames). No transcoding needed. No HTTP endpoints to manage. Full control over playback buffer size.
-- **Cons**: **Requires a new React Native native module** for streaming PCM playback on both iOS and Android. expo-audio can't do this. The phone ↔ cloud WebSocket currently only carries JSON — need to add binary frame handling (or a parallel connection). Need to handle jitter, out-of-order packets (TCP so ordering is guaranteed, but timing isn't). No built-in codec — raw PCM is ~384kbps at 24kHz/16-bit/mono, which is fine over WiFi but notable over cellular. WebSocket over TCP means head-of-line blocking on packet loss.
+Would have been the lowest latency (~50-210ms first-byte) but requires a new React Native native module for streaming PCM playback on both platforms, plus binary frame handling on the phone WebSocket — all of which we've decided against.
 
 ---
 
 ## Comparison Matrix
 
-| | Option A: HTTP Relay | Option B: Chunked Files | Option C: WS Binary |
+| | Option A: HTTP Relay ✅ | Option B: Chunked Files (fallback) | Option C: WS Binary ❌ |
 |---|---|---|---|
-| **First-byte latency** | 180-700ms | 230-600ms | 50-210ms |
+| **First-byte latency** | 130-650ms | 230-600ms | 50-210ms |
 | **Gaps/stuttering** | Smooth (continuous stream) | Gaps at segment boundaries | Smooth (continuous) |
 | **Mobile changes** | Maybe tune ExoPlayer buffer | None | New native module (both platforms) |
-| **Cloud changes** | New relay endpoint + transcoder | Segment storage endpoint | Binary frame relay |
+| **Cloud changes** | New relay endpoint (dumb pipe) | Segment storage endpoint | Binary frame relay |
 | **SDK changes** | New output stream API | New segment accumulator | New output stream API |
-| **Bandwidth** | Low (MP3/Opus compressed) | Low (MP3 compressed) | High (raw PCM, ~384kbps) |
+| **Bandwidth** | Low (MP3 compressed) | Low (MP3 compressed) | High (raw PCM, ~384kbps) |
 | **Complexity** | Medium | Low | High |
 | **Interruption** | Close HTTP response | Stop playing, discard queue | Stop writing to AudioTrack |
-| **Works offline/P2P** | No (needs cloud relay) | No (needs cloud) | No (needs cloud) |
+| **WS audio to phone** | No (HTTP only) | No | Yes — **banned** |
 | **Concurrent with playAudio()** | Yes (different URL) | Yes (same system) | Needs track management |
+| **Status** | **Selected** | Fallback if A fails | Ruled out |
 
 ## Recommendation
 
-**Option A with SDK-side encoding. Cloud is a zero-CPU dumb pipe.**
+**Option A with SDK-side encoding. Cloud is a zero-CPU dumb pipe. Option C ruled out (WS audio to phone banned).**
 
 Rationale:
 
@@ -295,7 +273,7 @@ Rationale:
 
 4. **Most developers won't encode at all.** ElevenLabs, Cartesia, Azure, OpenAI all output MP3 natively. The SDK just passes MP3 bytes through. Only Gemini Live (PCM output) needs the SDK-side encoder helper.
 
-5. **Upgrade path.** If latency testing shows that HTTP buffering is too much for conversational AI, we can evaluate Option C (native audio module) as a "low-latency mode." The SDK API (`createOutputStream` / `write` / `end` / `flush`) stays the same — only the transport changes.
+5. **No WS audio to phone.** WS audio streaming had too many reliability issues historically. Option C is ruled out. If Option A's HTTP latency isn't good enough, Option B (chunked files) is the fallback — not WS.
 
 6. **Option B is a fallback** if A turns out to be harder than expected. Chunked playback is dead simple but the gaps may be unacceptable for voice.
 
@@ -335,8 +313,8 @@ This would be a small stateless service: receives PCM via HTTP/WS, encodes with 
 - Metrics (latency, buffer underruns, stream duration)
 
 **If Phase 1 shows >700ms first-byte latency that can't be tuned down:**
-- Fall back to Option B for a quick win
-- Evaluate Option C (native audio module) for production low-latency
+- Fall back to Option B (chunked file segments) for a quick win
+- Option C (WS binary to phone) is not on the table — WS audio to phone is banned
 
 ## Open Questions
 
@@ -357,7 +335,7 @@ This would be a small stateless service: receives PCM via HTTP/WS, encodes with 
    - **Leaning**: Ship `lamejs` as the built-in helper. It's pure JS, works everywhere Bun/Node runs, fast enough for real-time mono audio. Make it an optional dependency so developers who send MP3 directly don't pay the cost.
 
 4. **How does the SDK push MP3 chunks to the cloud relay?**
-   - **Option 4a**: Send MP3 as WS binary frames on the existing app↔cloud WebSocket (tag with streamId header). Cloud demuxes and routes to the relay.
+   - **Option 4a**: Send MP3 as WS binary frames on the existing app↔cloud WebSocket (tag with streamId header). Cloud demuxes and routes to the relay. Note: WS binary is fine for SDK→cloud — the ban is only on WS audio to the phone.
    - **Option 4b**: SDK opens a separate HTTP POST with chunked transfer encoding to the relay endpoint. Keeps audio traffic off the main WebSocket.
    - **Leaning**: 4a (WS binary on existing connection) is simpler and avoids authentication complexity for a new HTTP endpoint. Audio input already uses WS binary frames in the other direction — symmetric.
 
