@@ -179,13 +179,25 @@ export function AppsGrid({showAllApps = false, onOpenApp, onAddToHome, searchQue
     const totalItems = filteredApps.length
     const remainder = totalItems % GRID_COLUMNS
     const MIN_APPS = 20
-    let emptySlots = remainder
+    let emptySlots = GRID_COLUMNS - remainder
+    if (remainder == 0) {
+      emptySlots = 0
+    }
     if (appSwitcherUi) {
-      emptySlots = Math.max(emptySlots, MIN_APPS - totalItems)
+      // console.log("MIN_APPS", MIN_APPS, "totalItems", totalItems)
+      // console.log("emptySlots", emptySlots)
+      // emptySlots = Math.max(emptySlots, MIN_APPS - totalItems)
+      while (emptySlots + totalItems < MIN_APPS) {
+        emptySlots += GRID_COLUMNS
+      }
+      if (emptySlots < GRID_COLUMNS) {
+        emptySlots += GRID_COLUMNS
+      }
     }
     if (showAllApps) {
       emptySlots = 0
     }
+    
     for (let i = 0; i < emptySlots; i++) {
       filteredApps.push({...DUMMY_APPLET, packageName: `__empty_${i}`})
     }
