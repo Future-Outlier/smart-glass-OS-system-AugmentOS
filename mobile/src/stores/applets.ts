@@ -339,8 +339,24 @@ const getOfflineApplets = async (): Promise<ClientAppletInterface[]> => {
       type: "background",
       logoUrl: require("@assets/applet-icons/store.png"),
       local: false,
-      onStart: () => saveLocalAppRunningState(storePackageName, true),
-      onStop: () => saveLocalAppRunningState(storePackageName, false),
+      onStart: () => {
+        return Res.try_async(async () => {
+          const appSwitcherUi = useSettingsStore.getState().getSetting(SETTINGS.app_switcher_ui.key)
+          if (!appSwitcherUi) {
+            saveLocalAppRunningState(storePackageName, true)
+          }
+          return undefined
+        })
+      },
+      onStop: () => {
+        return Res.try_async(async () => {
+          const appSwitcherUi = useSettingsStore.getState().getSetting(SETTINGS.app_switcher_ui.key)
+          if (!appSwitcherUi) {
+            saveLocalAppRunningState(storePackageName, false)
+          }
+          return undefined
+        })
+      },
     },
     {
       packageName: mirrorPackageName,
