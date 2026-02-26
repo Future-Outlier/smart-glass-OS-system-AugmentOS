@@ -25,6 +25,7 @@ declare class CoreModule extends NativeModule<CoreModuleEvents> {
   forget(): Promise<void>
   findCompatibleDevices(deviceModel: string): Promise<void>
   showDashboard(): Promise<void>
+  ping(): Promise<void>
 
   // WiFi Commands
   requestWifiScan(): Promise<void>
@@ -47,6 +48,9 @@ declare class CoreModule extends NativeModule<CoreModuleEvents> {
   // OTA Commands
   sendOtaStart(): Promise<void>
 
+  // Version Info Commands
+  requestVersionInfo(): Promise<void>
+
   // Video Recording Commands
   startBufferRecording(): Promise<void>
   stopBufferRecording(): Promise<void>
@@ -62,6 +66,11 @@ declare class CoreModule extends NativeModule<CoreModuleEvents> {
   // Microphone Commands
   setMicState(sendPcmData: boolean, sendTranscript: boolean, bypassVad: boolean): Promise<void>
   restartTranscriber(): Promise<void>
+
+  // Audio Playback Monitoring
+  // Notify native side when our app starts/stops playing audio
+  // Used to suspend LC3 mic during audio playback to avoid MCU overload
+  setOwnAppAudioPlaying(playing: boolean): Promise<void>
 
   // RGB LED Control
   rgbLedControl(

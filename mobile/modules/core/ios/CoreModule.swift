@@ -20,6 +20,7 @@ public class CoreModule: Module {
             "wifi_status_change",
             "hotspot_status_change",
             "hotspot_error",
+            "photo_response",
             "gallery_status",
             "compatible_glasses_search_stop",
             "heartbeat_sent",
@@ -41,8 +42,7 @@ public class CoreModule: Module {
             "keep_alive_ack",
             "mtk_update_complete",
             "ota_update_available",
-            "ota_progress",
-            "version_info"
+            "ota_progress"
         )
 
         OnCreate {
@@ -146,6 +146,12 @@ public class CoreModule: Module {
             }
         }
 
+        AsyncFunction("ping") {
+            await MainActor.run {
+                CoreManager.shared.ping()
+            }
+        }
+
         // MARK: - WiFi Commands
 
         AsyncFunction("requestWifiScan") {
@@ -197,6 +203,28 @@ public class CoreModule: Module {
         AsyncFunction("sendOtaStart") {
             await MainActor.run {
                 CoreManager.shared.sendOtaStart()
+            }
+        }
+
+        // MARK: - Version Info Commands
+
+        AsyncFunction("requestVersionInfo") {
+            await MainActor.run {
+                CoreManager.shared.requestVersionInfo()
+            }
+        }
+
+        // MARK: - Power Control Commands
+
+        AsyncFunction("sendShutdown") {
+            await MainActor.run {
+                CoreManager.shared.sendShutdown()
+            }
+        }
+
+        AsyncFunction("sendReboot") {
+            await MainActor.run {
+                CoreManager.shared.sendReboot()
             }
         }
 
@@ -264,6 +292,14 @@ public class CoreModule: Module {
             await MainActor.run {
                 CoreManager.shared.restartTranscriber()
             }
+        }
+
+        // MARK: - Audio Playback Monitoring
+
+        AsyncFunction("setOwnAppAudioPlaying") { (playing: Bool) in
+            // Notify PhoneAudioMonitor that our app started/stopped playing audio
+            // This is used to suspend LC3 mic during audio playback to avoid MCU overload
+            PhoneAudioMonitor.getInstance().setOwnAppAudioPlaying(playing)
         }
 
         // MARK: - RGB LED Control

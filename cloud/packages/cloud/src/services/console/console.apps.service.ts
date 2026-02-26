@@ -3,6 +3,7 @@ import App from "../../models/app.model";
 import { User, UserI } from "../../models/user.model";
 import { OrganizationService } from "../core/organization.service";
 import { generateApiKey, hashApiKey } from "../core/developer.service";
+import { isMentraAdmin } from "../core/admin.utils";
 import { slackService } from "../notifications/slack.service";
 import { logger as rootLogger } from "../logging/pino-logger";
 const logger = rootLogger.child({ service: "console.apps.service" });
@@ -200,13 +201,6 @@ export async function createApp(
     }
   }
 
-  // Default permissions: if none were provided, grant MICROPHONE so the app
-  // isn't deaf out of the box.  The dev console pre-fills this in its form;
-  // this ensures CLI / API callers get the same sensible default.
-  if (!doc.permissions || !Array.isArray(doc.permissions) || doc.permissions.length === 0) {
-    doc.permissions = [{ type: "MICROPHONE" }];
-  }
-
   try {
     const created = await App.create(doc);
     const leanCreated = (await App.findById(created._id).lean()) || doc;
@@ -317,8 +311,13 @@ export async function deleteApp(email: string, packageName: string): Promise<voi
 }
 
 /**
- * Publish an app (must be admin of the owning org).
- * For now, toggle appStoreStatus to "PUBLISHED".
+ * Publish an app to the MentraOS Store.
+ *
+ * - Mentra admins (@mentra.glass / @mentraglass.com / ADMIN_EMAILS)
+ *   bypass review and set the app directly to "PUBLISHED".
+ * - All other org admins submit the app for review ("SUBMITTED").
+ *
+ * In both cases the caller must be an admin of the owning organization.
  */
 export async function publishApp(email: string, packageName: string): Promise<any> {
   if (!packageName) throw new ApiError(400, "packageName is required");
@@ -328,13 +327,22 @@ export async function publishApp(email: string, packageName: string): Promise<an
   if (!appDoc) throw new ApiError(404, "App not found");
 
   if (appDoc.organizationId) {
-    const isAdmin = await OrganizationService.isOrgAdmin(user, appDoc.organizationId);
-    if (!isAdmin) throw new ApiError(403, "Forbidden");
+    const isOrgAdmin = await OrganizationService.isOrgAdmin(user, appDoc.organizationId);
+    if (!isOrgAdmin) throw new ApiError(403, "Forbidden");
   } else {
     throw new ApiError(409, "App has no organizationId");
   }
 
-  appDoc.appStoreStatus = "PUBLISHED";
+  // Only Mentra platform admins can publish directly; everyone else
+  // submits for review.
+  if (isMentraAdmin(email)) {
+    appDoc.appStoreStatus = "PUBLISHED";
+    logger.info({ email, packageName }, "Mentra admin directly published app");
+  } else {
+    appDoc.appStoreStatus = "SUBMITTED";
+    logger.info({ email, packageName }, "App submitted for review");
+  }
+
   await appDoc.save();
 
   const lean = await App.findById(appDoc._id).lean();

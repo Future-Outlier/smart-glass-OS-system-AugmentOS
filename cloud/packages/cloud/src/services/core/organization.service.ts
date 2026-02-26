@@ -805,7 +805,7 @@ export class OrganizationService {
     if (appCount > 0) {
       throw new ApiError(
         400,
-        "Organization cannot be deleted while it owns one or more applications",
+        "Organization cannot be deleted while it owns one or more MiniApps",
       );
     }
 

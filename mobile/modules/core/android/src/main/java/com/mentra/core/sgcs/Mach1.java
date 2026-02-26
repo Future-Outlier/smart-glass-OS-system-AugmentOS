@@ -251,6 +251,10 @@ public class Mach1 extends SGCManager {
     }
 
     @Override
+    public void ping() {
+    }
+
+    @Override
     public void setDashboardPosition(int height, int depth) {
 
     }
@@ -273,6 +277,16 @@ public class Mach1 extends SGCManager {
     @Override
     public void exit() {
 
+    }
+
+    @Override
+    public void sendShutdown() {
+        Bridge.log("sendShutdown - not supported on Mach1");
+    }
+
+    @Override
+    public void sendReboot() {
+        Bridge.log("sendReboot - not supported on Mach1");
     }
 
     @Override
@@ -364,6 +378,12 @@ public class Mach1 extends SGCManager {
     public void sendGalleryMode() {
         // Mach1 doesn't have a built-in camera/gallery system
         Bridge.log("Mach1: sendGalleryModeActive - not supported on Mach1");
+    }
+
+    @Override
+    public void requestVersionInfo() {
+        // Mach1 doesn't support version info requests
+        Bridge.log("Mach1: requestVersionInfo - not supported on Mach1");
     }
 
     public class UltraliteListener implements EventListener{

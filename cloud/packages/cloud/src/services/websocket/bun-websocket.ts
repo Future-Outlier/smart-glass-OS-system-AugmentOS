@@ -26,6 +26,7 @@ import {
 
 import { SYSTEM_DASHBOARD_PACKAGE_NAME } from "../core/app.service";
 import { logger as rootLogger } from "../logging/pino-logger";
+import { metricsService } from "../metrics";
 import { PosthogService } from "../logging/posthog.service";
 import UserSession from "../session/UserSession";
 
@@ -440,12 +441,14 @@ async function handleGlassesConnectionInit(
   const _logger = userSession.logger.child({ function: "sendConnectionAck" });
   _logger.info({ feature: "websocket", ackMessage, reconnection }, "Sending CONNECTION_ACK");
   ws.send(JSON.stringify(ackMessage));
+  metricsService.incrementClientMessagesOut();
 }
 
 /**
  * Handle glasses WebSocket message
  */
 async function handleGlassesMessage(ws: GlassesServerWebSocket, message: string | Buffer): Promise<void> {
+  metricsService.incrementClientMessagesIn();
   const { userId } = ws.data;
   const userSession = UserSession.getById(userId);
 
@@ -463,7 +466,22 @@ async function handleGlassesMessage(ws: GlassesServerWebSocket, message: string 
 
     // Parse text message
     const messageStr = typeof message === "string" ? message : message.toString();
-    const parsed = JSON.parse(messageStr) as GlassesToCloudMessage;
+    const parsed = JSON.parse(messageStr);
+
+    // Application-level ping/pong for client liveness detection.
+    // Respond immediately — don't log, don't relay, don't touch session state.
+    if (parsed.type === "ping") {
+      ws.send(JSON.stringify({ type: "pong" }));
+      return;
+    }
+
+    // Client pong (response to server's app-level ping). Consume silently.
+    // Protocol-level pongs are handled separately in websocketHandlers.pong().
+    // Without this, the pong falls through to handleGlassesMessage → default
+    // case → relayMessageToApps, causing 1800 debug logs/user/hour in BetterStack.
+    if (parsed.type === "pong") {
+      return;
+    }
 
     // Handle connection init specially (re-init after reconnect)
     if (parsed.type === GlassesToCloudMessageType.CONNECTION_INIT) {
@@ -599,6 +617,7 @@ async function handleAppOpen(ws: AppServerWebSocket): Promise<void> {
  * Handle app WebSocket message
  */
 async function handleAppMessage(ws: AppServerWebSocket, message: string | Buffer): Promise<void> {
+  metricsService.incrementMiniappMessagesIn();
   const { userId, packageName } = ws.data;
 
   try {

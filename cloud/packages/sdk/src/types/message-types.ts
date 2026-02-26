@@ -151,6 +151,9 @@ export enum AppToCloudMessageType {
 
   // Session lifecycle
   OWNERSHIP_RELEASE = "ownership_release",
+
+  // Telemetry (for incident debugging)
+  TELEMETRY_RESPONSE = "telemetry_response",
 }
 
 /**
@@ -187,6 +190,9 @@ export enum CloudToAppMessageType {
 
   // Permissions
   PERMISSION_ERROR = "permission_error",
+
+  // Telemetry (for incident debugging)
+  REQUEST_TELEMETRY = "request_telemetry",
 
   /**
    * @deprecated Use the settings system (mentraosSettings) instead.

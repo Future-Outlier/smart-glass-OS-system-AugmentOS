@@ -12,6 +12,7 @@ class Simulated: SGCManager {
         GlassesStore.shared.apply("glasses", "connected", true)
         GlassesStore.shared.apply("glasses", "connectionState", ConnTypes.CONNECTED)
         GlassesStore.shared.apply("glasses", "micEnabled", false)
+        GlassesStore.shared.apply("glasses", "vadEnabled", false)
         GlassesStore.shared.apply("glasses", "btcConnected", false)
     }
 
@@ -179,6 +180,14 @@ class Simulated: SGCManager {
         Bridge.log("exit")
     }
 
+    func sendShutdown() {
+        Bridge.log("sendShutdown - not supported on Simulated")
+    }
+
+    func sendReboot() {
+        Bridge.log("sendReboot - not supported on Simulated")
+    }
+
     func sendRgbLedControl(requestId: String, packageName _: String?, action _: String, color _: String?, ontime _: Int, offtime _: Int, count _: Int) {
         Bridge.log("sendRgbLedControl - not supported on Simulated")
         Bridge.sendRgbLedControlResponse(requestId: requestId, success: false, error: "device_not_supported")
@@ -208,6 +217,10 @@ class Simulated: SGCManager {
 
     func cleanup() {
         Bridge.log("cleanup")
+    }
+
+    func ping() {
+        Bridge.log("ping")
     }
 
     // MARK: - Network Management
@@ -244,5 +257,11 @@ class Simulated: SGCManager {
 
     func sendGalleryMode() {
         Bridge.log("sendGalleryMode")
+    }
+
+    // MARK: - Version Info
+
+    func requestVersionInfo() {
+        Bridge.log("requestVersionInfo - not supported on Simulated")
     }
 }

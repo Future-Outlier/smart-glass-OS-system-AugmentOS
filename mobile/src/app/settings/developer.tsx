@@ -129,7 +129,7 @@ export default function DeveloperSettingsScreen() {
               }}
             />
 
-           <RouteButton
+            <RouteButton
               label="Test switcher"
               onPress={() => {
                 clearHistoryAndGoHome()

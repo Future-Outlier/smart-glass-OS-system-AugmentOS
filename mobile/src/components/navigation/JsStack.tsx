@@ -58,7 +58,7 @@ export const customCardStyleInterpolator = ({current, next, layouts}: any) => {
 
   return {
     cardStyle: {
-      // transform: [{translateX}, {translateY}, {scale}],
+      transform: [{scale}],
       opacity,
     },
     overlayStyle: {
@@ -89,7 +89,6 @@ export const simplePush = ({current, next, layouts}: any) => {
     },
   }
 }
-
 
 const fadeCardStyleInterpolator = ({current}: any) => {
   return {

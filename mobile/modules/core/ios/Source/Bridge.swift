@@ -179,21 +179,31 @@ class Bridge {
     }
 
     static func sendPhotoResponse(requestId: String, photoUrl: String) {
-        do {
-            let event: [String: Any] = [
-                "type": "photo_response",
-                "requestId": requestId,
-                "photoUrl": photoUrl,
-                "timestamp": Int(Date().timeIntervalSince1970 * 1000),
-            ]
+        let event: [String: Any] = [
+            "type": "photo_response",
+            "requestId": requestId,
+            "success": true,
+            "photoUrl": photoUrl,
+            "timestamp": Int(Date().timeIntervalSince1970 * 1000),
+        ]
+        Bridge.sendTypedMessage("photo_response", body: event)
+    }
 
-            let jsonData = try JSONSerialization.data(withJSONObject: event)
-            if let jsonString = String(data: jsonData, encoding: .utf8) {
-                Bridge.sendWSText(jsonString)
-            }
-        } catch {
-            Bridge.log("ServerComms: Error building photo_response JSON: \(error)")
+    static func sendPhotoError(requestId: String, errorCode: String, errorMessage: String) {
+        var event: [String: Any] = [
+            "type": "photo_response",
+            "requestId": requestId,
+            "success": false,
+            "photoUrl": "",
+            "timestamp": Int(Date().timeIntervalSince1970 * 1000),
+        ]
+        if !errorCode.isEmpty {
+            event["errorCode"] = errorCode
         }
+        if !errorMessage.isEmpty {
+            event["errorMessage"] = errorMessage
+        }
+        Bridge.sendTypedMessage("photo_response", body: event)
     }
 
     static func sendVideoStreamResponse(appId: String, streamUrl: String) {

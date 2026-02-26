@@ -3,11 +3,11 @@ import * as Sentry from "@sentry/react-native"
 import {Stack} from "expo-router"
 import {PostHogProvider} from "posthog-react-native"
 import {Suspense, FunctionComponent, PropsWithChildren} from "react"
-import {Platform, View} from "react-native"
+import {View} from "react-native"
 import ErrorBoundary from "react-native-error-boundary"
 import {GestureHandlerRootView} from "react-native-gesture-handler"
 import {KeyboardProvider} from "react-native-keyboard-controller"
-import {SafeAreaProvider, useSafeAreaInsets} from "react-native-safe-area-context"
+import {SafeAreaProvider} from "react-native-safe-area-context"
 import Toast from "react-native-toast-message"
 
 // import {ErrorBoundary} from "@/components/error"
@@ -20,7 +20,10 @@ import {useThemeProvider} from "@/contexts/ThemeContext"
 import {SETTINGS, useSetting, useSettingsStore} from "@/stores/settings"
 import {ModalProvider} from "@/utils/AlertUtils"
 import {KonamiCodeProvider} from "@/utils/debug/konami"
-import {getAnimation, JsStack, simplePush, woltScreenOptions} from "@/components/navigation/JsStack"
+import ConnectionOverlayProvider from "@/contexts/ConnectionOverlayContext"
+import { SaferAreaProvider, useSaferAreaInsets } from "@/contexts/SaferAreaContext"
+// JsStack imports commented out - were used for Android-specific navigation (currently disabled)
+// import {getAnimation, JsStack, woltScreenOptions} from "@/components/navigation/JsStack"
 
 // components at the top wrap everything below them in order:
 export const AllProviders = withWrappers(
@@ -66,6 +69,7 @@ export const AllProviders = withWrappers(
   },
   Suspense,
   SafeAreaProvider,
+  SaferAreaProvider,
   KeyboardProvider,
   AuthProvider,
   AppStoreProvider,
@@ -105,10 +109,11 @@ export const AllProviders = withWrappers(
   //   )
   // },
   (props) => {
+    const insets = useSaferAreaInsets()
     return (
       <>
         {props.children}
-        <Toast />
+        <Toast topOffset={insets.top} bottomOffset={insets.bottom} />
       </>
     )
   },
@@ -117,7 +122,7 @@ export const AllProviders = withWrappers(
     const {preventBack, getHistory} = useNavigationHistory()
     const [debugNavigationHistory] = useSetting(SETTINGS.debug_navigation_history.key)
     const history = getHistory().map((item) => item.replaceAll("/", "\\"))
-    const top = useSafeAreaInsets().top
+    const {top} = useSaferAreaInsets()
     if (!debugNavigationHistory) {
       return <>{props.children}</>
     }
@@ -137,23 +142,24 @@ export const AllProviders = withWrappers(
       </>
     )
   },
+  ConnectionOverlayProvider,
   (props) => {
     const {preventBack, animation} = useNavigationHistory()
 
     // if (Platform.OS === "ios") {
-      return (
-        <>
-          {props.children}
-          <Stack
-            screenOptions={{
-              headerShown: false,
-              gestureEnabled: !preventBack,
-              gestureDirection: "horizontal",
-              animation: animation,
-            }}
-          />
-        </>
-      )
+    return (
+      <>
+        {props.children}
+        <Stack
+          screenOptions={{
+            headerShown: false,
+            gestureEnabled: !preventBack,
+            gestureDirection: "horizontal",
+            animation: animation,
+          }}
+        />
+      </>
+    )
     // }
 
     // return (

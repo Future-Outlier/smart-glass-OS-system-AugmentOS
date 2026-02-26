@@ -36,7 +36,8 @@ export default function InitScreen() {
   // Hooks
   const {theme} = useAppTheme()
   const {user, session, loading: authLoading} = useAuth()
-  const {replace, replaceAll, getPendingRoute, setPendingRoute, clearHistoryAndGoHome, setAnimation} = useNavigationHistory()
+  const {replace, replaceAll, getPendingRoute, setPendingRoute, clearHistoryAndGoHome, setAnimation} =
+    useNavigationHistory()
   const {processUrl} = useDeeplink()
   const rootNavigationState = useRootNavigationState()
   const isNavigationReady = rootNavigationState?.key != null

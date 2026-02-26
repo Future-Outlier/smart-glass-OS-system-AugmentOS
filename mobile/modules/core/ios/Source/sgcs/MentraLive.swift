@@ -594,6 +594,7 @@ extension MentraLive: CBCentralManagerDelegate {
         if let name = peripheral.name {
             UserDefaults.standard.set(name, forKey: PREFS_DEVICE_NAME)
             Bridge.log("Saved device name for future reconnection: \(name)")
+            GlassesStore.shared.apply("glasses", "bluetoothName", name)
         }
 
         // Audio Pairing: Setup Bluetooth audio after BLE connection
@@ -731,7 +732,8 @@ extension MentraLive: CBPeripheralDelegate {
             Bridge.log("LIVE: ✅ Both TX and RX characteristics found - BLE connection ready")
             Bridge.log("LIVE: 🔄 Waiting for glasses SOC to become ready...")
 
-            GlassesStore.shared.apply("glasses", "connected", true)
+            // Don't set connected=true here - wait for SOC to be ready (fullyBooted=true)
+            // GlassesStore handles connected state based on fullyBooted
 
             // Keep state as connecting until glasses are ready
             connectionState = ConnTypes.CONNECTING
@@ -866,6 +868,11 @@ typealias JSONObject = [String: Any]
 
 @MainActor
 class MentraLive: NSObject, SGCManager {
+    // Feature Flags
+    // BLOCK_AUDIO_DUPLEX: When true, suspends LC3 mic while phone is playing audio via A2DP
+    // to avoid overloading the MCU. Set to false to allow simultaneous A2DP + LC3 mic.
+    private let BLOCK_AUDIO_DUPLEX = false
+
     var connectionState: String = ConnTypes.DISCONNECTED
 
     func setDashboardPosition(_: Int, _: Int) {}
@@ -882,6 +889,10 @@ class MentraLive: NSObject, SGCManager {
     func setBrightness(_: Int, autoMode _: Bool) {}
     func clearDisplay() {}
     func sendTextWall(_: String) {}
+    func ping() {
+        Bridge.log("LIVE: ping()")
+        keepAwake()
+    }
     func forget() {
         Bridge.log("LIVE: Forgetting Mentra Live glasses")
 
@@ -898,8 +909,9 @@ class MentraLive: NSObject, SGCManager {
     var hasMic = true
 
     func setMicEnabled(_ enabled: Bool) {
-        Bridge.log("LIVE: setMicEnabled called: \(enabled)")
+        Bridge.log("LIVE: 🎤 Microphone state change requested: \(enabled)")
         GlassesStore.shared.apply("glasses", "micEnabled", enabled)
+
         // Only enable if device supports LC3 audio
         guard supportsLC3Audio else {
             Bridge.log("LIVE: Device does not support LC3 audio, ignoring mic enable request")
@@ -909,11 +921,28 @@ class MentraLive: NSObject, SGCManager {
         // Update shouldUseGlassesMic based on enabled state
         shouldUseGlassesMic = enabled
 
-        if shouldUseGlassesMic {
-            Bridge.log("LIVE: Microphone enabled, starting audio input handling")
-            startMicBeat()
+        // Update the intent state for the suspend/resume state machine
+        micIntentEnabled = enabled
+
+        if enabled {
+            // User wants mic ON
+            // Check if we should suspend due to phone audio (only if BLOCK_AUDIO_DUPLEX is enabled)
+            if BLOCK_AUDIO_DUPLEX, let monitor = phoneAudioMonitor, monitor.isPlaying() {
+                // Phone is currently playing audio - don't start mic yet, mark as suspended
+                micSuspendedForAudio = true
+                Bridge.log(
+                    "LIVE: 🎤 Mic requested but phone audio is playing - suspending until audio stops"
+                )
+            } else {
+                // Safe to start mic
+                micSuspendedForAudio = false
+                Bridge.log("LIVE: 🎤 Microphone enabled, starting audio input handling")
+                startMicBeat()
+            }
         } else {
-            Bridge.log("LIVE: Microphone disabled, stopping audio input handling")
+            // User wants mic OFF - clear suspended state and stop
+            micSuspendedForAudio = false
+            Bridge.log("LIVE: 🎤 Microphone disabled, stopping audio input handling")
             stopMicBeat()
         }
     }
@@ -953,6 +982,13 @@ class MentraLive: NSObject, SGCManager {
     private var micBeatCount = 0
     private var shouldUseGlassesMic = false
 
+    // LC3 Mic suspend/resume state machine for A2DP conflict avoidance
+    // When phone plays audio via A2DP while LC3 mic is active, it overloads the MCU
+    // So we temporarily suspend the LC3 mic during phone audio playback
+    private var micIntentEnabled = false  // User/system WANTS mic enabled
+    private var micSuspendedForAudio = false  // Mic temporarily suspended due to phone audio
+    private var phoneAudioMonitor: PhoneAudioMonitor?
+
     // Timing Constants
     private let BASE_RECONNECT_DELAY_MS: UInt64 = 1_000_000_000  // 1 second in nanoseconds
     private let MAX_RECONNECT_DELAY_MS: UInt64 = 30_000_000_000  // 30 seconds
@@ -987,10 +1023,6 @@ class MentraLive: NSObject, SGCManager {
     private var globalMessageId = 0
     private var lastReceivedMessageId = 0
 
-    // Version info chunking support (for MTU workaround)
-    // Glasses send version_info in 2 chunks to fit within BLE MTU limits
-    private var pendingVersionInfoChunk1: [String: Any]?
-
     private var fullyBooted: Bool {
         get { GlassesStore.shared.get("glasses", "fullyBooted") as? Bool ?? false }
         set { GlassesStore.shared.apply("glasses", "fullyBooted", newValue) }
@@ -1011,6 +1043,9 @@ class MentraLive: NSObject, SGCManager {
     private var heartbeatCounter = 0
     private var readinessCheckTimer: Timer?
     private var readinessCheckCounter = 0
+
+    // BES OTA progress tracking - only send to UI on 5% increments
+    private var lastBesOtaProgress = -1
     private var connectionTimeoutTimer: Timer?
     private var reconnectionWorkItem: DispatchWorkItem?
 
@@ -1019,6 +1054,19 @@ class MentraLive: NSObject, SGCManager {
     override init() {
         super.init()
         setupCommandQueue()
+
+        // Initialize phone audio monitor for LC3 mic suspend/resume (if enabled)
+        // This detects when phone is playing audio and temporarily suspends LC3 mic
+        // to avoid overloading the MCU when both A2DP output and LC3 mic input are active
+        if BLOCK_AUDIO_DUPLEX {
+            phoneAudioMonitor = PhoneAudioMonitor.getInstance()
+            phoneAudioMonitor?.startMonitoring(listener: self)
+            Bridge.log(
+                "LIVE: 🎵 Phone audio monitor started for LC3 mic suspend/resume (BLOCK_AUDIO_DUPLEX=true)"
+            )
+        } else {
+            Bridge.log("LIVE: 🎵 Phone audio monitor disabled (BLOCK_AUDIO_DUPLEX=false)")
+        }
     }
 
     deinit {
@@ -1173,10 +1221,6 @@ class MentraLive: NSObject, SGCManager {
                 "B": enableString,
             ]
 
-            // Send this 3 times to ensure this gets through, since we don't get ACK from BES.
-            // Kind of hacky but works for now.
-            sendRawK900Command(command)
-            sendRawK900Command(command)
             if sendRawK900Command(command) {
                 Bridge.log("LIVE: Sent enable_custom_audio_tx via queue (BES-handled command)")
             } else {
@@ -1490,6 +1534,8 @@ class MentraLive: NSObject, SGCManager {
             Bridge.log("LIVE: Maximum reconnection attempts reached (\(MAX_RECONNECT_ATTEMPTS))")
             reconnectAttempts = 0
             connectionState = ConnTypes.DISCONNECTED
+            connected = false
+            fullyBooted = false
             return
         }
 
@@ -1725,39 +1771,8 @@ class MentraLive: NSObject, SGCManager {
         case "button_press":
             handleButtonPress(json)
 
-        case "version_info_1":
-            // Chunk 1 of version info (MTU workaround) - contains basic device info
-            print("LIVE: Received version_info_1 (chunk 1/2): \(json)")
-            pendingVersionInfoChunk1 = json
-        // Wait for chunk 2 to arrive before processing
-
-        case "version_info_2":
-            // Chunk 2 of version info (MTU workaround) - contains URLs and identifiers
-            print("LIVE: Received version_info_2 (chunk 2/2): \(json)")
-
-            if let chunk1 = pendingVersionInfoChunk1 {
-                // Merge both chunks into a complete version_info dict
-                var mergedJson: [String: Any] = [:]
-                // Copy all fields from chunk 1
-                for (key, value) in chunk1 {
-                    mergedJson[key] = value
-                }
-                // Copy all fields from chunk 2
-                for (key, value) in json {
-                    mergedJson[key] = value
-                }
-                // Process as complete version_info
-                print("LIVE: Processing merged version_info from chunks: \(mergedJson)")
-                handleVersionInfo(mergedJson)
-                // Clear the pending chunk
-                pendingVersionInfoChunk1 = nil
-            } else {
-                print("LIVE: ⚠️ Received version_info_2 without version_info_1 - ignoring")
-            }
-
-        case "version_info":
-            // Legacy single-message format
-            handleVersionInfo(json)
+        // Removed: version_info_1, version_info_2, and version_info cases
+        // Now handled by flexible parsing in the default case below
 
         case "touch_event":
             let gestureName = json["gesture_name"] as? String ?? "unknown"
@@ -1892,7 +1907,58 @@ class MentraLive: NSObject, SGCManager {
             )
 
         default:
-            Bridge.log("Unhandled message type: \(type)")
+            // Flexible version_info parsing - handle any version_info* message
+            if type.hasPrefix("version_info") {
+                Bridge.log("LIVE: Received \(type): \(json)")
+
+                // Extract all fields from JSON (except "type")
+                var fields: [String: Any] = [:]
+                for (key, value) in json {
+                    if key != "type" {
+                        fields[key] = value
+                    }
+                }
+
+                // Update local fields for any we recognize
+                if let appVersion = fields["app_version"] as? String {
+                    GlassesStore.shared.apply("glasses", "appVersion", appVersion)
+                }
+                if let buildNumber = fields["build_number"] as? String {
+                    isNewVersion = (Int(buildNumber) ?? 0) >= 5
+                    GlassesStore.shared.apply("glasses", "buildNumber", buildNumber)
+                }
+                if let deviceModel = fields["device_model"] as? String {
+                    GlassesStore.shared.apply("glasses", "deviceModel", deviceModel)
+                }
+                if let androidVersion = fields["android_version"] as? String {
+                    GlassesStore.shared.apply("glasses", "androidVersion", androidVersion)
+                }
+                if let otaVersionUrl = fields["ota_version_url"] as? String {
+                    GlassesStore.shared.apply("glasses", "otaVersionUrl", otaVersionUrl)
+                }
+                if let firmwareVersion = fields["firmware_version"] as? String {
+                    GlassesStore.shared.apply("glasses", "fwVersion", firmwareVersion)
+                }
+                if let besFwVersion = fields["bes_fw_version"] as? String {
+                    GlassesStore.shared.apply("glasses", "besFwVersion", besFwVersion)
+                }
+                if let mtkFwVersion = fields["mtk_fw_version"] as? String {
+                    // MTK firmware version (e.g., "20241130")
+                    // Note: Stored separately from BES version for OTA patch matching
+                    GlassesStore.shared.apply("glasses", "mtkFwVersion", mtkFwVersion)
+                }
+                if let btMacAddress = fields["bt_mac_address"] as? String {
+                    GlassesStore.shared.apply("glasses", "btMacAddress", btMacAddress)
+                }
+
+                // Send fields immediately to RN - no waiting for other chunks
+                // All fields including mtk_fw_version are forwarded to RN
+                // Bridge.sendTypedMessage("version_info", body: fields)
+
+                // Bridge.log("LIVE: Processed version_info fields and sent to RN")
+            } else {
+                Bridge.log("Unhandled message type: \(type)")
+            }
         }
     }
 
@@ -1928,7 +1994,7 @@ class MentraLive: NSObject, SGCManager {
         switch command {
         case "sr_hrt":
             if let bodyObj = json["B"] as? [String: Any] {
-                let readyResponse = bodyObj["fullyBooted"] as? Int ?? 0
+                let readyResponse = bodyObj["ready"] as? Int ?? 0
 
                 // Extract battery info from heartbeat
                 let percentage = bodyObj["pt"] as? Int ?? 0
@@ -2000,13 +2066,73 @@ class MentraLive: NSObject, SGCManager {
             // Notify the system that glasses are intentionally disconnected
             connectionState = ConnTypes.DISCONNECTED
 
+        case "sr_adota":
+            // BES chip OTA progress - convert to ota_progress format for phone UI
+            // This is sent by the BES chip during firmware flashing (the "install" phase)
+            // Since the glasses can't send ota_progress via serial during BES OTA (serial is busy),
+            // the BES chip sends progress via this K900 BLE command instead
+            if let bodyObj = json["B"] as? [String: Any] {
+                let type = bodyObj["type"] as? String ?? ""
+                let rawProgress = bodyObj["progress"] as? Int ?? 0
+
+                // Round to nearest 5% for cleaner UI updates
+                var progress = ((rawProgress + 2) / 5) * 5
+                if progress > 100 { progress = 100 }
+
+                // Only send if progress changed to a new 5% increment
+                let isTerminalStatus = type == "success" || type == "error" || type == "fail"
+                if progress == lastBesOtaProgress && !isTerminalStatus {
+                    break  // Skip duplicate progress
+                }
+                lastBesOtaProgress = progress
+
+                Bridge.log(
+                    "LIVE: 📱 BES OTA progress via sr_adota - type: \(type), raw: \(rawProgress)%, rounded: \(progress)%"
+                )
+
+                // Determine status and error message based on type
+                var besOtaStatus: String
+                var besOtaProgress: Int
+                var besOtaErrorMessage: String? = nil
+
+                if type == "update" {
+                    besOtaStatus = "PROGRESS"
+                    besOtaProgress = progress
+                } else if type == "success" || rawProgress >= 100 {
+                    besOtaStatus = "FINISHED"
+                    besOtaProgress = 100
+                    lastBesOtaProgress = -1  // Reset for next OTA
+                } else if type == "error" || type == "fail" {
+                    besOtaStatus = "FAILED"
+                    besOtaProgress = progress
+                    besOtaErrorMessage = bodyObj["message"] as? String ?? "BES update failed"
+                    lastBesOtaProgress = -1  // Reset for next OTA
+                } else {
+                    // Unknown type, treat as progress
+                    besOtaStatus = "PROGRESS"
+                    besOtaProgress = progress
+                }
+
+                // Send to React Native bridge as ota_progress
+                Bridge.sendOtaProgress(
+                    stage: "install",
+                    status: besOtaStatus,
+                    progress: besOtaProgress,
+                    bytesDownloaded: 0,
+                    totalBytes: 0,
+                    currentUpdate: "bes",
+                    errorMessage: besOtaErrorMessage
+                )
+            }
+
         case "sr_tpevt":
             // K900 touchpad event - convert to touch_event for frontend
             if let bodyObj = json["B"] as? [String: Any],
-               let gestureType = bodyObj["type"] as? Int
+                let gestureType = bodyObj["type"] as? Int
             {
                 if let gestureName = mapK900GestureType(gestureType) {
-                    Bridge.log("LIVE: 👆 K900 touchpad event - Type: \(gestureType) -> \(gestureName)")
+                    Bridge.log(
+                        "LIVE: 👆 K900 touchpad event - Type: \(gestureType) -> \(gestureName)")
                     Bridge.sendTouchEvent(
                         deviceModel: deviceModel,
                         gestureName: gestureName,
@@ -2128,6 +2254,17 @@ class MentraLive: NSObject, SGCManager {
         sendJson(json, wakeUp: true)
     }
 
+    func keepAwake() {
+        Bridge.log("LIVE: 📱 Sending keep_awake command to glasses")
+
+        let json: [String: Any] = [
+            "type": "keep_awake",
+            "timestamp": Int(Date().timeIntervalSince1970 * 1000),
+        ]
+
+        sendJson(json, wakeUp: true)
+    }
+
     // MARK: - Message Handlers
 
     private func handleGlassesReady() {
@@ -2153,10 +2290,23 @@ class MentraLive: NSObject, SGCManager {
         // Start heartbeat
         startHeartbeat()
 
+        // Restore mic state if it was enabled before reconnect
+        if micIntentEnabled {
+            if BLOCK_AUDIO_DUPLEX, let monitor = phoneAudioMonitor, monitor.isPlaying() {
+                micSuspendedForAudio = true
+                Bridge.log(
+                    "LIVE: 🎤 Restoring mic intent after reconnect, but phone audio is playing - suspending"
+                )
+            } else {
+                micSuspendedForAudio = false
+                Bridge.log("LIVE: 🎤 Restoring mic state after reconnect")
+                startMicBeat()
+            }
+        }
+
         fullyBooted = true
         connected = true
         connectionState = ConnTypes.CONNECTED
-        // maybe add audio monitoring here?
     }
 
     private func handleWifiScanResult(_ json: [String: Any]) {
@@ -2367,13 +2517,22 @@ class MentraLive: NSObject, SGCManager {
     private func handleTransferFailed(_ json: [String: Any]) {
         let fileName = json["fileName"] as? String ?? ""
         let reason = json["reason"] as? String ?? "unknown"
+        let requestId = json["requestId"] as? String ?? ""
 
         guard !fileName.isEmpty else {
             Bridge.log("LIVE: ❌ Transfer failed notification missing fileName: \(json)")
+            Bridge.sendPhotoError(
+                requestId: requestId, errorCode: "FILE_NAME_MISSING",
+                errorMessage: "Transfer failed fileName is missing"
+            )
             return
         }
 
         Bridge.log("LIVE: ❌ Transfer failed for: \(fileName) (reason: \(reason))")
+        Bridge.sendPhotoError(
+            requestId: requestId, errorCode: "TRANSFER_FAILED",
+            errorMessage: "Transfer failed for: \(fileName) (reason: \(reason))"
+        )
 
         if let session = activeFileTransfers.removeValue(forKey: fileName) {
             Bridge.log(
@@ -2743,7 +2902,7 @@ class MentraLive: NSObject, SGCManager {
         sendJson(json, wakeUp: true)
     }
 
-    private func requestVersionInfo() {
+    func requestVersionInfo() {
         let json: [String: Any] = ["type": "request_version"]
         sendJson(json)
     }
@@ -2753,7 +2912,7 @@ class MentraLive: NSObject, SGCManager {
 
         let coreToken = GlassesStore.shared.get("core", "auth_token") as? String ?? ""
         if coreToken.isEmpty {
-            Bridge.log("No coreToken available to send to ASG client")
+            Bridge.log("LIVE: No coreToken available to send to ASG client")
             return
         }
 
@@ -2777,6 +2936,28 @@ class MentraLive: NSObject, SGCManager {
 
         Bridge.log("LIVE: Sending stored user email to ASG client")
         sendUserEmailToGlasses(storedEmail)
+    }
+
+    // MARK: - Power Control Methods
+
+    /**
+     * Send shutdown command to the glasses.
+     * This will initiate a graceful shutdown of the device.
+     */
+    @objc func sendShutdown() {
+        Bridge.log("LIVE: 🔌 Sending shutdown command to glasses")
+        let json: [String: Any] = ["type": "shutdown"]
+        sendJson(json)
+    }
+
+    /**
+     * Send reboot command to the glasses.
+     * This will initiate a reboot of the device.
+     */
+    @objc func sendReboot() {
+        Bridge.log("LIVE: 🔄 Sending reboot command to glasses")
+        let json: [String: Any] = ["type": "reboot"]
+        sendJson(json)
     }
 
     // MARK: - IMU Methods
@@ -3065,6 +3246,7 @@ class MentraLive: NSObject, SGCManager {
     private var readinessCheckDispatchTimer: DispatchSourceTimer?
 
     private func startReadinessCheckLoop() {
+        Bridge.log("LIVE: startReadinessCheckLoop()")
         stopReadinessCheckLoop()
 
         readinessCheckCounter = 0
@@ -3253,6 +3435,10 @@ class MentraLive: NSObject, SGCManager {
             stopScan()
         }
 
+        // Stop phone audio monitor
+        phoneAudioMonitor?.stopMonitoring()
+        Bridge.log("LIVE: 🎵 Phone audio monitor stopped")
+
         // Stop all timers
         stopAllTimers()
 
@@ -3260,6 +3446,17 @@ class MentraLive: NSObject, SGCManager {
         if let peripheral = connectedPeripheral {
             centralManager?.cancelPeripheralConnection(peripheral)
         }
+
+        GlassesStore.shared.apply("glasses", "connected", false)
+        GlassesStore.shared.apply("glasses", "fullyBooted", false)
+        GlassesStore.shared.apply("glasses", "connectionState", ConnTypes.DISCONNECTED)
+        GlassesStore.shared.apply("glasses", "wifiConnected", false)
+        GlassesStore.shared.apply("glasses", "wifiSsid", "")
+        GlassesStore.shared.apply("glasses", "wifiLocalIp", "")
+        GlassesStore.shared.apply("glasses", "hotspotEnabled", false)
+        GlassesStore.shared.apply("glasses", "hotspotSsid", "")
+        GlassesStore.shared.apply("glasses", "hotspotPassword", "")
+        GlassesStore.shared.apply("glasses", "hotspotGatewayIp", "")
 
         connectedPeripheral = nil
         centralManager?.delegate = nil
@@ -3795,7 +3992,8 @@ extension MentraLive {
 
     func startVideoRecording(requestId: String, save: Bool, silent: Bool) {
         startVideoRecording(
-            requestId: requestId, save: save, silent: silent, width: 0, height: 0, fps: 0)
+            requestId: requestId, save: save, silent: silent, width: 0, height: 0, fps: 0
+        )
     }
 
     // MARK: - SGCManager Protocol Compliance
@@ -3860,5 +4058,35 @@ extension MentraLive {
             "request_id": requestId,
         ]
         sendJson(json)
+    }
+}
+
+// MARK: - PhoneAudioMonitorListener
+
+extension MentraLive: PhoneAudioMonitorListener {
+    /// Handle phone audio playback state changes
+    /// Called by PhoneAudioMonitor when phone starts/stops playing audio
+    ///
+    /// State machine logic:
+    /// - When phone starts playing audio: suspend LC3 mic if it was running
+    /// - When phone stops playing audio: resume LC3 mic if it was suspended
+    func onPhoneAudioStateChanged(isPlaying: Bool) {
+        Bridge.log("LIVE: 🎵 Phone audio state changed: \(isPlaying ? "PLAYING" : "STOPPED")")
+
+        if isPlaying {
+            // Phone started playing audio - suspend mic if it was running
+            if micIntentEnabled && !micSuspendedForAudio {
+                Bridge.log("LIVE: 🎤 Phone audio started - suspending LC3 mic to avoid MCU overload")
+                stopMicBeat()
+                micSuspendedForAudio = true
+            }
+        } else {
+            // Phone stopped playing audio - resume mic if it was suspended
+            if micIntentEnabled && micSuspendedForAudio {
+                Bridge.log("LIVE: 🎤 Phone audio stopped - resuming LC3 mic")
+                micSuspendedForAudio = false
+                startMicBeat()
+            }
+        }
     }
 }

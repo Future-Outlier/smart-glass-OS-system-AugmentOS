@@ -11,7 +11,6 @@ import {useAppTheme} from "@/contexts/ThemeContext"
 import {translate} from "@/i18n"
 import showAlert from "@/utils/AlertUtils"
 import WifiCredentialsService from "@/utils/wifi/WifiCredentialsService"
-import {ConnectionOverlay} from "@/components/glasses/ConnectionOverlay"
 
 export default function WifiPasswordScreen() {
   const params = useLocalSearchParams()
@@ -72,7 +71,6 @@ export default function WifiPasswordScreen() {
   return (
     <Screen preset="fixed">
       <Header title={translate("wifi:wifi")} leftIcon="chevron-left" onLeftPress={goBack} />
-      <ConnectionOverlay />
       <View className="bg-primary-foreground rounded-3xl p-6 w-full items-center mt-12">
         {/* WiFi Icon */}
         <View className="mb-3">
@@ -135,8 +133,8 @@ export default function WifiPasswordScreen() {
             labelPosition="right"
             label="Remember password"
             labelTx="wifi:rememberPassword"
-            helper="Save password for future connections"
-            helperTx="wifi:rememberPasswordDescription"
+            //helper="Save password for future connections"
+            //helperTx="wifi:rememberPasswordDescription"
           />
         </View>
 

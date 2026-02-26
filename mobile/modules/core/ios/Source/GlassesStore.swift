@@ -52,6 +52,7 @@ class GlassesStore {
         store.set("core", "wifiScanResults", [])
         store.set("core", "micRanking", MicMap.map["auto"]!)
         store.set("core", "lastLog", [])
+        store.set("core", "otherBtConnected", false)
 
         // CORE SETTINGS:
         store.set("core", "default_wearable", "")
@@ -103,13 +104,14 @@ class GlassesStore {
         // Trigger hardware updates based on setting changes
         switch (category, key) {
         case ("glasses", "fullyBooted"):
-            Bridge.log("MAN: Glasses ready changed to \(value)")
+            Bridge.log("STORE: Glasses fullyBooted changed to \(value)")
             if let ready = value as? Bool {
                 if ready {
                     CoreManager.shared.handleDeviceReady()
                 } else {
                     CoreManager.shared.handleDeviceDisconnected()
                 }
+                // we shouldn't call store.set in this function as this is only intended for side-effects, not driving state updates
             }
 
         case ("glasses", "headUp"):
@@ -205,6 +207,8 @@ class GlassesStore {
 
         case ("core", "offline_mode"):
             if let offline = value as? Bool {
+                // set should_send_transcript to true if offline_mode is true && running is true, otherwise false
+                let shouldSendTranscript = offline && (store.get("core", "offline_captions_running") as? Bool) ?? false
                 CoreManager.shared.setMicState(
                     store.get("core", "should_send_pcm_data") as? Bool ?? false,
                     store.get("core", "should_send_transcript") as? Bool ?? false,
@@ -217,9 +221,11 @@ class GlassesStore {
                 Bridge.log("GlassesStore: offline_captions_running changed to \(running)")
                 // When offline captions are enabled, start the microphone for local transcription
                 // When disabled, stop the microphone
+                // set should_send_transcript to true if offline_mode is true && running is true, otherwise false
+                let shouldSendTranscript = (store.get("core", "offline_mode") as? Bool) ?? false && running
                 CoreManager.shared.setMicState(
-                    running, // send PCM data
-                    running, // send transcript
+                    store.get("core", "should_send_pcm_data") as? Bool ?? false,
+                    shouldSendTranscript,
                     store.get("core", "bypass_vad") as? Bool ?? true
                 )
             }
@@ -244,6 +250,8 @@ class GlassesStore {
         case ("core", "device_name"):
             if let name = value as? String {
                 CoreManager.shared.checkCurrentAudioDevice()
+                // listen for when the audio device is paired and connected
+                // CoreManager.shared.setupAudioPairing(deviceName: name)
             }
 
         case ("core", "lastLog"):

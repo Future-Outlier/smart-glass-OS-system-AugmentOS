@@ -115,8 +115,7 @@ const en = {
     btClassicDisconnectedMessage:
       "Your glasses are connected to the app, but the bluetooth audio device is not connected.",
     powerOn: "Power on",
-    poweredOn: "Powered on",
-    glassesBooting: "Glasses are booting...",
+    poweredOn: "Continue",
   },
   pairingGuide: {
     mentraLivePreorder: "Get Mentra Live and experience computer vision on your smart glasses.",
@@ -178,7 +177,7 @@ const en = {
     liveTakeAPhoto: "Take a photo",
     livePressActionButton: "Press the action button once",
     liveStopRecording: "Stop recording",
-    livePressAndHoldAgain: "Press and hold the action button again",
+    livePressAndHoldAgain: "Press the action button again",
     liveLedFlashWarning: "The LED flash turns on when the camera turns on",
     liveStartRecording: "Start recording",
     livePressAndHold: "Press and hold the action button for 3 seconds",
@@ -192,7 +191,7 @@ const en = {
     liveCableDescription: "Take off your glasses, connect the cable, then put them back on",
     liveCableInfo: "The cable allows you to use Mentra Live while it charges",
     liveEndTitle: "Great job!",
-    liveEndMessage: "That's the basics. Now let's set up some advanced features",
+    liveEndMessage: "You're all set. Time to start using Mentra Live.",
     liveWelcomeTitle: "Welcome to Mentra Live",
     liveWelcomeSubtitle: "Learn the basics",
     livePowerOnTutorial: "Press and hold the power button for 5 seconds",
@@ -233,9 +232,10 @@ const en = {
     btClassicStep4: 'Return to the app once it says "Connected"',
     btClassicTitle: "Pair Audio",
     btClassicSubtitle: "Connect {{name}} as a Bluetooth audio device",
+    showDevicePicker: "Show device picker",
     openSettings: "Open settings",
     stepCounter: "Step {{index}} / {{total}}",
-    confirmSkip: "Yes, skip"
+    confirmSkip: "Yes, skip",
   },
   wifi: {
     networks: "Networks",
@@ -244,10 +244,9 @@ const en = {
     enterNetworkManually: "Enter network manually",
     enterNetworkDetails: "Enter network details",
     addNetwork: "Add your Wi-Fi network",
-    addNetworkDescription:
-      "Add a network to import media and install device updates automatically while your device is charging.",
+    addNetworkDescription: "Add your network here to sync the media and software on your Mentra Live.",
     rememberPassword: "Remember password",
-    rememberPasswordDescription: "Save this password for future connections.",
+    rememberPasswordDescription: "",
     wifiPassword: "Wi-Fi password",
     enterNetworkName: "Enter network name",
     networkName: "Network name (SSID)",
@@ -257,7 +256,7 @@ const en = {
     connectionFailed: "Connection failed",
     networkAdded: "Network added",
     networkAddedDescription:
-      "Connected devices will perform automatic updates and media imports while charging through the Mentra app. Automatic updates can be disabled in Device settings at any time.",
+      "Connected devices can sync photos and videos, update firmware, and use Wi-Fi enabled apps like Livestreamer.",
     failedDescription: "Make sure the password was entered correctly",
     connectingDescription: "This may take up to 20 seconds",
     connectingToNetwork: "Connecting to {{network}}...",
@@ -332,6 +331,7 @@ const en = {
       "{{app}} requires hardware that is not available on your connected glasses: {{missing}}",
     incompatibleApps: "Incompatible Apps",
     incompatibleAppsCount: "{{count}} Incompatible Apps",
+    activeAppsCount: "{{count}} Apps active",
     incompatibleAppsDescription:
       "The following apps require specific hardware that is currently not available on your connected glasses.",
     incompatible: "Incompatible",
@@ -345,9 +345,12 @@ const en = {
     activeBackgroundApps: "Active Background Apps",
     inactiveBackgroundApps: "Inactive Background Apps",
     appletPlaceholder: "Tap an app below to activate it",
+    appletPlaceholder2: "Tap an app above to activate it",
     simulatedGlasses: "Simulated glasses",
     glassesMirror: "Glasses Mirror",
     stopTrying: "Stop trying",
+    running: "Running",
+    appsCount: "{{count}} Apps",
   },
   permissions: {
     backgroundLocationPermissionRequiredMessage:
@@ -355,7 +358,7 @@ const en = {
     openSettings: "Open Settings",
     permissionRequired: "Permission Required",
     permissionRequiredMessage:
-      "{{name}} permission is required but has been denied previously. Please enable it in your device settings.",
+      "{{name}} permission is required but has been denied. Please enable it in your device settings.",
   },
   glasses: {
     title: "Glasses",
@@ -401,6 +404,10 @@ const en = {
     storageUsed: "Storage Used",
     glassesAreReconnecting: "Glasses are reconnecting...",
     glassesAreReconnectingMessage: "Make sure your glasses are turned on.",
+    // Gallery sync WiFi explanation
+    connectToGlassesTitle: "Connect to Glasses",
+    wifiJoinExplanationIos: 'When prompted, tap "Join" to connect to "{{ssid}}".',
+    wifiJoinExplanationAndroid: 'When prompted, tap "Join" to connect to "{{ssid}}".',
   },
   store: {
     title: "Store",
@@ -671,6 +678,8 @@ const en = {
     no: "No",
     cancel: "Cancel",
     back: "Back",
+    done: "Done",
+    close: "Close",
     or: "OR",
     logOut: "Log Out",
     error: "Error",
@@ -737,6 +746,11 @@ const en = {
     store: "Store",
     account: "Account",
   },
+  appSwitcher: {
+    swipeUpToClose: "Swipe up to close apps",
+    noAppsOpen: "No Apps Open",
+    yourRecentlyUsedAppsWillAppearHere: "Your recently used apps will appear here",
+  },
   feedback: {
     thankYou: "Thank You!",
     feedbackReceived: "Your feedback has been received.",
@@ -765,6 +779,11 @@ const en = {
       "We're so glad you're enjoying MentraOS! Would you mind rating us on the app store? It really helps us out.",
     notNow: "Not Now",
     rateNow: "Rate Now",
+    screenshots: "Screenshots (optional)",
+    screenshotsHint: "Add up to 5 screenshots to help us understand the issue",
+    addScreenshots: "Tap to add screenshots",
+    addMore: "Add more screenshots",
+    photoPermissionRequired: "Photo library access is required to attach screenshots.",
   },
   offlineMode: {
     enableOfflineMode: "Enable Offline Mode?",
@@ -809,6 +828,44 @@ const en = {
     search: "Search",
     noOptionsFound: "No options found",
   },
+  miniApps: {
+    gallery: "Gallery",
+    camera: "Camera",
+    settings: "Settings",
+    liveCaptions: "Live Captions",
+    offlineCaptions: "Offline Captions",
+    mirror: "Glasses Mirror",
+    simulated: "Simulated Glasses",
+    store: "Get more apps",
+    lmaInstaller: "Local Store",
+  },
+  appInfo: {
+    share: "Share",
+    addToHome: "Add to home",
+    open: "Open",
+    uninstall: "Uninstall",
+    remove: "Remove",
+    settings: "Settings",
+  },
+  lmaInstaller: {
+    installedVersions: "Installed versions",
+    miniAppInstaller: "Mini App Installer",
+    installMiniApp: "Install Mini App",
+    uninstallMiniApp: "Uninstall Mini App",
+    uninstallMiniAppConfirm: "Are you sure you want to uninstall {{appName}}?",
+    uninstallMiniAppError: "Error uninstalling mini app: {{error}}",
+    uninstallMiniAppSuccess: "{{appName}} has been uninstalled successfully",
+  },
+  dev: {
+    developerMode: "Developer mode",
+    developerModeEnabled: "Developer mode enabled!",
+    developerModeMoreTaps: "{{number}} more taps to enable developer mode",
+    superMode: "Super mode",
+    superModeActivated: "Super mode activated! 🚀",
+    superModeDeactivated: "Super mode deactivated",
+    versionInfo: "Version info",
+    versionInfoCopied: "Version info copied to clipboard",
+  }
 }
 
 export default en

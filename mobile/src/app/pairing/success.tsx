@@ -21,6 +21,8 @@ export default function PairingSuccessScreen() {
   const [buttonText, setButtonText] = useState<string>(translate("common:continue"))
   const [stack, setStack] = useState<string[]>([])
 
+  focusEffectPreventBack()
+
   // Use route params first (immediately available), fall back to settings store
   const deviceModel = routeDeviceModel || defaultWearable
   if (!routeDeviceModel) {
@@ -28,8 +30,6 @@ export default function PairingSuccessScreen() {
   } else {
     console.log("PAIR_SUCCESS: Using deviceModel from route params:", routeDeviceModel)
   }
-
-  focusEffectPreventBack()
 
   const glassesImage = getGlassesImage(deviceModel)
 
@@ -55,7 +55,7 @@ export default function PairingSuccessScreen() {
       }
       newStack.push("/ota/check-for-updates")
       if (!onboardingOsCompleted) {
-        newStack.push("/onboarding/os")
+        // newStack.push("/onboarding/os")
       }
       newStack.push("/onboarding/live")
 
@@ -64,7 +64,7 @@ export default function PairingSuccessScreen() {
     }
     if (deviceModel === DeviceTypes.G1) {
       if (!onboardingOsCompleted) {
-        newStack.push("/onboarding/os")
+        // newStack.push("/onboarding/os")
       }
     }
     setStack(newStack)
@@ -101,6 +101,8 @@ export default function PairingSuccessScreen() {
           transition: false,
           title: translate("common:success"),
           subtitle: translate("onboarding:liveConnected"),
+          titleCentered: true,
+          subtitleCentered: true,
         },
       ]
       break
@@ -181,7 +183,6 @@ export default function PairingSuccessScreen() {
         showSkipButton={false}
         startButtonText={buttonText}
         endButtonText={buttonText}
-        exitFn={handleContinue}
         endButtonFn={handleContinue}
       />
     </Screen>

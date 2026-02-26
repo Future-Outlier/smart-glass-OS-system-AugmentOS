@@ -13,6 +13,7 @@ import path from "path";
 
 import { CORS_ORIGINS } from "./config/cors";
 import { logger as rootLogger } from "./services/logging/pino-logger";
+import { metricsService } from "./services/metrics";
 import UserSession from "./services/session/UserSession";
 import { udpAudioServer } from "./services/udp/UdpAudioServer";
 import type { AppEnv } from "./types/hono";
@@ -26,9 +27,11 @@ import {
   clientAppsApi,
   userSettingsApi,
   feedbackApi,
+  incidentLogsApi,
   calendarApi,
   locationApi,
   notificationsApi,
+  photoApi,
   deviceStateApi,
   // SDK APIs (third-party apps)
   sdkVersionApi,
@@ -40,6 +43,9 @@ import {
   consoleOrgsApi,
   consoleAppsApi,
   cliKeysApi,
+  consoleIncidentsApi,
+  // Agent APIs (coding agents)
+  agentIncidentsApi,
   // Store APIs (MentraOS Store website)
   storeAppsApi,
   storeAuthApi,
@@ -137,6 +143,9 @@ app.use(async (c, next) => {
   const status = c.res.status;
   const responseContentType = c.res.headers.get("content-type");
 
+  // Track HTTP request metrics for Prometheus / Porter dashboard
+  metricsService.incrementHttpRequests(status);
+
   // Capture userId from auth middleware (populated during next())
   // This enables filtering by user in Better Stack
   const userId = c.get("email") || c.get("console")?.email || undefined;
@@ -196,16 +205,19 @@ app.use(async (c, next) => {
 app.get("/health", (c) => {
   try {
     const activeSessions = UserSession.getAllSessions();
-    const udpStatus = udpAudioServer.getStatus();
+
+    // Update session gauges so metrics are fresh
+    let miniappCount = 0;
+    for (const session of activeSessions) {
+      miniappCount += session.appWebsockets.size;
+    }
+    metricsService.setUserSessions(activeSessions.length);
+    metricsService.setMiniappSessions(miniappCount);
 
     return c.json({
       status: "ok",
       timestamp: new Date().toISOString(),
-      sessions: {
-        activeCount: activeSessions.length,
-      },
-      udp: udpStatus,
-      uptime: process.uptime(),
+      ...metricsService.toJSON(),
     });
   } catch (error) {
     logger.error(error, "Health check error");
@@ -221,6 +233,30 @@ app.get("/health", (c) => {
 });
 
 // ============================================================================
+// Prometheus Metrics Endpoint (for Porter dashboard + custom autoscaling)
+// ============================================================================
+
+app.get("/metrics", (c) => {
+  try {
+    // Update session gauges before generating output
+    const activeSessions = UserSession.getAllSessions();
+    let miniappCount = 0;
+    for (const session of activeSessions) {
+      miniappCount += session.appWebsockets.size;
+    }
+    metricsService.setUserSessions(activeSessions.length);
+    metricsService.setMiniappSessions(miniappCount);
+
+    return c.text(metricsService.toPrometheus(), 200, {
+      "Content-Type": "text/plain; version=0.0.4; charset=utf-8",
+    });
+  } catch (error) {
+    logger.error(error, "Metrics endpoint error");
+    return c.text("# error generating metrics\n", 500);
+  }
+});
+
+// ============================================================================
 // Client API Routes (Hono native)
 // ============================================================================
 
@@ -229,9 +265,11 @@ app.route("/api/client/min-version", minVersionApi);
 app.route("/api/client/apps", clientAppsApi);
 app.route("/api/client/user/settings", userSettingsApi);
 app.route("/api/client/feedback", feedbackApi);
+app.route("/api/incidents", incidentLogsApi);
 app.route("/api/client/calendar", calendarApi);
 app.route("/api/client/location", locationApi);
 app.route("/api/client/notifications", notificationsApi);
+app.route("/api/client/photo", photoApi);
 app.route("/api/client/device/state", deviceStateApi);
 app.route("/api/client/audio/configure", audioConfigApi);
 
@@ -260,7 +298,14 @@ consoleRouter.route("/account", consoleAccountApi);
 consoleRouter.route("/orgs", consoleOrgsApi);
 consoleRouter.route("/apps", consoleAppsApi);
 consoleRouter.route("/cli-keys", cliKeysApi);
+consoleRouter.route("/admin/incidents", consoleIncidentsApi);
 app.route("/api/console", consoleRouter);
+
+// ============================================================================
+// Agent API Routes (for coding agents with X-Agent-Key auth)
+// ============================================================================
+
+app.route("/api/agent/incidents", agentIncidentsApi);
 
 // ============================================================================
 // CLI API Routes (with CLI auth middleware, reusing console handlers)

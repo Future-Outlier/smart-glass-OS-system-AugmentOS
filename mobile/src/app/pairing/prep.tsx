@@ -241,13 +241,14 @@ export default function PairingPrepScreen() {
       {
         name: "power_on_tutorial",
         type: "video",
-        source: `${CDN_BASE}/ONB1_power_button.mp4`,
-        // poster: require("@assets/onboarding/live/thumbnails/ONB0_power.png"),
+        source: `${CDN_BASE}/ONB1_power_button_loop.mp4`,
+        poster: require("@assets/onboarding/live/thumbnails/ONB0_power.png"),
         transition: false,
         title: translate("pairing:powerOn"), // for spacing so it's consistent with the other steps
         subtitle: translate("onboarding:livePowerOnTutorial"),
         info: translate("onboarding:livePowerOnInfo"),
-        playCount: 99999, //1,
+        playCount: -1, // repeat forever
+        showButtonImmediately: true,
       },
     ]
 
@@ -307,12 +308,12 @@ export default function PairingPrepScreen() {
     )
   }
 
-  const MentraNexGlassesPairingGuide = () => {
+  const MentraDisplayGlassesPairingGuide = () => {
     return (
       <View className="flex-1 flex-col justify-start mt-6">
-        <Text text="Mentra Nex" className="text-2xl font-bold mb-4 text-secondary-foreground" />
+        <Text text="Mentra Display" className="text-2xl font-bold mb-4 text-secondary-foreground" />
         <Text
-          text="1. Make sure your Mentra Nex is fully charged and turned on."
+          text="1. Make sure your Mentra Display is fully charged and turned on."
           className="text-lg text-secondary-foreground"
         />
       </View>
@@ -366,12 +367,31 @@ export default function PairingPrepScreen() {
     )
   }
 
+  // show a coming soon message:
+  const G2PairingGuide = () => {
+    return (
+      <View className="flex-1 flex-col justify-center items-center">
+        <Text text="Coming soon" className="text-3xl font-bold text-secondary-foreground text-center" />
+      </View>
+    )
+  }
+
+  const G2Buttons = () => {
+    return (
+      <View className="gap-4">
+        <Button tx="common:back" onPress={() => goBack()} />
+      </View>
+    )
+  }
+
   const renderGuide = () => {
     switch (deviceModel) {
       case DeviceTypes.SIMULATED:
         return <SimulatedPairingGuide />
       case DeviceTypes.G1:
         return <G1PairingGuide />
+      case DeviceTypes.G2:
+        return <G2PairingGuide />
       case DeviceTypes.LIVE:
         return <MentraLivePairingGuide />
       case DeviceTypes.MACH1:
@@ -379,7 +399,7 @@ export default function PairingPrepScreen() {
       case DeviceTypes.Z100:
         return <VuzixZ100PairingGuide />
       case DeviceTypes.NEX:
-        return <MentraNexGlassesPairingGuide />
+        return <MentraDisplayGlassesPairingGuide />
     }
 
     throw new Error(`Unknown model name: ${deviceModel}`)
@@ -389,6 +409,8 @@ export default function PairingPrepScreen() {
     switch (deviceModel) {
       case DeviceTypes.G1:
         return <G1Buttons />
+      case DeviceTypes.G2:
+        return <G2Buttons />
       case DeviceTypes.LIVE:
         return null
       default:

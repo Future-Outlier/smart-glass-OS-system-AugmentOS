@@ -8,7 +8,7 @@ export type ButtonPressEvent = {
   type: "button_press"
   buttonId: string
   pressType: "long" | "short"
-  timestamp: string
+  timestamp: number
 }
 
 export type TouchEvent = {
@@ -55,7 +55,17 @@ export type HotspotStatusChangeEvent = {
 export type HotspotErrorEvent = {
   type: "hotspot_error"
   error_message: string
-  timestamp: string
+  timestamp: number
+}
+
+export type PhotoResponseEvent = {
+  type: "photo_response"
+  requestId: string
+  photoUrl: string
+  timestamp: number
+  success: boolean
+  errorCode?: string
+  errorMessage?: string
 }
 
 export type GalleryStatusEvent = {
@@ -75,14 +85,14 @@ export type CompatibleGlassesSearchStopEvent = {
 export type HeartbeatSentEvent = {
   type: "heartbeat_sent"
   heartbeat_sent: {
-    timestamp: string
+    timestamp: number
   }
 }
 
 export type HeartbeatReceivedEvent = {
   type: "heartbeat_received"
   heartbeat_received: {
-    timestamp: string
+    timestamp: number
   }
 }
 
@@ -140,7 +150,7 @@ export type PhoneNotificationEvent = {
   title: string
   content: string
   priority: number
-  timestamp: string
+  timestamp: number
   packageName: string
 }
 
@@ -179,7 +189,7 @@ export type KeepAliveAckEvent = {
 export type MtkUpdateCompleteEvent = {
   type: "mtk_update_complete"
   message: string
-  timestamp: string
+  timestamp: number
 }
 
 export type OtaUpdateAvailableEvent = {
@@ -201,51 +211,8 @@ export type OtaProgressEvent = {
   error_message?: string
 }
 
-export type VersionInfoEvent = {
-  type: "version_info"
-  app_version: string
-  build_number: string
-  device_model: string
-  android_version: string
-  ota_version_url: string
-  firmware_version: string
-  bt_mac_address: string
-}
-
 // Union type of all core events
-export type CoreEvent =
-  | ButtonPressEvent
-  | TouchEvent
-  | HeadUpEvent
-  | LocalTranscriptionEvent
-  | LogEvent
-  | WifiStatusChangeEvent
-  | HotspotStatusChangeEvent
-  | HotspotErrorEvent
-  | GalleryStatusEvent
-  | CompatibleGlassesSearchStopEvent
-  | HeartbeatSentEvent
-  | HeartbeatReceivedEvent
-  | SwipeVolumeStatusEvent
-  | SwitchStatusEvent
-  | RgbLedControlResponseEvent
-  | PairFailureEvent
-  | AudioPairingNeededEvent
-  | AudioConnectedEvent
-  | AudioDisconnectedEvent
-  | SaveSettingEvent
-  | PhoneNotificationEvent
-  | PhoneNotificationDismissedEvent
-  | WsTextEvent
-  | WsBinEvent
-  | MicDataEvent
-  | RtmpStreamStatusEvent
-  | KeepAliveAckEvent
-  | MtkUpdateCompleteEvent
-  | OtaUpdateAvailableEvent
-  | OtaProgressEvent
-  | VersionInfoEvent
-  | GlassesNotReadyEvent
+export type CoreEvent = Parameters<CoreModuleEvents[keyof CoreModuleEvents]>[0]
 
 export type CoreModuleEvents = {
   glasses_status: (changed: Partial<GlassesStatus>) => void
@@ -283,7 +250,6 @@ export type CoreModuleEvents = {
   mtk_update_complete: (event: MtkUpdateCompleteEvent) => void
   ota_update_available: (event: OtaUpdateAvailableEvent) => void
   ota_progress: (event: OtaProgressEvent) => void
-  version_info: (event: VersionInfoEvent) => void
 }
 
 export type GlassesConnectionState = "disconnected" | "connected" | "connecting"
@@ -312,7 +278,7 @@ export interface OtaProgress {
 
 export interface GlassesStatus {
   // state:
-  ready: boolean
+  fullyBooted: boolean
   connected: boolean
   micEnabled: boolean
   connectionState: string
@@ -321,6 +287,8 @@ export interface GlassesStatus {
   deviceModel: string
   androidVersion: string
   fwVersion: string
+  besFwVersion: string
+  mtkFwVersion: string
   btMacAddress: string
   buildNumber: string
   otaVersionUrl: string
@@ -374,4 +342,5 @@ export interface CoreStatus {
   searchResults: DeviceSearchResult[]
   wifiScanResults: WifiSearchResult[]
   lastLog: string[]
+  otherBtConnected: boolean
 }
