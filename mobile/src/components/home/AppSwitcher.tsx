@@ -117,7 +117,8 @@ function AppCardItem({app, index, count, translateX, onDismiss, onSelect}: AppCa
     // let stat = -index * cardWidth // use real index for stat!!
     let stat = 0
 
-    let howFar = SCREEN_WIDTH / 4
+    // let howFar = SCREEN_WIDTH / 4
+    let howFar = SCREEN_WIDTH / 2 - cardWidth / 2
     let lin = translateX.value / cardWidth + animIndex
     if (lin < 0) {
       lin = 0
