@@ -18,10 +18,10 @@ function getLatestPhoto(c: Context) {
 
   if (!userId) return c.json({error: "userId is required"}, 400)
 
-  const user = UserSession.get(userId)
-  if (!user) return c.json({error: "No photos available for this user"}, 404)
+  const userSession = UserSession.get(userId)
+  if (!userSession) return c.json({error: "No photos available for this user"}, 404)
 
-  const photos = user.photo.getAll()
+  const photos = userSession.photo.getAll()
   if (photos.length === 0) {
     return c.json({error: "No photos available for this user"}, 404)
   }
@@ -42,7 +42,7 @@ function getPhotoData(c: Context) {
 
   if (!userId) return c.json({error: "userId is required"}, 400)
 
-  const user = UserSession.get(userId)
+  const userSession = UserSession.get(userId)
   const photo = user?.photo.getPhoto(requestId)
   if (!photo) return c.json({error: "Photo not found"}, 404)
   if (photo.userId !== userId) {
@@ -64,7 +64,7 @@ function getPhotoBase64(c: Context) {
 
   if (!userId) return c.json({error: "userId is required"}, 400)
 
-  const user = UserSession.get(userId)
+  const userSession = UserSession.get(userId)
   const photo = user?.photo.getPhoto(requestId)
   if (!photo) return c.json({error: "Photo not found"}, 404)
   if (photo.userId !== userId) {

@@ -18,13 +18,13 @@ async function speak(c: Context) {
   if (!text) return c.json({error: "text is required"}, 400)
   if (!userId) return c.json({error: "userId is required"}, 400)
 
-  const user = UserSession.get(userId)
-  if (!user?.appSession) {
+  const userSession = UserSession.get(userId)
+  if (!userSession?.appSession) {
     return c.json({error: `No active session for user ${userId}`}, 404)
   }
 
   try {
-    await user.audio.speak(text)
+    await userSession.audio.speak(text)
     return c.json({success: true, message: "Text-to-speech started", userId})
   } catch (error: any) {
     return c.json({error: error.message}, 500)
@@ -37,13 +37,13 @@ async function stopAudio(c: Context) {
 
   if (!userId) return c.json({error: "userId is required"}, 400)
 
-  const user = UserSession.get(userId)
-  if (!user?.appSession) {
+  const userSession = UserSession.get(userId)
+  if (!userSession?.appSession) {
     return c.json({error: `No active session for user ${userId}`}, 404)
   }
 
   try {
-    await user.audio.stopAudio()
+    await userSession.audio.stopAudio()
     return c.json({success: true, message: "Audio stopped", userId})
   } catch (error: any) {
     return c.json({error: error.message}, 500)

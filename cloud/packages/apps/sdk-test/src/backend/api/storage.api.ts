@@ -17,13 +17,13 @@ async function getTheme(c: Context) {
 
   if (!userId) return c.json({error: "userId is required"}, 400)
 
-  const user = UserSession.get(userId)
-  if (!user?.appSession) {
+  const userSession = UserSession.get(userId)
+  if (!userSession?.appSession) {
     return c.json({error: `No active session for user ${userId}`}, 404)
   }
 
   try {
-    const theme = await user.storage.getTheme()
+    const theme = await userSession.storage.getTheme()
     return c.json({theme, userId})
   } catch (error: any) {
     return c.json({error: error.message}, 500)
@@ -39,13 +39,13 @@ async function setTheme(c: Context) {
     return c.json({error: 'theme must be "dark" or "light"'}, 400)
   }
 
-  const user = UserSession.get(userId)
-  if (!user?.appSession) {
+  const userSession = UserSession.get(userId)
+  if (!userSession?.appSession) {
     return c.json({error: `No active session for user ${userId}`}, 404)
   }
 
   try {
-    await user.storage.setTheme(theme)
+    await userSession.storage.setTheme(theme)
     return c.json({success: true, theme, userId})
   } catch (error: any) {
     return c.json({error: error.message}, 500)

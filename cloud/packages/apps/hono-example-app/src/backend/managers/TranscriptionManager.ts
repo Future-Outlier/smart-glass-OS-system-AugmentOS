@@ -14,7 +14,7 @@ export class TranscriptionManager {
   private sseClients: Set<SSEWriter> = new Set()
   private unsubscribe: (() => void) | null = null
 
-  constructor(private user: UserSession) {}
+  constructor(private userSession: UserSession) {}
 
   /** Wire up the transcription listener on the glasses session */
   setup(session: AppSession): void {
@@ -31,7 +31,7 @@ export class TranscriptionManager {
       text,
       isFinal,
       timestamp: Date.now(),
-      userId: this.user.userId,
+      userId: this.userSession.userId,
     })
 
     for (const client of this.sseClients) {

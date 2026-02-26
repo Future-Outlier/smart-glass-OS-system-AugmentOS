@@ -24,7 +24,7 @@ export type GestureName = (typeof GESTURES)[number]
  * appropriate manager (e.g. single_tap → photo.takePhoto()).
  */
 export class InputManager {
-  constructor(private user: UserSession) {}
+  constructor(private userSession: UserSession) {}
 
   /** Wire up all button and touch listeners on the glasses session */
   setup(session: AppSession): void {
@@ -41,14 +41,14 @@ export class InputManager {
       }
 
       // Quick press — take a photo
-      await this.user.photo.takePhoto()
+      await this.userSession.photo.takePhoto()
     })
   }
 
   /** Touchpad gesture handlers */
   private setupTouch(session: AppSession): void {
     session.events.onTouchEvent("single_tap", async () => {
-      await this.user.photo.takePhoto()
+      await this.userSession.photo.takePhoto()
     })
 
     session.events.onTouchEvent("double_tap", () => {})

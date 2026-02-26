@@ -17,8 +17,8 @@ function photoStream(c: Context) {
   const userId = c.req.query("userId")
   if (!userId) return c.json({error: "userId is required"}, 400)
 
-  const user = UserSession.get(userId)
-  if (!user) return c.json({error: `No user for ${userId}`}, 404)
+  const userSession = UserSession.get(userId)
+  if (!userSession) return c.json({error: `No user for ${userId}`}, 404)
 
   return streamSSE(c, async (stream) => {
     const client = {
@@ -27,14 +27,14 @@ function photoStream(c: Context) {
       close: () => stream.close(),
     }
 
-    user.photo.addSSEClient(client)
+    userSession.photo.addSSEClient(client)
 
     await stream.writeSSE({
       data: JSON.stringify({type: "connected", userId}),
     })
 
     // Send existing photos
-    for (const photo of user.photo.getAllMap().values()) {
+    for (const photo of userSession.photo.getAllMap().values()) {
       const base64Data = photo.buffer.toString("base64")
       await stream.writeSSE({
         data: JSON.stringify({
@@ -51,7 +51,7 @@ function photoStream(c: Context) {
     }
 
     stream.onAbort(() => {
-      user.photo.removeSSEClient(client)
+      userSession.photo.removeSSEClient(client)
     })
 
     while (true) {
@@ -65,8 +65,8 @@ function transcriptionStream(c: Context) {
   const userId = c.req.query("userId")
   if (!userId) return c.json({error: "userId is required"}, 400)
 
-  const user = UserSession.get(userId)
-  if (!user) return c.json({error: `No user for ${userId}`}, 404)
+  const userSession = UserSession.get(userId)
+  if (!userSession) return c.json({error: `No user for ${userId}`}, 404)
 
   return streamSSE(c, async (stream) => {
     const client = {
@@ -75,14 +75,14 @@ function transcriptionStream(c: Context) {
       close: () => stream.close(),
     }
 
-    user.transcription.addSSEClient(client)
+    userSession.transcription.addSSEClient(client)
 
     await stream.writeSSE({
       data: JSON.stringify({type: "connected", userId}),
     })
 
     stream.onAbort(() => {
-      user.transcription.removeSSEClient(client)
+      userSession.transcription.removeSSEClient(client)
     })
 
     while (true) {

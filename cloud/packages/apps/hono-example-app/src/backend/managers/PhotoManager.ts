@@ -23,11 +23,11 @@ export class PhotoManager {
   private photos: Map<string, StoredPhoto> = new Map()
   private sseClients: Set<SSEWriter> = new Set()
 
-  constructor(private user: UserSession) {}
+  constructor(private userSession: UserSession) {}
 
   /** Capture a photo from the glasses and store + broadcast it */
   async takePhoto(): Promise<void> {
-    const session = this.user.appSession
+    const session = this.userSession.appSession
     if (!session) throw new Error("No active glasses session")
 
     const photo = await session.camera.requestPhoto()
@@ -36,7 +36,7 @@ export class PhotoManager {
       requestId: photo.requestId,
       buffer: photo.buffer,
       timestamp: photo.timestamp,
-      userId: this.user.userId,
+      userId: this.userSession.userId,
       mimeType: photo.mimeType,
       filename: photo.filename,
       size: photo.size,
