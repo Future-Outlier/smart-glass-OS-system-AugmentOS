@@ -1,191 +1,383 @@
 import {useState, useEffect, useCallback, useRef} from "react"
-import {Camera, Zap, Terminal, Moon, Sun} from "lucide-react"
-import {Badge, Switch, Tabs, TabsList, TabsTrigger, TabsContent} from "../../components/ui"
-import {useTheme} from "../../App"
-import {PhotoStream, type Photo} from "./components/PhotoStream"
-import {AudioControls} from "./components/AudioControls"
-import {TranscriptionFeed, type Transcription} from "./components/TranscriptionFeed"
-import {SystemLogs, type Log} from "./components/SystemLogs"
+import {Mic, Square, Loader2, Wifi, WifiOff, Camera, X, ChevronDown, ChevronUp} from "lucide-react"
 
 interface HomePageProps {
   userId: string
 }
 
+interface Photo {
+  id: string
+  requestId: string
+  url: string
+  timestamp: string
+}
+
+interface TranscriptEntry {
+  id: number
+  role: "user" | "ai"
+  text: string
+  time: string
+}
+
+type SessionStatus = "idle" | "connecting" | "active" | "error"
+
 export default function HomePage({userId}: HomePageProps) {
-  const {isDarkMode, toggleTheme} = useTheme()
+  const [status, setStatus] = useState<SessionStatus>("idle")
+  const [error, setError] = useState<string | null>(null)
+  const [transcript, setTranscript] = useState<TranscriptEntry[]>([])
   const [photos, setPhotos] = useState<Photo[]>([])
-  const [transcriptions, setTranscriptions] = useState<Transcription[]>([])
-  const [logs, setLogs] = useState<Log[]>([])
-  const logIdCounter = useRef(Date.now())
+  const [photosExpanded, setPhotosExpanded] = useState(true)
+  const [selectedPhoto, setSelectedPhoto] = useState<Photo | null>(null)
+  const [provider, setProvider] = useState<"gemini" | "openai">("gemini")
+  const transcriptEndRef = useRef<HTMLDivElement>(null)
+  const idCounter = useRef(0)
+  const pollRef = useRef<ReturnType<typeof setInterval> | null>(null)
 
-  const addLog = useCallback((message: string) => {
-    setLogs((prev) =>
-      [
-        {
-          id: logIdCounter.current++,
-          message,
-          time: new Date().toLocaleTimeString(),
-        },
-        ...prev,
-      ].slice(0, 20),
-    )
-  }, [])
-
-  // Connect to SSE photo stream
+  // Auto-scroll transcript
   useEffect(() => {
-    let eventSource: EventSource | null = null
+    transcriptEndRef.current?.scrollIntoView({behavior: "smooth"})
+  }, [transcript])
+
+  // Poll realtime status
+  useEffect(() => {
+    const check = async () => {
+      try {
+        const res = await fetch(`/api/realtime/status?userId=${encodeURIComponent(userId)}`)
+        const data = await res.json()
+        if (data.active && status === "idle") {
+          setStatus("active")
+        } else if (!data.active && status === "active") {
+          setStatus("idle")
+        }
+      } catch {}
+    }
+    pollRef.current = setInterval(check, 3000)
+    check()
+    return () => {
+      if (pollRef.current) clearInterval(pollRef.current)
+    }
+  }, [userId, status])
+
+  // Connect to transcription SSE stream
+  useEffect(() => {
+    if (!userId) return
+    let es: EventSource | null = null
 
     const connect = () => {
-      try {
-        eventSource = new EventSource(`/api/stream/photo?userId=${encodeURIComponent(userId)}`)
+      es = new EventSource(`/api/stream/transcription?userId=${encodeURIComponent(userId)}`)
 
-        eventSource.onopen = () => addLog("Connected to photo stream")
+      es.onmessage = (event) => {
+        try {
+          const data = JSON.parse(event.data)
+          if (data.type === "connected") return
+          if (!data.text || !data.isFinal) return
 
-        eventSource.onmessage = (event) => {
-          try {
-            const data = JSON.parse(event.data)
-            if (data.type === "connected") return
+          setTranscript((prev) => [
+            ...prev,
+            {
+              id: idCounter.current++,
+              role: "user",
+              text: data.text,
+              time: new Date().toLocaleTimeString([], {hour: "2-digit", minute: "2-digit"}),
+            },
+          ])
+        } catch {}
+      }
 
-            setPhotos((prev) => {
-              if (prev.some((p) => p.requestId === data.requestId)) return prev
-              addLog(`Photo captured at ${new Date(data.timestamp).toLocaleTimeString()}`)
-              return [
-                {
-                  id: data.requestId,
-                  requestId: data.requestId,
-                  url: data.dataUrl,
-                  timestamp: new Date(data.timestamp).toLocaleTimeString(),
-                },
-                ...prev,
-              ].slice(0, 6)
-            })
-          } catch {}
-        }
-
-        eventSource.onerror = () => {
-          addLog("Photo stream disconnected, reconnecting...")
-          eventSource?.close()
-          setTimeout(connect, 3000)
-        }
-      } catch {
-        addLog("Failed to connect to photo stream")
+      es.onerror = () => {
+        es?.close()
+        setTimeout(connect, 3000)
       }
     }
 
     connect()
-    return () => eventSource?.close()
-  }, [addLog, userId])
+    return () => es?.close()
+  }, [userId])
 
-  // Connect to SSE transcription stream
+  // Connect to photo SSE stream
   useEffect(() => {
-    let eventSource: EventSource | null = null
-    let idCounter = Date.now()
+    if (!userId) return
+    let es: EventSource | null = null
 
     const connect = () => {
-      try {
-        eventSource = new EventSource(`/api/stream/transcription?userId=${encodeURIComponent(userId)}`)
+      es = new EventSource(`/api/stream/photo?userId=${encodeURIComponent(userId)}`)
 
-        eventSource.onopen = () => addLog("Connected to transcription stream")
+      es.onmessage = (event) => {
+        try {
+          const data = JSON.parse(event.data)
+          if (data.type === "connected") return
 
-        eventSource.onmessage = (event) => {
-          try {
-            const data = JSON.parse(event.data)
-            if (data.type === "connected") return
+          setPhotos((prev) => {
+            if (prev.some((p) => p.requestId === data.requestId)) return prev
+            return [
+              {
+                id: data.requestId,
+                requestId: data.requestId,
+                url: data.dataUrl,
+                timestamp: new Date(data.timestamp).toLocaleTimeString([], {hour: "2-digit", minute: "2-digit"}),
+              },
+              ...prev,
+            ].slice(0, 20)
+          })
+        } catch {}
+      }
 
-            setTranscriptions((prev) => {
-              const entry = {
-                id: idCounter++,
-                text: data.text,
-                time: new Date(data.timestamp).toLocaleTimeString(),
-                isFinal: data.isFinal,
-              }
-
-              if (data.isFinal) {
-                if (prev.length > 0 && !prev[0].isFinal) {
-                  const updated = [...prev]
-                  updated[0] = {...updated[0], ...entry, id: updated[0].id}
-                  return updated.slice(0, 10)
-                }
-                return [entry, ...prev].slice(0, 10)
-              } else {
-                if (prev.length === 0 || prev[0].isFinal) {
-                  return [entry, ...prev].slice(0, 10)
-                }
-                const updated = [...prev]
-                updated[0] = {...updated[0], ...entry, id: updated[0].id}
-                return updated
-              }
-            })
-          } catch {}
-        }
-
-        eventSource.onerror = () => {
-          addLog("Transcription stream disconnected, reconnecting...")
-          eventSource?.close()
-          setTimeout(connect, 3000)
-        }
-      } catch {
-        addLog("Failed to connect to transcription stream")
+      es.onerror = () => {
+        es?.close()
+        setTimeout(connect, 3000)
       }
     }
 
     connect()
-    return () => eventSource?.close()
-  }, [addLog, userId])
+    return () => es?.close()
+  }, [userId])
+
+  const startSession = useCallback(async () => {
+    setError(null)
+    setStatus("connecting")
+
+    try {
+      const res = await fetch("/api/realtime/start", {
+        method: "POST",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify({userId, provider}),
+      })
+
+      const data = await res.json()
+
+      if (!res.ok) {
+        throw new Error(data.error || "Failed to start session")
+      }
+
+      setStatus("active")
+      setTranscript([])
+    } catch (err: any) {
+      setError(err.message)
+      setStatus("error")
+      setTimeout(() => setStatus("idle"), 3000)
+    }
+  }, [userId, provider])
+
+  const stopSession = useCallback(async () => {
+    try {
+      await fetch("/api/realtime/stop", {
+        method: "POST",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify({userId}),
+      })
+    } catch {}
+    setStatus("idle")
+  }, [userId])
+
+  const handleMicButton = useCallback(() => {
+    if (status === "active") {
+      stopSession()
+    } else if (status === "idle" || status === "error") {
+      startSession()
+    }
+  }, [status, startSession, stopSession])
+
+  const statusLabel = {
+    idle: "Tap to start",
+    connecting: "Connecting...",
+    active: "Listening",
+    error: "Error",
+  }[status]
+
+  const statusColor = {
+    idle: "text-zinc-400",
+    connecting: "text-amber-400",
+    active: "text-emerald-400",
+    error: "text-red-400",
+  }[status]
 
   return (
-    <div className="max-w-5xl mx-auto p-4 md:p-6 space-y-4">
+    <div className="min-h-screen bg-zinc-950 text-white flex flex-col">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <div className="w-9 h-9 rounded-xl bg-primary flex items-center justify-center">
-            <Camera className="w-4 h-4 text-primary-foreground" />
-          </div>
-          <div>
-            <h1 className="text-lg font-semibold">Camera App</h1>
-            <p className="text-xs text-muted-foreground">MentraOS</p>
-          </div>
+      <header className="flex items-center justify-between px-5 pt-5 pb-3">
+        <div>
+          <h1 className="text-lg font-semibold tracking-tight">Voice Assistant</h1>
+          <p className="text-xs text-zinc-500">MentraOS SDK Test</p>
         </div>
+        <div className="flex items-center gap-2">
+          {status === "active" ? (
+            <Wifi className="w-4 h-4 text-emerald-400" />
+          ) : (
+            <WifiOff className="w-4 h-4 text-zinc-600" />
+          )}
+          <span className="text-xs text-zinc-600 font-mono">{userId?.split("@")[0]}</span>
+        </div>
+      </header>
 
-        <div className="flex items-center gap-3">
-          <Badge variant="outline" className="font-mono text-xs">
-            {userId?.substring(0, 8)}...
-          </Badge>
-          <div className="flex items-center gap-2">
-            <Sun className="w-3.5 h-3.5 text-muted-foreground" />
-            <Switch checked={isDarkMode} onCheckedChange={toggleTheme} />
-            <Moon className="w-3.5 h-3.5 text-muted-foreground" />
-          </div>
+      {/* Provider Toggle */}
+      {status === "idle" && (
+        <div className="flex items-center justify-center gap-1 px-5">
+          <button
+            onClick={() => setProvider("gemini")}
+            className={`px-3 py-1.5 rounded-l-lg text-xs font-medium transition-colors ${
+              provider === "gemini"
+                ? "bg-blue-600/20 border border-blue-500/40 text-blue-300"
+                : "bg-zinc-800/50 border border-zinc-700/30 text-zinc-500 hover:text-zinc-300"
+            }`}>
+            Gemini
+          </button>
+          <button
+            onClick={() => setProvider("openai")}
+            className={`px-3 py-1.5 rounded-r-lg text-xs font-medium transition-colors ${
+              provider === "openai"
+                ? "bg-emerald-600/20 border border-emerald-500/40 text-emerald-300"
+                : "bg-zinc-800/50 border border-zinc-700/30 text-zinc-500 hover:text-zinc-300"
+            }`}>
+            OpenAI
+          </button>
         </div>
+      )}
+
+      {/* Photo Strip */}
+      {photos.length > 0 && (
+        <div className="px-5">
+          <button
+            onClick={() => setPhotosExpanded((p) => !p)}
+            className="flex items-center gap-2 text-xs text-zinc-500 hover:text-zinc-300 transition-colors mb-2">
+            <Camera className="w-3.5 h-3.5" />
+            <span>Photos ({photos.length})</span>
+            {photosExpanded ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
+          </button>
+
+          {photosExpanded && (
+            <div className="flex gap-2 overflow-x-auto pb-3 scrollbar-hide">
+              {photos.map((photo) => (
+                <button
+                  key={photo.id}
+                  onClick={() => setSelectedPhoto(photo)}
+                  className="flex-shrink-0 relative group rounded-lg overflow-hidden bg-zinc-800 border border-zinc-800 hover:border-zinc-600 transition-colors">
+                  <img src={photo.url} alt={`Captured at ${photo.timestamp}`} className="w-20 h-20 object-cover" />
+                  <div className="absolute bottom-0 inset-x-0 bg-gradient-to-t from-black/70 to-transparent px-1.5 py-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <span className="text-[9px] text-white/80 font-mono">{photo.timestamp}</span>
+                  </div>
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Transcript Area */}
+      <div className="flex-1 overflow-y-auto px-5 py-3 space-y-3">
+        {transcript.length === 0 && status === "idle" && (
+          <div className="flex flex-col items-center justify-center h-full opacity-40 select-none">
+            <Mic className="w-12 h-12 mb-4 text-zinc-600" />
+            <p className="text-sm text-zinc-500 text-center leading-relaxed">
+              Start a conversation with AI.
+              <br />
+              Speak naturally through your glasses.
+            </p>
+          </div>
+        )}
+
+        {transcript.length === 0 && status === "active" && (
+          <div className="flex flex-col items-center justify-center h-full opacity-60 select-none">
+            <div className="relative">
+              <div className="w-4 h-4 bg-emerald-400 rounded-full animate-ping absolute inset-0 m-auto" />
+              <div className="w-4 h-4 bg-emerald-400 rounded-full relative" />
+            </div>
+            <p className="text-sm text-zinc-400 mt-4">Listening... say something</p>
+          </div>
+        )}
+
+        {transcript.map((entry) => (
+          <div key={entry.id} className={`flex ${entry.role === "user" ? "justify-end" : "justify-start"}`}>
+            <div
+              className={`max-w-[85%] rounded-2xl px-4 py-2.5 ${
+                entry.role === "user"
+                  ? "bg-blue-600/20 border border-blue-500/20 text-blue-100"
+                  : "bg-zinc-800/80 border border-zinc-700/50 text-zinc-200"
+              }`}>
+              <p className="text-sm leading-relaxed">{entry.text}</p>
+              <p className="text-[10px] mt-1 opacity-40">{entry.time}</p>
+            </div>
+          </div>
+        ))}
+
+        <div ref={transcriptEndRef} />
       </div>
 
-      {/* Photo Stream */}
-      <PhotoStream photos={photos} />
+      {/* Error Banner */}
+      {error && (
+        <div className="mx-5 mb-2 px-4 py-2 rounded-lg bg-red-500/10 border border-red-500/20">
+          <p className="text-xs text-red-400">{error}</p>
+        </div>
+      )}
 
-      {/* Audio Controls */}
-      <AudioControls userId={userId} onLog={addLog} />
+      {/* Bottom Controls */}
+      <div className="flex flex-col items-center pb-8 pt-4 gap-3">
+        {/* Status */}
+        <div className="flex items-center gap-2">
+          {status === "active" && (
+            <span className="relative flex h-2 w-2">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
+              <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-400" />
+            </span>
+          )}
+          <span className={`text-xs font-medium ${statusColor}`}>
+            {status === "active" ? `${statusLabel} · ${provider}` : statusLabel}
+          </span>
+        </div>
 
-      {/* Transcriptions & Logs */}
-      <Tabs defaultValue="transcriptions">
-        <TabsList className="w-full">
-          <TabsTrigger value="transcriptions" className="flex-1">
-            <Zap className="w-3.5 h-3.5" />
-            Transcriptions
-          </TabsTrigger>
-          <TabsTrigger value="logs" className="flex-1">
-            <Terminal className="w-3.5 h-3.5" />
-            System Logs
-          </TabsTrigger>
-        </TabsList>
+        {/* Mic Button */}
+        <button
+          onClick={handleMicButton}
+          disabled={status === "connecting"}
+          className={`
+            relative w-20 h-20 rounded-full flex items-center justify-center
+            transition-all duration-300 active:scale-95
+            ${
+              status === "active"
+                ? "bg-red-500/20 border-2 border-red-500/60 shadow-[0_0_30px_rgba(239,68,68,0.2)]"
+                : status === "connecting"
+                ? "bg-amber-500/10 border-2 border-amber-500/30"
+                : "bg-white/5 border-2 border-white/10 hover:bg-white/10 hover:border-white/20"
+            }
+          `}>
+          {/* Pulse ring when active */}
+          {status === "active" && (
+            <span className="absolute inset-0 rounded-full border-2 border-red-500/30 animate-ping" />
+          )}
 
-        <TabsContent value="transcriptions">
-          <TranscriptionFeed transcriptions={transcriptions} />
-        </TabsContent>
+          {status === "connecting" ? (
+            <Loader2 className="w-8 h-8 text-amber-400 animate-spin" />
+          ) : status === "active" ? (
+            <Square className="w-7 h-7 text-red-400 fill-red-400" />
+          ) : (
+            <Mic className="w-8 h-8 text-zinc-300" />
+          )}
+        </button>
 
-        <TabsContent value="logs">
-          <SystemLogs logs={logs} />
-        </TabsContent>
-      </Tabs>
+        {/* Hint */}
+        {status === "active" && <p className="text-[11px] text-zinc-600">Tap to stop</p>}
+      </div>
+
+      {/* Photo Lightbox */}
+      {selectedPhoto && (
+        <div
+          className="fixed inset-0 z-50 bg-black/90 flex items-center justify-center p-4"
+          onClick={() => setSelectedPhoto(null)}>
+          <button
+            onClick={() => setSelectedPhoto(null)}
+            className="absolute top-4 right-4 w-10 h-10 rounded-full bg-white/10 flex items-center justify-center hover:bg-white/20 transition-colors">
+            <X className="w-5 h-5" />
+          </button>
+          <img
+            src={selectedPhoto.url}
+            alt={`Photo from ${selectedPhoto.timestamp}`}
+            className="max-w-full max-h-[85vh] rounded-xl object-contain"
+            onClick={(e) => e.stopPropagation()}
+          />
+          <div className="absolute bottom-6 text-center">
+            <span className="text-xs text-zinc-400 font-mono">{selectedPhoto.timestamp}</span>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

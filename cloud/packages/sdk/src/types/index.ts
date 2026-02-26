@@ -49,6 +49,8 @@ export type {
   StreamStatusCheckRequest,
   AudioPlayRequest,
   AudioStopRequest,
+  AudioStreamStart,
+  AudioStreamEnd,
   AppToCloudMessage,
   AppBroadcastMessage,
   AppDirectMessage,
@@ -105,6 +107,7 @@ export type {
   AudioChunk,
   PermissionError,
   PermissionErrorDetail,
+  AudioStreamReady,
 } from "./messages/cloud-to-app"
 
 // Stream types

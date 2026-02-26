@@ -7,7 +7,6 @@ import { slackService } from "../notifications/slack.service";
 import { logger as rootLogger } from "../logging/pino-logger";
 const logger = rootLogger.child({ service: "console.apps.service" });
 
-
 /**
  * Auto-install an app for the developer who created it.
  * This ensures the developer can immediately test their app without manual installation.
@@ -82,10 +81,7 @@ async function getOrCreateUserByEmail(email: string): Promise<UserI> {
  * - If orgId provided: returns apps owned by that org (membership required).
  * - Else: returns apps across all orgs the user is a member of (union).
  */
-export async function listApps(
-  email: string,
-  opts?: { orgId?: string },
-): Promise<any[]> {
+export async function listApps(email: string, opts?: { orgId?: string }): Promise<any[]> {
   const user = await getOrCreateUserByEmail(email);
   const orgId = opts?.orgId;
 
@@ -96,10 +92,7 @@ export async function listApps(
       // Verify user is a member of the org
       const isMember = await OrganizationService.isOrgMember(user, orgObjectId);
       if (!isMember) {
-        throw new ApiError(
-          403,
-          "Insufficient permissions for this organization",
-        );
+        throw new ApiError(403, "Insufficient permissions for this organization");
       }
 
       const apps = await App.find({ organizationId: orgObjectId }).lean();
@@ -107,9 +100,7 @@ export async function listApps(
     }
 
     // No orgId provided: list apps across user's organizations
-    const usersOrgs = Array.isArray(user.organizations)
-      ? user.organizations
-      : [];
+    const usersOrgs = Array.isArray(user.organizations) ? user.organizations : [];
     if (usersOrgs.length === 0) {
       return [];
     }
@@ -131,10 +122,7 @@ export async function listApps(
  * - Else use user.defaultOrg.
  * - Else create a personal org and set as default.
  */
-async function resolveOrgForWrite(
-  user: UserI,
-  opts?: { orgId?: string },
-): Promise<Types.ObjectId> {
+async function resolveOrgForWrite(user: UserI, opts?: { orgId?: string }): Promise<Types.ObjectId> {
   if (opts?.orgId) {
     return toObjectId(opts.orgId, "orgId");
   }
@@ -162,10 +150,7 @@ export async function createApp(
 
   // Validate required fields
   const packageNameRaw = appInput?.["packageName"];
-  if (
-    typeof packageNameRaw !== "string" ||
-    packageNameRaw.trim().length === 0
-  ) {
+  if (typeof packageNameRaw !== "string" || packageNameRaw.trim().length === 0) {
     throw new ApiError(400, "packageName is required");
   }
   const packageName = packageNameRaw.trim();
@@ -173,10 +158,7 @@ export async function createApp(
   // Ensure package uniqueness
   const existing = await App.findOne({ packageName }).lean();
   if (existing) {
-    throw new ApiError(
-      409,
-      `App with packageName '${packageName}' already exists`,
-    );
+    throw new ApiError(409, `App with packageName '${packageName}' already exists`);
   }
 
   // Resolve org for write
@@ -185,10 +167,7 @@ export async function createApp(
   // Verify admin rights in org
   const isAdmin = await OrganizationService.isOrgAdmin(user, orgObjectId);
   if (!isAdmin) {
-    throw new ApiError(
-      403,
-      "Insufficient permissions to create app in this organization",
-    );
+    throw new ApiError(403, "Insufficient permissions to create app in this organization");
   }
 
   // Generate and hash API key
@@ -221,20 +200,29 @@ export async function createApp(
     }
   }
 
+  // Default permissions: if none were provided, grant MICROPHONE so the app
+  // isn't deaf out of the box.  The dev console pre-fills this in its form;
+  // this ensures CLI / API callers get the same sensible default.
+  if (!doc.permissions || !Array.isArray(doc.permissions) || doc.permissions.length === 0) {
+    doc.permissions = [{ type: "MICROPHONE" }];
+  }
+
   try {
     const created = await App.create(doc);
     const leanCreated = (await App.findById(created._id).lean()) || doc;
 
     // Notify Slack about the new mini app submission (fire-and-forget)
-    slackService.notifyMiniAppSubmission(
-      {
-        name: leanCreated.name,
-        packageName: leanCreated.packageName,
-        appType: leanCreated.appType,
-        description: leanCreated.description,
-      },
-      email,
-    ).catch(() => {});
+    slackService
+      .notifyMiniAppSubmission(
+        {
+          name: leanCreated.name,
+          packageName: leanCreated.packageName,
+          appType: leanCreated.appType,
+          description: leanCreated.description,
+        },
+        email,
+      )
+      .catch(() => {});
 
     // Auto-install the app for the developer who created it
     await autoInstallAppForDeveloper(packageName, user);
@@ -262,10 +250,7 @@ export async function getApp(email: string, packageName: string): Promise<any> {
 
   // Ensure user is member of owning org
   if (app.organizationId) {
-    const isMember = await OrganizationService.isOrgMember(
-      user,
-      app.organizationId,
-    );
+    const isMember = await OrganizationService.isOrgMember(user, app.organizationId);
     if (!isMember) throw new ApiError(403, "Forbidden");
   }
   return sanitizeApp(app);
@@ -274,11 +259,7 @@ export async function getApp(email: string, packageName: string): Promise<any> {
 /**
  * Update an app (must be admin of the owning org).
  */
-export async function updateApp(
-  email: string,
-  packageName: string,
-  patch: Record<string, unknown>,
-): Promise<any> {
+export async function updateApp(email: string, packageName: string, patch: Record<string, unknown>): Promise<any> {
   if (!packageName) throw new ApiError(400, "packageName is required");
   const user = await getOrCreateUserByEmail(email);
 
@@ -287,10 +268,7 @@ export async function updateApp(
 
   // Admin check
   if (appDoc.organizationId) {
-    const isAdmin = await OrganizationService.isOrgAdmin(
-      user,
-      appDoc.organizationId,
-    );
+    const isAdmin = await OrganizationService.isOrgAdmin(user, appDoc.organizationId);
     if (!isAdmin) throw new ApiError(403, "Forbidden");
   } else {
     throw new ApiError(409, "App has no organizationId");
@@ -312,11 +290,7 @@ export async function updateApp(
     if (!forbidden.has(k)) update[k] = v;
   }
 
-  const updated = await App.findOneAndUpdate(
-    { packageName },
-    { $set: update },
-    { new: true },
-  ).lean();
+  const updated = await App.findOneAndUpdate({ packageName }, { $set: update }, { new: true }).lean();
 
   return sanitizeApp(updated);
 }
@@ -324,10 +298,7 @@ export async function updateApp(
 /**
  * Delete an app (must be admin of the owning org).
  */
-export async function deleteApp(
-  email: string,
-  packageName: string,
-): Promise<void> {
+export async function deleteApp(email: string, packageName: string): Promise<void> {
   if (!packageName) throw new ApiError(400, "packageName is required");
   const user = await getOrCreateUserByEmail(email);
 
@@ -336,10 +307,7 @@ export async function deleteApp(
 
   // Admin check
   if (appDoc.organizationId) {
-    const isAdmin = await OrganizationService.isOrgAdmin(
-      user,
-      appDoc.organizationId,
-    );
+    const isAdmin = await OrganizationService.isOrgAdmin(user, appDoc.organizationId);
     if (!isAdmin) throw new ApiError(403, "Forbidden");
   } else {
     throw new ApiError(409, "App has no organizationId");
@@ -352,10 +320,7 @@ export async function deleteApp(
  * Publish an app (must be admin of the owning org).
  * For now, toggle appStoreStatus to "PUBLISHED".
  */
-export async function publishApp(
-  email: string,
-  packageName: string,
-): Promise<any> {
+export async function publishApp(email: string, packageName: string): Promise<any> {
   if (!packageName) throw new ApiError(400, "packageName is required");
   const user = await getOrCreateUserByEmail(email);
 
@@ -363,10 +328,7 @@ export async function publishApp(
   if (!appDoc) throw new ApiError(404, "App not found");
 
   if (appDoc.organizationId) {
-    const isAdmin = await OrganizationService.isOrgAdmin(
-      user,
-      appDoc.organizationId,
-    );
+    const isAdmin = await OrganizationService.isOrgAdmin(user, appDoc.organizationId);
     if (!isAdmin) throw new ApiError(403, "Forbidden");
   } else {
     throw new ApiError(409, "App has no organizationId");
@@ -394,10 +356,7 @@ export async function regenerateApiKey(
   if (!appDoc) throw new ApiError(404, "App not found");
 
   if (appDoc.organizationId) {
-    const isAdmin = await OrganizationService.isOrgAdmin(
-      user,
-      appDoc.organizationId,
-    );
+    const isAdmin = await OrganizationService.isOrgAdmin(user, appDoc.organizationId);
     if (!isAdmin) throw new ApiError(403, "Forbidden");
   } else {
     throw new ApiError(409, "App has no organizationId");
@@ -415,11 +374,7 @@ export async function regenerateApiKey(
 /**
  * Move app to a different organization (user must be admin in both).
  */
-export async function moveApp(
-  email: string,
-  packageName: string,
-  targetOrgId: string,
-): Promise<any> {
+export async function moveApp(email: string, packageName: string, targetOrgId: string): Promise<any> {
   if (!packageName) throw new ApiError(400, "packageName is required");
   if (!targetOrgId) throw new ApiError(400, "targetOrgId is required");
   const user = await getOrCreateUserByEmail(email);
@@ -439,10 +394,7 @@ export async function moveApp(
 
   // Admin in target
   const targetObjectId = toObjectId(targetOrgId, "targetOrgId");
-  const isAdminTarget = await OrganizationService.isOrgAdmin(
-    user,
-    targetObjectId,
-  );
+  const isAdminTarget = await OrganizationService.isOrgAdmin(user, targetObjectId);
   if (!isAdminTarget) throw new ApiError(403, "Forbidden (target org)");
 
   // Update app
@@ -457,10 +409,7 @@ export async function moveApp(
  * Get app permissions (must be org member).
  * Reads the "permissions" array from the App document.
  */
-export async function getPermissions(
-  email: string,
-  packageName: string,
-): Promise<{ permissions: any[] }> {
+export async function getPermissions(email: string, packageName: string): Promise<{ permissions: any[] }> {
   if (!packageName) throw new ApiError(400, "packageName is required");
   const user = await getOrCreateUserByEmail(email);
 
@@ -468,10 +417,7 @@ export async function getPermissions(
   if (!app) throw new ApiError(404, "App not found");
 
   if (app.organizationId) {
-    const isMember = await OrganizationService.isOrgMember(
-      user,
-      app.organizationId,
-    );
+    const isMember = await OrganizationService.isOrgMember(user, app.organizationId);
     if (!isMember) throw new ApiError(403, "Forbidden");
   } else {
     throw new ApiError(409, "App has no organizationId");
@@ -496,10 +442,7 @@ export async function updatePermissions(
   if (!appDoc) throw new ApiError(404, "App not found");
 
   if (appDoc.organizationId) {
-    const isAdmin = await OrganizationService.isOrgAdmin(
-      user,
-      appDoc.organizationId,
-    );
+    const isAdmin = await OrganizationService.isOrgAdmin(user, appDoc.organizationId);
     if (!isAdmin) throw new ApiError(403, "Forbidden");
   } else {
     throw new ApiError(409, "App has no organizationId");
@@ -510,9 +453,7 @@ export async function updatePermissions(
 
   const lean = await App.findById(appDoc._id).lean();
   return {
-    permissions: Array.isArray(lean?.permissions)
-      ? (lean as any).permissions
-      : [],
+    permissions: Array.isArray(lean?.permissions) ? (lean as any).permissions : [],
   };
 }
 
@@ -520,10 +461,7 @@ export async function updatePermissions(
  * Get a share/install link for this app (must be org member).
  * Returns an app store URL that clients can share with testers or users.
  */
-export async function getShareLink(
-  email: string,
-  packageName: string,
-): Promise<{ installUrl: string }> {
+export async function getShareLink(email: string, packageName: string): Promise<{ installUrl: string }> {
   if (!packageName) throw new ApiError(400, "packageName is required");
   const user = await getOrCreateUserByEmail(email);
 
@@ -531,10 +469,7 @@ export async function getShareLink(
   if (!app) throw new ApiError(404, "App not found");
 
   if (app.organizationId) {
-    const isMember = await OrganizationService.isOrgMember(
-      user,
-      app.organizationId,
-    );
+    const isMember = await OrganizationService.isOrgMember(user, app.organizationId);
     if (!isMember) throw new ApiError(403, "Forbidden");
   } else {
     throw new ApiError(409, "App has no organizationId");
@@ -561,10 +496,7 @@ export async function trackSharing(
   if (!app) throw new ApiError(404, "App not found");
 
   if (app.organizationId) {
-    const isMember = await OrganizationService.isOrgMember(
-      user,
-      app.organizationId,
-    );
+    const isMember = await OrganizationService.isOrgMember(user, app.organizationId);
     if (!isMember) throw new ApiError(403, "Forbidden");
   } else {
     throw new ApiError(409, "App has no organizationId");
@@ -572,10 +504,7 @@ export async function trackSharing(
 
   // In the future, persist sharing events or emit audit logs.
   const count =
-    Array.isArray(emails) &&
-    emails.every((e) => typeof e === "string" && e.includes("@"))
-      ? emails.length
-      : 0;
+    Array.isArray(emails) && emails.every((e) => typeof e === "string" && e.includes("@")) ? emails.length : 0;
 
   return { success: true, sharedWith: count };
 }

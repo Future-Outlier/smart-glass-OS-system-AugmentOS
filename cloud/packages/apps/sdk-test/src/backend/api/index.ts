@@ -18,6 +18,11 @@
  *
  * GET  /stream/photo
  * GET  /stream/transcription
+ *
+ * POST /realtime/start
+ * POST /realtime/stop
+ * POST /realtime/interrupt
+ * GET  /realtime/status
  */
 
 import {Hono} from "hono"
@@ -25,6 +30,7 @@ import audio from "./audio.api"
 import photo from "./photo.api"
 import storage from "./storage.api"
 import stream from "./stream.api"
+import realtime from "./realtime.api"
 
 const api = new Hono()
 
@@ -36,5 +42,6 @@ api.route("/audio", audio)
 api.route("/photo", photo)
 api.route("/storage", storage)
 api.route("/stream", stream)
+api.route("/realtime", realtime)
 
 export {api}

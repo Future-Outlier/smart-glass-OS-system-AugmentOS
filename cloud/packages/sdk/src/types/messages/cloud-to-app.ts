@@ -335,6 +335,18 @@ export interface AudioPlayResponse extends BaseMessage {
 }
 
 /**
+ * Audio stream ready response from cloud.
+ * Sent after the cloud creates an HTTP streaming relay in response to
+ * AUDIO_STREAM_START. Contains the relay URL that the phone should play.
+ */
+export interface AudioStreamReady extends BaseMessage {
+  type: CloudToAppMessageType.AUDIO_STREAM_READY
+  streamId: string
+  /** HTTP URL the phone can play to receive the chunked MP3 stream */
+  streamUrl: string
+}
+
+/**
  * Union type for all messages from cloud to Apps
  */
 export type CloudToAppMessage =
@@ -369,6 +381,7 @@ export type CloudToAppMessage =
   | RgbLedControlResponse
   | PermissionError
   | AudioPlayResponse
+  | AudioStreamReady
 
 //===========================================================
 // Type guards

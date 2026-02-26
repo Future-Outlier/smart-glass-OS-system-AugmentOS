@@ -4,6 +4,7 @@ import {TranscriptionManager} from "./managers/transcription.manager"
 import {AudioManager} from "./managers/audio.manager"
 import {StorageManager} from "./managers/storage.manager"
 import {InputManager} from "./managers/input.manager"
+import {RealtimeManager} from "./managers/realtime.manager"
 
 /**
  * UserSession — per-user state container.
@@ -76,12 +77,16 @@ export class UserSession {
   /** Button presses and touchpad gestures */
   input: InputManager
 
+  /** OpenAI Realtime conversational AI */
+  realtime: RealtimeManager
+
   constructor(public readonly userId: string) {
     this.photo = new PhotoManager(this)
     this.transcription = new TranscriptionManager(this)
     this.audio = new AudioManager(this)
     this.storage = new StorageManager(this)
     this.input = new InputManager(this)
+    this.realtime = new RealtimeManager(this)
   }
 
   /** Wire up a glasses connection — sets up all event listeners */
@@ -94,11 +99,19 @@ export class UserSession {
   /** Disconnect glasses but keep user alive (photos, SSE clients stay) */
   clearAppSession(): void {
     this.transcription.destroy()
+    // Stop realtime session if active (depends on appSession)
+    if (this.realtime.isActive) {
+      this.realtime.stop().catch(() => {})
+    }
     this.appSession = null
   }
 
   /** Nuke everything — call on full disconnect */
   cleanup(): void {
+    // Stop realtime session first (it holds WS + output stream resources)
+    if (this.realtime.isActive) {
+      this.realtime.stop().catch(() => {})
+    }
     this.transcription.destroy()
     this.photo.destroy()
     this.appSession = null

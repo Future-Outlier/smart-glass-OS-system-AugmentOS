@@ -37,6 +37,8 @@ import type {
   CloudServerWebSocket,
 } from "./types";
 
+import { parseBinaryFrame } from "../session/AppAudioStreamManager";
+
 const logger = rootLogger.child({ service: "bun-websocket" });
 
 const AUGMENTOS_AUTH_JWT_SECRET = process.env.AUGMENTOS_AUTH_JWT_SECRET || "";
@@ -600,6 +602,20 @@ async function handleAppMessage(ws: AppServerWebSocket, message: string | Buffer
   const { userId, packageName } = ws.data;
 
   try {
+    // Binary frames are audio stream data — route through the UserSession's manager
+    if (typeof message !== "string" && !isJsonBuffer(message)) {
+      const frame = parseBinaryFrame(message instanceof Buffer ? message : Buffer.from(message));
+      if (frame) {
+        const userSession = UserSession.getById(userId || ws.data.userId);
+        if (userSession) {
+          await userSession.appAudioStreamManager.writeToStream(frame.streamId, frame.audioData);
+        }
+      } else {
+        logger.debug({ userId, packageName, bytes: message.length }, "Unrecognized binary frame from app");
+      }
+      return;
+    }
+
     const parsed = JSON.parse(message.toString()) as AppToCloudMessage;
 
     // Handle CONNECTION_INIT for legacy apps
@@ -673,6 +689,14 @@ async function handleAppMessage(ws: AppServerWebSocket, message: string | Buffer
  * ws.on("close", ...). But Bun's ServerWebSocket doesn't support EventEmitter,
  * so we must explicitly call handleDisconnect here.
  */
+/**
+ * Quick check: does this Buffer look like a JSON text message?
+ * JSON messages always start with '{'. Binary audio frames start with a UUID hex char.
+ */
+function isJsonBuffer(buf: Buffer | Uint8Array): boolean {
+  return buf.length > 0 && buf[0] === 0x7b; // '{' character
+}
+
 function handleAppClose(ws: AppServerWebSocket, code: number, reason: string): void {
   const { userId, packageName } = ws.data;
 

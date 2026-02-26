@@ -27,6 +27,7 @@ import { IWebSocket, WebSocketReadyState, hasEventEmitter } from "../websocket/t
 
 import AppManager from "./AppManager";
 import AudioManager from "./AudioManager";
+import { AppAudioStreamManager } from "./AppAudioStreamManager";
 import CalendarManager from "./CalendarManager";
 import { DashboardManager } from "./dashboard";
 import DeviceManager from "./DeviceManager";
@@ -120,6 +121,7 @@ export class UserSession {
   public userSettingsManager: UserSettingsManager;
   public deviceManager: DeviceManager;
   public udpAudioManager: UdpAudioManager;
+  public appAudioStreamManager: AppAudioStreamManager;
 
   public streamRegistry: StreamRegistry;
   public unmanagedStreamingExtension: UnmanagedStreamingExtension;
@@ -184,6 +186,7 @@ export class UserSession {
     this.speakerManager = new SpeakerManager(this);
     this.deviceManager = new DeviceManager(this);
     this.udpAudioManager = new UdpAudioManager(this);
+    this.appAudioStreamManager = new AppAudioStreamManager(userId, this.logger);
 
     // Set up heartbeat for glasses connection
     this.setupGlassesHeartbeat();
@@ -702,6 +705,7 @@ export class UserSession {
     if (this.unmanagedStreamingExtension) this.unmanagedStreamingExtension.dispose();
     if (this.photoManager) this.photoManager.dispose();
     if (this.managedStreamingExtension) this.managedStreamingExtension.dispose();
+    if (this.appAudioStreamManager) this.appAudioStreamManager.dispose();
 
     // Persist location to DB cold cache and clean up
     if (this.locationManager) await this.locationManager.dispose();
