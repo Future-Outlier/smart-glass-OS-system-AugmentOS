@@ -453,6 +453,9 @@ class G1: NSObject, SGCManager {
     }
 
     private var centralManager: CBCentralManager?
+
+    var isBluetoothPoweredOn: Bool { centralManager?.state == .poweredOn }
+
     private var leftPeripheral: CBPeripheral?
     private var rightPeripheral: CBPeripheral?
     private var connectedDevices: [String: (CBPeripheral?, CBPeripheral?)] = [:]

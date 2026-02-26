@@ -108,6 +108,8 @@ class Mach1: UltraliteBaseViewController, SGCManager {
 
     func ping() {}
 
+    var isBluetoothPoweredOn: Bool { true }
+
     var type: String = DeviceTypes.MACH1
     var hasMic: Bool = false
 

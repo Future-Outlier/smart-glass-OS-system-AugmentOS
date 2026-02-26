@@ -62,6 +62,10 @@ protocol SGCManager {
         offtime: Int, count: Int
     )
 
+    // MARK: - Bluetooth State
+
+    var isBluetoothPoweredOn: Bool { get }
+
     // MARK: - Connection Management
 
     func disconnect()
@@ -98,6 +102,7 @@ protocol SGCManager {
 // we can make read-only getters for convienence though:
 extension SGCManager {
     // MARK: - Default GlassesStore-backed property implementations
+
     var fullyBooted: Bool { GlassesStore.shared.get("glasses", "fullyBooted") as? Bool ?? false }
     var connected: Bool { GlassesStore.shared.get("glasses", "connected") as? Bool ?? false }
     var appVersion: String { GlassesStore.shared.get("glasses", "appVersion") as? String ?? "" }
