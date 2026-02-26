@@ -1,8 +1,4 @@
-import {
-  ClientAppletInterface,
-  saveLocalAppRunningState,
-  useAppletStatusStore,
-} from "@/stores/applets"
+import {ClientAppletInterface, saveLocalAppRunningState, useAppletStatusStore} from "@/stores/applets"
 import {storage} from "@/utils/storage/storage"
 import {printDirectory} from "@/utils/storage/zip"
 import {Directory, Paths, File} from "expo-file-system"
@@ -88,11 +84,31 @@ async function downloadAndInstallMiniApp(url: string) {
   let packageName = null
   let version = null
   let folderName = null
+  let appDir
   try {
+    // console.log("@@@@@@@@@@@@@@@@@@@@@@@@@@@@@")
+    // printDirectory(unzipDir)
+    
     const firstFile = unzipDir.list()[0] // this should be the folder containing the app.json file
     folderName = firstFile.name
+    console.log("ZIP: folder name", folderName)
+
+    // TODO: we shouldn't be fault tolerant here, but I can't seem to tell the difference between how these zip files were created
+    // it seems sometimes an extra folder is created, and sometimes it's not.
+    if (folderName === "icon.png" || folderName === "app.json") {
+      // there's no additional folder, so we should use the unzipDir directly
+      appDir = unzipDir
+    } else {
+      appDir = new Directory(unzipDir, folderName)
+    }
+  } catch (error) {
+    console.error("Error getting the app directory", error)
+    throw "GET_APP_DIR_FAILED"
+  }
+
+  try {
     // read firstFile/app.json:
-    const appJsonFile = new File(firstFile as Directory, "app.json")
+    const appJsonFile = new File(appDir, "app.json")
     const appJson = JSON.parse(appJsonFile.textSync())
     packageName = appJson.packageName
     version = appJson.version
@@ -133,8 +149,7 @@ async function downloadAndInstallMiniApp(url: string) {
 
   // move the contents of the folder to the destination directory
   try {
-    const folder = new Directory(unzipDir, folderName)
-    const contents = folder.list()
+    const contents = appDir.list()
     for (const item of contents) {
       item.move(versionDir)
     }
