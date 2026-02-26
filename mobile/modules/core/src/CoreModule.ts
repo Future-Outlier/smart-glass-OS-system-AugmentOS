@@ -104,6 +104,9 @@ declare class CoreModule extends NativeModule<CoreModuleEvents> {
     }>
   >
 
+  // Bluetooth State
+  isBluetoothEnabled(): Promise<boolean>
+
   // Media Library Commands
   saveToGalleryWithDate(
     filePath: string,

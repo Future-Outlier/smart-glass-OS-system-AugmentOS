@@ -314,6 +314,11 @@ class CoreModule : Module() {
             true
         }
 
+        AsyncFunction("isBluetoothEnabled") {
+            val adapter = android.bluetooth.BluetoothAdapter.getDefaultAdapter()
+            adapter?.isEnabled ?: false
+        }
+
         // Check if location services are enabled (required for WiFi operations on Android)
         AsyncFunction("isLocationServicesEnabled") {
             val context =
