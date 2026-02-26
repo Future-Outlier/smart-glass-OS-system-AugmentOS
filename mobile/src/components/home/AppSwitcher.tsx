@@ -123,7 +123,7 @@ function AppCardItem({app, index, count, translateX, onDismiss, onSelect}: AppCa
     if (lin < 0) {
       lin = 0
     }
-    let power = Math.pow(lin, 1.7) * howFar
+    let power = Math.pow(lin, 2) * howFar
     let res = stat + power
 
     let howFarPercent = (1 / (howFar / SCREEN_WIDTH)) * howFar
