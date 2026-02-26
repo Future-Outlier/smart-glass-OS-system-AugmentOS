@@ -398,6 +398,7 @@ export function AppsGrid({showAllApps = false, onOpenApp, searchQuery}: AppsGrid
           overDrag="none"
           showDropIndicator={true}
           sortEnabled={!showAllApps}
+          swapMode={true}
           dropIndicatorStyle={{backgroundColor: theme.colors.primary_foreground, borderWidth: 0}}
         />
       </View>
