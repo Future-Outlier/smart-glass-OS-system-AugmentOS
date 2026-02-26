@@ -1,5 +1,5 @@
 import {useCallback, useEffect, useMemo, useRef, useState} from "react"
-import {Dimensions, Pressable, StyleSheet, TouchableOpacity, View} from "react-native"
+import {Dimensions, Platform, Pressable, StyleSheet, TouchableOpacity, View} from "react-native"
 import {DraggableMasonryList} from "react-native-draggable-masonry"
 import {BlurView} from "expo-blur"
 
@@ -10,6 +10,8 @@ import {
   ClientAppletInterface,
   DUMMY_APPLET,
   getPackageNamePriority,
+  SYSTEM_APPS,
+  uninstallAppUI,
   useAppletStatusStore,
   useForegroundApps,
   useStartApplet,
@@ -66,13 +68,41 @@ const AppPopover: React.FC<{
     left = 0
   }
 
+  // todo: find out the actual height of the popover via a ref:
+  let popoverHeight = 10 + actions.length * 54
   if (position.screenY > screenHeight / 2) {
-    top = position.y - 210
+    top = position.y - popoverHeight
   }
   // const showAbove = top + popoverHeight > screenHeight - 40
   // if (showAbove) {
   //   top = position.y - popoverHeight - 8
   // }
+
+  const popoverContent = (
+    <View className="py-1">
+      {actions.map((action, index) => (
+        <View key={action.label}>
+          <Pressable
+            className="flex-row items-center gap-3 px-4 py-3 active:bg-foreground/10"
+            onPress={() => {
+              onClose()
+              action.onPress()
+            }}>
+            <Icon
+              name={action.icon as any}
+              size={24}
+              color={action.destructive ? theme.colors.destructive : theme.colors.foreground}
+            />
+            <Text
+              className={`text-[15px] ${action.destructive ? "text-destructive" : "text-foreground"}`}
+              text={action.label}
+            />
+          </Pressable>
+          {index < actions.length - 1 && <View className="h-px bg-white/10 mx-4" />}
+        </View>
+      ))}
+    </View>
+  )
 
   return (
     <View style={StyleSheet.absoluteFill} pointerEvents="box-none">
@@ -84,31 +114,13 @@ const AppPopover: React.FC<{
             top: top,
             width: POPOVER_WIDTH,
           }}>
-          <BlurView intensity={80} tint="default" className="rounded-2xl overflow-hidden">
-            <View className="py-1">
-              {actions.map((action, index) => (
-                <View key={action.label}>
-                  <Pressable
-                    className="flex-row items-center gap-3 px-4 py-3 active:bg-foreground/10"
-                    onPress={() => {
-                      onClose()
-                      action.onPress()
-                    }}>
-                    <Icon
-                      name={action.icon as any}
-                      size={24}
-                      color={action.destructive ? theme.colors.destructive : theme.colors.foreground}
-                    />
-                    <Text
-                      className={`text-[15px] ${action.destructive ? "text-destructive" : "text-foreground"}`}
-                      text={action.label}
-                    />
-                  </Pressable>
-                  {index < actions.length - 1 && <View className="h-px bg-white/10 mx-4" />}
-                </View>
-              ))}
-            </View>
-          </BlurView>
+          {Platform.OS === "ios" ? (
+            <BlurView intensity={80} tint="default" className="rounded-2xl overflow-hidden">
+              {popoverContent}
+            </BlurView>
+          ) : (
+            <View className="rounded-2xl overflow-hidden bg-primary-foreground/95">{popoverContent}</View>
+          )}
         </View>
       </Pressable>
     </View>
@@ -118,10 +130,11 @@ const AppPopover: React.FC<{
 interface AppsGridProps {
   showAllApps?: boolean
   onOpenApp?: (app: ClientAppletInterface) => void
+  onAddToHome?: (app: ClientAppletInterface) => void
   searchQuery?: string
 }
 
-export function AppsGrid({showAllApps = false, onOpenApp, searchQuery}: AppsGridProps) {
+export function AppsGrid({showAllApps = false, onOpenApp, onAddToHome, searchQuery}: AppsGridProps) {
   const {themed, theme} = useAppTheme()
 
   const startApplet = useStartApplet()
@@ -157,10 +170,21 @@ export function AppsGrid({showAllApps = false, onOpenApp, searchQuery}: AppsGrid
     // Apply search filter if searchQuery exists
     if (searchQuery && searchQuery.trim() !== "") {
       const query = searchQuery.toLowerCase().trim()
-      filteredApps = filteredApps.filter((app) =>
-        app.name?.toLowerCase().includes(query) ||
-        app.packageName?.toLowerCase().includes(query)
+      filteredApps = filteredApps.filter(
+        (app) => app.name?.toLowerCase().includes(query) || app.packageName?.toLowerCase().includes(query),
       )
+    }
+
+    // add dummy apps so we can place apps anywhere in the grid:
+    const totalItems = filteredApps.length
+    const remainder = totalItems % GRID_COLUMNS
+    let emptySlots = GRID_COLUMNS + remainder
+    emptySlots = Math.max(emptySlots, 20 - totalItems)
+    if (showAllApps) {
+      emptySlots = 0
+    }
+    for (let i = 0; i < emptySlots; i++) {
+      filteredApps.push({...DUMMY_APPLET, packageName: `__empty_${i}`})
     }
 
     if (orderMap && !showAllApps) {
@@ -176,13 +200,6 @@ export function AppsGrid({showAllApps = false, onOpenApp, searchQuery}: AppsGrid
       })
     } else {
       filteredApps.sort(getPackageNamePriority)
-    }
-
-    const totalItems = filteredApps.length
-    const remainder = totalItems % GRID_COLUMNS
-    const emptySlots = GRID_COLUMNS + remainder
-    for (let i = 0; i < emptySlots; i++) {
-      filteredApps.push({...DUMMY_APPLET, packageName: `__empty_${filteredApps.length}`})
     }
 
     return filteredApps.map((app) => ({
@@ -222,30 +239,36 @@ export function AppsGrid({showAllApps = false, onOpenApp, searchQuery}: AppsGrid
             })
           },
         },
-        !showAllApps && {
-          label: translate("appInfo:remove"),
-          icon: "minus",
-          onPress: () => {
-            if (selectedApp) {
-              useAppletStatusStore.getState().setHiddenStatus(selectedApp.packageName, true)
-              // useAppletStatusStore.getState().refreshApplets()
-            }
+        !showAllApps &&
+          !SYSTEM_APPS.includes(selectedApp?.packageName || "") && {
+            label: translate("appInfo:remove"),
+            icon: "minus",
+            onPress: () => {
+              if (selectedApp) {
+                useAppletStatusStore.getState().setHiddenStatus(selectedApp.packageName, true)
+                // useAppletStatusStore.getState().refreshApplets()
+              }
+            },
           },
-        },
         showAllApps &&
           selectedApp?.hidden && {
             label: translate("appInfo:addToHome"),
             icon: "home",
             onPress: () => {
               useAppletStatusStore.getState().setHiddenStatus(selectedApp.packageName, false)
+              if (onAddToHome) {
+                onAddToHome(selectedApp)
+              }
             },
           },
-        {
+        !SYSTEM_APPS.includes(selectedApp?.packageName || "") && {
           label: translate("appInfo:uninstall"),
           icon: "trash",
           destructive: true,
           onPress: () => {
-            // TODO: uninstall app
+            if (selectedApp) {
+              uninstallAppUI(selectedApp)
+            }
           },
         },
       ].filter(Boolean) as PopoverAction[],
@@ -394,6 +417,7 @@ export function AppsGrid({showAllApps = false, onOpenApp, searchQuery}: AppsGrid
           overDrag="none"
           showDropIndicator={true}
           sortEnabled={!showAllApps}
+          swapMode={true}
           dropIndicatorStyle={{backgroundColor: theme.colors.primary_foreground, borderWidth: 0}}
         />
       </View>

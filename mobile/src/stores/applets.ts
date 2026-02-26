@@ -46,6 +46,7 @@ interface AppStatusState {
   saveScreenshot: (packageName: string, screenshot: string) => Promise<void>
   setInstalledLmas: (installedLmas: ClientAppletInterface[]) => void
   setHiddenStatus: (packageName: string, status: boolean) => void
+  uninstallApplet: (packageName: string) => Promise<void>
 }
 
 export const DUMMY_APPLET: ClientAppletInterface = {
@@ -80,6 +81,52 @@ export const storePackageName = "com.mentra.store"
 export const simulatedPackageName = "com.mentra.simulated"
 export const mirrorPackageName = "com.mentra.mirror"
 export const lmaInstallerPackageName = "com.mentra.lma_installer"
+
+export const uninstallAppUI = (clientApp: ClientAppletInterface) => {
+  console.log(`Uninstalling app: ${clientApp.packageName}`)
+
+  showAlert(
+    translate("appSettings:uninstallApp"),
+    translate("appSettings:uninstallConfirm", {appName: clientApp.name}),
+    [
+      {
+        text: translate("common:cancel"),
+        style: "cancel",
+      },
+      {
+        text: translate("appSettings:uninstall"),
+        style: "destructive",
+        onPress: async () => {
+          try {
+            // First stop the app if it's running
+            if (clientApp.running) {
+              useAppletStatusStore.getState().stopApplet(clientApp.packageName)
+            }
+
+            await useAppletStatusStore.getState().uninstallApplet(clientApp.packageName)
+            showAlert(
+              translate("common:success"),
+              translate("appSettings:uninstalledSuccess", {appName: clientApp.name}),
+              [{text: translate("common:ok"), onPress: () => {}}],
+            )
+          } catch (error: any) {
+            console.error("Error uninstalling app:", error)
+            useAppletStatusStore.getState().refreshApplets()
+            showAlert(
+              translate("common:error"),
+              translate("appSettings:uninstallError", {error: error.message || "Unknown error"}),
+              [{text: translate("common:ok")}],
+            )
+          }
+        },
+      },
+    ],
+    {
+      iconName: "trash",
+      iconSize: 48,
+    },
+  )
+}
 
 const getHiddenStatus = (packageName: string): boolean => {
   const hidden = storage.load<boolean>(`${packageName}_hidden`)
@@ -133,6 +180,17 @@ export const getPackageNamePriority = (a: ClientAppletInterface, b: ClientApplet
   // if (pa !== pb) return pa - pb
   return a.name.localeCompare(b.name)
 }
+
+// these apps cannot be uninstalled:
+export const SYSTEM_APPS = [
+  cameraPackageName,
+  captionsPackageName,
+  galleryPackageName,
+  settingsPackageName,
+  storePackageName,
+  simulatedPackageName,
+  mirrorPackageName,
+]
 
 // get offline applets:
 const getOfflineApplets = async (): Promise<ClientAppletInterface[]> => {
@@ -504,7 +562,7 @@ export const useAppletStatusStore = create<AppStatusState>((set, get) => ({
     for (const applet of applets) {
       applet.hidden = getHiddenStatus(applet.packageName)
     }
-    
+
     set({apps: applets})
   },
 
@@ -610,6 +668,22 @@ export const useAppletStatusStore = create<AppStatusState>((set, get) => ({
     }))
 
     startStopApplet(applet, false)
+  },
+
+  uninstallApplet: async (packageName: string) => {
+    const applet = get().apps.find((a) => a.packageName === packageName)
+    if (!applet) {
+      console.error(`Applet with package name ${packageName} not found`)
+      return
+    }
+
+    if (applet.running) {
+      await startStopApplet(applet, false)
+    }
+    await restComms.uninstallApp(packageName)
+    set((state) => ({
+      apps: state.apps.filter((a) => a.packageName !== packageName),
+    }))
   },
 
   setHiddenStatus: (packageName: string, status: boolean) => {

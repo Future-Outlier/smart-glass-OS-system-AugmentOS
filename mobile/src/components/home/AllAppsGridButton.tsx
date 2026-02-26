@@ -124,6 +124,9 @@ export default function AllAppsGridButton() {
               onOpenApp={() => {
                 bottomSheetRef.current?.close()
               }}
+              onAddToHome={() => {
+                bottomSheetRef.current?.close()
+              }}
             />
           </View>
         </BottomSheetScrollView>
