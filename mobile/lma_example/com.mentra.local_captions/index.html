@@ -96,161 +96,47 @@
       <div id="log"></div>
     </div>
 
-    <!-- SDK / to be part of the SDK -->
-    <script>
-      // Initialize the bridge
-      window.messageLog = []
+    <!-- Load the MentraOS WebView SDK -->
+    <script src="https://cdn.jsdelivr.net/npm/@mentra/webview-sdk@latest/dist/index.js" type="module"></script>
 
-      class Bridge {
-        constructor() {
-          this.messageLog = []
+    <!-- App Logic -->
+    <script type="module">
+      // Import SDK from CDN (or use bundled version)
+      // For local development, you can use a bundler like Vite, Webpack, or Parcel
+      // and import { CoreModule, Events } from '@mentra/webview-sdk'
 
-          window.receiveNativeMessage = (messageStr) => {
-            try {
-              const message = JSON.parse(messageStr)
-              // addLog("Received from Native: " + message.type)
-              handleNativeMessage(message)
-            } catch (error) {
-              // addLog("Error parsing native message: " + error.message)
-              // addLog("Message: " + messageStr)
-            }
+      // For this example, the SDK is loaded globally via the script tag above
+      // and auto-initializes, exposing window.CoreModule and window.Events
+
+      // Wait for SDK to be available
+      if (window.CoreModule && window.Events) {
+        // Request online transcriptions with local fallback
+        // Online transcriptions come from Soniox, local transcriptions use the on-device model
+        // fallback: true means if online transcription fails, automatically use local model
+        window.Events.requestTranscriptions(
+          { type: "online", fallback: true },
+          (text) => {
+            console.log("Transcription:", text)
+            window.CoreModule.displayText(text)
           }
-        }
+        )
 
-        handleNativeMessage(message) {
-          switch (message.type) {
-            case "transcription":
-              // addLog("" + message.payload.message)
-              break
-          }
-        }
+        // Example: Display text on glasses
+        // window.CoreModule.displayText("Hello from WebView")
 
-        send(message) {
-          if (!window.ReactNativeWebView) {
-            console.error("ReactNativeWebView not available")
-            return
-          }
-          window.ReactNativeWebView.postMessage(JSON.stringify(message))
-        }
+        // Example: Control microphone state
+        // window.CoreModule.setMicState("on")
+
+        // Example: Request audio stream
+        // window.Events.requestAudio({ sampleRate: 16000 }, (audioData) => {
+        //   console.log("Audio data:", audioData)
+        // })
+
+        // Example: Request movement/IMU data
+        // window.Events.requestMovement({ frequency: 30 }, (movement) => {
+        //   console.log("Movement:", movement.x, movement.y, movement.z)
+        // })
       }
-
-      window.bridge = new Bridge()
-
-      // Notify native that page is ready
-      window.addEventListener("load", function () {
-        window.bridge.send({
-          type: "page_ready",
-          timestamp: Date.now(),
-        })
-      })
-
-      window.CoreModule = {
-        displayText: (text) => {
-          window.bridge.send({
-            type: "core_fn",
-            payload: {fn: "displayText", args: {text: text}},
-          })
-        },
-        setMicState: (state) => {
-          window.bridge.send({
-            type: "core_fn",
-            payload: {fn: "setMicState", args: {state: state}},
-          })
-        },
-      }
-
-      let subs = {
-        transcription: null,
-        audio: null,
-        movement: null,
-      }
-
-      window.Events = {
-        requestTranscriptions: (options, handleSub) => {
-          subs["transcription"] = handleSub
-          window.bridge.send({
-            type: "sub_transcription",
-            payload: options,
-          })
-        },
-        requestAudio: (options, handleSub) => {
-          subs["audio"] = handleSub
-          window.bridge.send({
-            type: "sub_audio",
-            payload: options,
-          })
-        },
-      }
-
-      window.SDK = {}
-    </script>
-    <script>
-      // request local / online transcriptions:
-      // online transcriptions come from soniox, local transcriptions come from the local model
-      // fallback: true means if the online transcription fails, start using the local model
-      window.Events.requestTranscriptions({type: "online", fallback: true}, (text) => {
-        console.log("transcription", text)
-        window.CoreModule.displayText({text: text})
-      })
-
-      // setInterval(function () {
-      //   window.CoreModule.displayText({text: "Hello from WebView" + Math.random()})
-      // }, 1000)
-
-      // // Button click handlers
-      // function sendMessage(buttonId) {
-      //   sendToNative({
-      //     type: "button_click",
-      //     payload: {buttonId: buttonId},
-      //     timestamp: Date.now(),
-      //   })
-      // }
-
-      // function requestData() {
-      //   sendToNative({
-      //     type: "custom_action",
-      //     payload: {action: "request_data"},
-      //     timestamp: Date.now(),
-      //   })
-      // }
-
-      // function sendCustomAction() {
-      //   sendToNative({
-      //     type: "custom_action",
-      //     payload: {
-      //       action: "custom",
-      //       data: {example: "test data", value: Math.random()},
-      //     },
-      //     timestamp: Date.now(),
-      //   })
-      // }
-
-      // // Logging function
-      // function addLog(message) {
-      //   const logDiv = document.getElementById("log")
-      //   const entry = document.createElement("div")
-      //   entry.className = "log-entry"
-
-      //   const timestamp = new Date().toLocaleTimeString()
-      //   entry.innerHTML = '<span class="timestamp">' + timestamp + "</span>" + message
-
-      //   logDiv.insertBefore(entry, logDiv.firstChild)
-
-      //   // Keep only last 20 messages
-      //   while (logDiv.children.length > 20) {
-      //     logDiv.removeChild(logDiv.lastChild)
-      //   }
-      // }
-
-      // let count = 0
-      // setInterval(function () {
-      //   count++
-      //   sendToNative({
-      //     type: "data_update",
-      //     payload: {count: count},
-      //     timestamp: Date.now(),
-      //   })
-      // }, 1000)
     </script>
   </body>
 </html>
