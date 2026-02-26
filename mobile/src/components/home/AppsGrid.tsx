@@ -178,9 +178,10 @@ export function AppsGrid({showAllApps = false, onOpenApp, onAddToHome, searchQue
     // add dummy apps so we can place apps anywhere in the grid:
     const totalItems = filteredApps.length
     const remainder = totalItems % GRID_COLUMNS
-    let emptySlots = GRID_COLUMNS + remainder
+    const MIN_APPS = 20
+    let emptySlots = remainder
     if (appSwitcherUi) {
-      emptySlots = Math.max(emptySlots, 20 - totalItems)
+      emptySlots = Math.max(emptySlots, MIN_APPS - totalItems)
     }
     if (showAllApps) {
       emptySlots = 0
@@ -189,7 +190,7 @@ export function AppsGrid({showAllApps = false, onOpenApp, onAddToHome, searchQue
       filteredApps.push({...DUMMY_APPLET, packageName: `__empty_${i}`})
     }
 
-    if (orderMap && !showAllApps) {
+    if (orderMap && !showAllApps && appSwitcherUi) {
       filteredApps.sort((a, b) => {
         const aIndex = orderMap[a.packageName]
         const bIndex = orderMap[b.packageName]

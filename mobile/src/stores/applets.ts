@@ -161,6 +161,9 @@ export const getLastOpenTime = (packageName: string): AsyncResult<number, Error>
 }
 
 const getRawPackageNamePriority = (pkg: string) => {
+  if (pkg.includes("__empty")) {
+    return 1000
+  }
   switch (pkg) {
     case cameraPackageName:
       return 0
@@ -178,6 +181,12 @@ export const getPackageNamePriority = (a: ClientAppletInterface, b: ClientApplet
   // const pa = getRawPackageNamePriority(a.packageName)
   // const pb = getRawPackageNamePriority(b.packageName)
   // if (pa !== pb) return pa - pb
+  const appSwitcherUi = useSettingsStore.getState().getSetting(SETTINGS.app_switcher_ui.key)
+  if (!appSwitcherUi) {
+    const pa = getRawPackageNamePriority(a.packageName)
+    const pb = getRawPackageNamePriority(b.packageName)
+    if (pa !== pb) return pa - pb
+  }
   return a.name.localeCompare(b.name)
 }
 
