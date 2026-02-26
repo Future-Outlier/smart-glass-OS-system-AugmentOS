@@ -157,10 +157,21 @@ export function AppsGrid({showAllApps = false, onOpenApp, searchQuery}: AppsGrid
     // Apply search filter if searchQuery exists
     if (searchQuery && searchQuery.trim() !== "") {
       const query = searchQuery.toLowerCase().trim()
-      filteredApps = filteredApps.filter((app) =>
-        app.name?.toLowerCase().includes(query) ||
-        app.packageName?.toLowerCase().includes(query)
+      filteredApps = filteredApps.filter(
+        (app) => app.name?.toLowerCase().includes(query) || app.packageName?.toLowerCase().includes(query),
       )
+    }
+
+    // add dummy apps so we can place apps anywhere in the grid:
+    const totalItems = filteredApps.length
+    const remainder = totalItems % GRID_COLUMNS
+    let emptySlots = GRID_COLUMNS + remainder
+    emptySlots = Math.max(emptySlots, 20 - totalItems)
+    if (showAllApps) {
+      emptySlots = 0
+    }
+    for (let i = 0; i < emptySlots; i++) {
+      filteredApps.push({...DUMMY_APPLET, packageName: `__empty_${i}`})
     }
 
     if (orderMap && !showAllApps) {
@@ -176,13 +187,6 @@ export function AppsGrid({showAllApps = false, onOpenApp, searchQuery}: AppsGrid
       })
     } else {
       filteredApps.sort(getPackageNamePriority)
-    }
-
-    const totalItems = filteredApps.length
-    const remainder = totalItems % GRID_COLUMNS
-    const emptySlots = GRID_COLUMNS + remainder
-    for (let i = 0; i < emptySlots; i++) {
-      filteredApps.push({...DUMMY_APPLET, packageName: `__empty_${filteredApps.length}`})
     }
 
     return filteredApps.map((app) => ({
