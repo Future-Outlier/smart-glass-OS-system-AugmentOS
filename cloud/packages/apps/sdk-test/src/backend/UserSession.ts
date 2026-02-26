@@ -1,9 +1,9 @@
 import {AppSession} from "@mentra/sdk"
-import {PhotoManager} from "./managers/PhotoManager"
-import {TranscriptionManager} from "./managers/TranscriptionManager"
-import {AudioManager} from "./managers/AudioManager"
-import {StorageManager} from "./managers/StorageManager"
-import {InputManager} from "./managers/InputManager"
+import {PhotoManager} from "./managers/photo.manager"
+import {TranscriptionManager} from "./managers/transcription.manager"
+import {AudioManager} from "./managers/audio.manager"
+import {StorageManager} from "./managers/storage.manager"
+import {InputManager} from "./managers/input.manager"
 
 /**
  * UserSession — per-user state container.
