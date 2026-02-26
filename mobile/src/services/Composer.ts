@@ -1,6 +1,5 @@
 import {
   ClientAppletInterface,
-  lmaInstallerPackageName,
   saveLocalAppRunningState,
   useAppletStatusStore,
 } from "@/stores/applets"

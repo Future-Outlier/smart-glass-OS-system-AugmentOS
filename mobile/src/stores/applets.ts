@@ -271,7 +271,7 @@ const getOfflineApplets = async (): Promise<ClientAppletInterface[]> => {
             {
               text: translate("transcription:goToSettings"),
               onPress: () => {
-                push("/settings/transcription")
+                push("/miniapps/settings/transcription")
               },
             },
           ])
@@ -318,7 +318,7 @@ const getOfflineApplets = async (): Promise<ClientAppletInterface[]> => {
       healthy: true,
       hidden: false,
       permissions: [],
-      offlineRoute: "/settings/account",
+      offlineRoute: "/miniapps/settings/account",
       webviewUrl: "",
       hardwareRequirements: [],
       onStart: () => saveLocalAppRunningState(settingsPackageName, true),

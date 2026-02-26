@@ -80,17 +80,17 @@ export default function ProfileSettingsPage() {
 
   const handleRequestDataExport = () => {
     console.log("Profile: Navigating to data export screen")
-    push("/settings/data-export")
+    push("/miniapps/settings/data-export")
   }
 
   const handleChangePassword = () => {
     console.log("Profile: Navigating to change password screen")
-    push("/settings/change-password")
+    push("/miniapps/settings/change-password")
   }
 
   const handleChangeEmail = () => {
     console.log("Profile: Navigating to change email screen")
-    push("/settings/change-email")
+    push("/miniapps/settings/change-email")
   }
 
   const handleDeleteAccount = () => {

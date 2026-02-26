@@ -144,7 +144,7 @@ export default function DeveloperSettingsScreen() {
             <RouteButton
               label="Buffer Recording Debug"
               subtitle="Control 30-second video buffer on glasses"
-              onPress={() => push("/settings/buffer-debug")}
+              onPress={() => push("/miniapps/settings/buffer-debug")}
             />
 
             <RouteButton
@@ -215,7 +215,7 @@ export default function DeveloperSettingsScreen() {
 
           <StoreUrl />
 
-          {superMode && <RouteButton label="Super Settings" onPress={() => push("/settings/super")} />}
+          {superMode && <RouteButton label="Super Settings" onPress={() => push("/miniapps/settings/super")} />}
 
           <Spacer height={theme.spacing.s12} />
         </View>

@@ -74,7 +74,7 @@ export default function ConnectedSimulatedGlassesInfo({
       {showHeader && (
         <View className="flex-row justify-between items-center mb-4">
           <Text className="font-semibold text-secondary-foreground text-lg" tx="home:simulatedGlasses" />
-          <Button flex={false} flexContainer={false} preset="alternate" onPress={() => push("/settings/glasses")}>
+          <Button flex={false} flexContainer={false} preset="alternate" onPress={() => push("/miniapps/settings/glasses")}>
             <Icon name="settings" size={24} color={theme.colors.secondary_foreground} />
           </Button>
         </View>

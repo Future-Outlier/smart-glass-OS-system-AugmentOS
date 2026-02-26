@@ -166,7 +166,7 @@
       }
 
       window.Events = {
-        requestTranscription: (options, handleSub) => {
+        requestTranscriptions: (options, handleSub) => {
           subs["transcription"] = handleSub
           window.bridge.send({
             type: "sub_transcription",
@@ -188,8 +188,9 @@
       // request local / online transcriptions:
       // online transcriptions come from soniox, local transcriptions come from the local model
       // fallback: true means if the online transcription fails, start using the local model
-      window.requestTranscription({type: "online", fallback: true}, (text) => {
+      window.Events.requestTranscriptions({type: "online", fallback: true}, (text) => {
         console.log("transcription", text)
+        window.CoreModule.displayText({text: text})
       })
 
       // setInterval(function () {

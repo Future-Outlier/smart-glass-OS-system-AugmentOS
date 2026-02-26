@@ -33,12 +33,12 @@ export default function AccountPage() {
             <RouteButton
               icon={<Icon name="circle-user" size={24} color={theme.colors.secondary_foreground} />}
               label={translate("settings:profileSettings")}
-              onPress={() => push("/settings/profile")}
+              onPress={() => push("/miniapps/settings/profile")}
             />
             <RouteButton
               icon={<Icon name="message-2-star" size={24} color={theme.colors.secondary_foreground} />}
               label={translate("settings:feedback")}
-              onPress={() => push("/settings/feedback")}
+              onPress={() => push("/miniapps/settings/feedback")}
             />
           </Group>
 
@@ -47,7 +47,7 @@ export default function AccountPage() {
               <RouteButton
                 icon={<Icon name="glasses" color={theme.colors.secondary_foreground} size={24} />}
                 label={defaultWearable}
-                onPress={() => push("/settings/glasses")}
+                onPress={() => push("/miniapps/settings/glasses")}
               />
             </Group>
           )}
@@ -57,25 +57,25 @@ export default function AccountPage() {
               <RouteButton
                 icon={<Icon name="sun" size={24} color={theme.colors.secondary_foreground} />}
                 label={translate("settings:appAppearance")}
-                onPress={() => push("/settings/theme")}
+                onPress={() => push("/miniapps/settings/theme")}
               />
             )}
             {(Platform.OS === "android" || superMode) && (
               <RouteButton
                 icon={<Icon name="bell" size={24} color={theme.colors.secondary_foreground} />}
                 label={translate("settings:notificationsSettings")}
-                onPress={() => push("/settings/notifications")}
+                onPress={() => push("/miniapps/settings/notifications")}
               />
             )}
             <RouteButton
               icon={<Icon name="file-type-2" size={24} color={theme.colors.secondary_foreground} />}
               label={translate("settings:transcriptionSettings")}
-              onPress={() => push("/settings/transcription")}
+              onPress={() => push("/miniapps/settings/transcription")}
             />
             <RouteButton
               icon={<Icon name="shield-lock" size={24} color={theme.colors.secondary_foreground} />}
               label={translate("settings:privacySettings")}
-              onPress={() => push("/settings/privacy")}
+              onPress={() => push("/miniapps/settings/privacy")}
             />
           </Group>
 
@@ -84,7 +84,7 @@ export default function AccountPage() {
               <RouteButton
                 icon={<Icon name="user-code" size={24} color={theme.colors.secondary_foreground} />}
                 label={translate("settings:developerSettings")}
-                onPress={() => push("/settings/developer")}
+                onPress={() => push("/miniapps/settings/developer")}
               />
             )}
           </Group>

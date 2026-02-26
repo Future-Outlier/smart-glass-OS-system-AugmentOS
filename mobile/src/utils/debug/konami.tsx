@@ -41,14 +41,14 @@ export function KonamiCodeProvider({children}: {children: React.ReactNode}) {
 
     if (matchesCode(KONAMI_CODE)) {
       console.log("KONAMI: Konami code activated!")
-      goHomeAndPush("/settings/developer")
+      goHomeAndPush("/miniapps/settings/developer")
       setSequence([])
     } else if (matchesCode(MINI_CODE)) {
       console.log("KONAMI: Mini code activated!")
       setSequence([])
     } else if (matchesCode(SUPER_CODE)) {
       console.log("KONAMI: Super code activated!")
-      goHomeAndPush("/settings/super")
+      goHomeAndPush("/miniapps/settings/super")
       setSequence([])
     }
   }, [sequence, goHomeAndPush, enabled])

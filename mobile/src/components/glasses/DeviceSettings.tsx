@@ -101,7 +101,7 @@ export default function DeviceSettings() {
             icon={<Icon name="locate" size={24} color={theme.colors.secondary_foreground} />}
             label={translate("settings:positionSettings")}
             // subtitle={translate("settings:screenDescription")}
-            onPress={() => push("/settings/position")}
+            onPress={() => push("/miniapps/settings/position")}
           />
         )}
         {/* Only show dashboard settings if glasses have display capability */}
@@ -110,7 +110,7 @@ export default function DeviceSettings() {
             icon={<Icon name="layout-dashboard" size={24} color={theme.colors.secondary_foreground} />}
             label={translate("settings:dashboardSettings")}
             // subtitle={translate("settings:dashboardDescription")}
-            onPress={() => push("/settings/dashboard")}
+            onPress={() => push("/miniapps/settings/dashboard")}
           />
         )}
         {/* Brightness Settings */}
@@ -205,14 +205,14 @@ export default function DeviceSettings() {
           <RouteButton
             icon={<Icon name="microphone" size={24} color={theme.colors.secondary_foreground} />}
             label={translate("deviceSettings:microphone")}
-            onPress={() => push("/settings/microphone")}
+            onPress={() => push("/miniapps/settings/microphone")}
           />
         )}
         {hasDeviceInfo && (
           <RouteButton
             icon={<Icon name="device-ipad" size={24} color={theme.colors.secondary_foreground} />}
             label={translate("deviceSettings:deviceInformation")}
-            onPress={() => push("/settings/device-info")}
+            onPress={() => push("/miniapps/settings/device-info")}
           />
         )}
       </Group>

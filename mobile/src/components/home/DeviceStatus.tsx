@@ -148,7 +148,7 @@ export const DeviceStatus = ({style}: {style?: ViewStyle}) => {
 
   if (!glassesConnected || !glassesFullyBooted || isSearching) {
     return (
-      <TouchableOpacity style={[themed($disconnectedContainer), style]} onPress={() => push("/settings/glasses")}>
+      <TouchableOpacity style={[themed($disconnectedContainer), style]} onPress={() => push("/miniapps/settings/glasses")}>
         <View className="justify-between items-center flex-row">
           <Text className="font-semibold text-secondary-foreground text-lg" text={defaultWearable} />
           <Icon name="bluetooth-off" size={18} color={theme.colors.foreground} />
@@ -209,7 +209,7 @@ export const DeviceStatus = ({style}: {style?: ViewStyle}) => {
             onPress={() => setShowSimulatedGlasses(!showSimulatedGlasses)}>
             <Icon name="arrow-left" size={18} color={theme.colors.foreground} />
           </Button>
-          <Button flexContainer={false} preset="alternate" onPress={() => push("/settings/glasses")}>
+          <Button flexContainer={false} preset="alternate" onPress={() => push("/miniapps/settings/glasses")}>
             <Icon name="settings" size={18} color={theme.colors.foreground} />
           </Button>
         </View>
@@ -220,7 +220,7 @@ export const DeviceStatus = ({style}: {style?: ViewStyle}) => {
   return (
     <TouchableOpacity
       className="bg-primary-foreground px-6 py-0 justify-center flex rounded-2xl"
-      onPress={() => push("/settings/glasses")}>
+      onPress={() => push("/miniapps/settings/glasses")}>
       <View className="justify-center items-center flex-row max-h-20">
         <View className="flex-1 self-start">
           <Image source={getCurrentGlassesImage()} className="w-full h-full max-w-32" style={{resizeMode: "contain"}} />
@@ -300,7 +300,7 @@ export const DeviceStatus = ({style}: {style?: ViewStyle}) => {
                 }
               />
             )}
-            <Button compactIcon preset="alternate" onPress={() => push("/settings/glasses")}>
+            <Button compactIcon preset="alternate" onPress={() => push("/miniapps/settings/glasses")}>
               <Icon name="settings" size={24} color={theme.colors.foreground} />
             </Button>
           </View>
