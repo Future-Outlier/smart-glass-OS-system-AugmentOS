@@ -16,7 +16,7 @@
         "@livekit/react-native-expo-plugin": "^1.0.1",
         "@livekit/react-native-webrtc": "^137.0.2",
         "@mentra/display-utils": "file:../cloud/packages/display-utils",
-        "@react-native-community/netinfo": "^11.4.1",
+        "@react-native-community/netinfo": "11.4.1",
         "@react-native-community/slider": "5.0.1",
         "@react-native-masked-view/masked-view": "^0.3.2",
         "@react-navigation/stack": "^7.6.14",
@@ -79,7 +79,7 @@
         "react-native-drawer-layout": "^4.2.0",
         "react-native-error-boundary": "^3.1.0",
         "react-native-gesture-handler": "~2.28.0",
-        "react-native-get-random-values": "^2.0.0",
+        "react-native-get-random-values": "~1.11.0",
         "react-native-image-viewing": "^0.2.2",
         "react-native-inappbrowser-reborn": "^3.7.0",
         "react-native-keyboard-controller": "1.18.5",
@@ -2121,7 +2121,7 @@
 
     "react-native-gesture-handler": ["react-native-gesture-handler@2.28.0", "", { "dependencies": { "@egjs/hammerjs": "^2.0.17", "hoist-non-react-statics": "^3.3.0", "invariant": "^2.2.4" }, "peerDependencies": { "react": "*", "react-native": "*" } }, "sha512-0msfJ1vRxXKVgTgvL+1ZOoYw3/0z1R+Ked0+udoJhyplC2jbVKIJ8Z1bzWdpQRCV3QcQ87Op0zJVE5DhKK2A0A=="],
 
-    "react-native-get-random-values": ["react-native-get-random-values@2.0.0", "", { "dependencies": { "fast-base64-decode": "^1.0.0" }, "peerDependencies": { "react-native": ">=0.81" } }, "sha512-wx7/aPqsUIiWsG35D+MsUJd8ij96e3JKddklSdrdZUrheTx89gPtz3Q2yl9knBArj5u26Cl23T88ai+Q0vypdQ=="],
+    "react-native-get-random-values": ["react-native-get-random-values@1.11.0", "", { "dependencies": { "fast-base64-decode": "^1.0.0" }, "peerDependencies": { "react-native": ">=0.56" } }, "sha512-4BTbDbRmS7iPdhYLRcz3PGFIpFJBwNZg9g42iwa2P6FOv9vZj/xJc678RZXnLNZzd0qd7Q3CCF6Yd+CU2eoXKQ=="],
 
     "react-native-image-viewing": ["react-native-image-viewing@0.2.2", "", { "peerDependencies": { "react": ">=16.11.0", "react-native": ">=0.61.3" } }, "sha512-osWieG+p/d2NPbAyonOMubttajtYEYiRGQaJA54slFxZ69j1V4/dCmcrVQry47ktVKy8/qpFwCpW1eT6MH5T2Q=="],
 
