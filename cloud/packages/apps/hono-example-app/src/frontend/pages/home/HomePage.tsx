@@ -1,32 +1,22 @@
-import { useState, useEffect, useCallback, useRef } from "react";
-import { Camera, Zap, Terminal, Moon, Sun } from "lucide-react";
-import {
-  Badge,
-  Switch,
-  Tabs,
-  TabsList,
-  TabsTrigger,
-  TabsContent,
-} from "../../components/ui";
-import { useTheme } from "../../App";
-import { PhotoStream, type Photo } from "./components/PhotoStream";
-import { AudioControls } from "./components/AudioControls";
-import {
-  TranscriptionFeed,
-  type Transcription,
-} from "./components/TranscriptionFeed";
-import { SystemLogs, type Log } from "./components/SystemLogs";
+import {useState, useEffect, useCallback, useRef} from "react"
+import {Camera, Zap, Terminal, Moon, Sun} from "lucide-react"
+import {Badge, Switch, Tabs, TabsList, TabsTrigger, TabsContent} from "../../components/ui"
+import {useTheme} from "../../App"
+import {PhotoStream, type Photo} from "./components/PhotoStream"
+import {AudioControls} from "./components/AudioControls"
+import {TranscriptionFeed, type Transcription} from "./components/TranscriptionFeed"
+import {SystemLogs, type Log} from "./components/SystemLogs"
 
 interface HomePageProps {
-  userId: string;
+  userId: string
 }
 
-export default function HomePage({ userId }: HomePageProps) {
-  const { isDarkMode, toggleTheme } = useTheme();
-  const [photos, setPhotos] = useState<Photo[]>([]);
-  const [transcriptions, setTranscriptions] = useState<Transcription[]>([]);
-  const [logs, setLogs] = useState<Log[]>([]);
-  const logIdCounter = useRef(Date.now());
+export default function HomePage({userId}: HomePageProps) {
+  const {isDarkMode, toggleTheme} = useTheme()
+  const [photos, setPhotos] = useState<Photo[]>([])
+  const [transcriptions, setTranscriptions] = useState<Transcription[]>([])
+  const [logs, setLogs] = useState<Log[]>([])
+  const logIdCounter = useRef(Date.now())
 
   const addLog = useCallback((message: string) => {
     setLogs((prev) =>
@@ -38,31 +28,27 @@ export default function HomePage({ userId }: HomePageProps) {
         },
         ...prev,
       ].slice(0, 20),
-    );
-  }, []);
+    )
+  }, [])
 
   // Connect to SSE photo stream
   useEffect(() => {
-    let eventSource: EventSource | null = null;
+    let eventSource: EventSource | null = null
 
     const connect = () => {
       try {
-        eventSource = new EventSource(
-          `/api/photo-stream?userId=${encodeURIComponent(userId)}`,
-        );
+        eventSource = new EventSource(`/api/stream/photo?userId=${encodeURIComponent(userId)}`)
 
-        eventSource.onopen = () => addLog("Connected to photo stream");
+        eventSource.onopen = () => addLog("Connected to photo stream")
 
         eventSource.onmessage = (event) => {
           try {
-            const data = JSON.parse(event.data);
-            if (data.type === "connected") return;
+            const data = JSON.parse(event.data)
+            if (data.type === "connected") return
 
             setPhotos((prev) => {
-              if (prev.some((p) => p.requestId === data.requestId)) return prev;
-              addLog(
-                `Photo captured at ${new Date(data.timestamp).toLocaleTimeString()}`,
-              );
+              if (prev.some((p) => p.requestId === data.requestId)) return prev
+              addLog(`Photo captured at ${new Date(data.timestamp).toLocaleTimeString()}`)
               return [
                 {
                   id: data.requestId,
@@ -71,42 +57,40 @@ export default function HomePage({ userId }: HomePageProps) {
                   timestamp: new Date(data.timestamp).toLocaleTimeString(),
                 },
                 ...prev,
-              ].slice(0, 6);
-            });
+              ].slice(0, 6)
+            })
           } catch {}
-        };
+        }
 
         eventSource.onerror = () => {
-          addLog("Photo stream disconnected, reconnecting...");
-          eventSource?.close();
-          setTimeout(connect, 3000);
-        };
+          addLog("Photo stream disconnected, reconnecting...")
+          eventSource?.close()
+          setTimeout(connect, 3000)
+        }
       } catch {
-        addLog("Failed to connect to photo stream");
+        addLog("Failed to connect to photo stream")
       }
-    };
+    }
 
-    connect();
-    return () => eventSource?.close();
-  }, [addLog, userId]);
+    connect()
+    return () => eventSource?.close()
+  }, [addLog, userId])
 
   // Connect to SSE transcription stream
   useEffect(() => {
-    let eventSource: EventSource | null = null;
-    let idCounter = Date.now();
+    let eventSource: EventSource | null = null
+    let idCounter = Date.now()
 
     const connect = () => {
       try {
-        eventSource = new EventSource(
-          `/api/transcription-stream?userId=${encodeURIComponent(userId)}`,
-        );
+        eventSource = new EventSource(`/api/stream/transcription?userId=${encodeURIComponent(userId)}`)
 
-        eventSource.onopen = () => addLog("Connected to transcription stream");
+        eventSource.onopen = () => addLog("Connected to transcription stream")
 
         eventSource.onmessage = (event) => {
           try {
-            const data = JSON.parse(event.data);
-            if (data.type === "connected") return;
+            const data = JSON.parse(event.data)
+            if (data.type === "connected") return
 
             setTranscriptions((prev) => {
               const entry = {
@@ -114,40 +98,40 @@ export default function HomePage({ userId }: HomePageProps) {
                 text: data.text,
                 time: new Date(data.timestamp).toLocaleTimeString(),
                 isFinal: data.isFinal,
-              };
+              }
 
               if (data.isFinal) {
                 if (prev.length > 0 && !prev[0].isFinal) {
-                  const updated = [...prev];
-                  updated[0] = { ...updated[0], ...entry, id: updated[0].id };
-                  return updated.slice(0, 10);
+                  const updated = [...prev]
+                  updated[0] = {...updated[0], ...entry, id: updated[0].id}
+                  return updated.slice(0, 10)
                 }
-                return [entry, ...prev].slice(0, 10);
+                return [entry, ...prev].slice(0, 10)
               } else {
                 if (prev.length === 0 || prev[0].isFinal) {
-                  return [entry, ...prev].slice(0, 10);
+                  return [entry, ...prev].slice(0, 10)
                 }
-                const updated = [...prev];
-                updated[0] = { ...updated[0], ...entry, id: updated[0].id };
-                return updated;
+                const updated = [...prev]
+                updated[0] = {...updated[0], ...entry, id: updated[0].id}
+                return updated
               }
-            });
+            })
           } catch {}
-        };
+        }
 
         eventSource.onerror = () => {
-          addLog("Transcription stream disconnected, reconnecting...");
-          eventSource?.close();
-          setTimeout(connect, 3000);
-        };
+          addLog("Transcription stream disconnected, reconnecting...")
+          eventSource?.close()
+          setTimeout(connect, 3000)
+        }
       } catch {
-        addLog("Failed to connect to transcription stream");
+        addLog("Failed to connect to transcription stream")
       }
-    };
+    }
 
-    connect();
-    return () => eventSource?.close();
-  }, [addLog, userId]);
+    connect()
+    return () => eventSource?.close()
+  }, [addLog, userId])
 
   return (
     <div className="max-w-5xl mx-auto p-4 md:p-6 space-y-4">
@@ -203,5 +187,5 @@ export default function HomePage({ userId }: HomePageProps) {
         </TabsContent>
       </Tabs>
     </div>
-  );
+  )
 }
