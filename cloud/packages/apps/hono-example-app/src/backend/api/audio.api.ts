@@ -1,8 +1,18 @@
+import {Hono} from "hono"
 import type {Context} from "hono"
 import {UserSession} from "../UserSession"
 
+const app = new Hono()
+
+// ─── Routes ──────────────────────────────────────────────────────────────────
+
+app.post("/speak", speak)
+app.post("/stop", stopAudio)
+
+// ─── Handlers ────────────────────────────────────────────────────────────────
+
 /** POST /speak — text-to-speech on the glasses */
-export async function speak(c: Context) {
+async function speak(c: Context) {
   const {text, userId} = await c.req.json()
 
   if (!text) return c.json({error: "text is required"}, 400)
@@ -21,8 +31,8 @@ export async function speak(c: Context) {
   }
 }
 
-/** POST /stop-audio — stop audio playback */
-export async function stopAudio(c: Context) {
+/** POST /stop — stop audio playback */
+async function stopAudio(c: Context) {
   const {userId} = await c.req.json()
 
   if (!userId) return c.json({error: "userId is required"}, 400)
@@ -39,3 +49,5 @@ export async function stopAudio(c: Context) {
     return c.json({error: error.message}, 500)
   }
 }
+
+export default app

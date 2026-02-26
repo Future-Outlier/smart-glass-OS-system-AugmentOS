@@ -1,8 +1,19 @@
+import {Hono} from "hono"
 import type {Context} from "hono"
 import {UserSession} from "../UserSession"
 
-/** GET /latest-photo — metadata for the most recent photo */
-export function getLatestPhoto(c: Context) {
+const app = new Hono()
+
+// ─── Routes ──────────────────────────────────────────────────────────────────
+
+app.get("/latest", getLatestPhoto)
+app.get("/:requestId", getPhotoData)
+app.get("/:requestId/base64", getPhotoBase64)
+
+// ─── Handlers ────────────────────────────────────────────────────────────────
+
+/** GET /latest — metadata for the most recent photo */
+function getLatestPhoto(c: Context) {
   const userId = c.req.query("userId")
 
   if (!userId) return c.json({error: "userId is required"}, 400)
@@ -24,8 +35,8 @@ export function getLatestPhoto(c: Context) {
   })
 }
 
-/** GET /photo/:requestId — raw photo image data */
-export function getPhotoData(c: Context) {
+/** GET /:requestId — raw photo image data */
+function getPhotoData(c: Context) {
   const requestId = c.req.param("requestId")
   const userId = c.req.query("userId")
 
@@ -46,8 +57,8 @@ export function getPhotoData(c: Context) {
   })
 }
 
-/** GET /photo-base64/:requestId — photo as base64 JSON */
-export function getPhotoBase64(c: Context) {
+/** GET /:requestId/base64 — photo as base64 JSON */
+function getPhotoBase64(c: Context) {
   const requestId = c.req.param("requestId")
   const userId = c.req.query("userId")
 
@@ -72,3 +83,5 @@ export function getPhotoBase64(c: Context) {
     dataUrl: `data:${photo.mimeType};base64,${base64Data}`,
   })
 }
+
+export default app

@@ -1,9 +1,19 @@
+import {Hono} from "hono"
 import type {Context} from "hono"
 import {streamSSE} from "hono/streaming"
 import {UserSession} from "../UserSession"
 
-/** GET /photo-stream — SSE for real-time photo updates */
-export function photoStream(c: Context) {
+const app = new Hono()
+
+// ─── Routes ──────────────────────────────────────────────────────────────────
+
+app.get("/photo", photoStream)
+app.get("/transcription", transcriptionStream)
+
+// ─── Handlers ────────────────────────────────────────────────────────────────
+
+/** GET /photo — SSE for real-time photo updates */
+function photoStream(c: Context) {
   const userId = c.req.query("userId")
   if (!userId) return c.json({error: "userId is required"}, 400)
 
@@ -50,8 +60,8 @@ export function photoStream(c: Context) {
   })
 }
 
-/** GET /transcription-stream — SSE for real-time transcriptions */
-export function transcriptionStream(c: Context) {
+/** GET /transcription — SSE for real-time transcriptions */
+function transcriptionStream(c: Context) {
   const userId = c.req.query("userId")
   if (!userId) return c.json({error: "userId is required"}, 400)
 
@@ -80,3 +90,5 @@ export function transcriptionStream(c: Context) {
     }
   })
 }
+
+export default app
