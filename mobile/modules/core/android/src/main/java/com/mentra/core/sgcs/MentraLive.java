@@ -973,6 +973,7 @@ public class MentraLive extends SGCManager {
                     isConnecting = false;
                     isConnected = true;
                     connectedDevice = gatt.getDevice();
+                    GlassesStore.INSTANCE.apply("glasses", "bluetoothName", connectedDevice.getName());
 
                     // Save the connected device name for future reconnections
                     // no longer needed as we now save it immediately in connectToDevice()
@@ -3527,6 +3528,11 @@ public class MentraLive extends SGCManager {
 
     }
 
+    public void ping() {
+        Bridge.log("LIVE: ping()");
+        keepAwake();
+    }
+
     public boolean displayBitmap(String base64) {
         return false;
     }
@@ -4586,6 +4592,16 @@ public class MentraLive extends SGCManager {
             queueData(packedData);
         } catch (JSONException e) {
             Log.e(TAG, "Error creating video command", e);
+        }
+    }
+
+    public void keepAwake(){
+        try{
+            JSONObject json = new JSONObject();
+            json.put("type", "keep_awake");
+            sendJson(json, true);
+        } catch (JSONException e) {
+            Log.e(TAG, "Error creating keep_awake command", e);
         }
     }
 

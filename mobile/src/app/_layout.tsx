@@ -16,6 +16,7 @@ import {loadDateFnsLocale} from "@/utils/formatDate"
 import {AllEffects} from "@/effects/AllEffects"
 import {AllProviders} from "@/contexts/AllProviders"
 import "@/global.css"
+import {configureReanimatedLogger, ReanimatedLogLevel} from "react-native-reanimated"
 
 // Initialize log ring buffer for capturing logs in bug reports
 // Must be done before app starts logging, after any console modifications
@@ -51,6 +52,11 @@ if (__DEV__) {
   console.warn = withoutIgnored(console.warn)
   console.error = withoutIgnored(console.error)
 }
+
+configureReanimatedLogger({
+  level: ReanimatedLogLevel.warn,
+  strict: false, // Reanimated runs in strict mode by default
+})
 
 SentrySetup()
 logBuffer.startConsoleInterception()
