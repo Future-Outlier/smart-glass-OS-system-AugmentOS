@@ -479,6 +479,7 @@ const en = {
     offlineSTT: "Offline Transcriptions",
     offlineSTTSubtitle: "Transcribe audio and display on connected glasses completely offline.",
     appAppearance: "App appearance",
+    layoutSettings: "Layout settings",
   },
   devSettings: {
     debugConsole: "Debug Console",
