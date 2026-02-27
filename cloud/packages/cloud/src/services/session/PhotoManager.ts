@@ -18,19 +18,6 @@ import { ConnectionValidator } from "../validators/ConnectionValidator";
 // Timeout handling is managed by CameraModule in the SDK
 
 /**
- * Packages that should have silent photo mode (no LED flash, no shutter sound).
- * These are AI apps that take photos continuously for context awareness.
- */
-const SILENT_PHOTO_PACKAGES_HARDCODED = ["com.mentra.mira", "com.mentra.mentraai", "com.mentra.mentraai.beta"];
-
-// Build the allowlist: hardcoded + env var
-const envPackages =
-  process.env.SILENT_PHOTO_PACKAGES?.split(",")
-    .map((p) => p.trim())
-    .filter(Boolean) || [];
-export const SILENT_PHOTO_PACKAGES = new Set([...SILENT_PHOTO_PACKAGES_HARDCODED, ...envPackages]);
-
-/**
  * Internal representation of a pending photo request,
  * adapted from PendingPhotoRequest in photo-request.service.ts.
  */
@@ -133,10 +120,9 @@ export class PhotoManager {
     };
     this.pendingPhotoRequests.set(requestId, requestInfo);
 
-    // Determine flash and sound based on package name
-    const isSilentPackage = SILENT_PHOTO_PACKAGES.has(packageName);
-    const flash = isSilentPackage ? false : true;
-    const sound = isSilentPackage ? false : (appRequest.sound ?? true);
+    // Flash is always on (privacy indicator for bystanders), sound is app-controlled via SDK
+    const flash = true;
+    const sound = appRequest.sound ?? true;
 
     // Message to glasses based on CloudToGlassesMessageType.PHOTO_REQUEST
     // Include webhook URL so ASG can upload directly to the app
