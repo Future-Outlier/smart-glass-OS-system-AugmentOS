@@ -1233,9 +1233,9 @@ class MentraLive: NSObject, SGCManager {
 
     func requestPhoto(
         _ requestId: String, appId: String, size: String?, webhookUrl: String?, authToken: String?,
-        compress: String?, silent: Bool
+        compress: String?, flash: Bool, sound: Bool
     ) {
-        Bridge.log("Requesting photo: \(requestId) for app: \(appId), silent: \(silent)")
+        Bridge.log("Requesting photo: \(requestId) for app: \(appId), flash: \(flash), sound: \(sound)")
 
         var json: [String: Any] = [
             "type": "take_photo",
@@ -1279,8 +1279,8 @@ class MentraLive: NSObject, SGCManager {
         // Add compress parameter
         json["compress"] = compress ?? "none"
 
-        // silent mode: disables shutter sound and privacy LED
-        json["silent"] = silent
+        json["flash"] = flash
+        json["sound"] = sound
 
         Bridge.log("Using auto transfer mode with BLE fallback ID: \(bleImgId)")
 
@@ -3990,9 +3990,9 @@ extension MentraLive {
         sendJson(json, wakeUp: true)
     }
 
-    func startVideoRecording(requestId: String, save: Bool, silent: Bool) {
+    func startVideoRecording(requestId: String, save: Bool, flash: Bool, sound: Bool) {
         startVideoRecording(
-            requestId: requestId, save: save, silent: silent, width: 0, height: 0, fps: 0
+            requestId: requestId, save: save, flash: flash, sound: sound, width: 0, height: 0, fps: 0
         )
     }
 
@@ -4016,10 +4016,10 @@ extension MentraLive {
     }
 
     func startVideoRecording(
-        requestId: String, save: Bool, silent: Bool, width: Int, height: Int, fps: Int
+        requestId: String, save: Bool, flash: Bool, sound: Bool, width: Int, height: Int, fps: Int
     ) {
         Bridge.log(
-            "Starting video recording on glasses: requestId=\(requestId), save=\(save), silent=\(silent), resolution=\(width)x\(height)@\(fps)fps"
+            "Starting video recording on glasses: requestId=\(requestId), save=\(save), flash=\(flash), sound=\(sound), resolution=\(width)x\(height)@\(fps)fps"
         )
 
         guard connectionState == ConnTypes.CONNECTED else {
@@ -4031,7 +4031,8 @@ extension MentraLive {
             "type": "start_video_recording",
             "request_id": requestId,
             "save": save,
-            "silent": silent,
+            "flash": flash,
+            "sound": sound,
         ]
 
         // Add video settings if provided
