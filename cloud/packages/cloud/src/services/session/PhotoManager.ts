@@ -28,7 +28,7 @@ const envPackages =
   process.env.SILENT_PHOTO_PACKAGES?.split(",")
     .map((p) => p.trim())
     .filter(Boolean) || [];
-const SILENT_PHOTO_PACKAGES = new Set([...SILENT_PHOTO_PACKAGES_HARDCODED, ...envPackages]);
+export const SILENT_PHOTO_PACKAGES = new Set([...SILENT_PHOTO_PACKAGES_HARDCODED, ...envPackages]);
 
 /**
  * Internal representation of a pending photo request,
@@ -133,8 +133,10 @@ export class PhotoManager {
     };
     this.pendingPhotoRequests.set(requestId, requestInfo);
 
-    // Determine if this app should use silent mode (no LED flash, no shutter sound)
-    const silent = SILENT_PHOTO_PACKAGES.has(packageName);
+    // Determine flash and sound based on package name
+    const isSilentPackage = SILENT_PHOTO_PACKAGES.has(packageName);
+    const flash = isSilentPackage ? false : true;
+    const sound = isSilentPackage ? false : (appRequest.sound ?? true);
 
     // Message to glasses based on CloudToGlassesMessageType.PHOTO_REQUEST
     // Include webhook URL so ASG can upload directly to the app
@@ -147,7 +149,8 @@ export class PhotoManager {
       authToken, // Include authToken for webhook authentication
       size, // Propagate desired size
       compress, // Propagate compression setting
-      silent, // Silent mode: disables LED flash and shutter sound for AI apps
+      flash, // Controls privacy flash LED (cloud-controlled)
+      sound, // Controls shutter sound (app-controllable via SDK)
       timestamp: new Date(),
     };
 
@@ -160,9 +163,10 @@ export class PhotoManager {
           webhookUrl,
           isCustom: !!customWebhookUrl,
           hasAuthToken: !!authToken,
-          silent,
+          flash,
+          sound,
         },
-        `PHOTO_REQUEST command sent to glasses${silent ? " (silent mode)" : ""}.`,
+        `PHOTO_REQUEST command sent to glasses (flash=${flash}, sound=${sound}).`,
       );
 
       // If using custom webhook URL, resolve immediately since glasses won't send response back to cloud

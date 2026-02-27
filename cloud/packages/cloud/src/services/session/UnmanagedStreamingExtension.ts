@@ -28,6 +28,7 @@ import { ConnectionValidator } from "../validators/ConnectionValidator";
 import { WebSocketReadyState } from "../websocket/types";
 
 import UserSession from "./UserSession";
+import { SILENT_PHOTO_PACKAGES } from "./PhotoManager";
 // session.service no longer needed; using UserSession instance methods
 
 // Constants from the original stream-tracker.service.ts
@@ -80,6 +81,7 @@ export class UnmanagedStreamingExtension {
       video,
       audio,
       stream: streamOptions,
+      sound: appSound,
     } = request;
     this.logger.info(
       {
@@ -245,6 +247,11 @@ export class UnmanagedStreamingExtension {
       stream: streamOptions,
     });
 
+    // Determine flash and sound based on package name
+    const isSilentPackage = SILENT_PHOTO_PACKAGES.has(packageName);
+    const flash = isSilentPackage ? false : true;
+    const sound = isSilentPackage ? false : (appSound ?? true);
+
     // Send start command to glasses
     const startMessage: StartRtmpStream = {
       type: CloudToGlassesMessageType.START_RTMP_STREAM,
@@ -255,6 +262,8 @@ export class UnmanagedStreamingExtension {
       video: video || {},
       audio: audio || {},
       stream: streamOptions || {},
+      flash,
+      sound,
       timestamp: now,
     };
 
