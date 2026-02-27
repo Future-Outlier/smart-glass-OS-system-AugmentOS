@@ -340,26 +340,24 @@ For the CI test/build workflows (cloud-build, console-build, etc.) that run Bun 
 | 1   | Split COPY for layer caching            | `Dockerfile.porter`, `Dockerfile.stress`, `Dockerfile.livekit` |
 | 7   | Fix bun-types via package.json override | `cloud/package.json`, all three Dockerfiles                    |
 
-### 14. CI uses `bun-version: latest` — causes lockfile drift
+### 14. Developers must keep local Bun updated to latest
 
-**Severity**: 🔴 High — causes recurring CI failures
+**Severity**: 🔴 High — causes recurring CI failures when local Bun is behind
 
-**Where**: All CI workflows (`cloud-tests.yml`, `cloud-build.yml`, `cloud-console-build.yml`, `cloud-store-build.yml`, `cloud-sdk-build.yml`, `augmentos_cloud_pr_dev_main.yml`)
+**Where**: Developer machines
 
-**Problem**: Every workflow specifies `bun-version: latest` (or leaves it blank, which defaults to latest). Developers run whatever local Bun version they have (e.g., `1.3.9`), but CI pulls the latest (`1.3.10`). Different Bun patch versions resolve dependencies slightly differently, producing lockfile differences. This causes `--frozen-lockfile` to fail even when no dependencies actually changed.
+**Problem**: CI uses `bun-version: latest` which is correct — we always want the latest Bun. But developers may fall behind (e.g., running `1.3.9` locally while CI has `1.3.10`). Different Bun patch versions resolve dependencies slightly differently, so a lockfile generated with an older local Bun will fail `--frozen-lockfile` on CI.
 
-This already caused two CI failures on PR #2108 — the lockfile committed from a local `1.3.9` install didn't match what CI's `1.3.10` expected.
+This already caused two CI failures on PR #2108 — the lockfile was committed from a local `1.3.9` install but CI ran `1.3.10`.
 
-**Fix**: Pin the Bun version across all workflows to a specific version that matches what developers use:
+**Fix**: Developers should run `bun upgrade` regularly to stay on the latest version. Add a note to `CONTRIBUTING.md` or the cloud `README.md`:
 
-```yaml
-- name: Setup Bun
-  uses: oven-sh/setup-bun@v2
-  with:
-    bun-version: "1.3.9" # Pin to match team's local version
+```
+## Prerequisites
+- Bun (latest) — run `bun upgrade` before committing lockfile changes
 ```
 
-Or define it once as a workflow-level env var / reusable workflow input so it's updated in one place. When the team wants to upgrade Bun, they bump the pin, regenerate the lockfile, and commit both together.
+Optionally, add a CI check that prints the Bun version at the start of each workflow for easier debugging when this happens.
 
 ---
 
@@ -372,21 +370,21 @@ Or define it once as a workflow-level env var / reusable workflow input so it's 
 | 11  | Evaluate Blacksmith Docker cache for deploys | Architecture decision on build location                     |
 | 13  | Simplify `start.sh`                          | Maintainability §19 (LiveKit removal)                       |
 
-### Phase 1.5 — Bun version pinning (this PR or fast follow)
+### Phase 1.5 — Bun version hygiene (this PR or fast follow)
 
-| #   | Fix                                       | Files                      |
-| --- | ----------------------------------------- | -------------------------- |
-| 14  | Pin `bun-version` across all CI workflows | All 6+ workflow YAML files |
+| #   | Fix                                                  | Files                       |
+| --- | ---------------------------------------------------- | --------------------------- |
+| 14  | Document "run `bun upgrade` before lockfile commits" | `CONTRIBUTING.md` or README |
 
 ---
 
 ## Expected Impact
 
-| Metric                             | Before                           | After (Phase 1+2)               |
-| ---------------------------------- | -------------------------------- | ------------------------------- |
-| Deploy build time (no dep changes) | ~3–4 min                         | ~1–2 min (install layer cached) |
-| CI test workflow (cache hit)       | Cache never hits                 | Cache hits on lockfile match    |
-| CI builds on doc-only changes      | Full test suite runs             | Skipped                         |
-| Stale CI runs on rapid pushes      | All run to completion            | Older runs canceled             |
-| Build correctness                  | Accidentally works               | Correct dependency order        |
-| Lockfile drift CI failures         | Recurring (Bun version mismatch) | Eliminated (pinned version)     |
+| Metric                             | Before                           | After (Phase 1+2)                |
+| ---------------------------------- | -------------------------------- | -------------------------------- |
+| Deploy build time (no dep changes) | ~3–4 min                         | ~1–2 min (install layer cached)  |
+| CI test workflow (cache hit)       | Cache never hits                 | Cache hits on lockfile match     |
+| CI builds on doc-only changes      | Full test suite runs             | Skipped                          |
+| Stale CI runs on rapid pushes      | All run to completion            | Older runs canceled              |
+| Build correctness                  | Accidentally works               | Correct dependency order         |
+| Lockfile drift CI failures         | Recurring (Bun version mismatch) | Eliminated (devs stay on latest) |
