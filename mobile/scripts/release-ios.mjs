@@ -70,12 +70,7 @@ console.log('\n━━━ Step 3: Archiving ━━━');
 
 const archivePath = path.resolve('build/MentraOS.xcarchive');
 
-await $({ stdio: 'inherit' })`xcodebuild archive
-  -workspace ios/MentraOS.xcworkspace
-  -scheme MentraOS
-  -configuration Release
-  -destination generic/platform=iOS
-  -archivePath ${archivePath}`;
+await $({ stdio: 'inherit' })`xcodebuild archive -workspace ios/MentraOS.xcworkspace -scheme MentraOS -configuration Release -destination generic/platform=iOS -archivePath ${archivePath}`;
 
 if (!existsSync(archivePath)) {
   console.error('Archive not found at:', archivePath);
@@ -90,11 +85,7 @@ console.log('\n━━━ Step 4: Exporting IPA ━━━');
 const exportPath = path.resolve('build/ios-export');
 const exportOptionsPlist = path.resolve('ios-export/ExportOptions.plist');
 
-await $({ stdio: 'inherit' })`xcodebuild -exportArchive
-  -archivePath ${archivePath}
-  -exportOptionsPlist ${exportOptionsPlist}
-  -exportPath ${exportPath}
-  -allowProvisioningUpdates`;
+await $({ stdio: 'inherit' })`xcodebuild -exportArchive -archivePath ${archivePath} -exportOptionsPlist ${exportOptionsPlist} -exportPath ${exportPath} -allowProvisioningUpdates`;
 
 // Find the exported IPA
 const ipaFiles = (await $`ls ${exportPath}/*.ipa`).stdout.trim().split('\n').filter(Boolean);
@@ -118,11 +109,7 @@ if (!ascConfig || !ascConfig.ASC_API_KEY_ID || !ascConfig.ASC_API_ISSUER_ID || !
 } else {
   // altool looks for AuthKey_<id>.p8 in $API_PRIVATE_KEYS_DIR
   const keyDir = path.dirname(ascConfig.ASC_API_KEY_PATH);
-  await $({ stdio: 'inherit', env: { ...process.env, API_PRIVATE_KEYS_DIR: keyDir } })`xcrun altool --upload-app
-    -f ${ipaPath}
-    -t ios
-    --apiKey ${ascConfig.ASC_API_KEY_ID}
-    --apiIssuer ${ascConfig.ASC_API_ISSUER_ID}`;
+  await $({ stdio: 'inherit', env: { ...process.env, API_PRIVATE_KEYS_DIR: keyDir } })`xcrun altool --upload-app -f ${ipaPath} -t ios --apiKey ${ascConfig.ASC_API_KEY_ID} --apiIssuer ${ascConfig.ASC_API_ISSUER_ID}`;
   console.log('IPA uploaded to App Store Connect (TestFlight)');
 }
 
@@ -146,16 +133,17 @@ try {
   releaseExists = true;
   if (assetsJson && assetsJson !== 'null') {
     const assets = JSON.parse(assetsJson);
-    // Use the highest beta number across ALL assets (APK + IPA) so iOS follows Android numbering
-    const betaNumbers = assets
+    // Find the latest APK beta number and use the same number for iOS
+    const apkBetas = assets
       .map(a => a.name)
+      .filter(name => name.endsWith('.apk'))
       .map(name => {
-        const match = name.match(/_Beta_(\d+)\.(apk|ipa)$/);
+        const match = name.match(/_Beta_(\d+)\.apk$/);
         return match ? parseInt(match[1], 10) : 0;
       })
       .filter(n => n > 0);
-    if (betaNumbers.length > 0) {
-      betaNumber = Math.max(...betaNumbers) + 1;
+    if (apkBetas.length > 0) {
+      betaNumber = Math.max(...apkBetas);
     }
   }
 } catch {

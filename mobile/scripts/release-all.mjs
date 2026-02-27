@@ -179,15 +179,23 @@ if (!existsSync(keyPath)) {
   console.log('AAB uploaded to Google Play (internal track)');
 }
 
+// ── Step 10: Run iOS release ───────────────────────────────────────────────────
+
+console.log('\n━━━ Step 10: Running iOS release ━━━');
+await $({ stdio: 'inherit' })`zx ./scripts/release-ios.mjs`;
+
 // ── Done ──────────────────────────────────────────────────────────────────────
 
 const repoName = (await $`gh repo view --json nameWithOwner -q .nameWithOwner`).stdout.trim();
 const apkUrl = `https://github.com/${repoName}/releases/download/${tag}/${apkName}`;
+const ipaName = `${prefix.replace('MentraOS_', 'MentraOS_iOS_')}_Beta_${betaNumber}.ipa`;
+const ipaUrl = `https://github.com/${repoName}/releases/download/${tag}/${ipaName}`;
 
 console.log('\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
 console.log(`Release complete!`);
 console.log(`  Version: ${version} (versionCode ${newVersionCode})`);
 console.log(`  APK: ${apkUrl}`);
+console.log(`  IPA: ${ipaUrl}`);
 if (existsSync(keyPath)) {
   console.log(`  Google Play: AAB uploaded (internal track)`);
 }
