@@ -273,7 +273,7 @@ actor ReconnectionManager {
 class G1: NSObject, SGCManager {
     func sendGalleryMode() {}
 
-    func sendButtonMaxRecordingTime() {}
+    func sendButtonMaxRecordingTime(_: Int) {}
 
     func requestPhoto(
         _: String, appId _: String, size _: String?, webhookUrl _: String?, authToken _: String?,
