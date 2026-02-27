@@ -839,6 +839,7 @@ const en = {
     simulated: "Simulated Glasses",
     store: "Get more apps",
     lmaInstaller: "Local Store",
+    lmaLoader: "Side Loader",
   },
   appInfo: {
     share: "Share",
@@ -856,6 +857,10 @@ const en = {
     uninstallMiniAppConfirm: "Are you sure you want to uninstall {{appName}}?",
     uninstallMiniAppError: "Error uninstalling mini app: {{error}}",
     uninstallMiniAppSuccess: "{{appName}} has been uninstalled successfully",
+  },
+  lmaLoader: {
+    miniAppLoader: "Mini App Loader",
+    loadMiniApp: "Load Mini App",
   },
   dev: {
     developerMode: "Developer mode",

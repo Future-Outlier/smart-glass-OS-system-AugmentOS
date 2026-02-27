@@ -33,7 +33,7 @@ export default function MiniAppInstaller() {
     return (
       <ScrollView className="pt-20" contentContainerClassName="flex-grow">
         <View className="gap-12 p-6 rounded-2xl bg-primary-foreground">
-          <Text tx="lmaInstaller:miniAppInstaller" className="text-xl font-semibold" />
+          <Text tx="lmaLoader:miniAppLoader" className="text-xl font-semibold" />
           {/* url text input */}
           <View className="w-full bg-background h-10 items-center justify-center rounded-xl px-3">
             <TextInput

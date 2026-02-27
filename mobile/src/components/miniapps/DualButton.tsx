@@ -39,10 +39,12 @@ export function MiniAppDualButtonHeader({
   packageName,
   viewShotRef,
   onEllipsisPress,
+  onMinusPress,
 }: {
   packageName: string
   viewShotRef: React.RefObject<View | null>
   onEllipsisPress?: () => void
+  onMinusPress?: () => void
 }) {
   const {goBack} = useNavigationHistory()
   const bottomSheetRef = useRef<BottomSheetModal>(null)
@@ -54,6 +56,14 @@ export function MiniAppDualButtonHeader({
       bottomSheetRef.current?.present()
     }
   }, [onEllipsisPress])
+
+  const handleMinusPress = useCallback(() => {
+    if (onMinusPress) {
+      onMinusPress()
+    } else {
+      handleExit()
+    }
+  }, [onMinusPress])
 
   const handleExit = async () => {
     // take a screenshot of the webview and save it to the applet zustand store:
@@ -74,7 +84,7 @@ export function MiniAppDualButtonHeader({
   }, true)
   return (
     <View className="z-2 absolute top-3 w-full items-center justify-end flex-row">
-      <DualButton onMinusPress={handleExit} onEllipsisPress={handleEllipsisPress} />
+      <DualButton onMinusPress={handleMinusPress} onEllipsisPress={handleEllipsisPress} />
       <MiniAppMoreActionsSheet ref={bottomSheetRef} packageName={packageName} />
     </View>
   )
