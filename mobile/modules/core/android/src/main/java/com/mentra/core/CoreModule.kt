@@ -334,11 +334,16 @@ class CoreModule : Module() {
                 // Fallback: check the system-level location toggle directly.
                 // GPS_PROVIDER/NETWORK_PROVIDER can report disabled on devices without
                 // Google Play Services or without a GPS chip, even when location is toggled on.
-                val systemEnabled = locationManager.isLocationEnabled
-                if (systemEnabled) {
-                    android.util.Log.w("CoreModule", "Location providers (GPS/Network) report disabled but system location toggle is ON. Device may lack GMS or GPS hardware.")
+                // isLocationEnabled requires API 28+; on older devices just trust the provider check.
+                if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.P) {
+                    val systemEnabled = locationManager.isLocationEnabled
+                    if (systemEnabled) {
+                        android.util.Log.w("CoreModule", "Location providers (GPS/Network) report disabled but system location toggle is ON. Device may lack GMS or GPS hardware.")
+                    }
+                    systemEnabled
+                } else {
+                    false
                 }
-                systemEnabled
             } else {
                 true
             }
