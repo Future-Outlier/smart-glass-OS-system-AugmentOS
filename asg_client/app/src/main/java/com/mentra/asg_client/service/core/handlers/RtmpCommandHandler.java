@@ -3,6 +3,7 @@ package com.mentra.asg_client.service.core.handlers;
 import android.content.Context;
 import android.util.Log;
 
+import com.mentra.asg_client.io.streaming.config.RtmpStreamConfig;
 import com.mentra.asg_client.io.streaming.services.RtmpStreamingService;
 import com.mentra.asg_client.service.legacy.interfaces.ICommandHandler;
 import com.mentra.asg_client.service.media.interfaces.IMediaManager;
@@ -111,7 +112,22 @@ public class RtmpCommandHandler implements ICommandHandler {
             // silent: true = no sound/LED, false (default) = normal behavior with sound/LED
             boolean silent = data.optBoolean("silent", false);
             boolean enableLed = !silent; // Convert to internal enableLed (inverted logic)
-            RtmpStreamingService.startStreaming(context, rtmpUrl, streamId, enableLed);
+
+            // Parse video/audio config from SDK message (supports both full and compact keys)
+            // Full: { video: {...}, audio: {...} }
+            // Compact: { v: {...}, a: {...} }
+            JSONObject videoJson = data.optJSONObject("video");
+            if (videoJson == null) {
+                videoJson = data.optJSONObject("v");
+            }
+            JSONObject audioJson = data.optJSONObject("audio");
+            if (audioJson == null) {
+                audioJson = data.optJSONObject("a");
+            }
+            RtmpStreamConfig streamConfig = RtmpStreamConfig.fromJson(videoJson, audioJson);
+
+            Log.d(TAG, "Starting RTMP stream with config: " + streamConfig.toString());
+            RtmpStreamingService.startStreaming(context, rtmpUrl, streamId, enableLed, streamConfig);
 
             // Set StateManager for battery monitoring
             RtmpStreamingService.setStateManager(stateManager);

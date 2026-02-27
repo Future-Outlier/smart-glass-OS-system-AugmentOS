@@ -27,7 +27,7 @@ export default function ThemeSettingsPage() {
       {themePreference === themeKey ? (
         <Icon name="check" size={24} color={theme.colors.primary} />
       ) : (
-        <Icon name="check" size={24} color={"transparent"} />
+        <Icon name="check" size={24} color={theme.colors.primary_foreground} />
       )}
     </TouchableOpacity>
   )

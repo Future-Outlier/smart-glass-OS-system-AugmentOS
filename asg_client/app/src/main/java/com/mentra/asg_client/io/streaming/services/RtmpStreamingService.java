@@ -34,6 +34,7 @@ import com.mentra.asg_client.utils.WakeLockManager;
 import com.mentra.asg_client.reporting.domains.StreamingReporting;
 import com.mentra.asg_client.io.hardware.interfaces.IHardwareManager;
 import com.mentra.asg_client.io.hardware.core.HardwareManagerFactory;
+import com.mentra.asg_client.io.streaming.config.RtmpStreamConfig;
 import com.mentra.asg_client.io.streaming.events.StreamingCommand;
 import com.mentra.asg_client.io.streaming.events.StreamingEvent;
 import com.mentra.asg_client.io.streaming.interfaces.StreamingStatusCallback;
@@ -78,10 +79,16 @@ public class RtmpStreamingService extends Service {
     private boolean mIsStreaming = false;
     private SurfaceTexture mSurfaceTexture;
     private Surface mSurface;
-    private static final int SURFACE_WIDTH = 1280;  // 16:9 aspect ratio for proper video streaming
-    private static final int SURFACE_HEIGHT = 720;  // HD resolution (720p)
 
-    private static final int START_BITRATE = 2000000; //2,000,000 => 800,000
+    // Default values (used when SDK doesn't specify config)
+    private static final int DEFAULT_SURFACE_WIDTH = 1280;  // 16:9 aspect ratio for proper video streaming
+    private static final int DEFAULT_SURFACE_HEIGHT = 720;  // HD resolution (720p)
+    private static final int DEFAULT_START_BITRATE = 2000000; //2,000,000 => 800,000
+
+    // Current stream configuration (set via setStreamConfig or defaults)
+    private RtmpStreamConfig mStreamConfig = new RtmpStreamConfig();
+    private static RtmpStreamConfig sPendingStreamConfig = null; // Config to apply when service starts
+
     // Reconnection logic parameters
     private int mReconnectAttempts = 0;
     private static final int MAX_RECONNECT_ATTEMPTS = 10;
@@ -151,6 +158,13 @@ public class RtmpStreamingService extends Service {
             mStateManager = sPendingStateManager;
             sPendingStateManager = null; // Clear pending after applying
             Log.d(TAG, "✅ Applied pending StateManager during onCreate");
+        }
+
+        // Apply pending stream config if it was set before service started
+        if (sPendingStreamConfig != null) {
+            mStreamConfig = sPendingStreamConfig;
+            sPendingStreamConfig = null; // Clear pending after applying
+            Log.d(TAG, "✅ Applied pending stream config during onCreate: " + mStreamConfig.toString());
         }
 
         // Create notification channel
@@ -325,9 +339,11 @@ public class RtmpStreamingService extends Service {
         }
 
         try {
-            Log.d(TAG, "Creating surface texture");
+            int surfaceWidth = mStreamConfig.getVideoWidth();
+            int surfaceHeight = mStreamConfig.getVideoHeight();
+            Log.d(TAG, "Creating surface texture with size: " + surfaceWidth + "x" + surfaceHeight);
             mSurfaceTexture = new SurfaceTexture(0);
-            mSurfaceTexture.setDefaultBufferSize(SURFACE_WIDTH, SURFACE_HEIGHT);
+            mSurfaceTexture.setDefaultBufferSize(surfaceWidth, surfaceHeight);
             mSurface = new Surface(mSurfaceTexture);
             Log.d(TAG, "Surface created successfully");
         } catch (Exception e) {
@@ -582,16 +598,28 @@ public class RtmpStreamingService extends Service {
             // Get the default profile for this MIME type
             int audioProfile = MediaCodecInfo.CodecProfileLevel.AACObjectLC; // Default for AAC
 
+            // Use config values (either from SDK or defaults)
+            int videoWidth = mStreamConfig.getVideoWidth();
+            int videoHeight = mStreamConfig.getVideoHeight();
+            int videoBitrate = mStreamConfig.getVideoBitrate();
+            int videoFps = mStreamConfig.getVideoFps();
+            int audioBitrate = mStreamConfig.getAudioBitrate();
+            int audioSampleRate = mStreamConfig.getAudioSampleRate();
+            boolean echoCancellation = mStreamConfig.isEchoCancellation();
+            boolean noiseSuppression = mStreamConfig.isNoiseSuppression();
+
+            Log.i(TAG, "Initializing stream with config: " + mStreamConfig.toString());
+
             // Configure audio settings using proper constructor
             AudioConfig audioConfig = new AudioConfig(
                     MediaFormat.MIMETYPE_AUDIO_AAC, // Use actual mime type instead of null
-                    64000, // 128 kbps
-                    44100, // 44.1 kHz
+                    audioBitrate,
+                    audioSampleRate,
                     AudioFormat.CHANNEL_IN_MONO, // Switch to mono for better compatibility
                     audioProfile, // Default profile
                     0, // Default byte format
-                    false, // Enable echo cancellation
-                    false // Enable noise suppression
+                    echoCancellation,
+                    noiseSuppression
             );
 
             // For MIME type, use the actual mime type instead of null
@@ -602,9 +630,9 @@ public class RtmpStreamingService extends Service {
             // Configure video settings using proper constructor
             VideoConfig videoConfig = new VideoConfig(
                     MediaFormat.MIMETYPE_VIDEO_AVC,
-                    START_BITRATE,
-                    new Size(SURFACE_WIDTH, SURFACE_HEIGHT),
-                    30, // Increase to 15 FPS minimum
+                    videoBitrate,
+                    new Size(videoWidth, videoHeight),
+                    videoFps,
                     profile,
                     level,
                     2.0f // Force keyframe every 2 seconds
@@ -1345,13 +1373,35 @@ public class RtmpStreamingService extends Service {
      */
 
     /**
-     * Start streaming to the specified RTMP URL with LED control
+     * Set the stream configuration for the next stream.
+     * If service is running, applies immediately. Otherwise, stores as pending.
+     * @param config The stream configuration to use
+     */
+    public static void setStreamConfig(RtmpStreamConfig config) {
+        if (config == null) {
+            config = new RtmpStreamConfig(); // Use defaults if null
+        }
+        if (sInstance != null) {
+            sInstance.mStreamConfig = config;
+            Log.d(TAG, "✅ Stream config set: " + config.toString());
+        } else {
+            sPendingStreamConfig = config;
+            Log.d(TAG, "✅ Stream config stored as pending: " + config.toString());
+        }
+    }
+
+    /**
+     * Start streaming to the specified RTMP URL with LED control and custom config
      * @param context Context to use for starting the service
      * @param rtmpUrl RTMP URL to stream to
      * @param streamId Stream ID for tracking (can be null)
      * @param enableLed Whether to enable recording LED during stream
+     * @param config Stream configuration (video/audio settings). Pass null for defaults.
      */
-    public static void startStreaming(Context context, String rtmpUrl, String streamId, boolean enableLed) {
+    public static void startStreaming(Context context, String rtmpUrl, String streamId, boolean enableLed, RtmpStreamConfig config) {
+        // Set config first (before service starts or before streaming begins)
+        setStreamConfig(config);
+
         // If service is running, send direct command
         if (sInstance != null) {
             // Cancel any pending reconnections first
@@ -1377,6 +1427,17 @@ public class RtmpStreamingService extends Service {
             intent.putExtra("enable_led", enableLed);
             context.startService(intent);
         }
+    }
+
+    /**
+     * Start streaming to the specified RTMP URL with LED control
+     * @param context Context to use for starting the service
+     * @param rtmpUrl RTMP URL to stream to
+     * @param streamId Stream ID for tracking (can be null)
+     * @param enableLed Whether to enable recording LED during stream
+     */
+    public static void startStreaming(Context context, String rtmpUrl, String streamId, boolean enableLed) {
+        startStreaming(context, rtmpUrl, streamId, enableLed, null); // Use default config
     }
 
     /**

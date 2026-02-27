@@ -23,6 +23,14 @@ interface Setting {
 export const SETTINGS: Record<string, Setting> = {
   // feature flags / mantle settings:
   dev_mode: {key: "dev_mode", defaultValue: () => __DEV__, writable: true, saveOnServer: true, persist: true},
+  super_mode: {key: "super_mode", defaultValue: () => false, writable: true, saveOnServer: true, persist: true},
+  app_switcher_ui: {
+    key: "app_switcher_ui",
+    defaultValue: () => false,
+    writable: true,
+    saveOnServer: true,
+    persist: true,
+  },
   enable_squircles: {
     key: "enable_squircles",
     defaultValue: () => true,
@@ -30,8 +38,29 @@ export const SETTINGS: Record<string, Setting> = {
     saveOnServer: true,
     persist: true,
   },
+  android_blur: {
+    key: "android_blur",
+    defaultValue: () => false,
+    writable: true,
+    saveOnServer: true,
+    persist: true,
+  },
   debug_console: {
     key: "debug_console",
+    defaultValue: () => false,
+    writable: true,
+    saveOnServer: true,
+    persist: true,
+  },
+  debug_navigation_history: {
+    key: "debug_navigation_history",
+    defaultValue: () => false,
+    writable: true,
+    saveOnServer: true,
+    persist: true,
+  },
+  debug_core_status_bar: {
+    key: "debug_core_status_bar",
     defaultValue: () => false,
     writable: true,
     saveOnServer: true,
@@ -69,7 +98,7 @@ export const SETTINGS: Record<string, Setting> = {
         return process.env.EXPO_PUBLIC_STORE_URL_OVERRIDE
       }
       if (process.env.EXPO_PUBLIC_DEPLOYMENT_REGION === "china") {
-        return "https://store.mentraglass.cn"
+        return "https://dev-store.mentraglass.cn"
       }
       return "https://apps.mentra.glass"
     },
@@ -79,9 +108,23 @@ export const SETTINGS: Record<string, Setting> = {
     saveOnServer: false,
     persist: true,
   },
+  saved_backend_urls: {
+    key: "saved_backend_urls",
+    defaultValue: () => [],
+    writable: true,
+    saveOnServer: true,
+    persist: true,
+  },
+  saved_store_urls: {
+    key: "saved_store_urls",
+    defaultValue: () => [],
+    writable: true,
+    saveOnServer: true,
+    persist: true,
+  },
   reconnect_on_app_foreground: {
     key: "reconnect_on_app_foreground",
-    defaultValue: () => false,
+    defaultValue: () => true,
     writable: true,
     saveOnServer: true,
     persist: true,
@@ -89,6 +132,22 @@ export const SETTINGS: Record<string, Setting> = {
   location_tier: {key: "location_tier", defaultValue: () => "", writable: true, saveOnServer: true, persist: true},
   // state:
   core_token: {key: "core_token", defaultValue: () => "", writable: true, saveOnServer: true, persist: true},
+  auth_email: {key: "auth_email", defaultValue: () => "", writable: true, saveOnServer: false, persist: true},
+  auth_token: {key: "auth_token", defaultValue: () => "", writable: true, saveOnServer: false, persist: true},
+  pending_wearable: {
+    key: "pending_wearable",
+    defaultValue: () => "",
+    writable: true,
+    saveOnServer: false,
+    persist: false,
+  },
+  pending_device_name: {
+    key: "pending_device_name",
+    defaultValue: () => "",
+    writable: true,
+    saveOnServer: false,
+    persist: false,
+  },
   default_wearable: {
     key: "default_wearable",
     defaultValue: () => "",
@@ -218,7 +277,7 @@ export const SETTINGS: Record<string, Setting> = {
   // 20 = 16kbps (low bandwidth), 40 = 32kbps (balanced), 60 = 48kbps (high quality)
   lc3_frame_size: {
     key: "lc3_frame_size",
-    defaultValue: () => 40,
+    defaultValue: () => 60,
     writable: true,
     saveOnServer: false,
     persist: true,
@@ -298,13 +357,6 @@ export const SETTINGS: Record<string, Setting> = {
     saveOnServer: true,
     persist: true,
   },
-  button_video_settings_width: {
-    key: "button_video_settings_width",
-    defaultValue: () => 1920,
-    writable: true,
-    saveOnServer: true,
-    persist: true,
-  },
   button_max_recording_time: {
     key: "button_max_recording_time",
     defaultValue: () => 10,
@@ -345,6 +397,13 @@ export const SETTINGS: Record<string, Setting> = {
     persist: true,
   },
   gallery_mode: {key: "gallery_mode", defaultValue: () => false, writable: true, saveOnServer: true, persist: true},
+  gallery_sync_explained: {
+    key: "gallery_sync_explained",
+    defaultValue: () => false,
+    writable: true,
+    saveOnServer: false,
+    persist: true,
+  },
   offline_camera_running: {
     key: "offline_camera_running",
     defaultValue: () => false,
@@ -396,6 +455,7 @@ export const OFFLINE_APPLETS: string[] = ["com.mentra.livecaptions", "com.mentra
 
 // these settings are automatically synced to the core:
 const CORE_SETTINGS_KEYS: string[] = [
+  // core settings:
   SETTINGS.sensing_enabled.key,
   SETTINGS.power_saving_mode.key,
   SETTINGS.always_on_status_bar.key,
@@ -406,6 +466,8 @@ const CORE_SETTINGS_KEYS: string[] = [
   SETTINGS.lc3_frame_size.key,
   SETTINGS.preferred_mic.key,
   SETTINGS.screen_disabled.key,
+  SETTINGS.auth_email.key,
+  SETTINGS.auth_token.key,
   // glasses settings:
   SETTINGS.contextual_dashboard.key,
   SETTINGS.head_up_angle.key,
@@ -419,13 +481,16 @@ const CORE_SETTINGS_KEYS: string[] = [
   SETTINGS.button_video_settings.key,
   SETTINGS.button_camera_led.key,
   SETTINGS.button_max_recording_time.key,
+  // device / pairing:
+  SETTINGS.pending_wearable.key,
+  SETTINGS.pending_device_name.key,
   SETTINGS.default_wearable.key,
   SETTINGS.device_name.key,
   SETTINGS.device_address.key,
   // offline applets:
+  SETTINGS.offline_mode.key,
   SETTINGS.offline_captions_running.key,
   SETTINGS.gallery_mode.key,
-  // SETTINGS.offline_camera_running.key,
   // notifications:
   SETTINGS.notifications_enabled.key,
   SETTINGS.notifications_blocklist.key,
@@ -448,25 +513,14 @@ interface SettingsState {
   getRestUrl: () => string
   getWsUrl: () => string
   getCoreSettings: () => Record<string, any>
+  resetAllSettingsLocally: () => void
 }
 
 const getDefaultSettings = () =>
-  Object.keys(SETTINGS).reduce(
-    (acc, key) => {
-      acc[key] = SETTINGS[key].defaultValue()
-      return acc
-    },
-    {} as Record<string, any>,
-  )
-
-const migrateSettings = () => {
-  useSettingsStore.getState().setSetting(SETTINGS.enable_squircles.key, true, true)
-  // Force light mode - dark mode is not complete yet
-  // const devMode = useSettingsStore.getState().getSetting(SETTINGS.dev_mode.key)
-  // if (!devMode) {
-  // useSettingsStore.getState().setSetting(SETTINGS.theme_preference.key, "light", true)
-  // }
-}
+  Object.keys(SETTINGS).reduce((acc, key) => {
+    acc[key] = SETTINGS[key].defaultValue()
+    return acc
+  }, {} as Record<string, any>)
 
 export const useSettingsStore = create<SettingsState>()(
   subscribeWithSelector((set, get) => ({
@@ -576,7 +630,6 @@ export const useSettingsStore = create<SettingsState>()(
         let loadedSettings: Record<string, any> = {}
 
         if (state.isInitialized) {
-          migrateSettings()
           return undefined
         }
 
@@ -622,7 +675,6 @@ export const useSettingsStore = create<SettingsState>()(
           isInitialized: true,
           settings: {...state.settings, ...loadedSettings},
         }))
-        migrateSettings()
       })
     },
     getRestUrl: () => {
@@ -647,6 +699,12 @@ export const useSettingsStore = create<SettingsState>()(
         }
       })
       return coreSettings
+    },
+    resetAllSettingsLocally: () => {
+      set((state) => ({
+        settings: getDefaultSettings(),
+        isInitialized: true,
+      }))
     },
   })),
 )

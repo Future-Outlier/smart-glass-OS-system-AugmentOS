@@ -65,7 +65,7 @@ export function MicrophoneSelector() {
         {preferredMic === "auto" ? (
           <Icon name="check" size={24} color={theme.colors.primary} />
         ) : (
-          <Icon name="check" size={24} color={"transparent"} />
+          <Icon name="check" size={24} color={theme.colors.primary_foreground} />
         )}
       </TouchableOpacity>
 
@@ -77,7 +77,7 @@ export function MicrophoneSelector() {
             {preferredMic === option.value ? (
               <Icon name="check" size={24} color={theme.colors.primary} />
             ) : (
-              <Icon name="check" size={24} color={"transparent"} />
+              <Icon name="check" size={24} color={theme.colors.primary_foreground} />
             )}
           </TouchableOpacity>
         </Fragment>

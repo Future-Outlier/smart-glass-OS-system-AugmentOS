@@ -1,7 +1,7 @@
-import CoreModule from "core"
-import {useLocalSearchParams} from "expo-router"
-import {useEffect, useRef, useState} from "react"
-import {ActivityIndicator, Platform, ScrollView, TouchableOpacity, View} from "react-native"
+import CoreModule, {WifiSearchResult} from "core"
+import {useFocusEffect} from "expo-router"
+import {useCallback, useEffect, useRef, useState} from "react"
+import {ActivityIndicator, ScrollView, TouchableOpacity, View} from "react-native"
 import Toast from "react-native-toast-message"
 
 import {WifiIcon} from "@/components/icons/WifiIcon"
@@ -10,167 +10,126 @@ import {WifiUnlockedIcon} from "@/components/icons/WifiUnlockedIcon"
 import {Button, Header, Screen, Text} from "@/components/ignite"
 import {Badge} from "@/components/ui/Badge"
 import {Group} from "@/components/ui"
-import {focusEffectPreventBack, useNavigationHistory} from "@/contexts/NavigationHistoryContext"
+import {useNavigationHistory} from "@/contexts/NavigationHistoryContext"
 import {useAppTheme} from "@/contexts/ThemeContext"
 import {useGlassesStore} from "@/stores/glasses"
 import showAlert from "@/utils/AlertUtils"
-import GlobalEventEmitter from "@/utils/GlobalEventEmitter"
 import WifiCredentialsService from "@/utils/wifi/WifiCredentialsService"
 import {translate} from "@/i18n"
-import {ConnectionOverlay} from "@/components/glasses/ConnectionOverlay"
-
-interface NetworkInfo {
-  ssid: string
-  requiresPassword: boolean
-  signalStrength?: number
-}
+import {BackgroundTimer} from "@/utils/timers"
+import {useCoreStore} from "@/stores/core"
 
 export default function WifiScanScreen() {
   const {theme} = useAppTheme()
 
-  const [networks, setNetworks] = useState<NetworkInfo[]>([])
+  const [networks, setNetworks] = useState<WifiSearchResult[]>([])
   const [savedNetworks, setSavedNetworks] = useState<string[]>([])
   const [isScanning, setIsScanning] = useState(true)
-  const scanTimeoutRef = useRef<NodeJS.Timeout | null>(null)
+  const scanTimeoutRef = useRef<number | null>(null)
   const currentScanSessionRef = useRef<number>(Date.now())
   const receivedResultsForSessionRef = useRef<boolean>(false)
   const wifiSsid = useGlassesStore((state) => state.wifiSsid)
   const wifiConnected = useGlassesStore((state) => state.wifiConnected)
-  const {push, goBack, pushPrevious, getPreviousRoute} = useNavigationHistory()
+  const {push, goBack, pushPrevious, getPreviousRoute, incPreventBack, decPreventBack, setAndroidBackFn} =
+    useNavigationHistory()
+  const wifiScanResults: WifiSearchResult[] = useCoreStore((state) => state.wifiScanResults)
 
-  // if the previous route is in this list, show / allow the back button:
-  const backableRoutes = ["/settings/glasses", "/home", "/(tabs)/home"]
+  // if the previous route is in this list, or the second to last route is in this list
+  // show / allow the back button:
+  const backableRoutes = ["/settings/glasses", "/home"]
 
-  const showBack = backableRoutes.includes(getPreviousRoute() || "")
-  const showSkip = !showBack
+  const secondLastRoute = getPreviousRoute(1)
+  const showBack = backableRoutes.includes(getPreviousRoute() || "") || backableRoutes.includes(secondLastRoute || "")
+  const showSkip = wifiConnected
 
   const handleBack = () => {
     if (showBack) {
       goBack()
     } else {
-      pushPrevious()
+      pushPrevious(1)
     }
   }
 
-  focusEffectPreventBack(() => {
-    if (showBack) {
-      goBack()
-    }
-  })
+  // only prevent back if the showBack flag is false:
+  useFocusEffect(
+    useCallback(() => {
+      if (!showBack) {
+        incPreventBack()
+      }
+      setAndroidBackFn(() => {
+        if (showBack) {
+          goBack()
+        }
+      })
 
-  // if (Platform.OS === "android") {
-  //   focusEffectPreventBack(() => {
-  //     if (showBack) {
-  //       goBack()
-  //     } else {
-  //       // do nothing
-  //     }
-  //   })
-  // } else if (Platform.OS === "ios") {
-  //   // only prevent back if the showBack flag is false:
-  //   if (!showBack) {
-  //     focusEffectPreventBack()
-  //   }
-  // }
+      return () => {
+        decPreventBack()
+      }
+    }, [incPreventBack, decPreventBack, showBack]),
+  )
 
   useEffect(() => {
-    const loadSavedNetworks = () => {
-      const savedCredentials = WifiCredentialsService.getAllCredentials()
-      setSavedNetworks(savedCredentials.map((cred) => cred.ssid))
-    }
-
-    loadSavedNetworks()
+    const savedCredentials = WifiCredentialsService.getAllCredentials()
+    setSavedNetworks(savedCredentials.map((cred) => cred.ssid))
     startScan()
+  }, [])
 
-    const handleWifiScanResults = (data: {networks: string[]; networksEnhanced?: any[]}) => {
-      console.log("🎯 ========= SCAN.TSX RECEIVED WIFI RESULTS =========")
-      console.log("🎯 Data received:", data)
-
-      let processedNetworks: NetworkInfo[]
-      if (data.networks && data.networks.length > 0) {
-        console.log("🎯 Processing enhanced networks:", data.networks)
-        processedNetworks = data.networks.map((network: any) => ({
-          ssid: network.ssid || "",
-          requiresPassword: network.requiresPassword !== false,
-          signalStrength: network.signalStrength || -100,
-        }))
-        console.log("🎯 Enhanced networks count:", processedNetworks.length)
+  useEffect(() => {
+    const handleWifiScanResults = (scanResults: WifiSearchResult[]) => {
+      if (scanResults.length === 0) {
+        return
       }
 
+      let processedNetworks = scanResults?.map((network: any) => ({
+        ssid: network.ssid || "",
+        requiresPassword: network.requiresPassword !== false,
+        signalStrength: network.signalStrength || -100,
+      }))
+
       if (scanTimeoutRef.current) {
-        console.log("🎯 Clearing scan timeout - results received")
-        clearTimeout(scanTimeoutRef.current)
+        BackgroundTimer.clearTimeout(scanTimeoutRef.current)
         scanTimeoutRef.current = null
       }
 
-      setNetworks((prevNetworks) => {
-        console.log("🎯 Current scan session ID:", currentScanSessionRef.current)
-        console.log("🎯 Previous networks count:", prevNetworks.length)
-        console.log("🎯 Is first result of this scan session?", !receivedResultsForSessionRef.current)
-
-        let baseNetworks: NetworkInfo[]
-        if (receivedResultsForSessionRef.current) {
-          console.log("🎯 APPENDING: Adding to existing networks from current scan session")
-          baseNetworks = prevNetworks
-        } else {
-          console.log("🎯 REPLACING: Starting fresh with new scan session results")
-          baseNetworks = []
-        }
-
-        const existingMap = new Map<string, NetworkInfo>()
-        baseNetworks.forEach((network) => existingMap.set(network.ssid, network))
-        processedNetworks.forEach((network) => {
-          if (network.ssid) {
-            existingMap.set(network.ssid, network)
-          }
-        })
-        const newNetworks = Array.from(existingMap.values())
-        console.log("🎯 Final networks count:", newNetworks.length)
-        return newNetworks
-      })
+      setNetworks(processedNetworks)
 
       receivedResultsForSessionRef.current = true
       setIsScanning(false)
-      console.log("🎯 ========= END SCAN.TSX WIFI RESULTS =========")
     }
 
-    GlobalEventEmitter.on("wifi_scan_results", handleWifiScanResults)
+    handleWifiScanResults(wifiScanResults)
 
     return () => {
-      GlobalEventEmitter.removeListener("wifi_scan_results", handleWifiScanResults)
       if (scanTimeoutRef.current) {
-        clearTimeout(scanTimeoutRef.current)
+        BackgroundTimer.clearTimeout(scanTimeoutRef.current)
         scanTimeoutRef.current = null
       }
     }
-  }, [])
+  }, [wifiScanResults])
 
   const startScan = async () => {
-    console.log("🔄 ========= STARTING NEW WIFI SCAN =========")
+    console.log("WIFI_SCAN: ========= STARTING NEW WIFI SCAN =========")
     setIsScanning(true)
+    setNetworks([])
     currentScanSessionRef.current = Date.now()
     receivedResultsForSessionRef.current = false
-    setNetworks([])
 
     if (scanTimeoutRef.current) {
-      clearTimeout(scanTimeoutRef.current)
+      BackgroundTimer.clearTimeout(scanTimeoutRef.current)
     }
 
-    scanTimeoutRef.current = setTimeout(() => {
-      console.log("⏱️ WIFI SCAN TIMEOUT - RETRYING...")
-      CoreModule.requestWifiScan().catch((error) => {
-        console.error("⏱️ RETRY FAILED:", error)
-      })
+    scanTimeoutRef.current = BackgroundTimer.setTimeout(() => {
+      console.log("WIFI_SCAN: SCAN TIMEOUT - RETRYING...")
       scanTimeoutRef.current = null
     }, 15000)
 
     try {
       await CoreModule.requestWifiScan()
-      console.log("🔄 WiFi scan request sent successfully")
+      console.log("WIFI_SCAN: WiFi scan request sent successfully")
     } catch (error) {
-      console.error("Error scanning for WiFi networks:", error)
+      console.error("WIFI_SCAN: Error scanning for WiFi networks:", error)
       if (scanTimeoutRef.current) {
-        clearTimeout(scanTimeoutRef.current)
+        BackgroundTimer.clearTimeout(scanTimeoutRef.current)
         scanTimeoutRef.current = null
       }
       setIsScanning(false)
@@ -181,7 +140,7 @@ export default function WifiScanScreen() {
     }
   }
 
-  const handleNetworkSelect = (selectedNetwork: NetworkInfo) => {
+  const handleNetworkSelect = (selectedNetwork: WifiSearchResult) => {
     if (wifiConnected && wifiSsid === selectedNetwork.ssid) {
       showAlert(
         "Forget Network",
@@ -196,7 +155,7 @@ export default function WifiScanScreen() {
             style: "destructive",
             onPress: async () => {
               try {
-                console.log(`🗑️ Forgetting network: ${selectedNetwork.ssid}`)
+                console.log(`WIFI_SCAN: Forgetting network: ${selectedNetwork.ssid}`)
                 await CoreModule.forgetWifiNetwork(selectedNetwork.ssid)
                 // Also remove from local saved credentials
                 WifiCredentialsService.removeCredentials(selectedNetwork.ssid)
@@ -205,7 +164,7 @@ export default function WifiScanScreen() {
                   text1: `Forgot "${selectedNetwork.ssid}"`,
                 })
               } catch (error) {
-                console.error("Error forgetting network:", error)
+                console.error("WIFI_SCAN: Error forgetting network:", error)
                 Toast.show({
                   type: "error",
                   text1: "Failed to forget network",
@@ -219,13 +178,13 @@ export default function WifiScanScreen() {
     }
 
     if (!selectedNetwork.requiresPassword) {
-      console.log(`🔓 Open network selected: ${selectedNetwork.ssid} - connecting directly`)
+      console.log(`WIFI_SCAN: Open network selected: ${selectedNetwork.ssid} - connecting directly`)
       push("/wifi/connecting", {
         ssid: selectedNetwork.ssid,
         password: "",
       })
     } else {
-      console.log(`🔒 Secured network selected: ${selectedNetwork.ssid} - going to password screen`)
+      console.log(`WIFI_SCAN: Secured network selected: ${selectedNetwork.ssid} - going to password screen`)
       push("/wifi/password", {
         ssid: selectedNetwork.ssid,
         requiresPassword: selectedNetwork.requiresPassword.toString(),
@@ -239,14 +198,16 @@ export default function WifiScanScreen() {
     })
   }
 
-  const renderNetworkItem = (item: NetworkInfo) => {
+  const renderNetworkItem = (item: WifiSearchResult) => {
     const isConnected = wifiConnected && wifiSsid === item.ssid
     const isSaved = savedNetworks.includes(item.ssid)
 
     return (
       <TouchableOpacity
         key={item.ssid}
-        className={`flex-row justify-between items-center bg-primary-foreground py-4 px-4 rounded-xl ${isConnected ? "opacity-70" : ""}`}
+        className={`flex-row justify-between items-center bg-primary-foreground py-4 px-4 rounded-xl ${
+          isConnected ? "opacity-70" : ""
+        }`}
         onPress={() => handleNetworkSelect(item)}>
         <View className="flex-1 flex-row items-center justify-between">
           <View className="flex-row items-center flex-1">
@@ -290,8 +251,6 @@ export default function WifiScanScreen() {
         <Header title="Wi-Fi" rightIcon="repeat" onRightPress={startScan} />
       )}
 
-      <ConnectionOverlay />
-
       <View className="flex-1">
         {/* Header */}
         <View className="pt-4 pb-6 items-center">
@@ -306,7 +265,7 @@ export default function WifiScanScreen() {
         <View className="flex-1 flex-shrink min-h-0 pb-4">
           {isScanning ? (
             <View className="flex-1 justify-center items-center py-12">
-              <ActivityIndicator size="large" color={theme.colors.text} />
+              <ActivityIndicator size="large" color={theme.colors.foreground} />
               <Text className="mt-4 text-base text-text-dim" tx="wifi:scanningForNetworks" />
             </View>
           ) : networks.length > 0 ? (
@@ -324,11 +283,8 @@ export default function WifiScanScreen() {
           )}
         </View>
 
-        <Button
-          tx="wifi:enterNetworkManually"
-          preset={showSkip ? "primary" : "secondary"}
-          onPress={handleManualEntry}
-        />
+        <Button tx="wifi:enterNetworkManually" preset="primary" onPress={handleManualEntry} />
+        {/* show skip button if we are already connected to a network */}
         {showSkip && <Button tx="common:skip" preset="secondary" onPress={handleBack} className="mt-3" />}
       </View>
     </Screen>

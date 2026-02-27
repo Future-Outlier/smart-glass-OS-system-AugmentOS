@@ -1,4 +1,4 @@
-import { Info, Share2, Smartphone, ChevronLeft, X, ChevronRight } from "lucide-react";
+import { Info, Share2, Smartphone, ChevronLeft, X, ChevronRight, AlertTriangle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import GetMentraOSButton from "../components/GetMentraOSButton";
 import { HardwareRequirementLevel, HardwareType } from "../types";
@@ -14,6 +14,7 @@ import { useState } from "react";
 
 const AppDetailsDesktop: React.FC<AppDetailsDesktopProps> = ({
   app,
+  deviceInfo,
   isAuthenticated,
   isWebView,
   installingApp,
@@ -22,9 +23,10 @@ const AppDetailsDesktop: React.FC<AppDetailsDesktopProps> = ({
   navigateToLogin,
 }) => {
   const [selectedImage, setSelectedImage] = useState<{ url: string; index: number } | null>(null);
+  const [loadedImages, setLoadedImages] = useState<Set<string>>(new Set());
 
   return (
-    <div className="min-h-screen flex justify-center">
+    <div className="min-h-screen flex justify-center relative z-0">
       {/* Desktop Close Button */}
       {/* <button
         onClick={handleBackNavigation}
@@ -96,7 +98,7 @@ const AppDetailsDesktop: React.FC<AppDetailsDesktopProps> = ({
               )}
 
               {/* Buttons Section - Desktop only */}
-              <div className="flex items-center gap-[24px]">
+              <div className="flex items-center gap-[24px] relative z-0">
                 {/* Install Button */}
                 {isAuthenticated ? (
                   app.isInstalled ? (
@@ -109,6 +111,17 @@ const AppDetailsDesktop: React.FC<AppDetailsDesktopProps> = ({
                         color: "var(--button-text)",
                       }}>
                       Installed
+                    </Button>
+                  ) : app.compatibility?.isCompatible === false ? (
+                    <Button
+                      disabled={true}
+                      className="px-8 h-[44px] text-[18px] font-medium rounded-full opacity-40 cursor-not-allowed min-w-[242px]"
+                      style={{
+                        fontFamily: '"Red Hat Display", sans-serif',
+                        backgroundColor: "var(--button-bg)",
+                        color: "var(--button-text)",
+                      }}>
+                      Get
                     </Button>
                   ) : (
                     <Button
@@ -159,15 +172,27 @@ const AppDetailsDesktop: React.FC<AppDetailsDesktopProps> = ({
               </div>
 
               {/* Device Compatibility Notice - Desktop only */}
-              <div
-                className="flex items-center gap-2 text-[14px] mt-[32px]"
-                style={{
-                  color: "var(--text-secondary)",
-                  fontFamily: '"Red Hat Display", sans-serif',
-                }}>
-                <Smartphone className="w-[18px] h-[18px] text-[14px]" />
-                <span>This app is available for your device</span>
-              </div>
+              {app.compatibility?.isCompatible === false && deviceInfo?.modelName ? (
+                <div
+                  className="flex items-center gap-2 text-[14px] font-medium mt-[32px]"
+                  style={{
+                    color: "var(--text-primary)",
+                    fontFamily: '"Red Hat Display", sans-serif',
+                  }}>
+                  <AlertTriangle className="w-[18px] h-[18px]" />
+                  <span>This app is incompatible with {deviceInfo.modelName}</span>
+                </div>
+              ) : deviceInfo?.connected ? (
+                <div
+                  className="flex items-center gap-2 text-[14px] mt-[32px]"
+                  style={{
+                    color: "var(--text-secondary)",
+                    fontFamily: '"Red Hat Display", sans-serif',
+                  }}>
+                  <Smartphone className="w-[18px] h-[18px]" />
+                  <span>This app is compatible with {deviceInfo.modelName || "your device"}</span>
+                </div>
+              ) : null}
             </div>
 
             {/* Right Side - App Icon (desktop only, larger) */}
@@ -210,6 +235,35 @@ const AppDetailsDesktop: React.FC<AppDetailsDesktopProps> = ({
           </div>
         )}
 
+        {/* Incompatibility Warning */}
+        {app.compatibility?.isCompatible === false && deviceInfo?.modelName && (
+          <div className="mb-6">
+            <div
+              className="flex items-center gap-2 p-3 rounded-lg"
+              style={{
+                backgroundColor: "var(--warning-bg, #fffbeb)",
+                border: "1px solid var(--warning-text, #d97706)",
+              }}>
+              <AlertTriangle
+                className="h-5 w-5 flex-shrink-0"
+                style={{
+                  color: "var(--warning-text, #d97706)",
+                }}
+              />
+              <span
+                className="text-[14px]"
+                style={{
+                  color: "var(--warning-text, #d97706)",
+                }}>
+                This app is incompatible with {deviceInfo.modelName}
+                {app.compatibility.missingRequired && app.compatibility.missingRequired.length > 0 && (
+                  <>. Missing hardware: {app.compatibility.missingRequired.map(r => r.type).join(", ")}</>
+                )}
+              </span>
+            </div>
+          </div>
+        )}
+
         <div className="h-[1px] w-full bg-[var(--border)] mb-[24px] mt-[24px]"></div>
 
         {/* Vertical Scrollable Layout - All sections visible */}
@@ -238,10 +292,13 @@ const AppDetailsDesktop: React.FC<AppDetailsDesktopProps> = ({
                     .sort((a, b) => a.order - b.order)
                     .map((image, index) => {
                       const isPortrait = image.orientation === "portrait";
+                      const imageKey = image.imageId || `${image.url}-${index}`;
+                      const isLoaded = loadedImages.has(imageKey);
+
                       return (
                         <div
-                          key={image.imageId || index}
-                          className=" flex-shrink-0 rounded-lg overflow-hidden snap-start cursor-pointer transition-opacity "
+                          key={imageKey}
+                          className=" flex-shrink-0 rounded-lg overflow-hidden snap-start cursor-pointer transition-opacity relative"
                           style={{
                             maxHeight: "422px",
                             height: "422px",
@@ -249,15 +306,40 @@ const AppDetailsDesktop: React.FC<AppDetailsDesktopProps> = ({
                             backgroundColor: "var(--bg-secondary)",
                           }}
                           onClick={() => setSelectedImage({ url: image.url, index })}>
+                          {/* Skeleton Loader */}
+                          {!isLoaded && (
+                            <div
+                              className="absolute inset-0 animate-pulse"
+                              style={{
+                                backgroundColor: "var(--bg-secondary)",
+                              }}>
+                              <div
+                                className="w-full h-full"
+                                style={{
+                                  background:
+                                    "linear-gradient(90deg, transparent, rgba(255,255,255,0.05), transparent)",
+                                  backgroundSize: "200% 100%",
+                                  animation: "shimmer 1.5s infinite",
+                                }}
+                              />
+                            </div>
+                          )}
+
                           <img
                             src={image.url}
                             alt={`${app.name} preview ${index + 1}`}
                             className="w-full h-full object-cover"
                             style={{
                               objectPosition: "center",
+                              opacity: isLoaded ? 1 : 0,
+                              transition: "opacity 0.3s ease-in-out",
+                            }}
+                            onLoad={() => {
+                              setLoadedImages((prev) => new Set(prev).add(imageKey));
                             }}
                             onError={(e) => {
                               (e.target as HTMLImageElement).style.display = "none";
+                              setLoadedImages((prev) => new Set(prev).add(imageKey));
                             }}
                           />
                         </div>
@@ -269,6 +351,14 @@ const AppDetailsDesktop: React.FC<AppDetailsDesktopProps> = ({
                     __html: `
                     .overflow-x-auto::-webkit-scrollbar {
                       display: none;
+                    }
+                    @keyframes shimmer {
+                      0% {
+                        background-position: -200% 0;
+                      }
+                      100% {
+                        background-position: 200% 0;
+                      }
                     }
                   `,
                   }}
@@ -573,9 +663,9 @@ const AppDetailsDesktop: React.FC<AppDetailsDesktopProps> = ({
         {/* Get MentraOS - Hide in React Native WebView */}
         {!isWebView && (
           <div className="text-center mb-8 mt-12">
-            <div className="flex justify-center">
+            {/* <div className="flex justify-center">
               <GetMentraOSButton size="small" />
-            </div>
+            </div> */}
           </div>
         )}
       </div>

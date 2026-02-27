@@ -21,7 +21,6 @@ import {
   ViewStyle,
 } from "react-native"
 import * as RNFS from "@dr.pogodin/react-native-fs"
-import {useSafeAreaInsets} from "react-native-safe-area-context"
 import {createShimmerPlaceholder} from "react-native-shimmer-placeholder"
 import {useShallow} from "zustand/react/shallow"
 
@@ -43,6 +42,7 @@ import showAlert from "@/utils/AlertUtils"
 // import {shareFile} from "@/utils/FileUtils"
 import {MediaLibraryPermissions} from "@/utils/permissions/MediaLibraryPermissions"
 import {ENABLE_TEST_GALLERY_DATA, TEST_GALLERY_ITEMS} from "@/utils/testGalleryData"
+import { useSaferAreaInsets } from "@/contexts/SaferAreaContext"
 
 // @ts-ignore
 const ShimmerPlaceholder = createShimmerPlaceholder(LinearGradient)
@@ -64,7 +64,7 @@ interface GalleryItem {
 export function GalleryScreen() {
   const {goBack, push} = useNavigationHistory()
   const {theme, themed} = useAppTheme()
-  const insets = useSafeAreaInsets()
+  const insets = useSaferAreaInsets()
 
   // Column calculation - 3 per row like Google Photos / Apple Photos
   const screenWidth = Dimensions.get("window").width
@@ -167,10 +167,12 @@ export function GalleryScreen() {
       setLoadingPhotoCount(totalFromStorage)
       console.log("[GalleryScreen] ⏱️ SET loadingPhotoCount to", totalFromStorage)
 
-      // Show validating status if we're validating more than 50 photos
-      if (totalFromStorage > 40) {
+      // Show validating status only for newly downloaded photos from this sync session
+      // Use completedFiles from sync store (photos downloaded this session) instead of total gallery count
+      if (completedFiles > 0) {
         setIsValidating(true)
-        setValidatingCount(totalFromStorage)
+        setValidatingCount(completedFiles)
+        console.log(`[GalleryScreen] 🔄 Validating ${completedFiles} newly downloaded pictures`)
       }
 
       const validPhotoInfos: PhotoInfo[] = []
@@ -245,7 +247,7 @@ export function GalleryScreen() {
       setIsValidating(false)
       setValidatingCount(0)
     }
-  }, [])
+  }, [completedFiles])
 
   // Initialize pending status for all files when sync starts
   useEffect(() => {
@@ -464,6 +466,13 @@ export function GalleryScreen() {
       console.log("[GalleryScreen] Already syncing, ignoring press")
       return
     }
+
+    // Check if glasses are connected before starting sync
+    if (!glassesConnected) {
+      showAlert("Glasses Disconnected", "Please connect your glasses before syncing the gallery.", [{text: "OK"}])
+      return
+    }
+
     gallerySyncService.startSync()
   }
 
@@ -831,7 +840,7 @@ export function GalleryScreen() {
         case "requesting_hotspot":
           return (
             <View style={themed($syncButtonRow)}>
-              <ActivityIndicator size="small" color={theme.colors.text} style={{marginRight: spacing.s2}} />
+              <ActivityIndicator size="small" color={theme.colors.foreground} style={{marginRight: spacing.s2}} />
               <Text style={themed($syncButtonText)}>Starting connection...</Text>
             </View>
           )
@@ -839,7 +848,7 @@ export function GalleryScreen() {
         case "connecting_wifi":
           return (
             <View style={themed($syncButtonRow)}>
-              <ActivityIndicator size="small" color={theme.colors.text} style={{marginRight: spacing.s2}} />
+              <ActivityIndicator size="small" color={theme.colors.foreground} style={{marginRight: spacing.s2}} />
               <Text style={themed($syncButtonText)}>Connecting...</Text>
             </View>
           )
@@ -848,7 +857,7 @@ export function GalleryScreen() {
           if (totalFiles === 0) {
             return (
               <View style={themed($syncButtonRow)}>
-                <ActivityIndicator size="small" color={theme.colors.text} style={{marginRight: spacing.s2}} />
+                <ActivityIndicator size="small" color={theme.colors.foreground} style={{marginRight: spacing.s2}} />
                 <Text style={themed($syncButtonText)}>Preparing sync...</Text>
               </View>
             )
@@ -872,13 +881,13 @@ export function GalleryScreen() {
           )
 
         case "complete":
-          // Show validating status if we're validating >50 photos
+          // Show validating status for newly downloaded photos
           if (isValidating && validatingCount > 0) {
             return (
               <View style={themed($syncButtonRow)}>
-                <ActivityIndicator size="small" color={theme.colors.text} style={{marginRight: spacing.s2}} />
+                <ActivityIndicator size="small" color={theme.colors.foreground} style={{marginRight: spacing.s2}} />
                 <Text style={themed($syncButtonText)}>
-                  Validating {validatingCount} {validatingCount === 1 ? "item" : "items"}...
+                  Validating {validatingCount} {validatingCount === 1 ? "picture" : "pictures"}...
                 </Text>
               </View>
             )
@@ -991,7 +1000,6 @@ export function GalleryScreen() {
                     progress={Math.max(0, Math.min(100, syncStateForItem.progress || 0))}
                     size={50}
                     strokeWidth={4}
-                    showPercentage={!isFailed}
                     progressColor={isFailed ? theme.colors.error : theme.colors.primary}
                   />
                   {isFailed && (
@@ -1073,7 +1081,7 @@ export function GalleryScreen() {
             if (showSpinner) {
               return (
                 <View style={themed($loadingSpinnerContainer)}>
-                  <ActivityIndicator size="large" color={theme.colors.primary} />
+                  <ActivityIndicator size="large" color={theme.colors.foreground} />
                   <Text style={themed($loadingSpinnerText)}>Loading gallery...</Text>
                 </View>
               )

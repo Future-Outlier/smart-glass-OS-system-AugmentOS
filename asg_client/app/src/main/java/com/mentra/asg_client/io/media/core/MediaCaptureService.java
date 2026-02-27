@@ -15,10 +15,12 @@ import com.mentra.asg_client.camera.CameraNeo;
 import com.mentra.asg_client.settings.VideoSettings;
 import com.mentra.asg_client.io.hardware.interfaces.IHardwareManager;
 import com.mentra.asg_client.io.hardware.core.HardwareManagerFactory;
+import com.mentra.asg_client.hardware.K900RgbLedController;
 import com.mentra.asg_client.io.streaming.services.RtmpStreamingService;
 import com.mentra.asg_client.audio.AudioAssets;
 import com.mentra.asg_client.service.system.interfaces.IStateManager;
 import com.mentra.asg_client.service.core.constants.BatteryConstants;
+import com.mentra.asg_client.io.storage.StorageManager;
 
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -426,6 +428,18 @@ public class MediaCaptureService {
     }
 
     /**
+     * Play storage full sound to alert user.
+     */
+    public void playStorageFullSound() {
+        if (hardwareManager != null && hardwareManager.supportsAudioPlayback()) {
+            hardwareManager.playAudioAsset(AudioAssets.STORAGE_FULL);
+            Log.d(TAG, "💾 Playing storage full sound");
+        } else {
+            Log.w(TAG, "⚠️ Cannot play storage full sound - hardware manager not available");
+        }
+    }
+
+    /**
      * Set or update the StateManager reference.
      * Used when StateManager is initialized after MediaCaptureService creation.
      */
@@ -469,28 +483,44 @@ public class MediaCaptureService {
     }
     
     /**
-     * Trigger white LED flash for photo capture (synchronized with shutter sound)
+     * Trigger white LED flash for photo capture (synchronized with shutter sound, default brightness)
      */
     private void triggerPhotoFlashLed() {
-        Log.i(TAG, "📸 triggerPhotoFlashLed() called");
+        triggerPhotoFlashLed(K900RgbLedController.DEFAULT_RGB_LED_BRIGHTNESS);
+    }
+
+    /**
+     * Trigger white LED flash for photo capture with specified brightness
+     * @param brightness Brightness level (0-255, where 255 is maximum brightness)
+     */
+    private void triggerPhotoFlashLed(int brightness) {
+        Log.i(TAG, "📸 triggerPhotoFlashLed() called with brightness: " + brightness);
 
         if (hardwareManager != null && hardwareManager.supportsRgbLed()) {
-            hardwareManager.flashRgbLedWhite(2200); // 5 second flash
-            Log.i(TAG, "📸 Photo flash LED (white) triggered via hardware manager");
+            hardwareManager.flashRgbLedWhite(2200, brightness); // 2.2 second flash
+            Log.i(TAG, "📸 Photo flash LED (white) triggered via hardware manager at brightness " + brightness);
         } else {
             Log.w(TAG, "⚠️ RGB LED not supported on this device");
         }
     }
     
     /**
-     * Trigger solid white LED for video recording duration
+     * Trigger solid white LED for video recording duration (default brightness)
      */
     private void triggerVideoRecordingLed() {
-        Log.i(TAG, "🎥 triggerVideoRecordingLed() called");
+        triggerVideoRecordingLed(K900RgbLedController.DEFAULT_RGB_LED_BRIGHTNESS);
+    }
+
+    /**
+     * Trigger solid white LED for video recording duration with specified brightness
+     * @param brightness Brightness level (0-255, where 255 is maximum brightness)
+     */
+    private void triggerVideoRecordingLed(int brightness) {
+        Log.i(TAG, "🎥 triggerVideoRecordingLed() called with brightness: " + brightness);
 
         if (hardwareManager != null && hardwareManager.supportsRgbLed()) {
-            hardwareManager.setRgbLedSolidWhite(1800000); // 30 minute solid white LED
-            Log.i(TAG, "🎥 Video recording LED (solid white) triggered via hardware manager");
+            hardwareManager.setRgbLedSolidWhite(1800000, brightness); // 30 minute solid white LED
+            Log.i(TAG, "🎥 Video recording LED (solid white) triggered via hardware manager at brightness " + brightness);
         } else {
             Log.w(TAG, "⚠️ RGB LED not supported on this device");
         }
@@ -929,6 +959,17 @@ public class MediaCaptureService {
     }
 
     /**
+     * Get the file name (not full path) of the actively recording video, or null if idle.
+     */
+    public String getActiveRecordingFileName() {
+        if (!isRecordingVideo || currentVideoPath == null) {
+            return null;
+        }
+        File f = new File(currentVideoPath);
+        return f.getName();
+    }
+
+    /**
      * Get the current recording duration in milliseconds
      * @return Duration in milliseconds, or 0 if not recording
      */
@@ -1112,14 +1153,21 @@ public class MediaCaptureService {
             Log.w(TAG, "⚠️ StateManager not initialized - skipping battery check for local photo");
         }
 
-        // Note: No need to check CameraNeo.isCameraInUse() for photos
-        // The camera's keep-alive system handles rapid photo taking gracefully
-
-        // Check storage availability before taking photo
-        if (!isExternalStorageAvailable()) {
-            Log.e(TAG, "External storage is not available for photo capture");
+        // STORAGE CHECK: Reject if insufficient storage
+        StorageManager storageManager = StorageManager.getInstance(mContext);
+        if (!storageManager.canTakePhoto()) {
+            Log.w(TAG, "🚫 Photo rejected - insufficient storage");
+            playStorageFullSound();
+            if (mMediaCaptureListener != null) {
+                mMediaCaptureListener.onMediaError("local",
+                    "Insufficient storage space for photo capture",
+                    MediaUploadQueueManager.MEDIA_TYPE_PHOTO);
+            }
             return;
         }
+
+        // Note: No need to check CameraNeo.isCameraInUse() for photos
+        // The camera's keep-alive system handles rapid photo taking gracefully
 
         // Add milliseconds and a random component to ensure uniqueness even in rapid capture
         String timeStamp = new SimpleDateFormat("yyyyMMdd_HHmmss_SSS", Locale.US).format(new Date());
@@ -1249,6 +1297,15 @@ public class MediaCaptureService {
             }
         } else {
             Log.w(TAG, "⚠️ StateManager not initialized - skipping battery check for photo upload");
+        }
+
+        // STORAGE CHECK: Reject if insufficient storage
+        StorageManager storageManager = StorageManager.getInstance(mContext);
+        if (!storageManager.canTakePhoto()) {
+            Log.w(TAG, "🚫 Photo rejected - insufficient storage");
+            playStorageFullSound();
+            sendPhotoErrorResponse(requestId, "INSUFFICIENT_STORAGE", "Insufficient storage space for photo capture");
+            return;
         }
 
         // Check if already uploading - skip request if busy
@@ -2100,6 +2157,15 @@ public class MediaCaptureService {
             }
         } else {
             Log.w(TAG, "⚠️ StateManager not initialized - skipping battery check for BLE transfer");
+        }
+
+        // STORAGE CHECK: Reject if insufficient storage
+        StorageManager storageManager = StorageManager.getInstance(mContext);
+        if (!storageManager.canTakePhoto()) {
+            Log.w(TAG, "🚫 Photo rejected - insufficient storage");
+            playStorageFullSound();
+            sendPhotoErrorResponse(requestId, "INSUFFICIENT_STORAGE", "Insufficient storage space for photo capture");
+            return;
         }
 
         // Store the save flag for this request
