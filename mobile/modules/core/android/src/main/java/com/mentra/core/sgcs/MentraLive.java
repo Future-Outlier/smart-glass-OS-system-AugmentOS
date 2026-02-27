@@ -31,32 +31,6 @@ import android.util.Log;
 import androidx.core.app.ActivityCompat;
 // import androidx.preference.PreferenceManager;
 
-// import com.augmentos.augmentos_core.smarterglassesmanager.eventbusmessages.BatteryLevelEvent;
-// import com.augmentos.augmentos_core.smarterglassesmanager.eventbusmessages.ButtonPressEvent;
-// import com.augmentos.augmentos_core.smarterglassesmanager.eventbusmessages.GlassesGalleryStatusEvent;
-// import com.augmentos.augmentos_core.smarterglassesmanager.eventbusmessages.GlassesBluetoothSearchDiscoverEvent;
-// import com.augmentos.augmentos_core.smarterglassesmanager.eventbusmessages.GlassesBluetoothSearchStopEvent;
-// import com.augmentos.augmentos_core.smarterglassesmanager.eventbusmessages.GlassesWifiScanResultEvent;
-// import com.augmentos.augmentos_core.smarterglassesmanager.eventbusmessages.GlassesWifiStatusChange;
-// import com.augmentos.augmentos_core.smarterglassesmanager.eventbusmessages.GlassesHotspotStatusChange;
-// import com.augmentos.augmentos_core.smarterglassesmanager.eventbusmessages.KeepAliveAckEvent;
-// import com.augmentos.augmentos_core.smarterglassesmanager.eventbusmessages.RtmpStreamStatusEvent;
-// import com.augmentos.augmentos_core.smarterglassesmanager.supportedglasses.SmartGlassesDevice;
-// import com.augmentos.augmentos_core.smarterglassesmanager.utils.SmartGlassesConnectionState;
-// import com.augmentos.augmentos_core.smarterglassesmanager.eventbusmessages.GlassesVersionInfoEvent;
-// import com.augmentos.augmentos_core.smarterglassesmanager.SmartGlassesManager;
-// import com.augmentos.augmentos_core.smarterglassesmanager.eventbusmessages.DownloadProgressEvent;
-// import com.augmentos.augmentos_core.smarterglassesmanager.eventbusmessages.InstallationProgressEvent;
-// import com.augmentos.augmentos_core.smarterglassesmanager.eventbusmessages.PairFailureEvent;
-// import com.augmentos.augmentos_core.smarterglassesmanager.eventbusmessages.ImuDataEvent;
-// import com.augmentos.augmentos_core.smarterglassesmanager.eventbusmessages.ImuGestureEvent;
-// import com.augmentos.augmentos_core.smarterglassesmanager.eventbusmessages.isMicEnabledForFrontendEvent;
-// import com.augmentos.augmentos_core.smarterglassesmanager.utils.K900ProtocolUtils;
-// import com.augmentos.augmentos_core.smarterglassesmanager.utils.MessageChunker;
-// import com.augmentos.augmentos_core.smarterglassesmanager.utils.BlePhotoUploadService;
-// import com.augmentos.smartglassesmanager.cpp.L3cCpp;
-// import com.augmentos.augmentos_core.audio.Lc3Player;
-
 // Mentra
 import com.mentra.core.sgcs.SGCManager;
 import com.mentra.core.CoreManager;
@@ -973,6 +947,7 @@ public class MentraLive extends SGCManager {
                     isConnecting = false;
                     isConnected = true;
                     connectedDevice = gatt.getDevice();
+                    GlassesStore.INSTANCE.apply("glasses", "bluetoothName", connectedDevice.getName());
 
                     // Save the connected device name for future reconnections
                     // no longer needed as we now save it immediately in connectToDevice()
@@ -3527,6 +3502,11 @@ public class MentraLive extends SGCManager {
 
     }
 
+    public void ping() {
+        Bridge.log("LIVE: ping()");
+        keepAwake();
+    }
+
     public boolean displayBitmap(String base64) {
         return false;
     }
@@ -4586,6 +4566,16 @@ public class MentraLive extends SGCManager {
             queueData(packedData);
         } catch (JSONException e) {
             Log.e(TAG, "Error creating video command", e);
+        }
+    }
+
+    public void keepAwake(){
+        try{
+            JSONObject json = new JSONObject();
+            json.put("type", "keep_awake");
+            sendJson(json, true);
+        } catch (JSONException e) {
+            Log.e(TAG, "Error creating keep_awake command", e);
         }
     }
 

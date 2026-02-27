@@ -52,6 +52,7 @@ export const DeviceStatus = ({style}: {style?: ViewStyle}) => {
   const caseBatteryLevel = useGlassesStore((state) => state.caseBatteryLevel)
   const caseOpen = useGlassesStore((state) => state.caseOpen)
   const batteryLevel = useGlassesStore((state) => state.batteryLevel)
+  const charging = useGlassesStore((state) => state.charging)
   const wifiConnected = useGlassesStore((state) => state.wifiConnected)
   const wifiSsid = useGlassesStore((state) => state.wifiSsid)
   const searching = useCoreStore((state) => state.searching)
@@ -222,14 +223,14 @@ export const DeviceStatus = ({style}: {style?: ViewStyle}) => {
       onPress={() => push("/settings/glasses")}>
       <View className="justify-center items-center flex-row max-h-20">
         <View className="flex-1 self-start">
-          <Image source={getCurrentGlassesImage()} className="w-full h-full max-w-40" style={{resizeMode: "contain"}} />
+          <Image source={getCurrentGlassesImage()} className="w-full h-full max-w-32" style={{resizeMode: "contain"}} />
         </View>
 
         <View className="justify-between items-center flex-col gap-2 py-5">
           <View className="flex-row items-center gap-3">
             {batteryLevel !== -1 && (
               <View className="flex-row items-center gap-1">
-                <Icon name={getBatteryIcon(batteryLevel) as any} size={18} color={theme.colors.foreground} />
+                <Icon name={charging ? "battery-charging" : getBatteryIcon(batteryLevel) as any} size={18} color={theme.colors.foreground} />
                 <Text className="text-secondary-foreground text-sm" text={`${batteryLevel}%`} />
               </View>
             )}
