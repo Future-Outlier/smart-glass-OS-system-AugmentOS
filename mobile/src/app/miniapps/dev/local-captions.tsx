@@ -16,11 +16,9 @@ export default function LocalCaptionsExampleDev() {
     const loadHtml = async () => {
       // load the html from the dev directory:
       // const asset = Asset.fromModule(
-      //   require("../../../../webview-sdk/examples/react-app/build/com.mentra.local_captions/index.html"),
+      //   require("../../../../webview-sdk/examples/local-captions/dist/index.html"),
       // )
-      const asset = Asset.fromModule(
-        require("../../../../webview-sdk/examples/react-app/build/com.mentra.react_example/index.html"),
-      )
+      const asset = Asset.fromModule(require("../../../../webview-sdk/examples/react-app/dist/index.html"))
       await asset.downloadAsync()
       const res = await new File(asset.localUri!).text()
       setHtml(res)
