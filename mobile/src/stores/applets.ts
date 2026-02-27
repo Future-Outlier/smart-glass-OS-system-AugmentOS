@@ -74,7 +74,7 @@ export const DUMMY_APPLET: ClientAppletInterface = {
  */
 
 export const cameraPackageName = "com.mentra.camera"
-export const captionsPackageName = "com.mentra.offline_captions"
+export const captionsPackageName = "com.mentra.captions"
 export const galleryPackageName = "com.mentra.gallery"
 export const settingsPackageName = "com.mentra.settings"
 export const storePackageName = "com.mentra.store"
@@ -199,7 +199,6 @@ export const SYSTEM_APPS = [
   storePackageName,
   simulatedPackageName,
   mirrorPackageName,
-  "com.mentra.captions",
 ]
 
 // get offline applets:
@@ -742,7 +741,13 @@ export const useInactiveForegroundApps = () => {
 }
 export const useForegroundApps = () => {
   const apps = useApplets()
-  return useMemo(() => apps.filter((app) => app.type === "standard" || app.type === "background" || !app.type), [apps])
+  const [isOffline] = useSetting(SETTINGS.offline_mode.key)
+  return useMemo(() => {
+    if (isOffline) {
+      return apps.filter((app) => (app.type === "standard" || app.type === "background" || !app.type) && app.offline)
+    }
+    return apps.filter((app) => app.type === "standard" || app.type === "background" || !app.type)
+  }, [apps, isOffline])
 }
 
 export const useActiveApps = () => {
