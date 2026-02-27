@@ -174,11 +174,6 @@ struct ViewState {
         set { GlassesStore.shared.apply("core", "enforce_local_transcription", newValue) }
     }
 
-    private var offlineMode: Bool {
-        get { GlassesStore.shared.get("core", "offline_mode") as? Bool ?? false }
-        set { GlassesStore.shared.apply("core", "offline_mode", newValue) }
-    }
-
     private var metricSystem: Bool {
         get { GlassesStore.shared.get("core", "metric_system") as? Bool ?? false }
         set { GlassesStore.shared.apply("core", "metric_system", newValue) }

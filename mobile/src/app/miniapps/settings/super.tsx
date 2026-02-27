@@ -56,7 +56,6 @@ export default function SuperSettingsScreen() {
             <RouteButton label="React Example" onPress={() => push("/miniapps/dev/react-example")} />
             <RouteButton label="Local Captions Example" onPress={() => push("/miniapps/dev/local-captions")} />
             <RouteButton label="LMA Installer" onPress={() => push("/miniapps/dev/mini-app-installer")} />
-            <RouteButton label="LMA Loader" onPress={() => push("/miniapps/dev/mini-app-loader")} />
           </Group>
         </View>
       </ScrollView>

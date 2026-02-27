@@ -121,10 +121,6 @@ class CoreManager {
         get() = GlassesStore.store.get("core", "enforce_local_transcription") as? Boolean ?: false
         set(value) = GlassesStore.apply("core", "enforce_local_transcription", value)
 
-    private var offlineMode: Boolean
-        get() = GlassesStore.store.get("core", "offline_mode") as? Boolean ?: false
-        set(value) = GlassesStore.apply("core", "offline_mode", value)
-
     private var metricSystem: Boolean
         get() = GlassesStore.store.get("core", "metric_system") as? Boolean ?: false
         set(value) = GlassesStore.apply("core", "metric_system", value)

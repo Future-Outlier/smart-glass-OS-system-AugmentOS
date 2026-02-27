@@ -74,7 +74,7 @@ export const DUMMY_APPLET: ClientAppletInterface = {
  */
 
 export const cameraPackageName = "com.mentra.camera"
-export const captionsPackageName = "com.mentra.captions"
+export const captionsPackageName = "com.mentra.offline_captions"
 export const galleryPackageName = "com.mentra.gallery"
 export const settingsPackageName = "com.mentra.settings"
 export const storePackageName = "com.mentra.store"
@@ -550,13 +550,12 @@ export const useAppletStatusStore = create<AppStatusState>((set, get) => ({
       ...(await getOfflineApplets()),
       ...(await composer.getLocalApplets()),
     ]
-    const offlineMode = useSettingsStore.getState().getSetting(SETTINGS.offline_mode.key)
 
     // remove duplicates and keep the online versions:
     const packageNameMap = new Map<string, ClientAppletInterface>()
     applets.forEach((app) => {
       const existing = packageNameMap.get(app.packageName)
-      if (!existing || offlineMode) {
+      if (!existing) {
         packageNameMap.set(app.packageName, app)
       }
     })

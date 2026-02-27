@@ -9,7 +9,6 @@ import composer from "@/services/Composer"
 import Toast from "react-native-toast-message"
 import {useLocalMiniApps} from "@/stores/applets"
 import {useAppTheme} from "@/contexts/ThemeContext"
-import BasicDialog from "@/components/ui/BasicDialog"
 import LocalMiniApp from "@/components/home/LocalMiniApp"
 
 export default function MiniAppInstaller() {
