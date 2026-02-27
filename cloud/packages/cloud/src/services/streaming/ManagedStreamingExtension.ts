@@ -22,6 +22,7 @@ import {
 } from "./StreamRegistry";
 import { StreamLifecycleController } from "./StreamLifecycleController";
 import { ConnectionValidator } from "../validators/ConnectionValidator";
+import { SILENT_PHOTO_PACKAGES } from "../session/PhotoManager";
 
 // Keep-alive constants matching UnmanagedStreamingExtension
 const KEEP_ALIVE_INTERVAL_MS = 15000; // 15 seconds
@@ -78,6 +79,7 @@ export class ManagedStreamingExtension {
       audio,
       stream: streamOptions,
       restreamDestinations,
+      sound: appSound,
     } = request;
     const userId = userSession.userId;
 
@@ -260,6 +262,11 @@ export class ManagedStreamingExtension {
     );
     //await new Promise((resolve) => setTimeout(resolve, 3000));
 
+    // Determine flash and sound based on package name
+    const isSilentPackage = SILENT_PHOTO_PACKAGES.has(packageName);
+    const flash = isSilentPackage ? false : true;
+    const sound = isSilentPackage ? false : (appSound ?? true);
+
     // Send start command to glasses with Cloudflare RTMP URL
     const startMessage: StartRtmpStream = {
       type: CloudToGlassesMessageType.START_RTMP_STREAM,
@@ -270,6 +277,8 @@ export class ManagedStreamingExtension {
       video: video || {},
       audio: audio || {},
       stream: streamOptions || {},
+      flash,
+      sound,
       timestamp: new Date(),
     };
 

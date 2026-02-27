@@ -120,6 +120,8 @@ export interface ManagedStreamRequest extends BaseMessage {
   stream?: StreamConfig
   /** Optional RTMP destinations to re-stream to (YouTube, Twitch, etc) */
   restreamDestinations?: RestreamDestination[]
+  /** Controls stream start/stop sounds. Defaults to true if omitted. */
+  sound?: boolean
 }
 
 /**
