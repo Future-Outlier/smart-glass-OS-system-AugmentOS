@@ -83,7 +83,7 @@ console.log('Archive created successfully');
 console.log('\n━━━ Step 4: Exporting IPA ━━━');
 
 const exportPath = path.resolve('build/ios-export');
-const exportOptionsPlist = path.resolve('ios-export/ExportOptions.plist');
+const exportOptionsPlist = path.resolve('ci/ios-export/ExportOptions.plist');
 
 await $({ stdio: 'inherit' })`xcodebuild -exportArchive -archivePath ${archivePath} -exportOptionsPlist ${exportOptionsPlist} -exportPath ${exportPath} -allowProvisioningUpdates`;
 
