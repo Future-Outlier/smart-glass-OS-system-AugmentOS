@@ -2,24 +2,24 @@
 #
 # dev-setup.sh - Install your custom asg_client on Mentra Live
 #
-# This script builds your debug APK, replaces the factory app, and grants
-# all required permissions.
+# This script builds your fork of asg_client, disables the stock app,
+# and installs your version as the default launcher.
 #
-# IMPORTANT: The factory asg_client is signed with Mentra's release key.
-# You cannot "update" it - you must uninstall it first. This script handles
-# that safely by only uninstalling after your build succeeds.
+# How it works:
+#   - Stock asg_client is a system app signed with Mentra's key
+#   - Your build uses package name com.mentra.asg_client.thirdparty
+#   - Stock app is disabled (not deleted) so your app becomes the launcher
+#   - To restore stock: ./scripts/restore-stock.sh
 #
 # Usage:
-#   1. Connect to your Mentra Live via ADB (USB or WiFi)
+#   1. Connect to your Mentra Live via ADB (Infinity Cable)
 #   2. Run: ./scripts/dev-setup.sh
-#
-# To restore stock firmware later:
-#   ./scripts/restore-stock.sh
 #
 
 set -e
 
-PKG="com.mentra.asg_client"
+STOCK_PKG="com.mentra.asg_client"
+DEV_PKG="com.mentra.asg_client.thirdparty"
 APK_PATH="app/build/outputs/apk/debug/app-debug.apk"
 
 echo ""
@@ -27,8 +27,9 @@ echo "╔═══════════════════════�
 echo "║                         ⚠️  WARNING                            ║"
 echo "╠════════════════════════════════════════════════════════════════╣"
 echo "║  This script will:                                             ║"
-echo "║    • Remove Mentra's official asg_client from your glasses     ║"
-echo "║    • Install your custom debug build instead                   ║"
+echo "║    • Disable Mentra's stock asg_client                         ║"
+echo "║    • Install your build as com.mentra.asg_client.thirdparty    ║"
+echo "║    • Set your build as the default launcher                    ║"
 echo "║                                                                ║"
 echo "║  After running this:                                           ║"
 echo "║    • You will NOT receive OTA updates from Mentra              ║"
@@ -55,16 +56,7 @@ echo ""
 if ! adb devices | grep -q "device$"; then
     echo "ERROR: No ADB device connected."
     echo ""
-    echo "To connect to your Mentra Live:"
-    echo ""
-    echo "  Option 1 - USB Cable (recommended):"
-    echo "    Attach the magnetic USB-C clip-on cable and run 'adb devices'"
-    echo ""
-    echo "  Option 2 - WiFi:"
-    echo "    1. Pair your glasses in the MentraOS app"
-    echo "    2. Connect glasses to your WiFi network"
-    echo "    3. Get the IP from the 'Glasses' screen in the app"
-    echo "    4. Run: adb connect <IP_ADDRESS>:5555"
+    echo "Connect your Mentra Live using the Infinity Cable and try again."
     echo ""
     exit 1
 fi
@@ -82,7 +74,7 @@ if ./gradlew assembleDebug; then
     echo "Build succeeded."
 else
     echo ""
-    echo "ERROR: Build failed. Factory app NOT modified."
+    echo "ERROR: Build failed. Stock app NOT modified."
     echo "Fix build errors and try again."
     exit 1
 fi
@@ -90,58 +82,41 @@ fi
 # Verify APK exists
 if [ ! -f "$APK_PATH" ]; then
     echo "ERROR: APK not found at $APK_PATH"
-    echo "Build may have failed silently. Factory app NOT modified."
+    echo "Build may have failed silently. Stock app NOT modified."
     exit 1
 fi
 
 echo ""
 
-# Step 2: Uninstall factory app (only now that we have a working build)
-echo "=== Removing Factory App ==="
+# Step 2: Disable stock app
+echo "=== Disabling Stock App ==="
 echo ""
-if adb shell pm list packages | grep -q "$PKG"; then
-    echo "Uninstalling factory app for user 0..."
-    adb shell pm uninstall --user 0 "$PKG" 2>/dev/null || true
-    echo "Factory app disabled."
-else
-    echo "Factory app already removed."
-fi
+echo "Disabling $STOCK_PKG..."
+adb shell pm disable-user --user 0 "$STOCK_PKG" 2>/dev/null || true
+echo "Stock app disabled."
 
 echo ""
 
-# Step 3: Install custom APK
-# Note: After uninstalling for user 0, the package manager can be in a weird state.
-# We install the APK, then run install-existing to properly register it.
+# Step 3: Uninstall any previous dev build
+echo "=== Removing Previous Dev Build (if any) ==="
+echo ""
+adb shell pm uninstall "$DEV_PKG" 2>/dev/null || true
+
+# Step 4: Install new build
 echo "=== Installing Your Build ==="
 echo ""
 echo "Installing $APK_PATH..."
-if adb install -r "$APK_PATH"; then
-    echo "APK installed."
+if adb install -g "$APK_PATH"; then
+    echo "Install succeeded."
 else
     echo ""
-    echo "Install failed. Attempting to fix package state..."
-    # Fix corrupted package manager state
-    adb shell cmd package install-existing "$PKG" 2>/dev/null || true
-    adb shell pm uninstall --user 0 "$PKG" 2>/dev/null || true
-
-    if adb install -r "$APK_PATH"; then
-        echo "APK installed (after cleanup)."
-    else
-        echo ""
-        echo "ERROR: Install still failed."
-        echo "Try: adb reboot && ./scripts/dev-setup.sh"
-        exit 1
-    fi
+    echo "ERROR: Install failed."
+    exit 1
 fi
-
-# Fix package registration - required after uninstalling system app for user 0
-echo "Registering package..."
-adb shell cmd package install-existing "$PKG" 2>/dev/null || true
-echo "Install succeeded."
 
 echo ""
 
-# Step 4: Grant permissions
+# Step 5: Grant additional permissions
 echo "=== Granting Permissions ==="
 echo ""
 
@@ -165,18 +140,24 @@ PERMISSIONS=(
 )
 
 for perm in "${PERMISSIONS[@]}"; do
-    if adb shell pm grant "$PKG" "$perm" 2>/dev/null; then
+    if adb shell pm grant "$DEV_PKG" "$perm" 2>/dev/null; then
         echo "Granted: $perm"
     fi
 done
 
 echo ""
+
+# Step 6: Launch the app
+echo "=== Launching App ==="
+adb shell am start -n "$DEV_PKG/.MainActivity" 2>/dev/null || true
+
+echo ""
 echo "=== Setup Complete ==="
 echo ""
-echo "Your custom asg_client is now running on the glasses."
+echo "Your build ($DEV_PKG) is now the active launcher."
 echo ""
 echo "Useful commands:"
 echo "  View logs:        adb logcat -s ASGClient"
-echo "  Reinstall:        adb install -r $APK_PATH"
+echo "  Reinstall:        adb install -r -g $APK_PATH"
 echo "  Restore stock:    ./scripts/restore-stock.sh"
 echo ""
