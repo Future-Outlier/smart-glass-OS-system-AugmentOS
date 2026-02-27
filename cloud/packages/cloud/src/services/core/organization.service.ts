@@ -236,11 +236,6 @@ export class OrganizationService {
     delete sanitizedPatch.members;
     delete sanitizedPatch.slug;
 
-    // If name is being updated, generate new slug
-    if (sanitizedPatch.name) {
-      sanitizedPatch.slug = await generateSlug(sanitizedPatch.name);
-    }
-
     const org = await Organization.findByIdAndUpdate(id, { $set: sanitizedPatch }, { new: true, runValidators: true });
 
     if (!org) {

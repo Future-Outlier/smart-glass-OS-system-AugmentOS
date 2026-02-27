@@ -165,7 +165,7 @@ export async function getOrg(email: string, orgId: string): Promise<Organization
 /**
  * Update an organization (admin only).
  * - Allows updating name and profile (website/contactEmail/description/logo).
- * - Recomputes slug if name changes.
+ * - Slug is NOT recomputed on rename (set once at creation, treated as a permanent URL identifier).
  */
 export async function updateOrg(
   email: string,
@@ -179,7 +179,6 @@ export async function updateOrg(
   const updates: any = {};
   if (patch.name && typeof patch.name === "string") {
     updates.name = patch.name.trim().replace(/\s+/g, " ");
-    updates.slug = Organization.generateSlug(updates.name);
   }
   if (patch.profile && typeof patch.profile === "object") {
     updates.profile = {
