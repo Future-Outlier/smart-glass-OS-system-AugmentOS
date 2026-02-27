@@ -5,14 +5,15 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "tsc && vite build",
+    "build:ts": "tsc && vite build",
     "build:mmk": "node ./scripts/build-mmk.js",
     "preview": "vite preview"
   },
   "dependencies": {
-    "@mentra/webview-sdk": "link:../../",
+    "@mentra/webview-sdk": "file:../../",
     "react": "^18.2.0",
-    "react-dom": "^18.2.0"
+    "react-dom": "^18.2.0",
+    "vite-plugin-singlefile": "^2.3.0"
   },
   "devDependencies": {
     "@types/react": "^18.2.66",
