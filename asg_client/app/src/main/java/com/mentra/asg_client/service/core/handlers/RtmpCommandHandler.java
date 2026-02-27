@@ -110,6 +110,7 @@ public class RtmpCommandHandler implements ICommandHandler {
 
             String streamId = data.optString("streamId", "");
             boolean flash = data.optBoolean("flash", true);
+            boolean sound = data.optBoolean("sound", true);
 
             // Parse video/audio config from SDK message (supports both full and compact keys)
             // Full: { video: {...}, audio: {...} }
@@ -125,7 +126,7 @@ public class RtmpCommandHandler implements ICommandHandler {
             RtmpStreamConfig streamConfig = RtmpStreamConfig.fromJson(videoJson, audioJson);
 
             Log.d(TAG, "Starting RTMP stream with config: " + streamConfig.toString());
-            RtmpStreamingService.startStreaming(context, rtmpUrl, streamId, flash, streamConfig);
+            RtmpStreamingService.startStreaming(context, rtmpUrl, streamId, flash, sound, streamConfig);
 
             // Set StateManager for battery monitoring
             RtmpStreamingService.setStateManager(stateManager);
