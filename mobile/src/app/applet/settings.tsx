@@ -1,7 +1,7 @@
 import {useFocusEffect, useLocalSearchParams} from "expo-router"
 import {useCallback, useEffect, useMemo, useRef, useState} from "react"
 import {Animated, BackHandler, TextStyle, View, ViewStyle} from "react-native"
-import {useSafeAreaInsets} from "react-native-safe-area-context"
+import {useSaferAreaInsets} from "@/contexts/SaferAreaContext"
 
 import {Header, Icon, PillButton, Screen, Text} from "@/components/ignite"
 import AppIcon from "@/components/home/AppIcon"
@@ -36,7 +36,7 @@ export default function AppSettings() {
   const [isUninstalling, setIsUninstalling] = useState(false)
   const {theme, themed} = useAppTheme()
   const {goBack, replaceAll} = useNavigationHistory()
-  const insets = useSafeAreaInsets()
+  const insets = useSaferAreaInsets()
   const hasLoadedData = useRef(false)
 
   // Use appName from params or default to empty string

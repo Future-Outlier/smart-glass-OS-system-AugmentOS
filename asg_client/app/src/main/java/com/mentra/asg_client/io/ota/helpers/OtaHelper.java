@@ -42,6 +42,7 @@ import java.util.concurrent.locks.ReentrantLock;
 import com.mentra.asg_client.io.ota.utils.OtaConstants;
 import com.mentra.asg_client.settings.AsgSettings;
 import com.mentra.asg_client.service.utils.SysProp;
+import com.mentra.asg_client.utils.WakeLockManager;
 
 import org.json.JSONArray;
 
@@ -242,19 +243,26 @@ public class OtaHelper {
         Log.d(TAG, "Phone disconnected - reset OTA notification flag");
     }
 
+    // Wakelock timeout for OTA process (10 minutes)
+    private static final long OTA_WAKELOCK_TIMEOUT_MS = 600000;
+
     /**
      * Start OTA update from phone command (onboarding or background approval).
      * Called by OtaCommandHandler when phone sends ota_start command.
      */
     public void startOtaFromPhone() {
         Log.i(TAG, "📱 Starting OTA from phone request");
-        
+
         // If OTA already in progress, acknowledge but don't restart
         if (versionCheckLock.isLocked()) {
             Log.i(TAG, "📱 OTA check already in progress, ignoring duplicate ota_start");
             return;
         }
-        
+
+        // Acquire wakelock to prevent CPU sleep during OTA download/install
+        WakeLockManager.acquireCpuWakeLock(context, OTA_WAKELOCK_TIMEOUT_MS);
+        Log.i(TAG, "📱 OTA wakelock acquired for " + (OTA_WAKELOCK_TIMEOUT_MS / 1000) + " seconds");
+
         isPhoneInitiatedOta = true;
         hasNotifiedPhoneOfUpdate = false; // Reset for next check cycle
 
@@ -876,6 +884,8 @@ public class OtaHelper {
         // Download new APK file
         URL url = new URL(urlStr);
         HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+        conn.setConnectTimeout(OtaConstants.CONNECT_TIMEOUT_MS);
+        conn.setReadTimeout(OtaConstants.READ_TIMEOUT_MS);
         conn.connect();
 
         InputStream in = conn.getInputStream();
@@ -1514,10 +1524,12 @@ public class OtaHelper {
             }
             
             Log.d(TAG, "Downloading BES firmware from: " + firmwareUrl);
-            
+
             // Download firmware file
             URL url = new URL(firmwareUrl);
             HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+            conn.setConnectTimeout(OtaConstants.CONNECT_TIMEOUT_MS);
+            conn.setReadTimeout(OtaConstants.READ_TIMEOUT_MS);
             conn.connect();
             
             long fileSize = conn.getContentLength();
@@ -1760,10 +1772,12 @@ public class OtaHelper {
             }
             
             Log.d(TAG, "Downloading MTK firmware from: " + firmwareUrl);
-            
+
             // Download firmware file
             URL url = new URL(firmwareUrl);
             HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+            conn.setConnectTimeout(OtaConstants.CONNECT_TIMEOUT_MS);
+            conn.setReadTimeout(OtaConstants.READ_TIMEOUT_MS);
             conn.connect();
             
             long fileSize = conn.getContentLength();

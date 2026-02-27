@@ -7,14 +7,14 @@ import Animated, {useSharedValue, useAnimatedStyle, withTiming} from "react-nati
 import {Header, Screen, Text} from "@/components/ignite"
 import InternetConnectionFallbackComponent from "@/components/ui/InternetConnectionFallbackComponent"
 import LoadingOverlay from "@/components/ui/LoadingOverlay"
-import {focusEffectPreventBack, useNavigationHistory} from "@/contexts/NavigationHistoryContext"
+import {useNavigationHistory} from "@/contexts/NavigationHistoryContext"
 import restComms from "@/services/RestComms"
 import {SETTINGS, useSetting, useSettingsStore} from "@/stores/settings"
 import showAlert from "@/utils/AlertUtils"
-import {captureRef} from "react-native-view-shot"
 import {useAppletStatusStore} from "@/stores/applets"
-import {DualButton, MiniAppDualButtonHeader} from "@/components/miniapps/DualButton"
+import {MiniAppDualButtonHeader} from "@/components/miniapps/DualButton"
 import {Image} from "expo-image"
+import AppIcon from "@/components/home/AppIcon"
 
 export default function AppWebView() {
   const {webviewURL, appName, packageName} = useLocalSearchParams()
@@ -168,13 +168,43 @@ export default function AppWebView() {
   }
 
   const renderLoadingOverlay = () => {
+    const app = useAppletStatusStore.getState().apps.find((a) => a.packageName === packageName)
+
     const screenshot = screenshotComponent()
+    if (screenshot) {
+      return (
+        <Animated.View
+          className="absolute top-0 left-0 right-0 bottom-0 z-10"
+          style={[loadingAnimatedStyle]}
+          pointerEvents={isWebViewReady ? "none" : "auto"}>
+          {screenshot}
+        </Animated.View>
+      )
+    }
+
+    if (!app) {
+      return (
+        <Animated.View
+          className="absolute top-0 left-0 right-0 bottom-0 z-10"
+          style={[loadingAnimatedStyle]}
+          pointerEvents={isWebViewReady ? "none" : "auto"}>
+          <LoadingOverlay message={`Loading ${appName}...`} />
+        </Animated.View>
+      )
+    }
+
     return (
       <Animated.View
         className="absolute top-0 left-0 right-0 bottom-0 z-10"
         style={[loadingAnimatedStyle]}
         pointerEvents={isWebViewReady ? "none" : "auto"}>
-        {screenshot || <LoadingOverlay message={`Loading ${appName}...`} />}
+        {/* show the app icon and app name */}
+        <View className="flex-1 flex-row items-center justify-center">
+          <View className="flex-col">
+            <AppIcon app={app} className="w-32 h-32" />
+            {/* <Text text={appName} className="text-foreground text-2xl font-medium text-center" numberOfLines={1} /> */}
+          </View>
+        </View>
       </Animated.View>
     )
   }
@@ -216,19 +246,7 @@ export default function AppWebView() {
       safeAreaEdges={[appSwitcherUi && "top"]}
       KeyboardAvoidingViewProps={{enabled: true}}
       ref={viewShotRef}>
-      {appSwitcherUi && (
-        <MiniAppDualButtonHeader
-          packageName={packageName}
-          viewShotRef={viewShotRef}
-          onEllipsisPress={() => {
-            push("/applet/settings", {
-              packageName: packageName as string,
-              appName: appName as string,
-              fromWebView: "true",
-            })
-          }}
-        />
-      )}
+      {appSwitcherUi && <MiniAppDualButtonHeader packageName={packageName} viewShotRef={viewShotRef} />}
       {!appSwitcherUi && (
         <Header
           leftIcon="chevron-left"
