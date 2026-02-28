@@ -417,28 +417,6 @@ export class AudioManager {
   }
 
   /**
-   * Get audio gap detection statistics for debugging/telemetry
-   */
-  getAudioGapStats(): {
-    lastAudioTimestamp?: number;
-    timeSinceLastAudio?: number;
-    reconnectAttemptCount: number;
-    lastReconnectAttemptAt?: number;
-    hasActiveSubscriptions: boolean;
-  } {
-    const now = Date.now();
-    const lastAudioTimestamp = this.userSession.lastAudioTimestamp;
-
-    return {
-      lastAudioTimestamp,
-      timeSinceLastAudio: lastAudioTimestamp ? now - lastAudioTimestamp : undefined,
-      reconnectAttemptCount: this.reconnectAttemptCount,
-      lastReconnectAttemptAt: this.lastReconnectAttemptAt,
-      hasActiveSubscriptions: this.hasActiveAudioSubscriptions(),
-    };
-  }
-
-  /**
    * Check if this manager has been disposed
    */
   isDisposed(): boolean {
