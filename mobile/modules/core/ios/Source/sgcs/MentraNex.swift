@@ -123,8 +123,6 @@ class MentraNexSGC: NSObject, CBCentralManagerDelegate, CBPeripheralDelegate, SG
 
     private var centralManager: CBCentralManager?
 
-    var isBluetoothPoweredOn: Bool { centralManager?.state == .poweredOn }
-
     private var peripheral: CBPeripheral?
     private var writeCharacteristic: CBCharacteristic?
     private var notifyCharacteristic: CBCharacteristic?

@@ -193,10 +193,6 @@ class Simulated: SGCManager {
         Bridge.sendRgbLedControlResponse(requestId: requestId, success: false, error: "device_not_supported")
     }
 
-    // MARK: - Bluetooth State
-
-    var isBluetoothPoweredOn: Bool { true }
-
     // MARK: - Connection Management
 
     func disconnect() {

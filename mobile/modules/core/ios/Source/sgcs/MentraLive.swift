@@ -1011,8 +1011,6 @@ class MentraLive: NSObject, SGCManager {
     // BLE Properties
     private var centralManager: CBCentralManager?
 
-    var isBluetoothPoweredOn: Bool { centralManager?.state == .poweredOn }
-
     private var connectedPeripheral: CBPeripheral?
     private var txCharacteristic: CBCharacteristic?
     private var rxCharacteristic: CBCharacteristic?

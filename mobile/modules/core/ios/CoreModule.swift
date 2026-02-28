@@ -344,12 +344,6 @@ public class CoreModule: Module {
             return STTTools.extractTarBz2(sourcePath: sourcePath, destinationPath: destinationPath)
         }
 
-        AsyncFunction("isBluetoothEnabled") { () -> Bool in
-            await MainActor.run {
-                CoreManager.shared.sgc?.isBluetoothPoweredOn ?? false
-            }
-        }
-
         // MARK: - Android Stubs
 
         AsyncFunction("getInstalledApps") { () -> Any in

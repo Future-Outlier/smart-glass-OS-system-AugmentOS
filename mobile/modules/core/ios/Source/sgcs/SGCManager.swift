@@ -62,10 +62,6 @@ protocol SGCManager {
         offtime: Int, count: Int
     )
 
-    // MARK: - Bluetooth State
-
-    var isBluetoothPoweredOn: Bool { get }
-
     // MARK: - Connection Management
 
     func disconnect()

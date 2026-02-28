@@ -12,7 +12,7 @@ import {useGallerySyncStore, HotspotInfo} from "@/stores/gallerySync"
 import {useGlassesStore} from "@/stores/glasses"
 import {SETTINGS, useSettingsStore} from "@/stores/settings"
 import {PhotoInfo} from "@/types/asg"
-import {showAlert, showBluetoothAlert} from "@/utils/AlertUtils"
+import {showAlert} from "@/utils/AlertUtils"
 import GlobalEventEmitter from "@/utils/GlobalEventEmitter"
 import {SettingsNavigationUtils} from "@/utils/SettingsNavigationUtils"
 import {MediaLibraryPermissions} from "@/utils/permissions/MediaLibraryPermissions"
@@ -23,6 +23,7 @@ import {gallerySettingsService} from "./gallerySettingsService"
 import {gallerySyncNotifications} from "./gallerySyncNotifications"
 import {localStorageService} from "./localStorageService"
 import {
+  checkConnectivityRequirementsUI,
   checkFeaturePermissions,
   requestFeaturePermissions,
   PermissionFeatures,
@@ -347,17 +348,12 @@ class GallerySyncService {
       return
     }
 
-    // Hard gate: check actual BT adapter state (store can be stale)
-    try {
-      const btEnabled = await CoreModule.isBluetoothEnabled()
-      if (!btEnabled) {
-        console.warn("[GallerySyncService] Sync aborted - Bluetooth is OFF at the system level")
-        store.setSyncError("Bluetooth is disabled")
-        showBluetoothAlert("Bluetooth is Off", "Please enable Bluetooth to sync photos from your glasses.")
-        return
-      }
-    } catch (error) {
-      console.warn("[GallerySyncService] Could not check Bluetooth adapter state:", error)
+    // Reuse shared connectivity gate (BT + Android location); shows the right alert if not ready
+    const connectivityOk = await checkConnectivityRequirementsUI()
+    if (!connectivityOk) {
+      console.warn("[GallerySyncService] Sync aborted - connectivity requirements not met")
+      store.setSyncError("Connectivity requirements not met")
+      return
     }
 
     // Check if glasses are connected (store-based, secondary check)
