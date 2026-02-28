@@ -58,7 +58,7 @@ export default function SelectGlassesModelScreen() {
       ? [
           // {deviceModel: DeviceTypes.SIMULATED, key: DeviceTypes.SIMULATED},
           {deviceModel: DeviceTypes.G1, key: "evenrealities_g1"},
-          // {deviceModel: DeviceTypes.G2, key: "evenrealities_g2"},
+          {deviceModel: DeviceTypes.G2, key: "evenrealities_g2"},
           {deviceModel: DeviceTypes.LIVE, key: "mentra_live"},
           {deviceModel: DeviceTypes.MACH1, key: "mentra_mach1"},
           {deviceModel: DeviceTypes.Z100, key: "vuzix-z100"},
@@ -69,7 +69,7 @@ export default function SelectGlassesModelScreen() {
           // Android:
           // {deviceModel: DeviceTypes.SIMULATED, key: DeviceTypes.SIMULATED},
           {deviceModel: DeviceTypes.G1, key: "evenrealities_g1"},
-          // {deviceModel: DeviceTypes.G2, key: "evenrealities_g2"},
+          {deviceModel: DeviceTypes.G2, key: "evenrealities_g2"},
           {deviceModel: DeviceTypes.LIVE, key: "mentra_live"},
           {deviceModel: DeviceTypes.MACH1, key: "mentra_mach1"},
           {deviceModel: DeviceTypes.Z100, key: "vuzix-z100"},

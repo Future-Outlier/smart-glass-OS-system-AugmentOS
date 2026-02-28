@@ -1,5 +1,5 @@
 //
-//  G1.swift
+//  G2.swift
 //  MentraOS_Manager
 //
 //  Created by Matthew Fosse on 3/3/25.
@@ -11,273 +11,301 @@ import Foundation
 import React
 import UIKit
 
-extension Data {
-    func chunked(into size: Int) -> [Data] {
-        var chunks = [Data]()
-        var index = 0
-        while index < count {
-            let chunkSize = Swift.min(size, count - index)
-            let chunk = subdata(in: index ..< (index + chunkSize))
-            chunks.append(chunk)
-            index += chunkSize
-        }
-        return chunks
-    }
+// extension Data {
+//     func chunked(into size: Int) -> [Data] {
+//         var chunks = [Data]()
+//         var index = 0
+//         while index < count {
+//             let chunkSize = Swift.min(size, count - index)
+//             let chunk = subdata(in: index ..< (index + chunkSize))
+//             chunks.append(chunk)
+//             index += chunkSize
+//         }
+//         return chunks
+//     }
 
-    func hexEncodedString() -> String {
-        return map { String(format: "%02x", $0) }.joined(separator: " ")
-        //    return map { String(format: "%02x", $0) }.joined(separator: ", ")
-    }
+//     func hexEncodedString() -> String {
+//         return map { String(format: "%02x", $0) }.joined(separator: " ")
+//         //    return map { String(format: "%02x", $0) }.joined(separator: ", ")
+//     }
 
-    // Extension for CRC32 calculation
-    var crc32: UInt32 {
-        return withUnsafeBytes { bytes in
-            let buffer = bytes.bindMemory(to: UInt8.self)
-            var crc: UInt32 = 0xFFFF_FFFF
+//     // Extension for CRC32 calculation
+//     var crc32: UInt32 {
+//         return withUnsafeBytes { bytes in
+//             let buffer = bytes.bindMemory(to: UInt8.self)
+//             var crc: UInt32 = 0xFFFF_FFFF
 
-            for byte in buffer {
-                crc ^= UInt32(byte)
-                for _ in 0 ..< 8 {
-                    if crc & 1 == 1 {
-                        crc = (crc >> 1) ^ 0xEDB8_8320
-                    } else {
-                        crc >>= 1
-                    }
-                }
-            }
+//             for byte in buffer {
+//                 crc ^= UInt32(byte)
+//                 for _ in 0 ..< 8 {
+//                     if crc & 1 == 1 {
+//                         crc = (crc >> 1) ^ 0xEDB8_8320
+//                     } else {
+//                         crc >>= 1
+//                     }
+//                 }
+//             }
 
-            return ~crc
-        }
-    }
+//             return ~crc
+//         }
+//     }
 
-    /// Initialize Data from hex string
-    init?(hexString: String) {
-        let cleanHex = hexString.replacingOccurrences(of: " ", with: "")
-        guard cleanHex.count % 2 == 0 else { return nil }
+//     /// Initialize Data from hex string
+//     init?(hexString: String) {
+//         let cleanHex = hexString.replacingOccurrences(of: " ", with: "")
+//         guard cleanHex.count % 2 == 0 else { return nil }
 
-        var data = Data()
-        var index = cleanHex.startIndex
+//         var data = Data()
+//         var index = cleanHex.startIndex
 
-        while index < cleanHex.endIndex {
-            let nextIndex = cleanHex.index(index, offsetBy: 2)
-            let byteString = cleanHex[index ..< nextIndex]
-            guard let byte = UInt8(byteString, radix: 16) else { return nil }
-            data.append(byte)
-            index = nextIndex
-        }
+//         while index < cleanHex.endIndex {
+//             let nextIndex = cleanHex.index(index, offsetBy: 2)
+//             let byteString = cleanHex[index ..< nextIndex]
+//             guard let byte = UInt8(byteString, radix: 16) else { return nil }
+//             data.append(byte)
+//             index = nextIndex
+//         }
 
-        self = data
-    }
-}
+//         self = data
+//     }
+// }
 
-public struct QuickNote: Equatable {
-    let id: UUID
-    let text: String
-    let timestamp: Date
+// struct BufferedCommand {
+//     let chunks: [[UInt8]]
+//     let sendLeft: Bool
+//     let sendRight: Bool
+//     let waitTime: Int
+//     let ignoreAck: Bool
+//     let chunkTimeMs: Int
+//     let lastFrameMs: Int
 
-    public static func == (lhs: QuickNote, rhs: QuickNote) -> Bool {
-        return lhs.id == rhs.id
-    }
-}
-
-struct BufferedCommand {
-    let chunks: [[UInt8]]
-    let sendLeft: Bool
-    let sendRight: Bool
-    let waitTime: Int
-    let ignoreAck: Bool
-    let chunkTimeMs: Int
-    let lastFrameMs: Int
-
-    init(
-        chunks: [[UInt8]], sendLeft: Bool = true, sendRight: Bool = true, waitTime: Int = -1,
-        ignoreAck: Bool = false, chunkTimeMs: Int = 10, lastFrameMs: Int = 0
-    ) {
-        self.chunks = chunks
-        self.sendLeft = sendLeft
-        self.sendRight = sendRight
-        self.waitTime = waitTime
-        self.ignoreAck = ignoreAck
-        self.chunkTimeMs = chunkTimeMs
-        self.lastFrameMs = lastFrameMs
-    }
-}
+//     init(
+//         chunks: [[UInt8]], sendLeft: Bool = true, sendRight: Bool = true, waitTime: Int = -1,
+//         ignoreAck: Bool = false, chunkTimeMs: Int = 10, lastFrameMs: Int = 0
+//     ) {
+//         self.chunks = chunks
+//         self.sendLeft = sendLeft
+//         self.sendRight = sendRight
+//         self.waitTime = waitTime
+//         self.ignoreAck = ignoreAck
+//         self.chunkTimeMs = chunkTimeMs
+//         self.lastFrameMs = lastFrameMs
+//     }
+// }
 
 // Simple struct to hold app info
-struct AppInfo {
-    let id: String
-    let name: String
-}
+// struct AppInfo {
+//     let id: String
+//     let name: String
+// }
 
-enum GlassesError: Error {
-    case missingGlasses(String)
-}
+// enum GlassesError: Error {
+//     case missingGlasses(String)
+// }
 
-// Dedicated actor for timer management
-actor HeartbeatManager {
-    private var task: Task<Void, Never>?
-    private let intervalSeconds: TimeInterval
+// // Dedicated actor for timer management
+// actor HeartbeatManager {
+//     private var task: Task<Void, Never>?
+//     private let intervalSeconds: TimeInterval
 
-    init(intervalSeconds: TimeInterval = 20) {
-        self.intervalSeconds = intervalSeconds
-    }
+//     init(intervalSeconds: TimeInterval = 20) {
+//         self.intervalSeconds = intervalSeconds
+//     }
 
-    func start(onTick: @escaping @Sendable () async -> Void) {
-        stop()
+//     func start(onTick: @escaping @Sendable () async -> Void) {
+//         stop()
 
-        task = Task {
-            while !Task.isCancelled {
-                do {
-                    try await Task.sleep(nanoseconds: UInt64(intervalSeconds * 1_000_000_000))
-                } catch {
-                    break
-                }
-                guard !Task.isCancelled else { break }
-                await onTick()
-            }
-        }
-    }
+//         task = Task {
+//             while !Task.isCancelled {
+//                 do {
+//                     try await Task.sleep(nanoseconds: UInt64(intervalSeconds * 1_000_000_000))
+//                 } catch {
+//                     break
+//                 }
+//                 guard !Task.isCancelled else { break }
+//                 await onTick()
+//             }
+//         }
+//     }
 
-    func stop() {
-        task?.cancel()
-        task = nil
-    }
-}
+//     func stop() {
+//         task?.cancel()
+//         task = nil
+//     }
+// }
 
-// Dedicated actor for command queue (you already have this partially)
-actor CommandQueue {
-    private var commands: [BufferedCommand] = []
-    private var continuation: CheckedContinuation<BufferedCommand, Never>?
+// // Dedicated actor for command queue (you already have this partially)
+// actor CommandQueue {
+//     private var commands: [BufferedCommand] = []
+//     private var continuation: CheckedContinuation<BufferedCommand, Never>?
 
-    func enqueue(_ command: BufferedCommand) {
-        if let continuation {
-            self.continuation = nil
-            continuation.resume(returning: command)
-        } else {
-            commands.append(command)
-        }
-    }
+//     func enqueue(_ command: BufferedCommand) {
+//         if let continuation {
+//             self.continuation = nil
+//             continuation.resume(returning: command)
+//         } else {
+//             commands.append(command)
+//         }
+//     }
 
-    func dequeue() async -> BufferedCommand {
-        if let command = commands.first {
-            commands.removeFirst()
-            return command
-        }
+//     func dequeue() async -> BufferedCommand {
+//         if let command = commands.first {
+//             commands.removeFirst()
+//             return command
+//         }
 
-        return await withCheckedContinuation { continuation in
-            self.continuation = continuation
-        }
-    }
-}
+//         return await withCheckedContinuation { continuation in
+//             self.continuation = continuation
+//         }
+//     }
+// }
 
-// Actor for managing pending ACKs
-actor AckManager {
-    private var pending: [String: CheckedContinuation<Bool, Never>] = [:]
+// // Actor for managing pending ACKs
+// actor AckManager {
+//     private var pending: [String: CheckedContinuation<Bool, Never>] = [:]
 
-    func waitForAck(
-        key: String,
-        timeoutMs: Int,
-        onRegistered: @escaping @Sendable () -> Void,
-        onTimeout: @escaping @Sendable () -> Void = {}
-    ) async -> Bool {
-        return await withCheckedContinuation { continuation in
-            pending[key] = continuation
+//     func waitForAck(
+//         key: String,
+//         timeoutMs: Int,
+//         onRegistered: @escaping @Sendable () -> Void,
+//         onTimeout: @escaping @Sendable () -> Void = {}
+//     ) async -> Bool {
+//         return await withCheckedContinuation { continuation in
+//             pending[key] = continuation
 
-            // Now it's safe to send — registration is complete
-            onRegistered()
+//             // Now it's safe to send — registration is complete
+//             onRegistered()
 
-            // Start timeout
-            Task { [weak self] in
-                try? await Task.sleep(nanoseconds: UInt64(timeoutMs) * 1_000_000)
+//             // Start timeout
+//             Task { [weak self] in
+//                 try? await Task.sleep(nanoseconds: UInt64(timeoutMs) * 1_000_000)
 
-                guard let self else { return }
-                if let timedOut = await self.removeIfPending(key: key) {
-                    onTimeout()
-                    timedOut.resume(returning: false)
-                }
-            }
-        }
-    }
+//                 guard let self else { return }
+//                 if let timedOut = await self.removeIfPending(key: key) {
+//                     onTimeout()
+//                     timedOut.resume(returning: false)
+//                 }
+//             }
+//         }
+//     }
 
-    func receiveAck(key: String) -> Bool {
-        if let continuation = pending.removeValue(forKey: key) {
-            continuation.resume(returning: true)
-            return true
-        }
-        return false
-    }
+//     func receiveAck(key: String) -> Bool {
+//         if let continuation = pending.removeValue(forKey: key) {
+//             continuation.resume(returning: true)
+//             return true
+//         }
+//         return false
+//     }
 
-    private func removeIfPending(key: String) -> CheckedContinuation<Bool, Never>? {
-        return pending.removeValue(forKey: key)
-    }
-}
+//     private func removeIfPending(key: String) -> CheckedContinuation<Bool, Never>? {
+//         return pending.removeValue(forKey: key)
+//     }
+// }
 
-// Actor for reconnection logic
-actor ReconnectionManager {
-    private var task: Task<Void, Never>?
-    private let intervalSeconds: TimeInterval
-    private var attempts = 0
-    private let maxAttempts: Int // -1 for unlimited
+// // Actor for reconnection logic
+// actor ReconnectionManager {
+//     private var task: Task<Void, Never>?
+//     private let intervalSeconds: TimeInterval
+//     private var attempts = 0
+//     private let maxAttempts: Int // -1 for unlimited
 
-    init(intervalSeconds: TimeInterval = 30, maxAttempts: Int = -1) {
-        self.intervalSeconds = intervalSeconds
-        self.maxAttempts = maxAttempts
-    }
+//     init(intervalSeconds: TimeInterval = 30, maxAttempts: Int = -1) {
+//         self.intervalSeconds = intervalSeconds
+//         self.maxAttempts = maxAttempts
+//     }
 
-    var isRunning: Bool {
-        task != nil && task?.isCancelled == false
-    }
+//     var isRunning: Bool {
+//         task != nil && task?.isCancelled == false
+//     }
 
-    var attemptCount: Int {
-        attempts
-    }
+//     var attemptCount: Int {
+//         attempts
+//     }
 
-    func start(onAttempt: @escaping @Sendable () async -> Bool) {
-        stop()
-        attempts = 0
+//     func start(onAttempt: @escaping @Sendable () async -> Bool) {
+//         stop()
+//         attempts = 0
 
-        task = Task {
-            while !Task.isCancelled {
-                if maxAttempts > 0, attempts >= maxAttempts {
-                    Bridge.log("G1: Max reconnection attempts (\(maxAttempts)) reached")
-                    break
-                }
+//         task = Task {
+//             while !Task.isCancelled {
+//                 if maxAttempts > 0, attempts >= maxAttempts {
+//                     Bridge.log("G2: Max reconnection attempts (\(maxAttempts)) reached")
+//                     break
+//                 }
 
-                attempts += 1
-                Bridge.log("G1: Reconnection attempt \(attempts)")
+//                 attempts += 1
+//                 Bridge.log("G2: Reconnection attempt \(attempts)")
 
-                let shouldStop = await onAttempt()
+//                 let shouldStop = await onAttempt()
 
-                if shouldStop {
-                    Bridge.log("G1: Reconnection successful, stopping")
-                    break
-                }
+//                 if shouldStop {
+//                     Bridge.log("G2: Reconnection successful, stopping")
+//                     break
+//                 }
 
-                do {
-                    try await Task.sleep(nanoseconds: UInt64(intervalSeconds * 1_000_000_000))
-                } catch {
-                    break
-                }
-            }
-        }
-    }
+//                 do {
+//                     try await Task.sleep(nanoseconds: UInt64(intervalSeconds * 1_000_000_000))
+//                 } catch {
+//                     break
+//                 }
+//             }
+//         }
+//     }
 
-    func stop() {
-        task?.cancel()
-        task = nil
-        attempts = 0
-    }
-}
+//     func stop() {
+//         task?.cancel()
+//         task = nil
+//         attempts = 0
+//     }
+// }
 
 @MainActor
-class G1: NSObject, SGCManager {
+class G2: NSObject, SGCManager {
     func sendGalleryMode() {}
 
-    func sendButtonMaxRecordingTime(_: Int) {}
+    func sendButtonMaxRecordingTime() {}
+
+    var glassesAppVersion: String = ""
+
+    var glassesBuildNumber: String = ""
+
+    var glassesDeviceModel: String = ""
+
+    var glassesAndroidVersion: String = ""
+
+    var glassesOtaVersionUrl: String = ""
+
+    var glassesFirmwareVersion: String = ""
+
+    var glassesBtMacAddress: String = ""
+
+    var glassesSerialNumber: String = ""
+
+    var glassesStyle: String = ""
+
+    var glassesColor: String = ""
+
+    var caseBatteryLevel: Int = -1
+
+    var wifiSsid: String = ""
+
+    var wifiConnected: Bool = false
+
+    var wifiLocalIp: String = ""
+
+    var isHotspotEnabled: Bool = false
+
+    var micEnabled: Bool = false
+
+    var hotspotSsid: String = ""
+
+    var hotspotPassword: String = ""
+
+    var hotspotGatewayIp: String = ""
 
     func requestPhoto(
         _: String, appId _: String, size _: String?, webhookUrl _: String?, authToken _: String?,
-        compress _: String?, silent _: Bool
+        compress _: String?
     ) {}
 
     func startRtmpStream(_: [String: Any]) {}
@@ -292,7 +320,7 @@ class G1: NSObject, SGCManager {
 
     func saveBufferVideo(requestId _: String, durationSeconds _: Int) {}
 
-    func startVideoRecording(requestId _: String, save _: Bool, silent _: Bool) {}
+    func startVideoRecording(requestId _: String, save _: Bool) {}
 
     func stopVideoRecording(requestId _: String) {}
 
@@ -302,7 +330,7 @@ class G1: NSObject, SGCManager {
 
     func sendButtonVideoRecordingSettings() {}
 
-    func sendButtonMaxRecordingTime() {}
+    func sendButtonMaxRecordingTime(_: Int) {}
 
     func sendButtonCameraLedSetting() {}
 
@@ -314,28 +342,16 @@ class G1: NSObject, SGCManager {
 
     func sendWifiCredentials(_: String, _: String) {}
 
-    func forgetWifiNetwork(_: String) {}
-
     func sendHotspotState(_: Bool) {}
 
-    func sendUserEmailToGlasses(_: String) {}
-
     func queryGalleryStatus() {}
-
-    func sendOtaStart() {}
-
-    func ping() {}
-
-    func requestVersionInfo() {
-        Bridge.log("G1: requestVersionInfo - not supported on G1")
-    }
 
     var connectionState: String = ConnTypes.DISCONNECTED
 
     func sendJson(_: [String: Any], wakeUp _: Bool, requireAck _: Bool) {}
 
-    var type = DeviceTypes.G1
-    var hasMic = true
+    var type = DeviceTypes.G2
+    let hasMic = true
 
     // TODO: we probably don't need this
     @objc static func requiresMainQueueSetup() -> Bool { return true }
@@ -364,12 +380,15 @@ class G1: NSObject, SGCManager {
     )
     private var writeCompletionCount = 0
 
-    private var _fullyBooted: Bool = false
-    var fullyBooted: Bool {
-        get { GlassesStore.shared.get("glasses", "fullyBooted") as? Bool ?? false }
+    private var _ready: Bool = false
+    var ready: Bool {
+        get { return _ready }
         set {
-            let oldValue = GlassesStore.shared.get("glasses", "fullyBooted") as? Bool ?? false
-            GlassesStore.shared.apply("glasses", "fullyBooted", newValue)
+            let oldValue = _ready
+            _ready = newValue
+            if oldValue != newValue {
+                CoreManager.shared.handleConnectionStateChanged()
+            }
             if !newValue {
                 // Reset battery levels when disconnected
                 batteryLevel = -1
@@ -379,39 +398,17 @@ class G1: NSObject, SGCManager {
         }
     }
 
-    private var connected: Bool {
-        get { GlassesStore.shared.get("glasses", "connected") as? Bool ?? false }
-        set { GlassesStore.shared.apply("glasses", "connected", newValue) }
-    }
-
     var leftReady: Bool = false
     var rightReady: Bool = false
 
     @Published var compressedVoiceData: Data = .init()
     @Published var aiListening: Bool = false
-    @Published var quickNotes: [QuickNote] = []
+    var batteryLevel: Int = -1
     @Published var leftBatteryLevel: Int = -1
     @Published var rightBatteryLevel: Int = -1
-
-    private var batteryLevel: Int {
-        get { GlassesStore.shared.get("glasses", "batteryLevel") as? Int ?? -1 }
-        set { GlassesStore.shared.apply("glasses", "batteryLevel", newValue) }
-    }
-
-    private var caseCharging: Bool {
-        get { GlassesStore.shared.get("glasses", "caseCharging") as? Bool ?? false }
-        set { GlassesStore.shared.apply("glasses", "caseCharging", newValue) }
-    }
-
-    private var caseOpen: Bool {
-        get { GlassesStore.shared.get("glasses", "caseOpen") as? Bool ?? true }
-        set { GlassesStore.shared.apply("glasses", "caseOpen", newValue) }
-    }
-
-    private var caseRemoved: Bool {
-        get { GlassesStore.shared.get("glasses", "caseRemoved") as? Bool ?? true }
-        set { GlassesStore.shared.apply("glasses", "caseRemoved", newValue) }
-    }
+    @Published var caseCharging = false
+    @Published var caseOpen = false
+    @Published var caseRemoved = true
 
     var isDisconnecting = false
 
@@ -459,6 +456,7 @@ class G1: NSObject, SGCManager {
     var lastConnectionTimestamp: Date = .distantPast
     private var leftInitialized: Bool = false
     private var rightInitialized: Bool = false
+    @Published var isHeadUp = false
 
     private var leftGlassUUID: UUID? {
         get {
@@ -529,7 +527,7 @@ class G1: NSObject, SGCManager {
         centralManager?.delegate = nil
         leftPeripheral?.delegate = nil
         rightPeripheral?.delegate = nil
-        Bridge.log("G1: Manager deinitialized")
+        Bridge.log("G2: Manager deinitialized")
     }
 
     func cleanup() {
@@ -629,6 +627,7 @@ class G1: NSObject, SGCManager {
     /// Emits serial number information to React Native
     private func emitSerialNumberInfo(serialNumber: String, style: String, color: String) {
         let eventBody: [String: Any] = [
+            "type": "glasses_serial_number",
             "serialNumber": serialNumber,
             "style": style,
             "color": color,
@@ -638,14 +637,18 @@ class G1: NSObject, SGCManager {
         do {
             let jsonData = try JSONSerialization.data(withJSONObject: eventBody, options: [])
             if let jsonString = String(data: jsonData, encoding: .utf8) {
-                // Bridge.sendTypedMessage("glasses_serial_number", body: eventBody)
-
+                Bridge.sendEvent(withName: "CoreMessageEvent", body: jsonString)
                 Bridge.log(
-                    "G1: 📱 Emitted serial number info: \(serialNumber), Style: \(style), Color: \(color)"
+                    "G2: 📱 Emitted serial number info: \(serialNumber), Style: \(style), Color: \(color)"
                 )
+
+                // Trigger status update to include serial number in status JSON
+                DispatchQueue.main.async {
+                    CoreManager.shared.getStatus()
+                }
             }
         } catch {
-            Bridge.log("G1: Error creating serial number JSON: \(error)")
+            Bridge.log("G2: Error creating serial number JSON: \(error)")
         }
     }
 
@@ -653,25 +656,26 @@ class G1: NSObject, SGCManager {
 
     // this scans for glasses to connect to and only connnects if SEARCH_ID is set
     func startScan() -> Bool {
+        Bridge.log("G2: startScan()")
         if centralManager == nil {
             centralManager = CBCentralManager(
-                delegate: self, queue: G1._bluetoothQueue,
+                delegate: self, queue: G2._bluetoothQueue,
                 options: ["CBCentralManagerOptionShowPowerAlertKey": 0]
             )
         }
 
         isDisconnecting = false // reset intentional disconnect flag
         guard centralManager!.state == .poweredOn else {
-            Bridge.log("G1: Attempting to scan but bluetooth is not powered on.")
+            Bridge.log("G2: Attempting to scan but bluetooth is not powered on.")
             return false
         }
 
         // send our already connected devices to RN:
         let devices = getConnectedDevices()
-        Bridge.log("G1: connnectedDevices.count: (\(devices.count))")
+        Bridge.log("G2: connnectedDevices.count: (\(devices.count))")
         for device in devices {
             if let name = device.name {
-                Bridge.log("G1: Connected to device: \(name)")
+                Bridge.log("G2: Connected to device: \(name)")
                 if name.contains("_L_") && name.contains(DEVICE_SEARCH_ID) {
                     leftPeripheral = device
                     device.delegate = self
@@ -687,7 +691,7 @@ class G1: NSObject, SGCManager {
 
         // First try: Connect by UUID (works in background)
         if connectByUUID() {
-            Bridge.log("G1: 🔄 Found and attempting to connect to stored glasses UUIDs")
+            Bridge.log("G2: 🔄 Found and attempting to connect to stored glasses UUIDs")
             // Wait for connection to complete - no need to scan
             return true
         }
@@ -706,6 +710,7 @@ class G1: NSObject, SGCManager {
     }
 
     func findCompatibleDevices() {
+        Bridge.log("G2: findCompatibleDevices()")
         DEVICE_SEARCH_ID = "NOT_SET"
         startScan()
     }
@@ -715,12 +720,12 @@ class G1: NSObject, SGCManager {
         Bridge.log("RN_connectGlasses()")
 
         if let side = leftPeripheral {
-            Bridge.log("G1: connecting to left glass: \(side.name ?? "(unknown)")")
+            Bridge.log("G2: connecting to left glass: \(side.name ?? "(unknown)")")
             centralManager!.connect(side, options: nil)
         }
 
         if let side = rightPeripheral {
-            Bridge.log("G1: connecting to right glass: \(side.name ?? "(unknown)")")
+            Bridge.log("G2: connecting to right glass: \(side.name ?? "(unknown)")")
             centralManager!.connect(side, options: nil)
         }
 
@@ -730,12 +735,12 @@ class G1: NSObject, SGCManager {
         }
 
         Bridge.log(
-            "G1: found both glasses \(leftPeripheral!.name ?? "(unknown)"), \(rightPeripheral!.name ?? "(unknown)") stopping scan"
+            "G2: found both glasses \(leftPeripheral!.name ?? "(unknown)"), \(rightPeripheral!.name ?? "(unknown)") stopping scan"
         )
         stopScan()
 
         // get battery status:
-        getBatteryStatus()
+        // getBatteryStatus()
         return true
     }
 
@@ -784,34 +789,29 @@ class G1: NSObject, SGCManager {
     }
 
     func sendTextWall(_ text: String) {
-        // // clear the screen with the exit command after 3 seconds if the text is empty or a space:
-        // let powerSavingMode = GlassesStore.shared.get("core", "power_saving_mode") as! Bool
-        // if powerSavingMode && (text.isEmpty || text == " ") {
-        //     CoreManager.shared.sendStateWorkItem?.cancel()
-        //     Bridge.log("Mentra: Clearing display after 3 seconds")
-        //     // if we're clearing the display, after a delay, send a clear command if not cancelled with another
-        //     let workItem = DispatchWorkItem { [weak self] in
-        //         guard let self = self else { return }
-        //         let isHeadUp = GlassesStore.shared.get("core", "is_head_up") as! Bool
-        //         if isHeadUp {
-        //             return
-        //         }
-        //         self.exit()
-        //     }
-        //     CoreManager.shared.sendStateWorkItem = workItem
-        //     CoreManager.shared.sendStateQueue.asyncAfter(deadline: .now() + 3, execute: workItem)
-        // }
+        // clear the screen with the exit command after 3 seconds if the text is empty or a space:
+        if CoreManager.shared.powerSavingMode && text.isEmpty || text == " " {
+            CoreManager.shared.sendStateWorkItem?.cancel()
+            Bridge.log("Mentra: Clearing display after 3 seconds")
+            // if we're clearing the display, after a delay, send a clear command if not cancelled with another
+            let workItem = DispatchWorkItem { [weak self] in
+                guard let self = self else { return }
+                if CoreManager.shared.isHeadUp {
+                    return
+                }
+                self.exit()
+            }
+            CoreManager.shared.sendStateWorkItem = workItem
+            CoreManager.shared.sendStateQueue.asyncAfter(deadline: .now() + 3, execute: workItem)
+        }
 
         let chunks = textHelper.createTextWallChunks(text)
+        // if text.isEmpty {
+        //     clearDisplay()
+        //     return
+        // }
+        // let chunks = textHelper.chunkTextForTransmission(text)
         queueChunks(chunks, sleepAfterMs: 10)
-    }
-
-    func createQuickNoteIfNeeded(_ text: String) async {
-        if quickNotes.count == 0 {
-            await addQuickNote(text)
-        } else {
-            await updateQuickNote(id: quickNotes[0].id, newText: text)
-        }
     }
 
     func sendDoubleTextWall(_ top: String, _ bottom: String) {
@@ -823,108 +823,6 @@ class G1: NSObject, SGCManager {
         //   await createQuickNoteIfNeeded(top + "\n" + bottom)
         //   await sendQuickNotesToGlasses()
         // }
-    }
-
-    private func sendQuickNotesToGlasses() async {
-        //      guard let rightGlass = rightPeripheral,
-        //            let leftGlass = leftPeripheral,
-        //            let rightTxChar = findCharacteristic(uuid: UART_TX_CHAR_UUID, peripheral: rightGlass),
-        //            let leftTxChar = findCharacteristic(uuid: UART_TX_CHAR_UUID, peripheral: leftGlass) else {
-        //          return
-        //      }
-
-        // if !self.isHeadUp {
-        //   return
-        // }
-
-        // First, clear all existing notes
-        //      for noteNumber in 1...2 {
-        let noteNumber = 1
-        var command = Data()
-        command.append(Commands.QUICK_NOTE_ADD.rawValue)
-        command.append(0x10) // Fixed length for delete command
-        command.append(0x00) // Fixed byte
-        command.append(0xE0) // Version byte for delete
-        command.append(contentsOf: [0x03, 0x01, 0x00, 0x01, 0x00]) // Fixed bytes
-        command.append(UInt8(noteNumber)) // Note number to delete
-        command.append(contentsOf: [0x00, 0x01, 0x00, 0x01, 0x00, 0x00]) // Fixed bytes for delete
-
-        //          // Send delete command to both glasses with proper timing
-        //          rightGlass.writeValue(command, for: rightTxChar, type: .withResponse)
-        //          try? await Task.sleep(nanoseconds: 50 * 1_000_000)
-        //          leftGlass.writeValue(command, for: leftTxChar, type: .withResponse)
-        //          try? await Task.sleep(nanoseconds: 150 * 1_000_000)
-
-        // convert command to array of UInt8
-        let commandArray = command.map { $0 }
-        queueChunks([commandArray])
-        //      }
-
-        // Then add all current notes
-        for (index, note) in quickNotes.prefix(4).enumerated() {
-            let slotNumber = index + 1
-
-            guard let textData = note.text.data(using: .utf8),
-                  let nameData = "Quick Note2".data(using: .utf8)
-            else {
-                continue
-            }
-
-            // Calculate payload length
-            let fixedBytes: [UInt8] = [0x03, 0x01, 0x00, 0x01, 0x00]
-            let versionByte = UInt8(
-                Date().timeIntervalSince1970.truncatingRemainder(dividingBy: 256))
-            let payloadLength =
-                1 // Fixed byte
-                + 1 // Version byte
-                + fixedBytes.count // Fixed bytes sequence
-                + 1 // Note number
-                + 1 // Fixed byte 2
-                + 1 // Name length
-                + nameData.count // Name bytes
-                + 1 // Text length
-                + 1 // Fixed byte after text length
-                + textData.count // Text bytes
-                + 2 // Final bytes
-
-            // Build command
-            var command = Data()
-            command.append(Commands.QUICK_NOTE_ADD.rawValue)
-            command.append(UInt8(payloadLength & 0xFF))
-            command.append(0x00) // Fixed byte
-            command.append(versionByte)
-            command.append(contentsOf: fixedBytes)
-            command.append(UInt8(slotNumber))
-            command.append(0x01) // Fixed byte 2
-            command.append(UInt8(nameData.count))
-            command.append(nameData)
-            command.append(UInt8(textData.count))
-            command.append(0x00) // Fixed byte
-            command.append(textData)
-
-            // convert command to array of UInt8
-            let commandArray = command.map { $0 }
-            queueChunks([commandArray])
-        }
-    }
-
-    func addQuickNote(_ text: String) async {
-        let note = QuickNote(id: UUID(), text: text, timestamp: Date())
-        quickNotes.append(note)
-    }
-
-    func updateQuickNote(id: UUID, newText: String) async {
-        if let index = quickNotes.firstIndex(where: { $0.id == id }) {
-            quickNotes[index] = QuickNote(id: id, text: newText, timestamp: Date())
-        }
-    }
-
-    func removeQuickNote(id: UUID) async {
-        quickNotes.removeAll { $0.id == id }
-    }
-
-    func clearQuickNotes() async {
-        quickNotes.removeAll()
     }
 
     // only set to true when we receive init_ack response from the glasses
@@ -946,23 +844,22 @@ class G1: NSObject, SGCManager {
         }
 
         //         CoreCommsService.log("g1Ready set to \(leftReady) \(rightReady) \(leftReady && rightReady) left: \(left), right: \(right)")
-        fullyBooted = leftReady && rightReady
-        connected = leftReady && rightReady
-        if fullyBooted {
+        ready = leftReady && rightReady
+        if ready {
             stopReconnectionTimer()
         }
     }
 
     func stopScan() {
         centralManager!.stopScan()
-        Bridge.log("G1: Stopped scanning for devices")
+        Bridge.log("G2: Stopped scanning for devices")
     }
 
     func getSerialNumberInfo() -> [String: Any] {
         return [
-            "serialNumber": serialNumber ?? "",
-            "style": style ?? "",
-            "color": color ?? "",
+            "serialNumber": glassesSerialNumber ?? "",
+            "style": glassesStyle ?? "",
+            "color": glassesColor ?? "",
         ]
     }
 
@@ -991,7 +888,7 @@ class G1: NSObject, SGCManager {
         leftPeripheral = nil
         rightPeripheral = nil
         setReadiness(left: false, right: false)
-        Bridge.log("G1: Disconnected from glasses")
+        Bridge.log("G2: Disconnected from glasses")
     }
 
     private func attemptSend(cmd: BufferedCommand, side: String) async {
@@ -1002,7 +899,7 @@ class G1: NSObject, SGCManager {
 
         while attempts < maxAttempts, !success {
             if attempts > 0 {
-                Bridge.log("G1: trying again to send to:\(side): \(attempts)")
+                Bridge.log("G2: trying again to send to:\(side): \(attempts)")
             }
             let data = Data(chunks[0])
             // CoreCommsService.log("SEND (\(side)) \(data.hexEncodedString())")
@@ -1048,7 +945,7 @@ class G1: NSObject, SGCManager {
             //        sequenceNumber = Int(lastChunk[1])
             //      }
 
-            //      CoreCommsService.log("G1: SENDING with sequenceNumber: \(sequenceNumber)")
+            //      CoreCommsService.log("G2: SENDING with sequenceNumber: \(sequenceNumber)")
 
             // for heartbeats, don't retry and assume success since the glasses don't respond:
             if lastChunk[0] == Commands.BLE_REQ_HEARTBEAT.rawValue {
@@ -1062,14 +959,14 @@ class G1: NSObject, SGCManager {
 
             // CoreCommsService.log("command success: \(success)")
             //      if (!success) {
-            //        CoreCommsService.log("G1: timed out waiting for \(s)")
+            //        CoreCommsService.log("G2: timed out waiting for \(s)")
             //      }
             //      await sendCommandToSideWithoutResponse(lastChunk, side: side)
             //      success = true
 
             attempts += 1
             if !success, attempts >= maxAttempts {
-                Bridge.log("G1: ❌ Command timed out!")
+                Bridge.log("G2: ❌ Command timed out!")
                 startReconnectionTimer()
                 break
             }
@@ -1084,7 +981,7 @@ class G1: NSObject, SGCManager {
     // Process a single number with timeouts
     private func processCommand(_ command: BufferedCommand) async {
         if command.chunks.isEmpty {
-            Bridge.log("G1: @@@ chunks was empty! @@@")
+            Bridge.log("G2: @@@ chunks was empty! @@@")
             return
         }
 
@@ -1147,17 +1044,18 @@ class G1: NSObject, SGCManager {
         Task {
             let wasWaiting = await ackManager.receiveAck(key: key)
             if wasWaiting {
-                // Bridge.log("G1: ✅ ACK received for \(key)")
+                // Bridge.log("G2: ✅ ACK received for \(key)")
             }
         }
     }
 
     private func handleNotification(from peripheral: CBPeripheral, data: Data) {
+        Bridge.log("G2: handleNotification()")
         guard let command = data.first else { return } // ensure the data isn't empty
 
         let side = peripheral == leftPeripheral ? "L" : "R"
         let s = peripheral == leftPeripheral ? "L" : "R"
-        // Bridge.log("G1: RECV (\(s)) \(data.hexEncodedString())")
+        // Bridge.log("G2: RECV (\(s)) \(data.hexEncodedString())")
 
         switch Commands(rawValue: command) {
         case .BLE_REQ_INIT:
@@ -1197,7 +1095,7 @@ class G1: NSObject, SGCManager {
             // skip the first 2 bytes:
             let lc3Data = data.subdata(in: 2 ..< data.count)
             CoreManager.shared.handleGlassesMicData(lc3Data)
-        //                CoreCommsService.log("G1: Got voice data: " + String(data.count))
+        //                CoreCommsService.log("G2: Got voice data: " + String(data.count))
         case .UNK_1:
             handleAck(from: peripheral, success: true)
         case .UNK_2:
@@ -1222,17 +1120,17 @@ class G1: NSObject, SGCManager {
             let rawVoltage = (voltageHigh << 8) | voltageLow
             let voltage = rawVoltage / 10 // Scale down by 10 to get actual millivolts
 
-            //      CoreCommsService.log("G1: Raw battery data - Battery: \(batteryPercent)%, Voltage: \(voltage)mV, Flags: 0x\(String(format: "%02X", flags))")
+            //      CoreCommsService.log("G2: Raw battery data - Battery: \(batteryPercent)%, Voltage: \(voltage)mV, Flags: 0x\(String(format: "%02X", flags))")
 
             // if left, update left battery level, if right, update right battery level
             if peripheral == leftPeripheral {
                 if leftBatteryLevel != batteryPercent {
-                    Bridge.log("G1: Left glass battery: \(batteryPercent)%")
+                    Bridge.log("G2: Left glass battery: \(batteryPercent)%")
                     leftBatteryLevel = batteryPercent
                 }
             } else if peripheral == rightPeripheral {
                 if rightBatteryLevel != batteryPercent {
-                    Bridge.log("G1: Right glass battery: \(batteryPercent)%")
+                    Bridge.log("G2: Right glass battery: \(batteryPercent)%")
                     rightBatteryLevel = batteryPercent
                 }
             }
@@ -1252,66 +1150,73 @@ class G1: NSObject, SGCManager {
             let order = data[1]
             switch DeviceOrders(rawValue: order) {
             case .HEAD_UP:
-                Bridge.log("G1: HEAD_UP")
-                GlassesStore.shared.apply("glasses", "headUp", true)
+                Bridge.log("G2: HEAD_UP")
+                isHeadUp = true
+                CoreManager.shared.updateHeadUp(isHeadUp)
             case .HEAD_UP2:
-                Bridge.log("G1: HEAD_UP2")
-                GlassesStore.shared.apply("glasses", "headUp", true)
+                Bridge.log("G2: HEAD_UP2")
+                isHeadUp = true
+                CoreManager.shared.updateHeadUp(isHeadUp)
             // case .HEAD_DOWN:
             //   CoreCommsService.log("HEAD_DOWN")
+            //   isHeadUp = false
             //   break
             case .HEAD_DOWN2:
-                Bridge.log("G1: HEAD_DOWN2")
-                GlassesStore.shared.apply("glasses", "headUp", false)
+                Bridge.log("G2: HEAD_DOWN2")
+                isHeadUp = false
+                CoreManager.shared.updateHeadUp(isHeadUp)
             case .ACTIVATED:
-                Bridge.log("G1: ACTIVATED")
+                Bridge.log("G2: ACTIVATED")
             case .SILENCED:
-                Bridge.log("G1: SILENCED")
+                Bridge.log("G2: SILENCED")
             case .DISPLAY_READY:
-                Bridge.log("G1: DISPLAY_READY")
+                Bridge.log("G2: DISPLAY_READY")
             //        sendInitCommand(to: peripheral)// experimental
             case .TRIGGER_FOR_AI:
-                Bridge.log("G1: TRIGGER AI")
+                Bridge.log("G2: TRIGGER AI")
             case .TRIGGER_FOR_STOP_RECORDING:
-                Bridge.log("G1: STOP RECORDING")
+                Bridge.log("G2: STOP RECORDING")
             case .TRIGGER_CHANGE_PAGE:
-                Bridge.log("G1: TRIGGER_CHANGE_PAGE")
+                Bridge.log("G2: TRIGGER_CHANGE_PAGE")
             case .CASE_REMOVED:
-                Bridge.log("G1: REMOVED FROM CASE")
+                Bridge.log("G2: REMOVED FROM CASE")
                 caseRemoved = true
+                CoreManager.shared.getStatus()
             case .CASE_REMOVED2:
-                Bridge.log("G1: REMOVED FROM CASE2")
+                Bridge.log("G2: REMOVED FROM CASE2")
                 caseRemoved = true
+                CoreManager.shared.getStatus()
             case .CASE_OPEN:
                 caseOpen = true
                 caseRemoved = false
-                Bridge.log("G1: CASE OPEN")
+                Bridge.log("G2: CASE OPEN")
+                CoreManager.shared.getStatus()
             case .CASE_CLOSED:
                 caseOpen = false
                 caseRemoved = false
-                Bridge.log("G1: CASE CLOSED")
+                Bridge.log("G2: CASE CLOSED")
+                CoreManager.shared.getStatus()
             case .CASE_CHARGING_STATUS:
                 guard data.count >= 3 else { break }
                 let status = data[2]
                 if status == 0x01 {
                     caseCharging = true
-                    Bridge.log("G1: CASE CHARGING")
+                    Bridge.log("G2: CASE CHARGING")
                 } else {
                     caseCharging = false
-                    Bridge.log("G1: CASE NOT CHARGING")
+                    Bridge.log("G2: CASE NOT CHARGING")
                 }
             case .CASE_CHARGE_INFO:
-                Bridge.log("G1: CASE CHARGE INFO")
+                Bridge.log("G2: CASE CHARGE INFO")
                 guard data.count >= 3 else { break }
                 if Int(data[2]) != -1 {
-                    let newCaseBatteryLevel = Int(data[2])
-                    GlassesStore.shared.apply("glasses", "caseBatteryLevel", newCaseBatteryLevel)
-                    Bridge.log("G1: Case battery level: \(newCaseBatteryLevel)%")
+                    caseBatteryLevel = Int(data[2])
+                    Bridge.log("G2: Case battery level: \(caseBatteryLevel)%")
                 } else {
-                    Bridge.log("G1: Case battery level was -1")
+                    Bridge.log("G2: Case battery level was -1")
                 }
             case .DOUBLE_TAP:
-                Bridge.log("G1: DOUBLE TAP / display turned off")
+                Bridge.log("G2: DOUBLE TAP / display turned off")
             //        Task {
             ////          RN_sendText("DOUBLE TAP DETECTED")
             ////          queueChunks([[UInt8(0x00), UInt8(0x01)]])
@@ -1320,18 +1225,18 @@ class G1: NSObject, SGCManager {
             //          clearState()
             //        }
             default:
-                //                 Core.log("G1: Received device order: \(data.subdata(in: 1..<data.count).hexEncodedString())")
+                //                 Core.log("G2: Received device order: \(data.subdata(in: 1..<data.count).hexEncodedString())")
                 break
             }
         default:
-            Bridge.log("G1: received from G1(not handled): \(data.hexEncodedString())")
+            Bridge.log("G2: received from G1(not handled): \(data.hexEncodedString())")
         }
     }
 }
 
 // MARK: Commands
 
-extension G1 {
+extension G2 {
     // Handle whitelist functionality
     func getWhitelistChunks() -> [[UInt8]] {
         // Define the hardcoded whitelist JSON
@@ -1341,7 +1246,7 @@ extension G1 {
         ]
         let whitelistJson = createWhitelistJson(apps: apps)
 
-        Bridge.log("G1: Creating chunks for hardcoded whitelist: \(whitelistJson)")
+        Bridge.log("G2: Creating chunks for hardcoded whitelist: \(whitelistJson)")
 
         // Convert JSON to bytes and split into chunks
         return createWhitelistChunks(json: whitelistJson)
@@ -1379,7 +1284,7 @@ extension G1 {
                 return "{}"
             }
         } catch {
-            Bridge.log("G1: Error creating whitelist JSON: \(error.localizedDescription)")
+            Bridge.log("G2: Error creating whitelist JSON: \(error.localizedDescription)")
             return "{}"
         }
     }
@@ -1392,7 +1297,7 @@ extension G1 {
         let totalChunks = Int(ceil(Double(jsonData.count) / Double(MAX_CHUNK_SIZE)))
         var chunks: [Data] = []
 
-        Bridge.log("G1: jsonData.count = \(jsonData.count), totalChunks = \(totalChunks)")
+        Bridge.log("G2: jsonData.count = \(jsonData.count), totalChunks = \(totalChunks)")
 
         for i in 0 ..< totalChunks {
             let start = i * MAX_CHUNK_SIZE
@@ -1451,14 +1356,6 @@ extension G1 {
         queueChunks([exitDataArray])
     }
 
-    func sendShutdown() {
-        Bridge.log("sendShutdown - not supported on G1")
-    }
-
-    func sendReboot() {
-        Bridge.log("sendReboot - not supported on G1")
-    }
-
     func sendRgbLedControl(
         requestId: String, packageName _: String?, action _: String, color _: String?,
         ontime _: Int, offtime _: Int, count _: Int
@@ -1473,11 +1370,11 @@ extension G1 {
     private func handleInitResponse(from peripheral: CBPeripheral, success: Bool) {
         if peripheral == leftPeripheral {
             leftInitialized = success
-            // CoreCommsService.log("G1: Left arm initialized: \(success)")
+            // CoreCommsService.log("G2: Left arm initialized: \(success)")
             setReadiness(left: true, right: nil)
         } else if peripheral == rightPeripheral {
             rightInitialized = success
-            // CoreCommsService.log("G1: Right arm initialized: \(success)")
+            // CoreCommsService.log("G2: Right arm initialized: \(success)")
             setReadiness(left: nil, right: true)
         }
 
@@ -1498,7 +1395,7 @@ extension G1 {
 
         var heartbeatArray = heartbeatData.map { UInt8($0) }
 
-        if fullyBooted {
+        if ready {
             queueChunks([heartbeatArray])
         }
 
@@ -1517,8 +1414,8 @@ extension G1 {
     func sendCommandToSide(_ command: [UInt8], side: String) async {
         // Convert to Data
         let commandData = Data(command)
-        //    CoreCommsService.log("G1: Sending command to glasses: \(paddedCommand.map { String(format: "%02X", $0) }.joined(separator: " "))")
-        // CoreCommsService.log("G1: SEND (\(side)) \(commandData.hexEncodedString())")
+        //    CoreCommsService.log("G2: Sending command to glasses: \(paddedCommand.map { String(format: "%02X", $0) }.joined(separator: " "))")
+        // CoreCommsService.log("G2: SEND (\(side)) \(commandData.hexEncodedString())")
 
         if side == "L" {
             // send to left
@@ -1570,7 +1467,7 @@ extension G1 {
         }
 
         guard let peripheral, let characteristic else {
-            Bridge.log("G1: ⚠️ peripheral/characteristic not found, resuming immediately")
+            Bridge.log("G2: ⚠️ peripheral/characteristic not found, resuming immediately")
             return false
         }
 
@@ -1581,7 +1478,7 @@ extension G1 {
             peripheral.writeValue(commandData, for: characteristic, type: .withResponse)
         } onTimeout: {
             let elapsed = Date().timeIntervalSince(startTime) * 1000
-            Bridge.log("G1: ⚠️ ACK timeout for \(key) after \(String(format: "%.0f", elapsed))ms")
+            Bridge.log("G2: ⚠️ ACK timeout for \(key) after \(String(format: "%.0f", elapsed))ms")
         }
     }
 
@@ -1631,7 +1528,7 @@ extension G1 {
     }
 
     func sendWhitelist() {
-        Bridge.log("G1: sendWhitelist()")
+        Bridge.log("G2: sendWhitelist()")
         let whitelistChunks = getWhitelistChunks()
         queueChunks(whitelistChunks, sendLeft: true, sendRight: true, sleepAfterMs: 100)
     }
@@ -1653,7 +1550,7 @@ extension G1 {
     }
 
     func setBrightnessRaw(_ level: UInt8, autoMode: Bool = false) async -> Bool {
-        Bridge.log("G1: setBrightness()")
+        Bridge.log("G2: setBrightness()")
         // Ensure level is between 0x00 and 0x29 (0-41)
         var lvl: UInt8 = level
         if level > 0x29 {
@@ -1697,13 +1594,13 @@ extension G1 {
     }
 
     func setHeadUpAngleRaw(_ angle: UInt8) async {
-        Bridge.log("G1: setHeadUpAngle()")
+        Bridge.log("G2: setHeadUpAngle()")
         let command: [UInt8] = [Commands.HEAD_UP_ANGLE.rawValue, angle, 0x01]
         queueChunks([command])
     }
 
     func getBatteryStatus() {
-        Bridge.log("G1: getBatteryStatus()")
+        Bridge.log("G2: getBatteryStatus()")
         let command: [UInt8] = [Commands.BLE_REQ_BATTERY.rawValue, 0x01]
         queueChunks([command])
     }
@@ -1763,8 +1660,8 @@ extension G1 {
     }
 
     func setMicEnabled(_ enabled: Bool) {
-        Bridge.log("G1: setMicEnabled() \(enabled)")
-        GlassesStore.shared.apply("glasses", "micEnabled", enabled)
+        Bridge.log("G2: setMicEnabled() \(enabled)")
+        micEnabled = enabled
         var micOnData = Data()
         micOnData.append(Commands.BLE_REQ_MIC_ON.rawValue)
         if enabled {
@@ -1790,19 +1687,19 @@ extension G1 {
 
     func displayBitmap(base64ImageData: String) async -> Bool {
         guard let bmpData = Data(base64Encoded: base64ImageData) else {
-            Bridge.log("G1: Failed to decode base64 image data")
+            Bridge.log("G2: Failed to decode base64 image data")
             return false
         }
 
-        Bridge.log("G1: ✅ Successfully decoded base64 image data to \(bmpData.count) bytes")
+        Bridge.log("G2: ✅ Successfully decoded base64 image data to \(bmpData.count) bytes")
         let invertedBmpData = invertBmpPixels(bmpData)
         let result = await sendBmp(bmpData: invertedBmpData)
-        Bridge.log("G1: 🖼️ Single frame: Transmission \(result ? "SUCCESS" : "FAILED")")
+        Bridge.log("G2: 🖼️ Single frame: Transmission \(result ? "SUCCESS" : "FAILED")")
         return result
     }
 
     func clearDisplay() {
-        Bridge.log("G1: clearDisplay() - Using space")
+        Bridge.log("G2: clearDisplay() - Using space")
         sendTextWall(" ")
     }
 
@@ -1832,7 +1729,7 @@ extension G1 {
 
     private func invertBmpPixels(_ bmpData: Data) -> Data {
         guard bmpData.count > 62 else {
-            Bridge.log("G1: BMP data too small to contain pixel data")
+            Bridge.log("G2: BMP data too small to contain pixel data")
             return bmpData
         }
 
@@ -1849,7 +1746,7 @@ extension G1 {
             invertedData.append(invertedByte)
         }
 
-        Bridge.log("G1: Inverted BMP pixels: \(pixelData.count) bytes processed")
+        Bridge.log("G2: Inverted BMP pixels: \(pixelData.count) bytes processed")
         return invertedData
     }
 
@@ -1864,7 +1761,7 @@ extension G1 {
         lastFrameTime = currentTime
 
         Bridge.log(
-            "G1: 🎬 Frame \(frameSequence): \(String(format: "%.0f", timeSinceLastFrame * 1000))ms since last frame"
+            "G2: 🎬 Frame \(frameSequence): \(String(format: "%.0f", timeSinceLastFrame * 1000))ms since last frame"
         )
 
         // MentraOS constants - exact match
@@ -1877,7 +1774,7 @@ extension G1 {
         //    if bmpData.count > pixelDataStart + 50 {
         //      let beforeChunkSample = Array(bmpData[pixelDataStart..<(pixelDataStart + 20)])
         //      let beforeChunkHex = beforeChunkSample.map { String(format: "%02X", $0) }.joined(separator: " ")
-        //      CoreCommsService.log("G1: 🔍 Before chunking - pixel data sample (bytes 62-82): \(beforeChunkHex)")
+        //      CoreCommsService.log("G2: 🔍 Before chunking - pixel data sample (bytes 62-82): \(beforeChunkHex)")
         //    }
 
         // Create chunks exactly like MentraOS
@@ -1891,14 +1788,14 @@ extension G1 {
             if index < 600 { // First 3 chunks (194 * 3 = 582)
                 let chunkSample = Array(singlePack.prefix(20))
                 let chunkHex = chunkSample.map { String(format: "%02X", $0) }.joined(separator: " ")
-                Bridge.log("G1: 🔍 Chunk creation - index \(index), sample: \(chunkHex)")
+                Bridge.log("G2: 🔍 Chunk creation - index \(index), sample: \(chunkHex)")
             }
 
             multiPacks.append(singlePack)
             index += packLen
         }
 
-        Bridge.log("G1: Created \(multiPacks.count) packs from BMP data (MentraOS format)")
+        Bridge.log("G2: Created \(multiPacks.count) packs from BMP data (MentraOS format)")
 
         var chunks: [[UInt8]] = []
 
@@ -2054,7 +1951,7 @@ extension G1 {
         crcCommand.append(UInt8((crcValue >> 8) & 0xFF))
         crcCommand.append(UInt8(crcValue & 0xFF))
 
-        Bridge.log("G1: Sending CRC command, CRC value: \(String(format: "%08x", crcValue))")
+        Bridge.log("G2: Sending CRC command, CRC value: \(String(format: "%08x", crcValue))")
 
         // Send CRC with retry
         for attempt in 0 ..< maxAttempts {
@@ -2064,18 +1961,18 @@ extension G1 {
             try? await Task.sleep(nanoseconds: UInt64(timeoutMs * 1_000_000))
 
             // For now, assume success (in a real implementation, you'd check for ACK)
-            Bridge.log("G1: CRC command sent successfully")
+            Bridge.log("G2: CRC command sent successfully")
             return true
         }
-        // Bridge.log("G1: CRC command failed, attempt \(attempt + 1)")
-        Bridge.log("G1: Failed to send CRC command after \(maxAttempts) attempts")
+        // Bridge.log("G2: CRC command failed, attempt \(attempt + 1)")
+        Bridge.log("G2: Failed to send CRC command after \(maxAttempts) attempts")
         return false
     }
 }
 
 // MARK: BLE Stubs
 
-extension G1: CBCentralManagerDelegate, CBPeripheralDelegate {
+extension G2: CBCentralManagerDelegate, CBPeripheralDelegate {
     func getWriteCharacteristic(for peripheral: CBPeripheral?) -> CBCharacteristic? {
         guard let peripheral = peripheral else { return nil }
         for service in peripheral.services ?? [] {
@@ -2092,7 +1989,7 @@ extension G1: CBCentralManagerDelegate, CBPeripheralDelegate {
 
     func extractIdNumber(_ string: String) -> Int? {
         // Pattern to match "G1_" followed by digits, followed by "_"
-        let pattern = "G1_(\\d+)_"
+        let pattern = "G2_(\\d+)_"
 
         // Create a regular expression
         guard let regex = try? NSRegularExpression(pattern: pattern, options: []) else {
@@ -2121,9 +2018,9 @@ extension G1: CBCentralManagerDelegate, CBPeripheralDelegate {
                 Bridge.log("Failed to extract ID number from device name: \(name)")
                 return
             }
-            let deviceModel = "Even Realities G1"
+            let modelName = "Even Realities G1"
             let dName = "\(deviceName)"
-            Bridge.sendDiscoveredDevice(deviceModel, dName)
+            Bridge.sendDiscoveredDevice(modelName, dName)
         } else {
             Bridge.log("Unknown device type: \(name)")
         }
@@ -2135,9 +2032,9 @@ extension G1: CBCentralManagerDelegate, CBPeripheralDelegate {
         rssi _: NSNumber
     ) {
         guard let name = peripheral.name else { return }
-        guard name.contains("Even G1") else { return }
+        guard name.contains("Even G2") else { return }
 
-        Bridge.log("G1: found peripheral: \(name) - SEARCH_ID: \(DEVICE_SEARCH_ID)")
+        Bridge.log("G2: found peripheral: \(name) - SEARCH_ID: \(DEVICE_SEARCH_ID)")
 
         // Only process serial number for devices that match our search ID
         if name.contains(DEVICE_SEARCH_ID) {
@@ -2145,33 +2042,36 @@ extension G1: CBCentralManagerDelegate, CBPeripheralDelegate {
             if let manufacturerData = advertisementData[CBAdvertisementDataManufacturerDataKey]
                 as? Data
             {
-                Bridge.log("G1: 📱 Found manufacturer data: \(manufacturerData.hexEncodedString())")
+                Bridge.log("G2: 📱 Found manufacturer data: \(manufacturerData.hexEncodedString())")
 
                 // Try to decode serial number from manufacturer data
                 if let decodedSerial = decodeSerialFromManufacturerData(manufacturerData) {
-                    Bridge.log("G1: 📱 Decoded serial number: \(decodedSerial)")
+                    Bridge.log("G2: 📱 Decoded serial number: \(decodedSerial)")
 
                     // Decode style and color from serial number
-                    let (decodedStyle, decodedColor) = G1.decodeEvenG1SerialNumber(decodedSerial)
-                    Bridge.log("G1: 📱 Style: \(style), Color: \(color)")
+                    let (style, color) = G1.decodeEvenG1SerialNumber(decodedSerial)
+                    Bridge.log("G2: 📱 Style: \(style), Color: \(color)")
 
                     // Store the information
-                    GlassesStore.shared.apply("glasses", "serialNumber", decodedSerial)
-                    GlassesStore.shared.apply("glasses", "style", decodedStyle)
-                    GlassesStore.shared.apply("glasses", "color", decodedColor)
+                    glassesSerialNumber = decodedSerial
+                    glassesStyle = style
+                    glassesColor = color
+
+                    // Emit the serial number information
+                    emitSerialNumberInfo(serialNumber: decodedSerial, style: style, color: color)
                 } else {
-                    Bridge.log("G1: 📱 Could not decode serial number from manufacturer data")
+                    Bridge.log("G2: 📱 Could not decode serial number from manufacturer data")
                 }
             } else {
-                Bridge.log("G1: 📱 No manufacturer data found in advertisement")
+                Bridge.log("G2: 📱 No manufacturer data found in advertisement")
             }
         }
 
         if name.contains("_L_"), name.contains(DEVICE_SEARCH_ID) {
-            Bridge.log("G1: Found left arm: \(name)")
+            Bridge.log("G2: Found left arm: \(name)")
             leftPeripheral = peripheral
         } else if name.contains("_R_"), name.contains(DEVICE_SEARCH_ID) {
-            Bridge.log("G1: Found right arm: \(name)")
+            Bridge.log("G2: Found right arm: \(name)")
             rightPeripheral = peripheral
         }
 
@@ -2191,7 +2091,7 @@ extension G1: CBCentralManagerDelegate, CBPeripheralDelegate {
         DispatchQueue.main.async { [weak self] in
             guard let self = self else { return }
 
-            Bridge.log("G1: device connected: \(peripheral.name ?? "Unknown")")
+            Bridge.log("G2: device connected: \(peripheral.name ?? "Unknown")")
 
             if peripheral == self.leftPeripheral || (peripheral.name?.contains("_L_") ?? false) {
                 self.leftGlassUUID = peripheral.identifier
@@ -2204,7 +2104,7 @@ extension G1: CBCentralManagerDelegate, CBPeripheralDelegate {
             }
 
             self.lastConnectionTimestamp = Date()
-            Bridge.log("G1: Connected to peripheral: \(peripheral.name ?? "Unknown")")
+            Bridge.log("G2: Connected to peripheral: \(peripheral.name ?? "Unknown")")
         }
     }
 
@@ -2214,7 +2114,7 @@ extension G1: CBCentralManagerDelegate, CBPeripheralDelegate {
         let side =
             peripheral == leftPeripheral
                 ? "LEFT" : peripheral == rightPeripheral ? "RIGHT" : "unknown"
-        Bridge.log("G1: @@@@@ \(side) PERIPHERAL DISCONNECTED @@@@@")
+        Bridge.log("G2: @@@@@ \(side) PERIPHERAL DISCONNECTED @@@@@")
 
         // only reconnect if we're not intentionally disconnecting:
         if isDisconnecting {
@@ -2236,12 +2136,12 @@ extension G1: CBCentralManagerDelegate, CBPeripheralDelegate {
                 guard let self else { return false }
 
                 // Check if already connected
-                if await MainActor.run(body: { self.fullyBooted }) {
-                    Bridge.log("G1: Already connected, stopping reconnection")
+                if await MainActor.run(body: { self.ready }) {
+                    Bridge.log("G2: Already connected, stopping reconnection")
                     return true // Returning true stops the reconnection loop
                 }
 
-                Bridge.log("G1: Attempting reconnection...")
+                Bridge.log("G2: Attempting reconnection...")
 
                 // Attempt to reconnect
                 await MainActor.run {
@@ -2264,20 +2164,20 @@ extension G1: CBCentralManagerDelegate, CBPeripheralDelegate {
     func connectByUUID() -> Bool {
         // don't do this if we don't have a search id set:
         if DEVICE_SEARCH_ID == "NOT_SET" || DEVICE_SEARCH_ID.isEmpty {
-            Bridge.log("G1: 🔵 No DEVICE_SEARCH_ID set, skipping connect by UUID")
+            Bridge.log("G2: 🔵 No DEVICE_SEARCH_ID set, skipping connect by UUID")
             return false
         }
 
-        Bridge.log("G1: 🔵 Attempting to connect by UUID")
+        Bridge.log("G2: 🔵 Attempting to connect by UUID")
         var foundAny = false
 
         if let leftUUID = leftGlassUUID {
-            Bridge.log("G1: 🔵 Found stored left glass UUID: \(leftUUID.uuidString)")
+            Bridge.log("G2: 🔵 Found stored left glass UUID: \(leftUUID.uuidString)")
             let leftDevices = centralManager!.retrievePeripherals(withIdentifiers: [leftUUID])
 
             if let leftDevice = leftDevices.first {
                 Bridge.log(
-                    "G1: 🔵 Successfully retrieved left glass: \(leftDevice.name ?? "Unknown")")
+                    "G2: 🔵 Successfully retrieved left glass: \(leftDevice.name ?? "Unknown")")
                 foundAny = true
                 leftPeripheral = leftDevice
                 leftDevice.delegate = self
@@ -2292,12 +2192,12 @@ extension G1: CBCentralManagerDelegate, CBPeripheralDelegate {
         }
 
         if let rightUUID = rightGlassUUID {
-            Bridge.log("G1: 🔵 Found stored right glass UUID: \(rightUUID.uuidString)")
+            Bridge.log("G2: 🔵 Found stored right glass UUID: \(rightUUID.uuidString)")
             let rightDevices = centralManager!.retrievePeripherals(withIdentifiers: [rightUUID])
 
             if let rightDevice = rightDevices.first {
                 Bridge.log(
-                    "G1: 🔵 Successfully retrieved right glass: \(rightDevice.name ?? "Unknown")")
+                    "G2: 🔵 Successfully retrieved right glass: \(rightDevice.name ?? "Unknown")")
                 foundAny = true
                 rightPeripheral = rightDevice
                 rightDevice.delegate = self
@@ -2355,10 +2255,10 @@ extension G1: CBCentralManagerDelegate, CBPeripheralDelegate {
 
             // // Mark the services as ready
             // if peripheral == leftPeripheral {
-            //     Bridge.log("G1: Left glass services discovered and ready")
+            //     Bridge.log("G2: Left glass services discovered and ready")
             //     setReadiness(left: true, right: nil)
             // } else if peripheral == rightPeripheral {
-            //     Bridge.log("G1: Right glass services discovered and ready")
+            //     Bridge.log("G2: Right glass services discovered and ready")
             //     setReadiness(left: nil, right: true)
             // }
         }
@@ -2370,14 +2270,14 @@ extension G1: CBCentralManagerDelegate, CBPeripheralDelegate {
             guard let self = self else { return }
 
             if central.state == .poweredOn {
-                Bridge.log("G1: Bluetooth was powered on")
+                Bridge.log("G2: Bluetooth was powered on")
                 self.setReadiness(left: false, right: false)
 
                 if self.DEVICE_SEARCH_ID != "NOT_SET", !self.DEVICE_SEARCH_ID.isEmpty {
                     self.startScan()
                 }
             } else {
-                Bridge.log("G1: Bluetooth was turned off.")
+                Bridge.log("G2: Bluetooth was turned off.")
             }
         }
     }
@@ -2388,12 +2288,12 @@ extension G1: CBCentralManagerDelegate, CBPeripheralDelegate {
         error: Error?
     ) {
         if let error = error {
-            Bridge.log("G1: Error updating value for characteristic: \(error.localizedDescription)")
+            Bridge.log("G2: Error updating value for characteristic: \(error.localizedDescription)")
             return
         }
 
         guard let data = characteristic.value else {
-            Bridge.log("G1: Characteristic value is nil.")
+            Bridge.log("G2: Characteristic value is nil.")
             return
         }
 
@@ -2410,7 +2310,7 @@ extension G1: CBCentralManagerDelegate, CBPeripheralDelegate {
 
             if let error = error {
                 Bridge.log(
-                    "G1: ❌ BLE write error for \(peripheral.name ?? "unknown"): \(error.localizedDescription)"
+                    "G2: ❌ BLE write error for \(peripheral.name ?? "unknown"): \(error.localizedDescription)"
                 )
             } else {
                 self.writeCompletionCount += 1

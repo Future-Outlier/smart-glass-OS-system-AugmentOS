@@ -24,6 +24,7 @@ export const getGlassesImage = (glasses: string | null) => {
     case "Even Realities G1":
     case "evenrealities_g1":
     case "g1":
+    case "Even Realities G2":
       return require("../../assets/glasses/g1.png")
     case "virtual-wearable":
     case "Audio Wearable":
