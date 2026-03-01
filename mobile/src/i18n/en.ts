@@ -125,6 +125,10 @@ const en = {
       step1: "Disconnect your G1 from within the Even Realities app, or uninstall the Even Realities app",
       step2: "Place your G1 in the charging case with the lid open.",
     },
+    G2: {
+      step1: "Disconnect your G2 from within the Even Realities app, or uninstall the Even Realities app",
+      step2: "Place your G2 in the charging case with the lid open.",
+    },
     LIVE: {
       step1: "Make sure your Mentra Live is fully charged and turned on.",
       step2: "Check that your Mentra Live is in pairing mode.",

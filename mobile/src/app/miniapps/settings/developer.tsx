@@ -177,9 +177,9 @@ export default function DeveloperSettingsScreen() {
             />
           </Group>
 
-          {/* G1 Specific Settings - Only show when connected to Even Realities G1 */}
-          {defaultWearable?.includes(DeviceTypes.G1) && (
-            <Group title="G1 Specific Settings">
+          {/* Even Realities Specific Settings - Only show when connected to G1 or G2 */}
+          {(defaultWearable?.includes(DeviceTypes.G1) || defaultWearable?.includes(DeviceTypes.G2)) && (
+            <Group title="Even Realities Settings">
               <ToggleSetting
                 label={translate("settings:powerSavingMode")}
                 subtitle={translate("settings:powerSavingModeSubtitle")}

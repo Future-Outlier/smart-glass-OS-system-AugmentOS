@@ -11,6 +11,7 @@ struct DeviceTypes {
     static let ALL = [
         SIMULATED,
         G1,
+        G2,
         MACH1,
         LIVE,
         Z100,

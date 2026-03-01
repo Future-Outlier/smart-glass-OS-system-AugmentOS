@@ -367,20 +367,50 @@ export default function PairingPrepScreen() {
     )
   }
 
-  // show a coming soon message:
   const G2PairingGuide = () => {
+    const {theme} = useAppTheme()
+
     return (
-      <View className="flex-1 flex-col justify-center items-center">
-        <Text text="Coming soon" className="text-3xl font-bold text-secondary-foreground text-center" />
+      <View className="flex-1 flex-col justify-start mt-6">
+        <View className="flex-col items-center justify-center bg-primary-foreground rounded-xl mb-6">
+          <Image source={require("../../../assets/glasses/even_realities_g2/even_realities_g2.png")} resizeMode="contain" className="w-50 h-25" />
+          <Icon name="chevron-down" size={36} color={theme.colors.text} />
+          <Image
+            source={require("../../../assets/guide/image_g1_pair.png")}
+            resizeMode="contain"
+            className="w-62 h-38"
+          />
+        </View>
+
+        <View style={{justifyContent: "flex-start", flexDirection: "column"}}>
+          <Text tx="pairing:instructions" className="text-2xl font-bold mb-4 text-secondary-foreground" />
+          <Text
+            className="text-lg text-secondary-foreground"
+            text="1. Disconnect your G2 from within the Even Realities app, or uninstall the Even Realities app"
+          />
+          <Text
+            className="text-lg text-secondary-foreground"
+            text="2. Place your G2 in the charging case with the lid open."
+          />
+        </View>
       </View>
     )
   }
 
   const G2Buttons = () => {
+    const [showTroubleshootingModal, setShowTroubleshootingModal] = useState(false)
     return (
-      <View className="gap-4">
-        <Button tx="common:back" onPress={() => goBack()} />
-      </View>
+      <>
+        <View className="gap-4">
+          <Button tx="pairing:g1Ready" onPress={advanceToPairing} />
+          <Button tx="pairing:g1NotReady" preset="secondary" onPress={() => setShowTroubleshootingModal(true)} />
+        </View>
+        <GlassesTroubleshootingModal
+          isVisible={showTroubleshootingModal}
+          onClose={() => setShowTroubleshootingModal(false)}
+          deviceModel={deviceModel}
+        />
+      </>
     )
   }
 

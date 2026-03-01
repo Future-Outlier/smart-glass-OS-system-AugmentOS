@@ -50,7 +50,7 @@ export default function SelectGlassesModelScreen() {
   }
 
   // Glasses models that should only be visible in dev mode
-  const DEV_MODE_ONLY_MODELS = new Set([DeviceTypes.NEX])
+  const DEV_MODE_ONLY_MODELS = new Set([DeviceTypes.NEX, DeviceTypes.G2])
 
   // Platform-specific glasses options
   const glassesOptions =

@@ -2,7 +2,8 @@
 //  G2.swift
 //  MentraOS_Manager
 //
-//  Created by Matthew Fosse on 3/3/25.
+//  Rewritten for EvenHub protocol (G2-native protobuf-based display system)
+//  Based on reverse-engineered protocol from ae_g2_rev
 //
 
 import Combine
@@ -11,703 +12,1322 @@ import Foundation
 import React
 import UIKit
 
-// extension Data {
-//     func chunked(into size: Int) -> [Data] {
-//         var chunks = [Data]()
-//         var index = 0
-//         while index < count {
-//             let chunkSize = Swift.min(size, count - index)
-//             let chunk = subdata(in: index ..< (index + chunkSize))
-//             chunks.append(chunk)
-//             index += chunkSize
-//         }
-//         return chunks
-//     }
-
-//     func hexEncodedString() -> String {
-//         return map { String(format: "%02x", $0) }.joined(separator: " ")
-//         //    return map { String(format: "%02x", $0) }.joined(separator: ", ")
-//     }
-
-//     // Extension for CRC32 calculation
-//     var crc32: UInt32 {
-//         return withUnsafeBytes { bytes in
-//             let buffer = bytes.bindMemory(to: UInt8.self)
-//             var crc: UInt32 = 0xFFFF_FFFF
-
-//             for byte in buffer {
-//                 crc ^= UInt32(byte)
-//                 for _ in 0 ..< 8 {
-//                     if crc & 1 == 1 {
-//                         crc = (crc >> 1) ^ 0xEDB8_8320
-//                     } else {
-//                         crc >>= 1
-//                     }
-//                 }
-//             }
-
-//             return ~crc
-//         }
-//     }
-
-//     /// Initialize Data from hex string
-//     init?(hexString: String) {
-//         let cleanHex = hexString.replacingOccurrences(of: " ", with: "")
-//         guard cleanHex.count % 2 == 0 else { return nil }
-
-//         var data = Data()
-//         var index = cleanHex.startIndex
-
-//         while index < cleanHex.endIndex {
-//             let nextIndex = cleanHex.index(index, offsetBy: 2)
-//             let byteString = cleanHex[index ..< nextIndex]
-//             guard let byte = UInt8(byteString, radix: 16) else { return nil }
-//             data.append(byte)
-//             index = nextIndex
-//         }
-
-//         self = data
-//     }
-// }
-
-// struct BufferedCommand {
-//     let chunks: [[UInt8]]
-//     let sendLeft: Bool
-//     let sendRight: Bool
-//     let waitTime: Int
-//     let ignoreAck: Bool
-//     let chunkTimeMs: Int
-//     let lastFrameMs: Int
-
-//     init(
-//         chunks: [[UInt8]], sendLeft: Bool = true, sendRight: Bool = true, waitTime: Int = -1,
-//         ignoreAck: Bool = false, chunkTimeMs: Int = 10, lastFrameMs: Int = 0
-//     ) {
-//         self.chunks = chunks
-//         self.sendLeft = sendLeft
-//         self.sendRight = sendRight
-//         self.waitTime = waitTime
-//         self.ignoreAck = ignoreAck
-//         self.chunkTimeMs = chunkTimeMs
-//         self.lastFrameMs = lastFrameMs
-//     }
-// }
-
-// Simple struct to hold app info
-// struct AppInfo {
-//     let id: String
-//     let name: String
-// }
-
-// enum GlassesError: Error {
-//     case missingGlasses(String)
-// }
-
-// // Dedicated actor for timer management
-// actor HeartbeatManager {
-//     private var task: Task<Void, Never>?
-//     private let intervalSeconds: TimeInterval
-
-//     init(intervalSeconds: TimeInterval = 20) {
-//         self.intervalSeconds = intervalSeconds
-//     }
-
-//     func start(onTick: @escaping @Sendable () async -> Void) {
-//         stop()
-
-//         task = Task {
-//             while !Task.isCancelled {
-//                 do {
-//                     try await Task.sleep(nanoseconds: UInt64(intervalSeconds * 1_000_000_000))
-//                 } catch {
-//                     break
-//                 }
-//                 guard !Task.isCancelled else { break }
-//                 await onTick()
-//             }
-//         }
-//     }
-
-//     func stop() {
-//         task?.cancel()
-//         task = nil
-//     }
-// }
-
-// // Dedicated actor for command queue (you already have this partially)
-// actor CommandQueue {
-//     private var commands: [BufferedCommand] = []
-//     private var continuation: CheckedContinuation<BufferedCommand, Never>?
-
-//     func enqueue(_ command: BufferedCommand) {
-//         if let continuation {
-//             self.continuation = nil
-//             continuation.resume(returning: command)
-//         } else {
-//             commands.append(command)
-//         }
-//     }
-
-//     func dequeue() async -> BufferedCommand {
-//         if let command = commands.first {
-//             commands.removeFirst()
-//             return command
-//         }
-
-//         return await withCheckedContinuation { continuation in
-//             self.continuation = continuation
-//         }
-//     }
-// }
-
-// // Actor for managing pending ACKs
-// actor AckManager {
-//     private var pending: [String: CheckedContinuation<Bool, Never>] = [:]
-
-//     func waitForAck(
-//         key: String,
-//         timeoutMs: Int,
-//         onRegistered: @escaping @Sendable () -> Void,
-//         onTimeout: @escaping @Sendable () -> Void = {}
-//     ) async -> Bool {
-//         return await withCheckedContinuation { continuation in
-//             pending[key] = continuation
-
-//             // Now it's safe to send — registration is complete
-//             onRegistered()
-
-//             // Start timeout
-//             Task { [weak self] in
-//                 try? await Task.sleep(nanoseconds: UInt64(timeoutMs) * 1_000_000)
-
-//                 guard let self else { return }
-//                 if let timedOut = await self.removeIfPending(key: key) {
-//                     onTimeout()
-//                     timedOut.resume(returning: false)
-//                 }
-//             }
-//         }
-//     }
-
-//     func receiveAck(key: String) -> Bool {
-//         if let continuation = pending.removeValue(forKey: key) {
-//             continuation.resume(returning: true)
-//             return true
-//         }
-//         return false
-//     }
-
-//     private func removeIfPending(key: String) -> CheckedContinuation<Bool, Never>? {
-//         return pending.removeValue(forKey: key)
-//     }
-// }
-
-// // Actor for reconnection logic
-// actor ReconnectionManager {
-//     private var task: Task<Void, Never>?
-//     private let intervalSeconds: TimeInterval
-//     private var attempts = 0
-//     private let maxAttempts: Int // -1 for unlimited
-
-//     init(intervalSeconds: TimeInterval = 30, maxAttempts: Int = -1) {
-//         self.intervalSeconds = intervalSeconds
-//         self.maxAttempts = maxAttempts
-//     }
-
-//     var isRunning: Bool {
-//         task != nil && task?.isCancelled == false
-//     }
-
-//     var attemptCount: Int {
-//         attempts
-//     }
-
-//     func start(onAttempt: @escaping @Sendable () async -> Bool) {
-//         stop()
-//         attempts = 0
-
-//         task = Task {
-//             while !Task.isCancelled {
-//                 if maxAttempts > 0, attempts >= maxAttempts {
-//                     Bridge.log("G2: Max reconnection attempts (\(maxAttempts)) reached")
-//                     break
-//                 }
-
-//                 attempts += 1
-//                 Bridge.log("G2: Reconnection attempt \(attempts)")
-
-//                 let shouldStop = await onAttempt()
-
-//                 if shouldStop {
-//                     Bridge.log("G2: Reconnection successful, stopping")
-//                     break
-//                 }
-
-//                 do {
-//                     try await Task.sleep(nanoseconds: UInt64(intervalSeconds * 1_000_000_000))
-//                 } catch {
-//                     break
-//                 }
-//             }
-//         }
-//     }
-
-//     func stop() {
-//         task?.cancel()
-//         task = nil
-//         attempts = 0
-//     }
-// }
-
-@MainActor
-class G2: NSObject, SGCManager {
-    func sendGalleryMode() {}
-
-    func sendButtonMaxRecordingTime() {}
-
-    var glassesAppVersion: String = ""
-
-    var glassesBuildNumber: String = ""
-
-    var glassesDeviceModel: String = ""
-
-    var glassesAndroidVersion: String = ""
-
-    var glassesOtaVersionUrl: String = ""
-
-    var glassesFirmwareVersion: String = ""
-
-    var glassesBtMacAddress: String = ""
-
-    var glassesSerialNumber: String = ""
-
-    var glassesStyle: String = ""
-
-    var glassesColor: String = ""
-
-    var caseBatteryLevel: Int = -1
-
-    var wifiSsid: String = ""
-
-    var wifiConnected: Bool = false
-
-    var wifiLocalIp: String = ""
-
-    var isHotspotEnabled: Bool = false
-
-    var micEnabled: Bool = false
-
-    var hotspotSsid: String = ""
-
-    var hotspotPassword: String = ""
-
-    var hotspotGatewayIp: String = ""
-
-    func requestPhoto(
-        _: String, appId _: String, size _: String?, webhookUrl _: String?, authToken _: String?,
-        compress _: String?
-    ) {}
-
-    func startRtmpStream(_: [String: Any]) {}
-
-    func stopRtmpStream() {}
-
-    func sendRtmpKeepAlive(_: [String: Any]) {}
-
-    func startBufferRecording() {}
-
-    func stopBufferRecording() {}
-
-    func saveBufferVideo(requestId _: String, durationSeconds _: Int) {}
-
-    func startVideoRecording(requestId _: String, save _: Bool) {}
-
-    func stopVideoRecording(requestId _: String) {}
-
-    func sendButtonPhotoSettings() {}
-
-    func sendButtonModeSetting() {}
-
-    func sendButtonVideoRecordingSettings() {}
-
-    func sendButtonMaxRecordingTime(_: Int) {}
-
-    func sendButtonCameraLedSetting() {}
-
-    func showDashboard() {}
-
-    func setSilentMode(_: Bool) {}
-
-    func requestWifiScan() {}
-
-    func sendWifiCredentials(_: String, _: String) {}
-
-    func sendHotspotState(_: Bool) {}
-
-    func queryGalleryStatus() {}
-
-    var connectionState: String = ConnTypes.DISCONNECTED
-
-    func sendJson(_: [String: Any], wakeUp _: Bool, requireAck _: Bool) {}
-
-    var type = DeviceTypes.G2
-    let hasMic = true
-
-    // TODO: we probably don't need this
-    @objc static func requiresMainQueueSetup() -> Bool { return true }
-
-    // Duplicate BMP prevention with timeout
-    private var isDisplayingBMP = false
-    private var lastBMPStartTime = Date()
-
-    // Frame synchronization for animations
-    private var lastFrameTime = Date()
-    private var frameSequence = 0
-
-    // Animation Batching (iOS-Controlled Timing)
-    private var animationFrames: [String] = []
-    private var animationTimer: Timer?
-    private var currentFrameIndex: Int = 0
-    private var animationInterval: TimeInterval = 1.650 // Default 1650ms
-    private var animationRepeat: Bool = false
-    private var isAnimationRunning: Bool = false
-
-    // L/R Synchronization - Track BLE write completions
-    private var pendingWriteCompletions: [CBCharacteristic: CheckedContinuation<Bool, Never>] = [:]
-    private var pendingAckCompletions: [String: CheckedContinuation<Bool, Never>] = [:]
-    private let ackCompletionsQueue = DispatchQueue(
-        label: "com.erg1.ackCompletions", attributes: .concurrent
-    )
-    private var writeCompletionCount = 0
-
-    private var _ready: Bool = false
-    var ready: Bool {
-        get { return _ready }
-        set {
-            let oldValue = _ready
-            _ready = newValue
-            if oldValue != newValue {
-                CoreManager.shared.handleConnectionStateChanged()
-            }
-            if !newValue {
-                // Reset battery levels when disconnected
-                batteryLevel = -1
-                leftBatteryLevel = -1
-                rightBatteryLevel = -1
-            }
+// MARK: - Data Little-Endian Helpers (for BMP construction)
+
+private extension Data {
+    mutating func appendLittleEndian(_ value: UInt16) {
+        var v = value.littleEndian
+        Swift.withUnsafeBytes(of: &v) { append(contentsOf: $0) }
+    }
+    mutating func appendLittleEndian(_ value: UInt32) {
+        var v = value.littleEndian
+        Swift.withUnsafeBytes(of: &v) { append(contentsOf: $0) }
+    }
+    mutating func appendLittleEndian(_ value: Int32) {
+        var v = value.littleEndian
+        Swift.withUnsafeBytes(of: &v) { append(contentsOf: $0) }
+    }
+}
+
+// MARK: - G2 Protocol Constants
+
+private enum G2BLE {
+    // EvenHub BLE characteristic UUIDs (NOT the G1 UART UUIDs!)
+    static let CHAR_WRITE = CBUUID(string: "00002760-08C2-11E1-9073-0E8AC72E5401")
+    static let CHAR_NOTIFY = CBUUID(string: "00002760-08C2-11E1-9073-0E8AC72E5402")
+    static let AUDIO_NOTIFY = CBUUID(string: "00002760-08C2-11E1-9073-0E8AC72E6402")
+
+    // We discover services by scanning for these characteristics
+    // The service UUID that contains these chars
+    static let SERVICE_UUID = CBUUID(string: "00002760-08C2-11E1-9073-0E8AC72E0000")
+
+    // Transport constants
+    static let HEADER_BYTE: UInt8 = 0xAA
+    static let SOURCE_PHONE: UInt8 = 1
+    static let DEST_GLASSES: UInt8 = 2
+    static let MAX_PACKET_PAYLOAD: Int = 236
+}
+
+// Service IDs from service_id_def.proto
+private enum ServiceID: UInt8 {
+    case g2Setting = 9         // 0x09 - UI_SETTING_APP_ID
+    case onboarding = 16       // 0x10 - UI_ONBOARDING_APP_ID
+    case deviceSettings = 128  // 0x80 - UX_DEVICE_SETTINGS_APP_ID
+    case evenHub = 224         // 0xE0 - UI_BACKGROUND_EVENHUB_APP_ID
+}
+
+// EvenHub command IDs from EvenHub.proto
+private enum EvenHubCmd: Int32 {
+    case createStartupPage = 0   // APP_REQUEST_CREATE_STARTUP_PAGE_PACKET
+    case updateImageRawData = 3  // APP_UPDATE_IMAGE_RAW_DATA_PACKET
+    case updateTextData = 5      // APP_UPDATE_TEXT_DATA_PACKET
+    case shutdownPage = 9        // APP_REQUEST_SHUTDOWN_PAGE_PACKET
+    case heartbeat = 12          // APP_REQUEST_HEARTBEAT_PACKET
+    case audioControl = 15       // APP_REQUEST_AUDIO_CTR_PACKET
+}
+
+// EvenHub response command IDs (from glasses → phone)
+private enum EvenHubResponseCmd: Int32 {
+    case osNotifyEventToApp = 2  // OS_NOITY_EVENT_TO_APP_PACKET - touch/gesture events
+}
+
+// OsEventTypeList from EvenHub.proto
+private enum OsEventType: Int32 {
+    case click = 0
+    case scrollTop = 1
+    case scrollBottom = 2
+    case doubleClick = 3
+    case foregroundEnter = 4
+    case foregroundExit = 5
+    case abnormalExit = 6
+    case systemExit = 7
+}
+
+// g2_settingCommandId from g2_setting.proto
+private enum G2SettingCommandId: Int32 {
+    case none = 0
+    case deviceReceiveInfo = 1    // Send settings TO glasses
+    case deviceReceiveRequest = 2 // Request info FROM glasses
+    case deviceSendToApp = 3      // Glasses sends info TO app
+    case deviceRespondToApp = 4   // Glasses responds to app
+}
+
+// DevCfgCommandId from dev_config_protocol.proto
+private enum DevCfgCommandId: Int32 {
+    case authentication = 4
+    case pipeRoleChange = 5
+    case timeSync = 128
+    case baseConnHeartBeat = 14
+}
+
+// MARK: - CRC16 (matches Python calc_crc)
+
+private func calcCRC16(_ data: Data) -> UInt16 {
+    var crc: UInt16 = 0xFFFF
+    for byte in data {
+        crc = ((crc >> 8) | ((crc << 8) & 0xFF00)) ^ UInt16(byte)
+        crc ^= (crc & 0xFF) >> 4
+        crc ^= (crc << 12) & 0xFFFF
+        crc ^= ((crc & 0xFF) << 5) & 0xFFFF
+    }
+    return crc & 0xFFFF
+}
+
+// MARK: - Minimal Protobuf Encoding Helpers
+
+// We manually encode protobuf messages rather than using codegen.
+// This keeps dependencies minimal and matches the known field numbers from the .proto files.
+
+private struct ProtobufWriter {
+    private(set) var data = Data()
+
+    // Varint encoding
+    mutating func writeVarint(_ value: UInt64) {
+        var v = value
+        while v > 0x7F {
+            data.append(UInt8(v & 0x7F) | 0x80)
+            v >>= 7
+        }
+        data.append(UInt8(v))
+    }
+
+    mutating func writeInt32Field(_ fieldNumber: Int, _ value: Int32) {
+        let tag = UInt64(fieldNumber << 3) | 0 // wire type 0 = varint
+        writeVarint(tag)
+        // protobuf int32 uses varint encoding; negative values use 10 bytes
+        if value >= 0 {
+            writeVarint(UInt64(value))
+        } else {
+            writeVarint(UInt64(bitPattern: Int64(value)))
         }
     }
 
-    var leftReady: Bool = false
-    var rightReady: Bool = false
-
-    @Published var compressedVoiceData: Data = .init()
-    @Published var aiListening: Bool = false
-    var batteryLevel: Int = -1
-    @Published var leftBatteryLevel: Int = -1
-    @Published var rightBatteryLevel: Int = -1
-    @Published var caseCharging = false
-    @Published var caseOpen = false
-    @Published var caseRemoved = true
-
-    var isDisconnecting = false
-
-    private let heartbeatManager = HeartbeatManager()
-    private let commandQueue = CommandQueue()
-    private let reconnectionManager = ReconnectionManager()
-    private let ackManager = AckManager()
-    private var globalCounter: UInt8 = 0
-    private var heartbeatCounter: UInt8 = 0
-
-    enum AiMode: String {
-        case AI_REQUESTED
-        case AI_MIC_ON
-        case AI_IDLE
+    mutating func writeStringField(_ fieldNumber: Int, _ value: String) {
+        let tag = UInt64(fieldNumber << 3) | 2 // wire type 2 = length-delimited
+        writeVarint(tag)
+        let utf8 = Array(value.utf8)
+        writeVarint(UInt64(utf8.count))
+        data.append(contentsOf: utf8)
     }
 
-    let UART_SERVICE_UUID = CBUUID(string: "6E400001-B5A3-F393-E0A9-E50E24DCCA9E")
-    let UART_TX_CHAR_UUID = CBUUID(string: "6E400002-B5A3-F393-E0A9-E50E24DCCA9E")
-    let UART_RX_CHAR_UUID = CBUUID(string: "6E400003-B5A3-F393-E0A9-E50E24DCCA9E")
-
-    // Constants
-    var DEVICE_SEARCH_ID = "NOT_SET"
-    let DELAY_BETWEEN_CHUNKS_SEND: UInt64 = 16_000_000 // 16ms
-    let DELAY_BETWEEN_SENDS_MS: UInt64 = 8_000_000 // 8ms
-    let INITIAL_CONNECTION_DELAY_MS: UInt64 = 350_000_000 // 350ms
-    var textHelper = G1Text()
-    var msgId = 100
-
-    static let _bluetoothQueue = DispatchQueue(label: "BluetoothG1", qos: .userInitiated)
-
-    private var aiMode: AiMode = .AI_IDLE {
-        didSet {
-            if aiMode == .AI_MIC_ON {
-                aiListening = true
-            } else {
-                aiListening = false
-            }
-        }
+    mutating func writeBytesField(_ fieldNumber: Int, _ value: Data) {
+        let tag = UInt64(fieldNumber << 3) | 2 // wire type 2 = length-delimited
+        writeVarint(tag)
+        writeVarint(UInt64(value.count))
+        data.append(value)
     }
 
-    private var centralManager: CBCentralManager?
-    private var leftPeripheral: CBPeripheral?
-    private var rightPeripheral: CBPeripheral?
-    private var connectedDevices: [String: (CBPeripheral?, CBPeripheral?)] = [:]
-    var lastConnectionTimestamp: Date = .distantPast
-    private var leftInitialized: Bool = false
-    private var rightInitialized: Bool = false
-    @Published var isHeadUp = false
-
-    private var leftGlassUUID: UUID? {
-        get {
-            if let uuidString = UserDefaults.standard.string(forKey: "leftGlassUUID") {
-                return UUID(uuidString: uuidString)
-            }
-            return nil
-        }
-        set {
-            if let newValue = newValue {
-                UserDefaults.standard.set(newValue.uuidString, forKey: "leftGlassUUID")
-            } else {
-                UserDefaults.standard.removeObject(forKey: "leftGlassUUID")
-            }
-        }
+    // Embed a sub-message (length-delimited)
+    mutating func writeMessageField(_ fieldNumber: Int, _ subMessage: Data) {
+        let tag = UInt64(fieldNumber << 3) | 2
+        writeVarint(tag)
+        writeVarint(UInt64(subMessage.count))
+        data.append(subMessage)
     }
 
-    private var rightGlassUUID: UUID? {
-        get {
-            if let uuidString = UserDefaults.standard.string(forKey: "rightGlassUUID") {
-                return UUID(uuidString: uuidString)
-            }
-            return nil
-        }
-        set {
-            if let newValue = newValue {
-                UserDefaults.standard.set(newValue.uuidString, forKey: "rightGlassUUID")
-            } else {
-                UserDefaults.standard.removeObject(forKey: "rightGlassUUID")
-            }
-        }
+    mutating func writeBoolField(_ fieldNumber: Int, _ value: Bool) {
+        writeInt32Field(fieldNumber, value ? 1 : 0)
+    }
+}
+
+// MARK: - Minimal Protobuf Decoding Helpers
+
+private struct ProtobufReader {
+    private let data: Data
+    private var offset: Int = 0
+
+    init(_ data: Data) {
+        self.data = data
     }
 
-    override init() {
-        super.init()
-        startHeartbeat()
-        startCommandProcessor()
-    }
+    var hasMore: Bool { offset < data.count }
 
-    func forget() {
-        Task {
-            await heartbeatManager.stop()
-            await reconnectionManager.stop()
+    mutating func readVarint() -> UInt64? {
+        var result: UInt64 = 0
+        var shift: UInt64 = 0
+        while offset < data.count {
+            let byte = data[data.startIndex + offset]
+            offset += 1
+            result |= UInt64(byte & 0x7F) << shift
+            if byte & 0x80 == 0 { return result }
+            shift += 7
+            if shift > 63 { return nil }
         }
-
-        // Disconnect BLE peripherals before clearing references
-        if let left = leftPeripheral {
-            centralManager?.cancelPeripheralConnection(left)
-        }
-        if let right = rightPeripheral {
-            centralManager?.cancelPeripheralConnection(right)
-        }
-
-        // Clear all references
-        leftGlassUUID = nil
-        rightGlassUUID = nil
-        leftPeripheral = nil
-        rightPeripheral = nil
-        DEVICE_SEARCH_ID = "NOT_SET"
-
-        // Clean up central manager delegate
-        centralManager?.delegate = nil
-    }
-
-    deinit {
-        // Note: Can't call async from deinit, but Tasks will be cancelled
-        // when the class is deallocated anyway
-        centralManager?.delegate = nil
-        leftPeripheral?.delegate = nil
-        rightPeripheral?.delegate = nil
-        Bridge.log("G2: Manager deinitialized")
-    }
-
-    func cleanup() {
-        // TODO:
-    }
-
-    private func startHeartbeat() {
-        Task {
-            await heartbeatManager.start { [weak self] in
-                await self?.sendHeartbeat()
-            }
-        }
-    }
-
-    private func startCommandProcessor() {
-        Task {
-            while !Task.isCancelled {
-                let command = await commandQueue.dequeue()
-                await processCommand(command)
-            }
-        }
-    }
-
-    // MARK: - Serial Number and Color Detection
-
-    /// Decodes Even G1 serial number to extract style and color information
-    /// - Parameter serialNumber: The full serial number (e.g., "S110LABD020021")
-    /// - Returns: Tuple containing (style, color) or ("Unknown", "Unknown") if invalid
-    static func decodeEvenG1SerialNumber(_ serialNumber: String) -> (style: String, color: String) {
-        guard serialNumber.count >= 6 else {
-            return ("Unknown", "Unknown")
-        }
-
-        // Style mapping: 2nd character (index 1)
-        let style: String
-        let styleChar = serialNumber[serialNumber.index(serialNumber.startIndex, offsetBy: 2)]
-        switch styleChar {
-        case "0":
-            style = "Round"
-        case "1":
-            style = "Rectangular"
-        default:
-            style = "Round"
-        }
-
-        // Color mapping: 5th character (index 4)
-        let color: String
-        let colorChar = serialNumber[serialNumber.index(serialNumber.startIndex, offsetBy: 5)]
-        switch colorChar {
-        case "A":
-            color = "Grey"
-        case "B":
-            color = "Brown"
-        case "C":
-            color = "Green"
-        default:
-            color = "Grey"
-        }
-
-        return (style, color)
-    }
-
-    /// Decodes serial number from manufacturer data bytes
-    /// - Parameter manufacturerData: The manufacturer data bytes
-    /// - Returns: Decoded serial number string or nil if not found
-    private func decodeSerialFromManufacturerData(_ manufacturerData: Data) -> String? {
-        guard manufacturerData.count >= 10 else {
-            return nil
-        }
-
-        // Convert bytes to ASCII string
-        var serialBuilder = ""
-        for byte in manufacturerData {
-            if byte == 0x00 {
-                // Stop at null terminator
-                break
-            }
-            if byte >= 0x20, byte <= 0x7E {
-                // Only include CoreCommsService.logable ASCII characters
-                serialBuilder.append(Character(UnicodeScalar(byte)))
-            }
-        }
-
-        let decodedString = serialBuilder.trimmingCharacters(in: .whitespacesAndNewlines)
-
-        // Check if it looks like a valid Even G1 serial number
-        if decodedString.count >= 12,
-           decodedString.hasPrefix("S1") || decodedString.hasPrefix("100")
-           || decodedString.hasPrefix("110")
-        {
-            return decodedString
-        }
-
         return nil
     }
 
-    /// Emits serial number information to React Native
-    private func emitSerialNumberInfo(serialNumber: String, style: String, color: String) {
-        let eventBody: [String: Any] = [
-            "type": "glasses_serial_number",
-            "serialNumber": serialNumber,
-            "style": style,
-            "color": color,
-        ]
+    // Returns (fieldNumber, wireType) or nil
+    mutating func readTag() -> (Int, Int)? {
+        guard let tag = readVarint() else { return nil }
+        return (Int(tag >> 3), Int(tag & 0x07))
+    }
 
-        // Convert to JSON string for CoreMessageEvent
-        do {
-            let jsonData = try JSONSerialization.data(withJSONObject: eventBody, options: [])
-            if let jsonString = String(data: jsonData, encoding: .utf8) {
-                Bridge.sendEvent(withName: "CoreMessageEvent", body: jsonString)
-                Bridge.log(
-                    "G2: 📱 Emitted serial number info: \(serialNumber), Style: \(style), Color: \(color)"
-                )
+    mutating func readInt32() -> Int32? {
+        guard let v = readVarint() else { return nil }
+        return Int32(truncatingIfNeeded: v)
+    }
 
-                // Trigger status update to include serial number in status JSON
-                DispatchQueue.main.async {
-                    CoreManager.shared.getStatus()
-                }
-            }
-        } catch {
-            Bridge.log("G2: Error creating serial number JSON: \(error)")
+    mutating func readBytes() -> Data? {
+        guard let len = readVarint() else { return nil }
+        let length = Int(len)
+        guard offset + length <= data.count else { return nil }
+        let result = data[(data.startIndex + offset)..<(data.startIndex + offset + length)]
+        offset += length
+        return Data(result)
+    }
+
+    mutating func readString() -> String? {
+        guard let bytes = readBytes() else { return nil }
+        return String(data: bytes, encoding: .utf8)
+    }
+
+    // Skip a field value based on wire type
+    mutating func skipField(wireType: Int) {
+        switch wireType {
+        case 0: _ = readVarint()        // varint
+        case 1: offset += 8              // 64-bit
+        case 2: _ = readBytes()          // length-delimited
+        case 5: offset += 4              // 32-bit
+        default: break
         }
     }
 
-    // @@@ REACT NATIVE FUNCTIONS @@@
+    // Parse a message into a dictionary of field# -> value
+    // Values are: Int32 for varint, Data for length-delimited
+    mutating func parseFields() -> [Int: Any] {
+        var fields: [Int: Any] = [:]
+        while hasMore {
+            guard let (fieldNum, wireType) = readTag() else { break }
+            switch wireType {
+            case 0: // varint
+                if let v = readVarint() { fields[fieldNum] = Int32(truncatingIfNeeded: v) }
+            case 2: // length-delimited (submessage or bytes or string)
+                if let d = readBytes() { fields[fieldNum] = d }
+            default:
+                skipField(wireType: wireType)
+            }
+        }
+        return fields
+    }
+}
 
-    // this scans for glasses to connect to and only connnects if SEARCH_ID is set
-    func startScan() -> Bool {
-        Bridge.log("G2: startScan()")
-        if centralManager == nil {
-            centralManager = CBCentralManager(
-                delegate: self, queue: G2._bluetoothQueue,
-                options: ["CBCentralManagerOptionShowPowerAlertKey": 0]
-            )
+// MARK: - EvenHub Protobuf Message Builders
+
+private enum EvenHubProto {
+    // Build a TextContainerProperty message
+    static func textContainerProperty(
+        x: Int32, y: Int32, width: Int32, height: Int32,
+        borderWidth: Int32 = 0, borderColor: Int32 = 0, borderRadius: Int32 = 0,
+        paddingLength: Int32 = 0, containerID: Int32,
+        containerName: String? = nil, isEventCapture: Bool = false,
+        content: String? = nil
+    ) -> Data {
+        var w = ProtobufWriter()
+        w.writeInt32Field(1, x)           // XPosition
+        w.writeInt32Field(2, y)           // YPosition
+        w.writeInt32Field(3, width)       // Width
+        w.writeInt32Field(4, height)      // Height
+        w.writeInt32Field(5, borderWidth) // BorderWidth
+        w.writeInt32Field(6, borderColor) // BorderColor
+        w.writeInt32Field(7, borderRadius) // BorderRdaius (sic - typo in proto)
+        w.writeInt32Field(8, paddingLength) // PaddingLength
+        w.writeInt32Field(9, containerID) // ContainerID
+        if let name = containerName {
+            w.writeStringField(10, name)  // ContainerName
+        }
+        w.writeInt32Field(11, isEventCapture ? 1 : 0) // IsEventCapture
+        if let content = content {
+            w.writeStringField(12, content) // Content
+        }
+        return w.data
+    }
+
+    // Build an ImageContainerProperty message
+    static func imageContainerProperty(
+        x: Int32, y: Int32, width: Int32, height: Int32,
+        containerID: Int32, containerName: String? = nil
+    ) -> Data {
+        var w = ProtobufWriter()
+        w.writeInt32Field(1, x)           // XPosition
+        w.writeInt32Field(2, y)           // YPosition
+        w.writeInt32Field(3, width)       // Width
+        w.writeInt32Field(4, height)      // Height
+        w.writeInt32Field(5, containerID) // ContainerID
+        if let name = containerName {
+            w.writeStringField(6, name)   // ContainerName
+        }
+        return w.data
+    }
+
+    // Build an ImageRawDataUpdate message
+    static func imageRawDataUpdate(
+        containerID: Int32, containerName: String? = nil,
+        mapSessionId: Int32, mapTotalSize: Int32, compressMode: Int32 = 0,
+        mapFragmentIndex: Int32, mapFragmentPacketSize: Int32, mapRawData: Data
+    ) -> Data {
+        var w = ProtobufWriter()
+        w.writeInt32Field(1, containerID)            // ContainerID
+        if let name = containerName {
+            w.writeStringField(2, name)              // ContainerName
+        }
+        w.writeInt32Field(3, mapSessionId)           // MapSessionId
+        w.writeInt32Field(4, mapTotalSize)           // MapTotalSize
+        w.writeInt32Field(5, compressMode)           // CompressMode
+        w.writeInt32Field(6, mapFragmentIndex)       // MapFragmentIndex
+        w.writeInt32Field(7, mapFragmentPacketSize)  // MapFragmentPacketSize
+        w.writeBytesField(8, mapRawData)             // MapRawData
+        return w.data
+    }
+
+    // Build a CreateStartUpPageContainer message
+    static func createStartupPageContainer(
+        containerTotalNum: Int32,
+        textContainers: [Data] = [],
+        imageContainers: [Data] = []
+    ) -> Data {
+        var w = ProtobufWriter()
+        w.writeInt32Field(1, containerTotalNum) // ContainerTotalNum
+        // field 2 = repeated ListContainerProperty ListObject (not used here)
+        for tc in textContainers {
+            w.writeMessageField(3, tc)  // field 3 = repeated TextObject
+        }
+        for ic in imageContainers {
+            w.writeMessageField(4, ic)  // field 4 = repeated ImageObject
+        }
+        return w.data
+    }
+
+    // Build a TextContainerUpgrade message
+    static func textContainerUpgrade(
+        containerID: Int32, contentOffset: Int32 = 0,
+        contentLength: Int32, content: String
+    ) -> Data {
+        var w = ProtobufWriter()
+        w.writeInt32Field(1, containerID)     // ContainerID
+        w.writeInt32Field(3, contentOffset)   // ContentOffset
+        w.writeInt32Field(4, contentLength)   // ContentLength
+        w.writeStringField(5, content)        // Content
+        return w.data
+    }
+
+    // Build a ShutDownContaniner message (sic - typo in proto)
+    static func shutdownContainer(exitMode: Int32 = 0) -> Data {
+        var w = ProtobufWriter()
+        w.writeInt32Field(1, exitMode) // exitMode
+        return w.data
+    }
+
+    // Build a HeartBeatPacket message
+    static func heartbeatPacket(cnt: Int32 = 0) -> Data {
+        var w = ProtobufWriter()
+        if cnt != 0 {
+            w.writeInt32Field(1, cnt)  // Cnt
+        }
+        return w.data
+    }
+
+    // Build an AudioCtrCmd message
+    static func audioCtrCmd(enable: Bool) -> Data {
+        var w = ProtobufWriter()
+        w.writeInt32Field(1, enable ? 1 : 0) // AudoFuncEn
+        return w.data
+    }
+
+    // Build an evenhub_main_msg_ctx wrapper
+    static func evenHubMessage(cmd: EvenHubCmd, subFieldNumber: Int, subMessage: Data) -> Data {
+        var w = ProtobufWriter()
+        w.writeInt32Field(1, cmd.rawValue) // Cmd (field 1, enum)
+        // MagicRandom will be set by the send layer (field 2)
+        w.writeMessageField(subFieldNumber, subMessage) // the actual command payload
+        return w.data
+    }
+
+    // Convenience builders for full evenhub messages
+    static func createPageMessage(textContainers: [Data] = [], imageContainers: [Data] = []) -> Data {
+        let total = Int32(textContainers.count + imageContainers.count)
+        let createMsg = createStartupPageContainer(
+            containerTotalNum: total,
+            textContainers: textContainers,
+            imageContainers: imageContainers
+        )
+        return evenHubMessage(cmd: .createStartupPage, subFieldNumber: 3, subMessage: createMsg)
+    }
+
+    static func updateImageRawDataMessage(
+        containerID: Int32, containerName: String? = nil,
+        mapSessionId: Int32, mapTotalSize: Int32, compressMode: Int32 = 0,
+        mapFragmentIndex: Int32, mapFragmentPacketSize: Int32, mapRawData: Data
+    ) -> Data {
+        let updateMsg = imageRawDataUpdate(
+            containerID: containerID, containerName: containerName,
+            mapSessionId: mapSessionId, mapTotalSize: mapTotalSize,
+            compressMode: compressMode,
+            mapFragmentIndex: mapFragmentIndex,
+            mapFragmentPacketSize: mapFragmentPacketSize,
+            mapRawData: mapRawData
+        )
+        return evenHubMessage(cmd: .updateImageRawData, subFieldNumber: 5, subMessage: updateMsg)
+    }
+
+    static func updateTextMessage(containerID: Int32, contentOffset: Int32 = 0, contentLength: Int32, content: String) -> Data {
+        let upgradeMsg = textContainerUpgrade(
+            containerID: containerID, contentOffset: contentOffset,
+            contentLength: contentLength, content: content
+        )
+        return evenHubMessage(cmd: .updateTextData, subFieldNumber: 9, subMessage: upgradeMsg)
+    }
+
+    static func shutdownMessage(exitMode: Int32 = 0) -> Data {
+        let shutdownMsg = shutdownContainer(exitMode: exitMode)
+        return evenHubMessage(cmd: .shutdownPage, subFieldNumber: 11, subMessage: shutdownMsg)
+    }
+
+    static func heartbeatMessage() -> Data {
+        let hbMsg = heartbeatPacket()
+        return evenHubMessage(cmd: .heartbeat, subFieldNumber: 14, subMessage: hbMsg)
+    }
+
+    static func audioControlMessage(enable: Bool) -> Data {
+        let audioMsg = audioCtrCmd(enable: enable)
+        return evenHubMessage(cmd: .audioControl, subFieldNumber: 18, subMessage: audioMsg)
+    }
+}
+
+// MARK: - DevSettings Auth Protobuf Builders
+
+private enum DevSettingsProto {
+    // DevCfgDataPackage with AUTHENTICATION command
+    static func authCmd(magicRandom: Int32) -> Data {
+        // DevCfgDataPackage:
+        //   field 1 = commandId (enum)
+        //   field 2 = magicRandom (int32)
+        //   field 3 = authMgr (AuthMgr message)
+        var w = ProtobufWriter()
+        w.writeInt32Field(1, DevCfgCommandId.authentication.rawValue) // commandId
+        w.writeInt32Field(2, magicRandom) // magicRandom
+
+        // AuthMgr sub-message:
+        //   field 1 = secAuth (bool)
+        //   field 2 = phoneType (enum eDevice: PHONE_IOS=3, PHONE_ANDROID=4)
+        var authW = ProtobufWriter()
+        authW.writeBoolField(1, true) // secAuth
+        authW.writeInt32Field(2, 3)   // phoneType = PHONE_IOS (eDevice.PHONE_IOS=3)
+
+        w.writeMessageField(3, authW.data) // authMgr
+        return w.data
+    }
+
+    // DevCfgDataPackage with PIPE_ROLE_CHANGE command
+    static func pipeRoleChange(magicRandom: Int32) -> Data {
+        var w = ProtobufWriter()
+        w.writeInt32Field(1, DevCfgCommandId.pipeRoleChange.rawValue)
+        w.writeInt32Field(2, magicRandom)
+
+        // PipeRoleChange: field 1 = asCmdRole (enum GlassesLR.RIGHT=1)
+        var roleW = ProtobufWriter()
+        roleW.writeInt32Field(1, 1) // RIGHT
+        w.writeMessageField(4, roleW.data) // roleChange (field 4 in DevCfgDataPackage)
+        return w.data
+    }
+
+    // DevCfgDataPackage with TIME_SYNC command
+    static func timeSync(magicRandom: Int32) -> Data {
+        var w = ProtobufWriter()
+        w.writeInt32Field(1, DevCfgCommandId.timeSync.rawValue)
+        w.writeInt32Field(2, magicRandom)
+
+        // TimeSync: field 1 = timestamp (int32), field 2 = timezone (int32)
+        var tsW = ProtobufWriter()
+        let timestamp = Int32(Date().timeIntervalSince1970)
+        tsW.writeInt32Field(1, timestamp)
+        let tz = Int32(TimeZone.current.secondsFromGMT() / 3600)
+        tsW.writeInt32Field(2, tz)
+        w.writeMessageField(128, tsW.data) // timeSync (field 128 in DevCfgDataPackage)
+        return w.data
+    }
+
+    // DevCfgDataPackage with BASE_CONNECT_HEART_BEAT command
+    static func baseHeartbeat(magicRandom: Int32) -> Data {
+        var w = ProtobufWriter()
+        w.writeInt32Field(1, DevCfgCommandId.baseConnHeartBeat.rawValue)
+        w.writeInt32Field(2, magicRandom)
+
+        // BaseConnHeartBeat: empty message
+        var hbW = ProtobufWriter()
+        _ = hbW // empty
+        w.writeMessageField(13, hbW.data) // baseHeartBeat (field 13)
+        return w.data
+    }
+}
+
+// MARK: - G2 Settings Protobuf Builders (g2_setting.proto, service ID 9)
+
+private enum G2SettingProto {
+    // Set brightness: G2SettingPackage with DeviceReceiveInfo + DeviceReceive_Brightness
+    static func setBrightness(magicRandom: Int32, level: Int32, autoAdjust: Bool) -> Data {
+        // DeviceReceive_Brightness
+        var brightnessW = ProtobufWriter()
+        brightnessW.writeInt32Field(1, autoAdjust ? 1 : 0) // autoAdjust
+        brightnessW.writeInt32Field(2, level)                // brightnessLevel
+
+        // DeviceReceiveInfoFromAPP
+        var infoW = ProtobufWriter()
+        infoW.writeMessageField(1, brightnessW.data) // deviceReceiveBrightness (field 1)
+
+        // G2SettingPackage
+        var w = ProtobufWriter()
+        w.writeInt32Field(1, G2SettingCommandId.deviceReceiveInfo.rawValue) // commandId
+        w.writeInt32Field(2, magicRandom)
+        w.writeMessageField(3, infoW.data) // deviceReceiveInfoFromApp (field 3)
+        return w.data
+    }
+
+    // Request battery/version/etc: G2SettingPackage with DeviceReceiveRequest
+    static func requestInfo(magicRandom: Int32) -> Data {
+        // DeviceReceiveRequestFromAPP - empty message triggers glasses to respond with all fields
+        var reqW = ProtobufWriter()
+        // Request brightness info type
+        reqW.writeInt32Field(1, 1) // settingInfoType = APP_REQUIRE_BASIC_SETTING
+
+        // G2SettingPackage
+        var w = ProtobufWriter()
+        w.writeInt32Field(1, G2SettingCommandId.deviceReceiveRequest.rawValue) // commandId
+        w.writeInt32Field(2, magicRandom)
+        w.writeMessageField(4, reqW.data) // deviceReceiveRequestFromApp (field 4)
+        return w.data
+    }
+}
+
+// MARK: - Onboarding Protobuf Builders (onboarding.proto, service ID 16)
+
+private enum OnboardingProto {
+    // Skip onboarding: OnboardingDataPackage with CONFIG command, processId=FINISH
+    static func skipOnboarding(magicRandom: Int32) -> Data {
+        // OnboardingConfig: processId = FINISH (4)
+        var configW = ProtobufWriter()
+        configW.writeInt32Field(1, 4) // processId = FINISH
+
+        // OnboardingDataPackage
+        var w = ProtobufWriter()
+        w.writeInt32Field(1, 1) // commandId = CONFIG
+        w.writeInt32Field(2, magicRandom)
+        w.writeMessageField(3, configW.data) // config (field 3)
+        return w.data
+    }
+}
+
+// MARK: - EvenBLE Transport Layer
+
+// Builds and splits payloads into BLE packets with the EvenHub transport framing
+private struct EvenBLETransport {
+    var syncId: UInt8
+
+    // Build one or more framed packets for a payload
+    static func buildPackets(syncId: UInt8, serviceId: UInt8, payload: Data, reserveFlag: Bool = false) -> [Data] {
+        let maxPayload = G2BLE.MAX_PACKET_PAYLOAD
+
+        // Split payload into chunks
+        var chunks: [Data] = []
+        var offset = 0
+        while offset < payload.count {
+            let end = min(offset + maxPayload, payload.count)
+            chunks.append(payload[offset..<end])
+            offset = end
+        }
+        if chunks.isEmpty {
+            chunks.append(Data())
         }
 
-        isDisconnecting = false // reset intentional disconnect flag
-        guard centralManager!.state == .poweredOn else {
-            Bridge.log("G2: Attempting to scan but bluetooth is not powered on.")
+        // If last chunk is exactly max size, we need an extra packet for CRC
+        let needExtraCrcPacket = (chunks.last!.count == maxPayload)
+        if needExtraCrcPacket {
+            chunks.append(Data())
+        }
+
+        let totalPackets = UInt8(chunks.count)
+        let crc = calcCRC16(payload)
+
+        var packets: [Data] = []
+        for (i, chunk) in chunks.enumerated() {
+            let serialNum = UInt8(i + 1)
+            let isLast = (serialNum == totalPackets)
+
+            // status byte: bit0=notify, bits1-4=resultCode, bit5=reserveFlag, bits6-7=reserve
+            let status: UInt8 = (reserveFlag ? 0x20 : 0x00)
+
+            // payload length includes CRC if last packet
+            let payloadLen = UInt8(chunk.count + (isLast ? 2 : 0))
+
+            var packet = Data()
+            packet.append(G2BLE.HEADER_BYTE)                                    // [0] 0xAA
+            packet.append((G2BLE.DEST_GLASSES << 4) | G2BLE.SOURCE_PHONE)       // [1] src+dst
+            packet.append(syncId)                                                // [2] syncId
+            packet.append(payloadLen)                                            // [3] payloadLen
+            packet.append(totalPackets)                                          // [4] packetTotalNum
+            packet.append(serialNum)                                             // [5] packetSerialNum
+            packet.append(serviceId)                                             // [6] serviceId
+            packet.append(status)                                                // [7] status
+
+            packet.append(chunk)
+
+            if isLast {
+                packet.append(UInt8(crc & 0xFF))         // CRC low
+                packet.append(UInt8((crc >> 8) & 0xFF))  // CRC high
+            }
+
+            packets.append(packet)
+        }
+
+        return packets
+    }
+}
+
+// MARK: - G2 Send Manager
+
+// Manages syncId counter and sends packets over BLE
+private class G2SendManager {
+    private var syncId: UInt8 = 0
+    private var magicRandom: UInt8 = 0
+
+    func nextSyncId() -> UInt8 {
+        let id = syncId
+        syncId = syncId &+ 1
+        return id
+    }
+
+    func nextMagicRandom() -> Int32 {
+        let val = magicRandom
+        magicRandom = magicRandom &+ 1
+        return Int32(val)
+    }
+
+    func buildPackets(serviceId: UInt8, payload: Data, reserveFlag: Bool = false) -> [Data] {
+        let sid = nextSyncId()
+        return EvenBLETransport.buildPackets(syncId: sid, serviceId: serviceId, payload: payload, reserveFlag: reserveFlag)
+    }
+}
+
+// MARK: - G2 Receive Manager (multi-part reassembly)
+
+private class G2ReceiveManager {
+    private var partials: [String: (Data, UInt8)] = [:] // key -> (accumulated payload, lastSerialNum)
+
+    func handlePacket(_ rawData: Data) -> (serviceId: UInt8, payload: Data)? {
+        guard rawData.count >= 8 else { return nil }
+        guard rawData[0] == G2BLE.HEADER_BYTE else { return nil }
+
+        let payloadLen = Int(rawData[3])
+        let expectedLen = payloadLen + 8
+        guard rawData.count >= expectedLen else { return nil }
+
+        let totalPackets = rawData[4]
+        let serialNum = rawData[5]
+        let serviceId = rawData[6]
+        let status = rawData[7]
+        let resultCode = (status >> 1) & 0x0F
+
+        guard resultCode == 0 else { return nil }
+
+        let isLast = (serialNum == totalPackets)
+        let hasCrc = isLast
+        let payloadEnd = 8 + payloadLen - (hasCrc ? 2 : 0)
+        let payload = rawData[8..<payloadEnd]
+
+        let syncId = rawData[2]
+        let key = "\(serviceId)-\(syncId)"
+
+        if serialNum > 1 {
+            guard var existing = partials[key] else { return nil }
+            existing.0.append(payload)
+            existing.1 = serialNum
+            partials[key] = existing
+        } else if totalPackets > 1 {
+            partials[key] = (Data(payload), serialNum)
+        }
+
+        if !isLast {
+            if serialNum == 1 && totalPackets > 1 {
+                // Already stored above
+            }
+            return nil
+        }
+
+        let fullPayload: Data
+        if let existing = partials[key] {
+            var accumulated = existing.0
+            if serialNum > 1 {
+                // already appended above
+            } else {
+                accumulated.append(payload)
+            }
+            fullPayload = accumulated
+            partials.removeValue(forKey: key)
+        } else {
+            fullPayload = Data(payload)
+        }
+
+        return (serviceId, fullPayload)
+    }
+}
+
+// MARK: - G2 Class (SGCManager implementation)
+
+// Actor for reconnection logic (matches G1 pattern)
+actor G2ReconnectionManager {
+    private var task: Task<Void, Never>?
+    private let intervalSeconds: TimeInterval
+    private var attempts = 0
+    private let maxAttempts: Int // -1 for unlimited
+
+    init(intervalSeconds: TimeInterval = 30, maxAttempts: Int = -1) {
+        self.intervalSeconds = intervalSeconds
+        self.maxAttempts = maxAttempts
+    }
+
+    var isRunning: Bool {
+        task != nil && task?.isCancelled == false
+    }
+
+    func start(onAttempt: @escaping @Sendable () async -> Bool) {
+        stop()
+        attempts = 0
+
+        task = Task {
+            while !Task.isCancelled {
+                if maxAttempts > 0, attempts >= maxAttempts {
+                    Bridge.log("G2: Max reconnection attempts (\(maxAttempts)) reached")
+                    break
+                }
+
+                attempts += 1
+                Bridge.log("G2: Reconnection attempt \(attempts)")
+
+                let shouldStop = await onAttempt()
+
+                if shouldStop {
+                    Bridge.log("G2: Reconnection successful, stopping")
+                    break
+                }
+
+                do {
+                    try await Task.sleep(nanoseconds: UInt64(intervalSeconds * 1_000_000_000))
+                } catch {
+                    break
+                }
+            }
+        }
+    }
+
+    func stop() {
+        task?.cancel()
+        task = nil
+        attempts = 0
+    }
+}
+
+@MainActor
+class G2: NSObject, SGCManager {
+    var type = DeviceTypes.G2
+    let hasMic = true
+
+    // Connection state
+    private var connectionState: String = ConnTypes.DISCONNECTED
+    private var _ready: Bool = false
+    private var ready: Bool {
+        get { _ready }
+        set {
+            _ready = newValue
+            if !newValue {
+                batteryLevel = -1
+            }
+        }
+    }
+
+    // BLE peripherals (L+R)
+    private var centralManager: CBCentralManager?
+    private var leftPeripheral: CBPeripheral?
+    private var rightPeripheral: CBPeripheral?
+    private var leftWriteChar: CBCharacteristic?
+    private var rightWriteChar: CBCharacteristic?
+    private var leftNotifyChar: CBCharacteristic?
+    private var rightNotifyChar: CBCharacteristic?
+    private var rightAudioChar: CBCharacteristic?
+    private var leftAudioChar: CBCharacteristic?
+    private var leftInitialized: Bool = false
+    private var rightInitialized: Bool = false
+    private var isDisconnecting = false
+
+    // Device search
+    var DEVICE_SEARCH_ID = "NOT_SET"
+
+    // Stored UUIDs for background reconnection
+    private var leftGlassUUID: UUID? {
+        get { UserDefaults.standard.string(forKey: "g2_leftGlassUUID").flatMap { UUID(uuidString: $0) } }
+        set {
+            if let v = newValue { UserDefaults.standard.set(v.uuidString, forKey: "g2_leftGlassUUID") }
+            else { UserDefaults.standard.removeObject(forKey: "g2_leftGlassUUID") }
+        }
+    }
+    private var rightGlassUUID: UUID? {
+        get { UserDefaults.standard.string(forKey: "g2_rightGlassUUID").flatMap { UUID(uuidString: $0) } }
+        set {
+            if let v = newValue { UserDefaults.standard.set(v.uuidString, forKey: "g2_rightGlassUUID") }
+            else { UserDefaults.standard.removeObject(forKey: "g2_rightGlassUUID") }
+        }
+    }
+
+    // Reconnection
+    private let reconnectionManager = G2ReconnectionManager()
+
+    // Protocol state
+    private let sendManager = G2SendManager()
+    private let receiveManager = G2ReceiveManager()
+    private var heartbeatTimer: Timer?
+    private var devSettingsHeartbeatTimer: Timer?
+    private var micEnabled_: Bool = false
+    private var pageCreated: Bool = false
+    private var currentTextContent: String = ""
+    private var textContainerID: Int32 = 1
+    private var imageSessionCounter: Int = 0
+    private var heartbeatCounter: Int = 0
+    private var authStarted: Bool = false
+
+    // Published state
+    @Published var batteryLevel: Int = -1 {
+        didSet {
+            if batteryLevel != oldValue && batteryLevel >= 0 {
+                GlassesStore.shared.apply("glasses", "batteryLevel", batteryLevel)
+                Bridge.sendBatteryStatus(level: batteryLevel, charging: isCharging)
+            }
+        }
+    }
+    private var isCharging: Bool = false
+    @Published var aiListening: Bool = false
+
+    static let _bluetoothQueue = DispatchQueue(label: "BluetoothG2", qos: .userInitiated)
+
+    // MARK: - Initialization
+
+    override init() {
+        super.init()
+    }
+
+    deinit {
+        centralManager?.delegate = nil
+        leftPeripheral?.delegate = nil
+        rightPeripheral?.delegate = nil
+    }
+
+    // MARK: - BLE Sending
+
+    private func sendToGlasses(_ packets: [Data], left: Bool = false, right: Bool = true) {
+        for packet in packets {
+            if right, let char = rightWriteChar, let peripheral = rightPeripheral {
+                peripheral.writeValue(packet, for: char, type: .withoutResponse)
+            }
+            if left, let char = leftWriteChar, let peripheral = leftPeripheral {
+                peripheral.writeValue(packet, for: char, type: .withoutResponse)
+            }
+        }
+    }
+
+    private func sendEvenHubCommand(_ payload: Data) {
+        let packets = sendManager.buildPackets(
+            serviceId: ServiceID.evenHub.rawValue,
+            payload: payload,
+            reserveFlag: true
+        )
+        sendToGlasses(packets)
+    }
+
+    private func sendDevSettingsCommand(_ payload: Data, left: Bool = false, right: Bool = true) {
+        let packets = sendManager.buildPackets(
+            serviceId: ServiceID.deviceSettings.rawValue,
+            payload: payload
+        )
+        sendToGlasses(packets, left: left, right: right)
+    }
+
+    private func sendG2SettingCommand(_ payload: Data) {
+        let packets = sendManager.buildPackets(
+            serviceId: ServiceID.g2Setting.rawValue,
+            payload: payload,
+            reserveFlag: true
+        )
+        sendToGlasses(packets)
+    }
+
+    private func sendOnboardingCommand(_ payload: Data) {
+        let packets = sendManager.buildPackets(
+            serviceId: ServiceID.onboarding.rawValue,
+            payload: payload,
+            reserveFlag: true
+        )
+        sendToGlasses(packets)
+    }
+
+    // MARK: - Authentication Sequence
+
+    private func runAuthSequence() {
+        Bridge.log("G2: Running auth sequence")
+
+        // Auth to left side
+        if leftPeripheral != nil && leftWriteChar != nil {
+            let authL = DevSettingsProto.authCmd(magicRandom: sendManager.nextMagicRandom())
+            sendDevSettingsCommand(authL, left: true, right: false)
+        }
+
+        // Small delay then auth right + pipe role change + time sync
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) { [weak self] in
+            guard let self = self else { return }
+
+            let authR = DevSettingsProto.authCmd(magicRandom: self.sendManager.nextMagicRandom())
+            self.sendDevSettingsCommand(authR, left: false, right: true)
+
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) { [weak self] in
+                guard let self = self else { return }
+
+                let roleChange = DevSettingsProto.pipeRoleChange(magicRandom: self.sendManager.nextMagicRandom())
+                self.sendDevSettingsCommand(roleChange, left: false, right: true)
+
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) { [weak self] in
+                    guard let self = self else { return }
+
+                    let timeSync = DevSettingsProto.timeSync(magicRandom: self.sendManager.nextMagicRandom())
+                    self.sendDevSettingsCommand(timeSync)
+
+                    // Skip onboarding on connect
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) { [weak self] in
+                        guard let self = self else { return }
+                        let onboarding = OnboardingProto.skipOnboarding(magicRandom: self.sendManager.nextMagicRandom())
+                        self.sendOnboardingCommand(onboarding)
+                        Bridge.log("G2: Sent onboarding skip (FINISH)")
+                    }
+
+                    // Start heartbeats after auth
+                    self.startHeartbeats()
+
+                    // Mark as ready and request device info (version + battery)
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) { [weak self] in
+                        guard let self = self else { return }
+                        self.ready = true
+                        Task { await self.reconnectionManager.stop() }
+                        Bridge.log("G2: Auth sequence complete, glasses ready")
+
+                        // Set device_name so CoreManager can save it for reconnection
+                        if let peripheralName = self.rightPeripheral?.name ?? self.leftPeripheral?.name,
+                           let idNumber = self.extractIdNumber(peripheralName) {
+                            let deviceId = "\(idNumber)"
+                            GlassesStore.shared.apply("core", "device_name", deviceId)
+                            Bridge.log("G2: Set device_name to \(deviceId)")
+                        }
+
+                        GlassesStore.shared.apply("glasses", "connected", true)
+                        GlassesStore.shared.apply("glasses", "fullyBooted", true)
+
+                        // Query version + battery info from glasses
+                        self.requestDeviceInfo()
+                    }
+                }
+            }
+        }
+    }
+
+    // MARK: - Heartbeats
+
+    private func startHeartbeats() {
+        // EvenHub heartbeat every 5 seconds
+        heartbeatTimer?.invalidate()
+        heartbeatTimer = Timer.scheduledTimer(withTimeInterval: 5.0, repeats: true) { [weak self] _ in
+            DispatchQueue.main.async {
+                self?.sendEvenHubHeartbeat()
+            }
+        }
+
+        // DevSettings heartbeat every 5 seconds
+        devSettingsHeartbeatTimer?.invalidate()
+        devSettingsHeartbeatTimer = Timer.scheduledTimer(withTimeInterval: 5.0, repeats: true) { [weak self] _ in
+            DispatchQueue.main.async {
+                self?.sendDevSettingsHeartbeat()
+            }
+        }
+    }
+
+    private func stopHeartbeats() {
+        heartbeatTimer?.invalidate()
+        heartbeatTimer = nil
+        devSettingsHeartbeatTimer?.invalidate()
+        devSettingsHeartbeatTimer = nil
+    }
+
+    private func sendEvenHubHeartbeat() {
+        guard ready else { return }
+        let msg = EvenHubProto.heartbeatMessage()
+        sendEvenHubCommand(msg)
+
+        // Poll battery every 10 heartbeats (~50 seconds)
+        heartbeatCounter += 1
+        if heartbeatCounter % 10 == 0 {
+            requestDeviceInfo()
+        }
+    }
+
+    private func sendDevSettingsHeartbeat() {
+        guard ready else { return }
+        let msg = DevSettingsProto.baseHeartbeat(magicRandom: sendManager.nextMagicRandom())
+        sendDevSettingsCommand(msg)
+    }
+
+    // Request battery, version, and other device info via g2_setting service
+    private func requestDeviceInfo() {
+        let msg = G2SettingProto.requestInfo(magicRandom: sendManager.nextMagicRandom())
+        sendG2SettingCommand(msg)
+        Bridge.log("G2: Requested device info (battery/version)")
+    }
+
+    // MARK: - SGCManager: Display Control
+
+    func sendTextWall(_ text: String) {
+        Bridge.log("G2: sendTextWall(\(text.prefix(50))...)")
+
+        if text.isEmpty {
+            clearDisplay()
+            return
+        }
+
+        if !pageCreated {
+            createPageWithText(text)
+        } else {
+            updateText(text)
+        }
+    }
+
+    func sendDoubleTextWall(_ top: String, _ bottom: String) {
+        // G2 doesn't have native double text wall, combine them
+        let combined = top + "\n" + bottom
+        sendTextWall(combined)
+    }
+
+    func clearDisplay() {
+        Bridge.log("G2: clearDisplay()")
+        // Don't shutdown the EvenHub page — that kills audio streaming too.
+        // Instead, just clear the text content by sending a space.
+        // if pageCreated {
+        //     let msg = EvenHubProto.shutdownMessage()
+        //     sendEvenHubCommand(msg)
+        //     pageCreated = false
+        //     currentTextContent = ""
+        // }
+        if pageCreated {
+            sendTextWall(" ")
+        }
+    }
+
+    func displayBitmap(base64ImageData: String) async -> Bool {
+        guard let rawData = Data(base64Encoded: base64ImageData) else {
+            Bridge.log("G2: displayBitmap() - failed to decode base64")
             return false
         }
 
-        // send our already connected devices to RN:
-        let devices = getConnectedDevices()
-        Bridge.log("G2: connnectedDevices.count: (\(devices.count))")
-        for device in devices {
-            if let name = device.name {
-                Bridge.log("G2: Connected to device: \(name)")
-                if name.contains("_L_") && name.contains(DEVICE_SEARCH_ID) {
-                    leftPeripheral = device
-                    device.delegate = self
-                    device.discoverServices([UART_SERVICE_UUID])
-                } else if name.contains("_R_") && name.contains(DEVICE_SEARCH_ID) {
-                    rightPeripheral = device
-                    device.delegate = self
-                    device.discoverServices([UART_SERVICE_UUID])
-                }
-                emitDiscoveredDevice(name)
-            }
+        Bridge.log("G2: displayBitmap() - decoded \(rawData.count) bytes from base64")
+
+        // Convert to G2-native 4-bit BMP (scaled down to keep BLE transfer small)
+        guard let bmp = convertToG2Bmp(rawData) else {
+            Bridge.log("G2: displayBitmap() - failed to convert image to G2 BMP format")
+            return false
         }
 
-        // First try: Connect by UUID (works in background)
-        if connectByUUID() {
-            Bridge.log("G2: 🔄 Found and attempting to connect to stored glasses UUIDs")
-            // Wait for connection to complete - no need to scan
-            return true
+        Bridge.log("G2: displayBitmap() - converted to G2 BMP: \(bmp.data.count) bytes (\(bmp.width)x\(bmp.height))")
+
+        // Shut down existing page, then create image page with container matching BMP size
+        let imageContainerID: Int32 = 2
+        let imageContainerName = "img-main"
+
+        // Center the image container on the display
+        let containerX = (G2.g2DisplayWidth - bmp.width) / 2
+        let containerY = (G2.g2DisplayHeight - bmp.height) / 2
+
+        let ic = EvenHubProto.imageContainerProperty(
+            x: Int32(containerX), y: Int32(containerY),
+            width: Int32(bmp.width), height: Int32(bmp.height),
+            containerID: imageContainerID, containerName: imageContainerName
+        )
+        let createMsg = EvenHubProto.createPageMessage(imageContainers: [ic])
+        sendEvenHubCommand(createMsg)
+        pageCreated = true
+        try? await Task.sleep(nanoseconds: 500_000_000) // 500ms
+
+        // Send BMP data in fragments (4096 bytes per fragment)
+        let fragmentSize = 4096
+        imageSessionCounter += 1
+        let sessionId = imageSessionCounter
+        let totalSize = Int32(bmp.data.count)
+        var fragmentIndex: Int32 = 0
+        var offset = 0
+
+        while offset < bmp.data.count {
+            let end = min(offset + fragmentSize, bmp.data.count)
+            let fragment = bmp.data[offset..<end]
+
+            let msg = EvenHubProto.updateImageRawDataMessage(
+                containerID: imageContainerID,
+                containerName: imageContainerName,
+                mapSessionId: Int32(sessionId),
+                mapTotalSize: totalSize,
+                compressMode: 0,
+                mapFragmentIndex: fragmentIndex,
+                mapFragmentPacketSize: Int32(fragment.count),
+                mapRawData: Data(fragment)
+            )
+            sendEvenHubCommand(msg)
+
+            fragmentIndex += 1
+            offset = end
+
+            // Small delay between fragments to avoid overwhelming BLE
+            try? await Task.sleep(nanoseconds: 50_000_000) // 50ms
         }
 
-        let scanOptions: [String: Any] = [
-            CBCentralManagerScanOptionAllowDuplicatesKey: false, // Don't allow duplicate advertisements
-        ]
-
-        centralManager!.scanForPeripherals(withServices: nil, options: scanOptions)
+        Bridge.log("G2: displayBitmap() - sent \(fragmentIndex) fragments")
         return true
     }
 
-    func connectById(_ id: String) {
-        DEVICE_SEARCH_ID = "_" + id + "_"
-        startScan()
+    // MARK: - Bitmap Conversion (any input → G2-native 4-bit BMP)
+
+    private static let g2DisplayWidth = 640
+    private static let g2DisplayHeight = 200
+
+    /// Result of BMP conversion — includes BMP data and dimensions for container sizing.
+    private struct G2BmpResult {
+        let data: Data
+        let width: Int
+        let height: Int
     }
+
+    /// Convert any image data to a G2-native 4-bit indexed BMP.
+    /// Scales down to keep BLE transfer small. Returns BMP data + actual dimensions.
+    private func convertToG2Bmp(_ data: Data) -> G2BmpResult? {
+        guard let image = UIImage(data: data), let cgImage = image.cgImage else {
+            Bridge.log("G2: convertToG2Bmp - could not decode image data")
+            return nil
+        }
+
+        let srcWidth = cgImage.width
+        let srcHeight = cgImage.height
+
+        // Scale to fit within half-display to keep BLE transfer reasonable (~10KB)
+        let maxW = G2.g2DisplayWidth / 2   // 320
+        let maxH = G2.g2DisplayHeight / 2  // 100
+        let scale = min(1.0, min(Double(maxW) / Double(srcWidth), Double(maxH) / Double(srcHeight)))
+        let dstWidth = max(1, Int(Double(srcWidth) * scale))
+        let dstHeight = max(1, Int(Double(srcHeight) * scale))
+
+        Bridge.log("G2: convertToG2Bmp - input \(srcWidth)x\(srcHeight) → output \(dstWidth)x\(dstHeight)")
+
+        guard let ctx = CGContext(
+            data: nil,
+            width: dstWidth,
+            height: dstHeight,
+            bitsPerComponent: 8,
+            bytesPerRow: dstWidth,
+            space: CGColorSpaceCreateDeviceGray(),
+            bitmapInfo: CGImageAlphaInfo.none.rawValue
+        ) else {
+            Bridge.log("G2: convertToG2Bmp - failed to create CGContext")
+            return nil
+        }
+
+        ctx.setFillColor(gray: 0, alpha: 1)
+        ctx.fill(CGRect(x: 0, y: 0, width: dstWidth, height: dstHeight))
+        ctx.interpolationQuality = .high
+        ctx.draw(cgImage, in: CGRect(x: 0, y: 0, width: dstWidth, height: dstHeight))
+
+        guard let renderedImage = ctx.makeImage(),
+              let pixelData = renderedImage.dataProvider?.data as Data? else {
+            Bridge.log("G2: convertToG2Bmp - failed to get rendered pixel data")
+            return nil
+        }
+
+        guard let bmpData = build4BitBmp(grayscalePixels: pixelData, width: dstWidth, height: dstHeight) else {
+            return nil
+        }
+        return G2BmpResult(data: bmpData, width: dstWidth, height: dstHeight)
+    }
+
+    /// Build a 4-bit indexed BMP file from 8-bit grayscale pixel data.
+    /// BMP rows are stored bottom-up. Each row is padded to a 4-byte boundary.
+    private func build4BitBmp(grayscalePixels: Data, width: Int, height: Int) -> Data? {
+        // 4-bit: 2 pixels per byte, rows padded to 4-byte boundary
+        let bytesPerRow4bit = (width + 1) / 2 // ceil(width / 2)
+        let paddedRowSize = (bytesPerRow4bit + 3) & ~3 // pad to 4-byte boundary
+        let pixelDataSize = paddedRowSize * height
+
+        // BMP file header (14 bytes) + DIB header (40 bytes) + color table (16 * 4 = 64 bytes)
+        let headerSize = 14 + 40 + 64
+        let fileSize = headerSize + pixelDataSize
+
+        var bmp = Data(capacity: fileSize)
+
+        // --- BMP File Header (14 bytes) ---
+        bmp.append(contentsOf: [0x42, 0x4D])                        // "BM" signature
+        bmp.appendLittleEndian(UInt32(fileSize))                     // File size
+        bmp.appendLittleEndian(UInt16(0))                            // Reserved1
+        bmp.appendLittleEndian(UInt16(0))                            // Reserved2
+        bmp.appendLittleEndian(UInt32(headerSize))                   // Pixel data offset
+
+        // --- DIB Header (BITMAPINFOHEADER, 40 bytes) ---
+        bmp.appendLittleEndian(UInt32(40))                           // DIB header size
+        bmp.appendLittleEndian(Int32(width))                         // Width
+        bmp.appendLittleEndian(Int32(height))                        // Height (positive = bottom-up)
+        bmp.appendLittleEndian(UInt16(1))                            // Color planes
+        bmp.appendLittleEndian(UInt16(4))                            // Bits per pixel (4-bit)
+        bmp.appendLittleEndian(UInt32(0))                            // Compression (none)
+        bmp.appendLittleEndian(UInt32(pixelDataSize))                // Image size
+        bmp.appendLittleEndian(Int32(2835))                          // X pixels/meter (~72 DPI)
+        bmp.appendLittleEndian(Int32(2835))                          // Y pixels/meter
+        bmp.appendLittleEndian(UInt32(16))                           // Colors used
+        bmp.appendLittleEndian(UInt32(0))                            // Important colors (0 = all)
+
+        // --- Color Table (16 entries, 4 bytes each: B, G, R, 0) ---
+        for i in 0..<16 {
+            let val = UInt8(i * 17) // 0, 17, 34, ... 255 (evenly spaced grayscale)
+            bmp.append(contentsOf: [val, val, val, 0]) // B, G, R, Reserved
+        }
+
+        // --- Pixel Data (bottom-up rows, 4-bit packed) ---
+        let rowBytes = [UInt8](repeating: 0, count: paddedRowSize)
+        for row in 0..<height {
+            // BMP is bottom-up: row 0 in BMP = last row of image
+            let srcRow = height - 1 - row
+            let srcOffset = srcRow * width
+            var rowBuf = rowBytes
+
+            for col in 0..<width {
+                let pixelIndex = srcOffset + col
+                guard pixelIndex < grayscalePixels.count else { continue }
+
+                // Map 8-bit grayscale (0-255) to 4-bit index (0-15)
+                let gray8 = grayscalePixels[pixelIndex]
+                let index4 = gray8 >> 4 // divide by 16
+
+                let bytePos = col / 2
+                if col % 2 == 0 {
+                    // High nibble
+                    rowBuf[bytePos] = index4 << 4
+                } else {
+                    // Low nibble
+                    rowBuf[bytePos] |= index4
+                }
+            }
+            bmp.append(contentsOf: rowBuf)
+        }
+
+        Bridge.log("G2: build4BitBmp - \(bmp.count) bytes (header=\(headerSize), pixels=\(pixelDataSize), rows=\(paddedRowSize)x\(height))")
+        return bmp
+    }
+
+    func showDashboard() {
+        // G2 doesn't have a native dashboard concept via EvenHub
+    }
+
+    func setDashboardPosition(_ height: Int, _ depth: Int) {
+        // No-op for G2
+    }
+
+    func setBrightness(_ level: Int, autoMode: Bool) {
+        Bridge.log("G2: setBrightness(\(level), auto=\(autoMode))")
+        let msg = G2SettingProto.setBrightness(
+            magicRandom: sendManager.nextMagicRandom(),
+            level: Int32(level),
+            autoAdjust: autoMode
+        )
+        sendG2SettingCommand(msg)
+    }
+
+    // MARK: - Private Display Helpers
+
+    private func createPageWithText(_ text: String) {
+        let tc = EvenHubProto.textContainerProperty(
+            x: 0, y: 0, width: 640, height: 200,
+            borderWidth: 0, borderColor: 0, borderRadius: 0,
+            paddingLength: 4, containerID: textContainerID,
+            containerName: "text-main", isEventCapture: false,
+            content: text
+        )
+
+        let msg = EvenHubProto.createPageMessage(textContainers: [tc])
+        sendEvenHubCommand(msg)
+        pageCreated = true
+        currentTextContent = text
+    }
+
+    private func updateText(_ text: String) {
+        let msg = EvenHubProto.updateTextMessage(
+            containerID: textContainerID,
+            contentOffset: 0,
+            contentLength: Int32(text.utf8.count),
+            content: text
+        )
+        sendEvenHubCommand(msg)
+        currentTextContent = text
+    }
+
+    // MARK: - SGCManager: Audio Control
+
+    func setMicEnabled(_ enabled: Bool) {
+        Bridge.log("G2: setMicEnabled(\(enabled))")
+        micEnabled_ = enabled
+        GlassesStore.shared.apply("glasses", "micEnabled", enabled)
+
+        let msg = EvenHubProto.audioControlMessage(enable: enabled)
+        sendEvenHubCommand(msg)
+    }
+
+    func sortMicRanking(list: [String]) -> [String] {
+        return list
+    }
+
+    // MARK: - SGCManager: Connection Management
 
     func findCompatibleDevices() {
         Bridge.log("G2: findCompatibleDevices()")
@@ -715,1418 +1335,519 @@ class G2: NSObject, SGCManager {
         startScan()
     }
 
-    // connect to glasses we've discovered:
-    @objc func RN_connectGlasses() -> Bool {
-        Bridge.log("RN_connectGlasses()")
-
-        if let side = leftPeripheral {
-            Bridge.log("G2: connecting to left glass: \(side.name ?? "(unknown)")")
-            centralManager!.connect(side, options: nil)
-        }
-
-        if let side = rightPeripheral {
-            Bridge.log("G2: connecting to right glass: \(side.name ?? "(unknown)")")
-            centralManager!.connect(side, options: nil)
-        }
-
-        // just return if we don't have both a left and right arm:
-        guard leftPeripheral != nil && rightPeripheral != nil else {
-            return false
-        }
-
-        Bridge.log(
-            "G2: found both glasses \(leftPeripheral!.name ?? "(unknown)"), \(rightPeripheral!.name ?? "(unknown)") stopping scan"
-        )
-        stopScan()
-
-        // get battery status:
-        // getBatteryStatus()
-        return true
-    }
-
-    @objc func RN_sendText(_ text: String) {
-        Task {
-            let displayText = "\(text)"
-            guard let textData = displayText.data(using: .utf8) else { return }
-
-            var command: [UInt8] = [
-                0x4E, // SEND_RESULT command
-                0x00, // sequence number
-                0x01, // total packages
-                0x00, // current package
-                0x71, // screen status (0x70 Text Show | 0x01 New Content)
-                0x00, // char position 0
-                0x00, // char position 1
-                0x01, // page number
-                0x01, // max pages
-            ]
-            command.append(contentsOf: Array(textData))
-            self.queueChunks([command])
-
-            // await sendTextWall(text)
-
-            // // await createQuickNoteIfNeeded(text)
-            // // await sendQuickNotesToGlasses()
-        }
-
-        // @@@@@@@@ just for testing:
-        //    Task {
-        //      msgId += 1
-        //      let ncsNotification = NCSNotification(
-        //          msgId: msgId,
-        //          appIdentifier: "io.heckel.ntfy",
-        //          title: "Notification Title",
-        //          subtitle: "Notification Subtitle",
-        //          message: text,
-        //          displayName: "Example App"
-        //      )
-        //
-        //      let notification = G1Notification(ncsNotification: ncsNotification)
-        //      let encodedChunks = await notification.constructNotification()
-        //      CoreCommsService.log("encodedChunks: \(encodedChunks.count)")
-        //      self.queueChunks(encodedChunks)
-        //    }
-    }
-
-    func sendTextWall(_ text: String) {
-        // clear the screen with the exit command after 3 seconds if the text is empty or a space:
-        if CoreManager.shared.powerSavingMode && text.isEmpty || text == " " {
-            CoreManager.shared.sendStateWorkItem?.cancel()
-            Bridge.log("Mentra: Clearing display after 3 seconds")
-            // if we're clearing the display, after a delay, send a clear command if not cancelled with another
-            let workItem = DispatchWorkItem { [weak self] in
-                guard let self = self else { return }
-                if CoreManager.shared.isHeadUp {
-                    return
-                }
-                self.exit()
-            }
-            CoreManager.shared.sendStateWorkItem = workItem
-            CoreManager.shared.sendStateQueue.asyncAfter(deadline: .now() + 3, execute: workItem)
-        }
-
-        let chunks = textHelper.createTextWallChunks(text)
-        // if text.isEmpty {
-        //     clearDisplay()
-        //     return
-        // }
-        // let chunks = textHelper.chunkTextForTransmission(text)
-        queueChunks(chunks, sleepAfterMs: 10)
-    }
-
-    func sendDoubleTextWall(_ top: String, _ bottom: String) {
-        let chunks = textHelper.createDoubleTextWallChunks(textTop: top, textBottom: bottom)
-        queueChunks(chunks, sleepAfterMs: 10)
-
-        // quick note testing:
-        // Task {
-        //   await createQuickNoteIfNeeded(top + "\n" + bottom)
-        //   await sendQuickNotesToGlasses()
-        // }
-    }
-
-    // only set to true when we receive init_ack response from the glasses
-    func setReadiness(left: Bool?, right: Bool?) {
-        let prevLeftReady = leftReady
-        let prevRightReady = rightReady
-
-        if left != nil {
-            leftReady = left!
-            if !prevLeftReady, leftReady {
-                Bridge.log("Left ready!")
-            }
-        }
-        if right != nil {
-            rightReady = right!
-            if !prevRightReady, rightReady {
-                Bridge.log("Right ready!")
-            }
-        }
-
-        //         CoreCommsService.log("g1Ready set to \(leftReady) \(rightReady) \(leftReady && rightReady) left: \(left), right: \(right)")
-        ready = leftReady && rightReady
-        if ready {
-            stopReconnectionTimer()
-        }
-    }
-
-    func stopScan() {
-        centralManager!.stopScan()
-        Bridge.log("G2: Stopped scanning for devices")
-    }
-
-    func getSerialNumberInfo() -> [String: Any] {
-        return [
-            "serialNumber": glassesSerialNumber ?? "",
-            "style": glassesStyle ?? "",
-            "color": glassesColor ?? "",
-        ]
-    }
-
-    func getConnectedBluetoothName() -> String? {
-        // Return the name of the first connected peripheral (either left or right)
-        if let leftName = leftPeripheral?.name {
-            return leftName
-        }
-        return rightPeripheral?.name
+    func connectById(_ id: String) {
+        Bridge.log("G2: connectById(\(id))")
+        DEVICE_SEARCH_ID = "_" + id + "_"
+        startScan()
     }
 
     func disconnect() {
+        Bridge.log("G2: disconnect()")
         isDisconnecting = true
-        leftGlassUUID = nil
-        rightGlassUUID = nil
-        stopReconnectionTimer()
+        stopHeartbeats()
+        Task { await reconnectionManager.stop() }
 
         if let left = leftPeripheral {
-            centralManager!.cancelPeripheralConnection(left)
+            centralManager?.cancelPeripheralConnection(left)
         }
-
         if let right = rightPeripheral {
-            centralManager!.cancelPeripheralConnection(right)
+            centralManager?.cancelPeripheralConnection(right)
         }
 
+        ready = false
+        leftInitialized = false
+        rightInitialized = false
+        authStarted = false
+        pageCreated = false
+        heartbeatCounter = 0
+        GlassesStore.shared.apply("glasses", "connected", false)
+        GlassesStore.shared.apply("glasses", "fullyBooted", false)
+    }
+
+    func forget() {
+        stopHeartbeats()
+        Task { await reconnectionManager.stop() }
+        disconnect()
+        leftGlassUUID = nil
+        rightGlassUUID = nil
         leftPeripheral = nil
         rightPeripheral = nil
-        setReadiness(left: false, right: false)
-        Bridge.log("G2: Disconnected from glasses")
+        leftWriteChar = nil
+        rightWriteChar = nil
+        leftNotifyChar = nil
+        rightNotifyChar = nil
+        rightAudioChar = nil
+        leftAudioChar = nil
+        DEVICE_SEARCH_ID = "NOT_SET"
+        centralManager?.delegate = nil
     }
 
-    private func attemptSend(cmd: BufferedCommand, side: String) async {
-        var maxAttempts = 5
-        var attempts = 0
-        var success = false
-        let chunks = cmd.chunks
-
-        while attempts < maxAttempts, !success {
-            if attempts > 0 {
-                Bridge.log("G2: trying again to send to:\(side): \(attempts)")
-            }
-            let data = Data(chunks[0])
-            // CoreCommsService.log("SEND (\(side)) \(data.hexEncodedString())")
-
-            if isDisconnecting {
-                // forget whatever we were doing since we're disconnecting:
-                break
-            }
-
-            for i in 0 ..< chunks.count - 1 {
-                let chunk = chunks[i]
-
-                let firstFewBytes = String(Data(chunk).hexEncodedString().prefix(16))
-                // CoreCommsService.log("SEND (\(side)) \(firstFewBytes)")
-                await sendCommandToSideWithoutResponse(chunk, side: side)
-                try? await Task.sleep(nanoseconds: UInt64(cmd.chunkTimeMs) * 1_000_000) // 8ms
-            }
-
-            let lastChunk = chunks.last!
-
-            var sequenceNumber = -1
-
-            // if this is a text chunk, set the sequence to the 2nd byte of the chunk:
-            if lastChunk[0] == Commands.BLE_REQ_EVENAI.rawValue {
-                sequenceNumber = Int(lastChunk[1])
-            }
-
-            if lastChunk[0] == Commands.CRC_CHECK.rawValue {
-                sequenceNumber = Int(lastChunk[1])
-            }
-
-            if cmd.lastFrameMs > 0 {
-                try? await Task.sleep(nanoseconds: UInt64(cmd.lastFrameMs) * 1_000_000) // 100ms
-            }
-
-            let firstFewBytes = String(Data(lastChunk).hexEncodedString().prefix(16)).uppercased()
-            // don't log if it starts with 25 (heartbeat):
-            if lastChunk[0] != Commands.BLE_REQ_HEARTBEAT.rawValue {
-                // Bridge.log("SEND (\(side)) \(firstFewBytes)")
-            }
-
-            //      if (lastChunk[0] == 0x4E) {
-            //        sequenceNumber = Int(lastChunk[1])
-            //      }
-
-            //      CoreCommsService.log("G2: SENDING with sequenceNumber: \(sequenceNumber)")
-
-            // for heartbeats, don't retry and assume success since the glasses don't respond:
-            if lastChunk[0] == Commands.BLE_REQ_HEARTBEAT.rawValue {
-                success = true
-                await sendCommandToSideWithoutResponse(lastChunk, side: side)
-            } else {
-                success = await sendCommandToSide2(
-                    lastChunk, side: side, attemptNumber: attempts, sequenceNumber: sequenceNumber
-                )
-            }
-
-            // CoreCommsService.log("command success: \(success)")
-            //      if (!success) {
-            //        CoreCommsService.log("G2: timed out waiting for \(s)")
-            //      }
-            //      await sendCommandToSideWithoutResponse(lastChunk, side: side)
-            //      success = true
-
-            attempts += 1
-            if !success, attempts >= maxAttempts {
-                Bridge.log("G2: ❌ Command timed out!")
-                startReconnectionTimer()
-                break
-            }
-
-            if success {
-                stopReconnectionTimer()
-                // setReadiness(left: true, right: true)
-            }
-        }
+    func cleanup() {
+        disconnect()
     }
 
-    // Process a single number with timeouts
-    private func processCommand(_ command: BufferedCommand) async {
-        if command.chunks.isEmpty {
-            Bridge.log("G2: @@@ chunks was empty! @@@")
-            return
-        }
-
-        // Send to both sides in parallel
-        await withTaskGroup(of: Void.self) { group in
-            if command.sendLeft {
-                group.addTask {
-                    await self.attemptSend(cmd: command, side: "L")
-                }
-            }
-
-            if command.sendRight {
-                group.addTask {
-                    await self.attemptSend(cmd: command, side: "R")
-                }
-            }
-
-            // Wait for all tasks to complete
-            await group.waitForAll()
-        }
-
-        if command.waitTime > 0 {
-            // wait waitTime milliseconds before moving on to the next command:
-            try? await Task.sleep(nanoseconds: UInt64(command.waitTime) * 1_000_000)
-        } else {
-            // sleep for a min amount of time unless otherwise specified
-            try? await Task.sleep(nanoseconds: 8 * 1_000_000) // Xms
-        }
+    func getConnectedBluetoothName() -> String? {
+        return rightPeripheral?.name ?? leftPeripheral?.name
     }
 
-    private func waitForSemaphore(semaphore: DispatchSemaphore, timeout: TimeInterval) -> Bool {
-        let result = semaphore.wait(timeout: .now() + timeout)
-        return result == .success
+    func ping() {
+        sendEvenHubHeartbeat()
     }
 
-    private func findCharacteristic(uuid: CBUUID, peripheral: CBPeripheral) -> CBCharacteristic? {
-        for service in peripheral.services ?? [] {
-            for characteristic in service.characteristics ?? [] {
-                if characteristic.uuid == uuid {
-                    return characteristic
-                }
-            }
-        }
-        return nil
-    }
-
-    private func getConnectedDevices() -> [CBPeripheral] {
-        let connectedPeripherals = centralManager!.retrieveConnectedPeripherals(withServices: [
-            UART_SERVICE_UUID,
-        ])
-        return connectedPeripherals
-    }
-
-    private func handleAck(from peripheral: CBPeripheral, success: Bool, sequenceNumber: Int = -1) {
-        guard success else { return }
-
-        let side = peripheral == leftPeripheral ? "L" : "R"
-        let key = sequenceNumber == -1 ? side : "\(side)-\(sequenceNumber)"
-
-        Task {
-            let wasWaiting = await ackManager.receiveAck(key: key)
-            if wasWaiting {
-                // Bridge.log("G2: ✅ ACK received for \(key)")
-            }
-        }
-    }
-
-    private func handleNotification(from peripheral: CBPeripheral, data: Data) {
-        Bridge.log("G2: handleNotification()")
-        guard let command = data.first else { return } // ensure the data isn't empty
-
-        let side = peripheral == leftPeripheral ? "L" : "R"
-        let s = peripheral == leftPeripheral ? "L" : "R"
-        // Bridge.log("G2: RECV (\(s)) \(data.hexEncodedString())")
-
-        switch Commands(rawValue: command) {
-        case .BLE_REQ_INIT:
-            handleAck(from: peripheral, success: data[1] == CommandResponse.ACK.rawValue)
-            handleInitResponse(from: peripheral, success: data[1] == CommandResponse.ACK.rawValue)
-        case .QUICK_NOTE_ADD:
-            handleAck(from: peripheral, success: data[1] == 0x10 || data[1] == 0x43)
-        case .BLE_REQ_MIC_ON:
-            handleAck(from: peripheral, success: data[1] == CommandResponse.ACK.rawValue)
-        case .BRIGHTNESS:
-            handleAck(from: peripheral, success: data[1] == CommandResponse.ACK.rawValue)
-        case .BLE_EXIT_ALL_FUNCTIONS:
-            handleAck(from: peripheral, success: data[1] == CommandResponse.ACK.rawValue)
-        case .WHITELIST:
-            // TODO: ios no idea why the glasses send 0xCB before sending ACK: (CB == continue!)
-            handleAck(
-                from: peripheral,
-                success: data[1] == 0xCB || data[1] == CommandResponse.ACK.rawValue
-            )
-        case .DASHBOARD_LAYOUT_COMMAND:
-            // 0x06 seems arbitrary :/
-            handleAck(from: peripheral, success: data[1] == 0x06)
-        case .DASHBOARD_SHOW:
-            handleAck(
-                from: peripheral, success: data[1] == 0x07 || data[1] == 0x90 || data[1] == 0x0C
-            )
-        case .HEAD_UP_ANGLE:
-            handleAck(from: peripheral, success: data[1] == CommandResponse.ACK.rawValue)
-        case .CRC_CHECK:
-            handleAck(from: peripheral, success: true, sequenceNumber: Int(data[1]))
-        case .BMP_END:
-            handleAck(from: peripheral, success: data[1] == CommandResponse.ACK.rawValue)
-        case .SILENT_MODE:
-            handleAck(from: peripheral, success: data[1] == CommandResponse.ACK.rawValue)
-        case .BLE_REQ_TRANSFER_MIC_DATA:
-            // compressedVoiceData = data
-            // skip the first 2 bytes:
-            let lc3Data = data.subdata(in: 2 ..< data.count)
-            CoreManager.shared.handleGlassesMicData(lc3Data)
-        //                CoreCommsService.log("G2: Got voice data: " + String(data.count))
-        case .UNK_1:
-            handleAck(from: peripheral, success: true)
-        case .UNK_2:
-            handleAck(from: peripheral, success: true)
-        case .BLE_REQ_HEARTBEAT:
-            Bridge.log("heartbeatCounter: \(heartbeatCounter) data[1]: \(data[1])")
-            handleAck(from: peripheral, success: data[1] == heartbeatCounter - 1)
-        case .BLE_REQ_BATTERY:
-            // TODO: ios handle semaphores correctly here
-            // battery info
-            guard data.count >= 6 && data[1] == 0x66 else {
-                break
-            }
-
-            handleAck(from: peripheral, success: data[1] == 0x66)
-
-            // Response format: 2C 66 [battery%] [flags] [voltage_low] [voltage_high] ...
-            let batteryPercent = Int(data[2])
-            let flags = data[3]
-            let voltageLow = Int(data[4])
-            let voltageHigh = Int(data[5])
-            let rawVoltage = (voltageHigh << 8) | voltageLow
-            let voltage = rawVoltage / 10 // Scale down by 10 to get actual millivolts
-
-            //      CoreCommsService.log("G2: Raw battery data - Battery: \(batteryPercent)%, Voltage: \(voltage)mV, Flags: 0x\(String(format: "%02X", flags))")
-
-            // if left, update left battery level, if right, update right battery level
-            if peripheral == leftPeripheral {
-                if leftBatteryLevel != batteryPercent {
-                    Bridge.log("G2: Left glass battery: \(batteryPercent)%")
-                    leftBatteryLevel = batteryPercent
-                }
-            } else if peripheral == rightPeripheral {
-                if rightBatteryLevel != batteryPercent {
-                    Bridge.log("G2: Right glass battery: \(batteryPercent)%")
-                    rightBatteryLevel = batteryPercent
-                }
-            }
-
-            // update the main battery level as the lower of the two
-            let newBatteryLevel = min(leftBatteryLevel, rightBatteryLevel)
-            if batteryLevel != newBatteryLevel {
-                batteryLevel = min(leftBatteryLevel, rightBatteryLevel)
-            }
-        case .BLE_REQ_EVENAI:
-            guard data.count > 1 else { break }
-            handleAck(
-                from: peripheral, success: data[1] == CommandResponse.ACK.rawValue,
-                sequenceNumber: Int(data[2])
-            )
-        case .BLE_REQ_DEVICE_ORDER:
-            let order = data[1]
-            switch DeviceOrders(rawValue: order) {
-            case .HEAD_UP:
-                Bridge.log("G2: HEAD_UP")
-                isHeadUp = true
-                CoreManager.shared.updateHeadUp(isHeadUp)
-            case .HEAD_UP2:
-                Bridge.log("G2: HEAD_UP2")
-                isHeadUp = true
-                CoreManager.shared.updateHeadUp(isHeadUp)
-            // case .HEAD_DOWN:
-            //   CoreCommsService.log("HEAD_DOWN")
-            //   isHeadUp = false
-            //   break
-            case .HEAD_DOWN2:
-                Bridge.log("G2: HEAD_DOWN2")
-                isHeadUp = false
-                CoreManager.shared.updateHeadUp(isHeadUp)
-            case .ACTIVATED:
-                Bridge.log("G2: ACTIVATED")
-            case .SILENCED:
-                Bridge.log("G2: SILENCED")
-            case .DISPLAY_READY:
-                Bridge.log("G2: DISPLAY_READY")
-            //        sendInitCommand(to: peripheral)// experimental
-            case .TRIGGER_FOR_AI:
-                Bridge.log("G2: TRIGGER AI")
-            case .TRIGGER_FOR_STOP_RECORDING:
-                Bridge.log("G2: STOP RECORDING")
-            case .TRIGGER_CHANGE_PAGE:
-                Bridge.log("G2: TRIGGER_CHANGE_PAGE")
-            case .CASE_REMOVED:
-                Bridge.log("G2: REMOVED FROM CASE")
-                caseRemoved = true
-                CoreManager.shared.getStatus()
-            case .CASE_REMOVED2:
-                Bridge.log("G2: REMOVED FROM CASE2")
-                caseRemoved = true
-                CoreManager.shared.getStatus()
-            case .CASE_OPEN:
-                caseOpen = true
-                caseRemoved = false
-                Bridge.log("G2: CASE OPEN")
-                CoreManager.shared.getStatus()
-            case .CASE_CLOSED:
-                caseOpen = false
-                caseRemoved = false
-                Bridge.log("G2: CASE CLOSED")
-                CoreManager.shared.getStatus()
-            case .CASE_CHARGING_STATUS:
-                guard data.count >= 3 else { break }
-                let status = data[2]
-                if status == 0x01 {
-                    caseCharging = true
-                    Bridge.log("G2: CASE CHARGING")
-                } else {
-                    caseCharging = false
-                    Bridge.log("G2: CASE NOT CHARGING")
-                }
-            case .CASE_CHARGE_INFO:
-                Bridge.log("G2: CASE CHARGE INFO")
-                guard data.count >= 3 else { break }
-                if Int(data[2]) != -1 {
-                    caseBatteryLevel = Int(data[2])
-                    Bridge.log("G2: Case battery level: \(caseBatteryLevel)%")
-                } else {
-                    Bridge.log("G2: Case battery level was -1")
-                }
-            case .DOUBLE_TAP:
-                Bridge.log("G2: DOUBLE TAP / display turned off")
-            //        Task {
-            ////          RN_sendText("DOUBLE TAP DETECTED")
-            ////          queueChunks([[UInt8(0x00), UInt8(0x01)]])
-            //          try? await Task.sleep(nanoseconds: 1500 * 1_000_000) // 2s delay after sending
-            //          sendInit()
-            //          clearState()
-            //        }
-            default:
-                //                 Core.log("G2: Received device order: \(data.subdata(in: 1..<data.count).hexEncodedString())")
-                break
-            }
-        default:
-            Bridge.log("G2: received from G1(not handled): \(data.hexEncodedString())")
-        }
-    }
-}
-
-// MARK: Commands
-
-extension G2 {
-    // Handle whitelist functionality
-    func getWhitelistChunks() -> [[UInt8]] {
-        // Define the hardcoded whitelist JSON
-        let apps = [
-            ["id": "com.mentra.os", "name": "MentraOS"],
-            ["id": "io.heckel.ntfy", "name": "ntfy"],
-        ]
-        let whitelistJson = createWhitelistJson(apps: apps)
-
-        Bridge.log("G2: Creating chunks for hardcoded whitelist: \(whitelistJson)")
-
-        // Convert JSON to bytes and split into chunks
-        return createWhitelistChunks(json: whitelistJson)
-    }
-
-    private func createWhitelistJson(apps: [[String: String]]) -> String {
-        do {
-            // Create app list array
-            var appList: [[String: Any]] = []
-            for app in apps {
-                let appDict: [String: Any] = [
-                    "id": app["id"] ?? "",
-                    "name": app["name"] ?? "",
-                ]
-                appList.append(appDict)
-            }
-
-            // Create the whitelist dictionary
-            let whitelistDict: [String: Any] = [
-                "calendar_enable": true,
-                "call_enable": true,
-                "msg_enable": true,
-                "ios_mail_enable": true,
-                "app": [
-                    "list": appList,
-                    "enable": true,
-                ],
-            ]
-
-            // Convert to JSON string
-            let jsonData = try JSONSerialization.data(withJSONObject: whitelistDict, options: [])
-            if let jsonString = String(data: jsonData, encoding: .utf8) {
-                return jsonString
-            } else {
-                return "{}"
-            }
-        } catch {
-            Bridge.log("G2: Error creating whitelist JSON: \(error.localizedDescription)")
-            return "{}"
-        }
-    }
-
-    // Helper function to split JSON into chunks
-    private func createWhitelistChunks(json: String) -> [[UInt8]] {
-        let MAX_CHUNK_SIZE = 180 - 4 // Reserve space for the header
-        guard let jsonData = json.data(using: .utf8) else { return [] }
-
-        let totalChunks = Int(ceil(Double(jsonData.count) / Double(MAX_CHUNK_SIZE)))
-        var chunks: [Data] = []
-
-        Bridge.log("G2: jsonData.count = \(jsonData.count), totalChunks = \(totalChunks)")
-
-        for i in 0 ..< totalChunks {
-            let start = i * MAX_CHUNK_SIZE
-            let end = min(start + MAX_CHUNK_SIZE, jsonData.count)
-            let range = start ..< end
-            let payloadChunk = jsonData.subdata(in: range)
-
-            // Create the header: [WHITELIST_CMD, total_chunks, chunk_index]
-            var headerData = Data()
-            headerData.append(Commands.WHITELIST.rawValue)
-            headerData.append(UInt8(totalChunks))
-            headerData.append(UInt8(i))
-
-            // Combine header and payload
-            var chunkData = Data()
-            chunkData.append(headerData)
-            chunkData.append(payloadChunk)
-
-            chunks.append(chunkData)
-        }
-
-        var uintChunks: [[UInt8]] = []
-        for chunk in chunks {
-            uintChunks.append(Array(chunk))
-        }
-        return uintChunks
-        //    return chunks.flatMap { Array($0) }
-    }
-
-    func exitAllFunctions(to peripheral: CBPeripheral, characteristic: CBCharacteristic) {
-        var data = Data()
-        data.append(Commands.BLE_EXIT_ALL_FUNCTIONS.rawValue)
-        peripheral.writeValue(data, for: characteristic, type: .withoutResponse)
-    }
-
-    private func sendInitCommand(to peripheral: CBPeripheral) {
-        let initData = Data([Commands.BLE_REQ_INIT.rawValue, 0x01])
-        let initDataArray = initData.map { UInt8($0) }
-
-        if leftPeripheral == peripheral {
-            queueChunks([initDataArray], sendLeft: true, sendRight: false)
-        } else if rightPeripheral == peripheral {
-            queueChunks([initDataArray], sendLeft: false, sendRight: true)
-        }
-    }
-
-    private func sendInit() {
-        let initData = Data([Commands.BLE_REQ_INIT.rawValue, 0x01])
-        let initDataArray = initData.map { UInt8($0) }
-        queueChunks([initDataArray])
-    }
-
-    func exit() {
-        let exitData = Data([Commands.BLE_EXIT_ALL_FUNCTIONS.rawValue])
-        let exitDataArray = exitData.map { UInt8($0) }
-        queueChunks([exitDataArray])
-    }
-
-    func sendRgbLedControl(
-        requestId: String, packageName _: String?, action _: String, color _: String?,
-        ontime _: Int, offtime _: Int, count _: Int
-    ) {
-        Bridge.log("sendRgbLedControl - not supported on G1")
-        Bridge.sendRgbLedControlResponse(
-            requestId: requestId, success: false, error: "device_not_supported"
-        )
-    }
-
-    // don't call semaphore signals here as it's handled elswhere:
-    private func handleInitResponse(from peripheral: CBPeripheral, success: Bool) {
-        if peripheral == leftPeripheral {
-            leftInitialized = success
-            // CoreCommsService.log("G2: Left arm initialized: \(success)")
-            setReadiness(left: true, right: nil)
-        } else if peripheral == rightPeripheral {
-            rightInitialized = success
-            // CoreCommsService.log("G2: Right arm initialized: \(success)")
-            setReadiness(left: nil, right: true)
-        }
-
-        // Only proceed if both glasses are initialized
-        if leftInitialized, rightInitialized {
-            setReadiness(left: true, right: true)
-        }
-    }
-
-    private func sendHeartbeat() {
-        incrementHeartbeatCounter()
-
-        var heartbeatData = Data()
-        // heartbeatData.append(Commands.BLE_REQ_HEARTBEAT.rawValue)
-        // heartbeatData.append(UInt8(0x02 & 0xFF))
-        heartbeatData.append(Commands.BLE_REQ_HEARTBEAT.rawValue)
-        heartbeatData.append(UInt8(heartbeatCounter & 0xFF))
-
-        var heartbeatArray = heartbeatData.map { UInt8($0) }
-
-        if ready {
-            queueChunks([heartbeatArray])
-        }
-
-        // Periodically request battery status
-        if leftBatteryLevel == -1 || rightBatteryLevel == -1 || heartbeatCounter % 10 == 0 {
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) { [weak self] in
-                self?.getBatteryStatus()
-            }
-        }
-        //    if let txChar = findCharacteristic(uuid: UART_TX_CHAR_UUID, peripheral: peripheral) {
-        //      let hexString = heartbeatData.map { String(format: "%02X", $0) }.joined()
-        //      peripheral.writeValue(heartbeatData, for: txChar, type: .withoutResponse)
-        //    }
-    }
-
-    func sendCommandToSide(_ command: [UInt8], side: String) async {
-        // Convert to Data
-        let commandData = Data(command)
-        //    CoreCommsService.log("G2: Sending command to glasses: \(paddedCommand.map { String(format: "%02X", $0) }.joined(separator: " "))")
-        // CoreCommsService.log("G2: SEND (\(side)) \(commandData.hexEncodedString())")
-
-        if side == "L" {
-            // send to left
-            if let leftPeripheral = leftPeripheral,
-               let characteristic = leftPeripheral.services?
-               .first(where: { $0.uuid == UART_SERVICE_UUID })?
-               .characteristics?
-               .first(where: { $0.uuid == UART_TX_CHAR_UUID })
-            {
-                leftPeripheral.writeValue(commandData, for: characteristic, type: .withResponse)
-            }
-        } else {
-            // send to right
-            if let rightPeripheral = rightPeripheral,
-               let characteristic = rightPeripheral.services?
-               .first(where: { $0.uuid == UART_SERVICE_UUID })?
-               .characteristics?
-               .first(where: { $0.uuid == UART_TX_CHAR_UUID })
-            {
-                rightPeripheral.writeValue(commandData, for: characteristic, type: .withResponse)
-            }
-        }
-    }
-
-    private func sendCommandToSide2(
-        _ command: [UInt8],
-        side: String,
-        attemptNumber: Int = 0,
-        sequenceNumber: Int = -1
-    ) async -> Bool {
-        let startTime = Date()
-        let commandData = Data(command)
-
-        let peripheral: CBPeripheral?
-        let characteristic: CBCharacteristic?
-
-        if side == "L" {
-            peripheral = leftPeripheral
-            characteristic = leftPeripheral?.services?
-                .first(where: { $0.uuid == UART_SERVICE_UUID })?
-                .characteristics?
-                .first(where: { $0.uuid == UART_TX_CHAR_UUID })
-        } else {
-            peripheral = rightPeripheral
-            characteristic = rightPeripheral?.services?
-                .first(where: { $0.uuid == UART_SERVICE_UUID })?
-                .characteristics?
-                .first(where: { $0.uuid == UART_TX_CHAR_UUID })
-        }
-
-        guard let peripheral, let characteristic else {
-            Bridge.log("G2: ⚠️ peripheral/characteristic not found, resuming immediately")
-            return false
-        }
-
-        let key = sequenceNumber == -1 ? side : "\(side)-\(sequenceNumber)"
-        let waitTimeMs = Int((0.3 + (0.2 * Double(attemptNumber))) * 1000)
-
-        return await ackManager.waitForAck(key: key, timeoutMs: waitTimeMs) {
-            peripheral.writeValue(commandData, for: characteristic, type: .withResponse)
-        } onTimeout: {
-            let elapsed = Date().timeIntervalSince(startTime) * 1000
-            Bridge.log("G2: ⚠️ ACK timeout for \(key) after \(String(format: "%.0f", elapsed))ms")
-        }
-    }
-
-    // FAST BLE TRANSMISSION (.withoutResponse)
-    func sendCommandToSideWithoutResponse(_ command: [UInt8], side: String) async {
-        // Convert to Data
-        let commandData = Data(command)
-
-        if side == "L" {
-            // send to left
-            if let leftPeripheral = leftPeripheral,
-               let characteristic = leftPeripheral.services?
-               .first(where: { $0.uuid == UART_SERVICE_UUID })?
-               .characteristics?
-               .first(where: { $0.uuid == UART_TX_CHAR_UUID })
-            {
-                // Fast approach: .withoutResponse for speed
-                leftPeripheral.writeValue(commandData, for: characteristic, type: .withoutResponse)
-            }
-        } else {
-            // send to right
-            if let rightPeripheral = rightPeripheral,
-               let characteristic = rightPeripheral.services?
-               .first(where: { $0.uuid == UART_SERVICE_UUID })?
-               .characteristics?
-               .first(where: { $0.uuid == UART_TX_CHAR_UUID })
-            {
-                // Fast approach: .withoutResponse for speed
-                rightPeripheral.writeValue(commandData, for: characteristic, type: .withoutResponse)
-            }
-        }
-
-        // No waiting for ACK - fire and forget for speed
-    }
-
-    func queueChunks(
-        _ chunks: [[UInt8]], sendLeft: Bool = true, sendRight: Bool = true, sleepAfterMs: Int = 0,
-        ignoreAck: Bool = false, chunkTimeMs: Int = 8, lastFrameMs: Int = 100
-    ) {
-        let bufferedCommand = BufferedCommand(
-            chunks: chunks, sendLeft: sendLeft, sendRight: sendRight, waitTime: sleepAfterMs,
-            ignoreAck: ignoreAck, chunkTimeMs: chunkTimeMs, lastFrameMs: lastFrameMs
-        )
-        Task {
-            await commandQueue.enqueue(bufferedCommand)
-        }
-    }
-
-    func sendWhitelist() {
-        Bridge.log("G2: sendWhitelist()")
-        let whitelistChunks = getWhitelistChunks()
-        queueChunks(whitelistChunks, sendLeft: true, sendRight: true, sleepAfterMs: 100)
-    }
-
-    func setBrightness(_ level: Int, autoMode: Bool = false) {
-        // Convert from percentage (0-100) to the correct range (0-41)
-        let mappedLevel = min(41, max(0, Int((Double(level) / 100.0) * 41.0)))
-
-        // Create and capture the UInt8 value
-        let brightnessLevel = UInt8(mappedLevel)
-
-        // Call the async function from a non-async context
-        Task {
-            let success = await setBrightnessRaw(brightnessLevel, autoMode: autoMode)
-            if !success {
-                NSLog("Failed to set brightness to level \(level)% (mapped to \(mappedLevel))")
-            }
-        }
-    }
-
-    func setBrightnessRaw(_ level: UInt8, autoMode: Bool = false) async -> Bool {
-        Bridge.log("G2: setBrightness()")
-        // Ensure level is between 0x00 and 0x29 (0-41)
-        var lvl: UInt8 = level
-        if level > 0x29 {
-            lvl = 0x29
-        }
-
-        let command: [UInt8] = [Commands.BRIGHTNESS.rawValue, lvl, autoMode ? 0x01 : 0x00]
-        queueChunks([command])
-
-        // buried data point testing:
-        //    let command: [UInt8] = [0x3E]
-        //    queueChunks([command])
-
-        //    // Send to both glasses with proper timing
-        //    if let rightGlass = rightPeripheral,
-        //       let rightTxChar = findCharacteristic(uuid: UART_TX_CHAR_UUID, peripheral: rightGlass) {
-        //      rightGlass.writeValue(Data(command), for: rightTxChar, type: .withResponse)
-        //      try? await Task.sleep(nanoseconds: 50 * 1_000_000) // 50ms delay
-        //    }
-        //
-        //    if let leftGlass = leftPeripheral,
-        //       let leftTxChar = findCharacteristic(uuid: UART_TX_CHAR_UUID, peripheral: leftGlass) {
-        //      leftGlass.writeValue(Data(command), for: leftTxChar, type: .withResponse)
-        //    }
-
-        return true
-    }
+    // MARK: - SGCManager: Device Control
 
     func setHeadUpAngle(_ angle: Int) {
-        var agl: Int = angle
-        if angle < 0 {
-            agl = 0
-        } else if angle > 60 {
-            agl = 60
-        }
-
-        // Call the async function from a non-async context
-        Task {
-            await setHeadUpAngleRaw(UInt8(agl))
-        }
-    }
-
-    func setHeadUpAngleRaw(_ angle: UInt8) async {
-        Bridge.log("G2: setHeadUpAngle()")
-        let command: [UInt8] = [Commands.HEAD_UP_ANGLE.rawValue, angle, 0x01]
-        queueChunks([command])
+        // TODO: Implement via g2_setting service
     }
 
     func getBatteryStatus() {
         Bridge.log("G2: getBatteryStatus()")
-        let command: [UInt8] = [Commands.BLE_REQ_BATTERY.rawValue, 0x01]
-        queueChunks([command])
+        requestDeviceInfo()
     }
 
-    func setSilentMode(_ enabled: Bool) async {
-        let command: [UInt8] = [Commands.SILENT_MODE.rawValue, enabled ? 0x0C : 0x0A, 0x00]
-        queueChunks([command])
+    func setSilentMode(_ enabled: Bool) {
+        // TODO: Implement
     }
 
-    func setDashboardPosition(_ height: Int, _ depth: Int) {
-        Task {
-            await setDashboardPositionRaw(UInt8(height), UInt8(depth))
+    func exit() {
+        clearDisplay()
+    }
+
+    func sendShutdown() {
+        clearDisplay()
+        disconnect()
+    }
+
+    func sendReboot() {
+        // TODO: Implement via dev_settings
+    }
+
+    func sendRgbLedControl(
+        requestId: String, packageName: String?, action: String, color: String?,
+        ontime: Int, offtime: Int, count: Int
+    ) {
+        // G2 doesn't have RGB LEDs
+    }
+
+    // MARK: - SGCManager: Messaging
+
+    func sendJson(_ jsonOriginal: [String: Any], wakeUp: Bool, requireAck: Bool) {
+        // G2 doesn't use JSON messaging
+    }
+
+    // MARK: - SGCManager: Camera & Media (not supported on G2)
+
+    func requestPhoto(_ requestId: String, appId: String, size: String?, webhookUrl: String?, authToken: String?, compress: String?, silent: Bool) {}
+    func startRtmpStream(_ message: [String: Any]) {}
+    func stopRtmpStream() {}
+    func sendRtmpKeepAlive(_ message: [String: Any]) {}
+    func startBufferRecording() {}
+    func stopBufferRecording() {}
+    func saveBufferVideo(requestId: String, durationSeconds: Int) {}
+    func startVideoRecording(requestId: String, save: Bool, silent: Bool) {}
+    func stopVideoRecording(requestId: String) {}
+    func sendButtonPhotoSettings() {}
+    func sendButtonModeSetting() {}
+    func sendButtonVideoRecordingSettings() {}
+    func sendButtonMaxRecordingTime() {}
+    func sendButtonCameraLedSetting() {}
+
+    // MARK: - SGCManager: Network (G2 has no WiFi)
+
+    func requestWifiScan() {}
+    func sendWifiCredentials(_ ssid: String, _ password: String) {}
+    func forgetWifiNetwork(_ ssid: String) {}
+    func sendHotspotState(_ enabled: Bool) {}
+    func sendOtaStart() {}
+
+    // MARK: - SGCManager: User Context
+
+    func sendUserEmailToGlasses(_ email: String) {
+        // TODO: Could send via dev_settings
+    }
+
+    // MARK: - SGCManager: Gallery
+
+    func queryGalleryStatus() {}
+    func sendGalleryMode() {}
+
+    // MARK: - SGCManager: Version Info
+
+    func requestVersionInfo() {
+        Bridge.log("G2: requestVersionInfo()")
+        requestDeviceInfo()
+    }
+
+    // MARK: - BLE Scanning
+
+    @discardableResult
+    private func startScan() -> Bool {
+        Bridge.log("G2: startScan()")
+        if centralManager == nil {
+            centralManager = CBCentralManager(
+                delegate: self, queue: G2._bluetoothQueue,
+                options: [CBCentralManagerOptionShowPowerAlertKey: 0]
+            )
         }
-    }
 
-    func incrementGlobalCounter() {
-        if globalCounter < 255 {
-            globalCounter += 1
-        } else {
-            globalCounter = 0
-        }
-    }
-
-    func incrementHeartbeatCounter() {
-        if heartbeatCounter < 255 {
-            heartbeatCounter += 1
-        } else {
-            heartbeatCounter = 0
-        }
-    }
-
-    func setDashboardPositionRaw(_ height: UInt8, _ depth: UInt8) async -> Bool {
-        let h: UInt8 = min(max(height, 0), 8)
-        let d: UInt8 = min(max(depth, 1), 9)
-
-        incrementGlobalCounter()
-
-        // Build dashboard position command
-        var command = Data()
-        command.append(Commands.DASHBOARD_LAYOUT_COMMAND.rawValue)
-        command.append(0x08) // Length
-        command.append(0x00) // Sequence
-        command.append(globalCounter & 0xFF) // Fixed value
-        command.append(0x02) // Fixed value
-        command.append(0x01) // State ON
-        command.append(h) // height
-        command.append(d) // depth
-
-        //    while command.count < 20 {
-        //      command.append(0x00)
-        //    }
-
-        // convert command to array of UInt8
-        let commandArray = command.map { $0 }
-        queueChunks([commandArray])
-        return true
-    }
-
-    func setMicEnabled(_ enabled: Bool) {
-        Bridge.log("G2: setMicEnabled() \(enabled)")
-        micEnabled = enabled
-        var micOnData = Data()
-        micOnData.append(Commands.BLE_REQ_MIC_ON.rawValue)
-        if enabled {
-            micOnData.append(0x01)
-        } else {
-            micOnData.append(0x00)
-        }
-
-        let micOnDataArray: [UInt8] = micOnData.map { UInt8($0) }
-
-        queueChunks([micOnDataArray], sendLeft: false, sendRight: true)
-
-        //    if let txChar = findCharacteristic(uuid: UART_TX_CHAR_UUID, peripheral: peripheral) {
-        //      peripheral.writeValue(micOnData, for: txChar, type: .withResponse)
-        //    }
-    }
-
-    func sortMicRanking(list: [String]) -> [String] {
-        return list
-    }
-
-    // MARK: - Enhanced BMP Display Methods
-
-    func displayBitmap(base64ImageData: String) async -> Bool {
-        guard let bmpData = Data(base64Encoded: base64ImageData) else {
-            Bridge.log("G2: Failed to decode base64 image data")
+        isDisconnecting = false
+        guard centralManager!.state == .poweredOn else {
+            Bridge.log("G2: Bluetooth not powered on")
             return false
         }
 
-        Bridge.log("G2: ✅ Successfully decoded base64 image data to \(bmpData.count) bytes")
-        let invertedBmpData = invertBmpPixels(bmpData)
-        let result = await sendBmp(bmpData: invertedBmpData)
-        Bridge.log("G2: 🖼️ Single frame: Transmission \(result ? "SUCCESS" : "FAILED")")
-        return result
-    }
-
-    func clearDisplay() {
-        Bridge.log("G2: clearDisplay() - Using space")
-        sendTextWall(" ")
-    }
-
-    /// Create a simple test BMP pattern in hex format
-    private func createTestBMPHex() -> String {
-        // BMP header for 576x135 1-bit monochrome (from our working data)
-        let header =
-            "424d36260000000000003e0000002800000040020000870000000100010000000000f82500c40e0000c40e00000200000002000000000000ffffff00"
-
-        // Create a simple pattern: alternating lines
-        var pixelData = ""
-        let bytesPerRow = 72 // 576 pixels / 8 bits per byte
-
-        for row in 0 ..< 135 {
-            for col in 0 ..< bytesPerRow {
-                // Create a pattern: every other row is different
-                if row % 10 < 5 {
-                    pixelData += "ff" // White line
-                } else {
-                    pixelData += col % 4 == 0 ? "00" : "ff" // Pattern line
-                }
-            }
+        // Try UUID-based reconnection first
+        if connectByUUID() {
+            return true
         }
 
-        return header + pixelData
-    }
-
-    private func invertBmpPixels(_ bmpData: Data) -> Data {
-        guard bmpData.count > 62 else {
-            Bridge.log("G2: BMP data too small to contain pixel data")
-            return bmpData
-        }
-
-        // BMP header is 62 bytes for your format (14 byte file header + 40 byte DIB header + 8 byte color table)
-        let headerSize = 62
-        var invertedData = Data(bmpData.prefix(headerSize)) // Keep header unchanged
-
-        // Invert the pixel data (everything after the header)
-        let pixelData = bmpData.dropFirst(headerSize)
-
-        for byte in pixelData {
-            // Invert each byte (flip all bits)
-            let invertedByte = ~byte
-            invertedData.append(invertedByte)
-        }
-
-        Bridge.log("G2: Inverted BMP pixels: \(pixelData.count) bytes processed")
-        return invertedData
-    }
-
-    // Core MentraOS-compatible BMP display implementation
-    private func sendBmp(bmpData: Data) async -> Bool {
-        // Frame timing validation for animation smoothness
-        let currentTime = Date()
-        let timeSinceLastFrame = currentTime.timeIntervalSince(lastFrameTime)
-
-        // Update frame tracking
-        frameSequence += 1
-        lastFrameTime = currentTime
-
-        Bridge.log(
-            "G2: 🎬 Frame \(frameSequence): \(String(format: "%.0f", timeSinceLastFrame * 1000))ms since last frame"
-        )
-
-        // MentraOS constants - exact match
-        let packLen = 194 // Exact chunk size from MentraOS
-        let iosDelayMs = 8 // iOS delay from MentraOS
-        let addressBytes: [UInt8] = [0x00, 0x1C, 0x00, 0x00] // Address from MentraOS
-
-        //    // Debug: Check bmpData integrity before chunking
-        //    let pixelDataStart = 62
-        //    if bmpData.count > pixelDataStart + 50 {
-        //      let beforeChunkSample = Array(bmpData[pixelDataStart..<(pixelDataStart + 20)])
-        //      let beforeChunkHex = beforeChunkSample.map { String(format: "%02X", $0) }.joined(separator: " ")
-        //      CoreCommsService.log("G2: 🔍 Before chunking - pixel data sample (bytes 62-82): \(beforeChunkHex)")
-        //    }
-
-        // Create chunks exactly like MentraOS
-        var multiPacks: [Data] = []
-        var index = 0
-        while index < bmpData.count {
-            let end = min(index + packLen, bmpData.count)
-            let singlePack = bmpData.subdata(in: index ..< end)
-
-            // Debug first few chunks to see where corruption happens
-            if index < 600 { // First 3 chunks (194 * 3 = 582)
-                let chunkSample = Array(singlePack.prefix(20))
-                let chunkHex = chunkSample.map { String(format: "%02X", $0) }.joined(separator: " ")
-                Bridge.log("G2: 🔍 Chunk creation - index \(index), sample: \(chunkHex)")
-            }
-
-            multiPacks.append(singlePack)
-            index += packLen
-        }
-
-        Bridge.log("G2: Created \(multiPacks.count) packs from BMP data (MentraOS format)")
-
-        var chunks: [[UInt8]] = []
-
-        // add bmp data chunks:
-        for (packIndex, pack) in multiPacks.enumerated() {
-            let packData: Data
-            if packIndex == 0 {
-                // First package includes address: [0x15, index, address...]
-                var firstPacketData = Data([0x15, UInt8(packIndex & 0xFF)])
-                firstPacketData.append(Data(addressBytes))
-                firstPacketData.append(pack)
-                packData = firstPacketData
-            } else {
-                // Subsequent packages: [0x15, index, data...]
-                var packetData = Data([0x15, UInt8(packIndex & 0xFF)])
-                packetData.append(pack)
-                packData = packetData
-            }
-
-            chunks.append(Array(packData))
-        }
-
-        //    queueChunks(chunks)
-        //    chunks.removeAll()
-
-        // add end command:
-        chunks.append([0x20, 0x0D, 0x0E])
-
-        queueChunks(chunks, sleepAfterMs: 25, lastFrameMs: 100)
-        chunks.removeAll()
-
-        // CRC validation like MentraOS - frame 1 should be 0x1914adcf
-        var imageWithAddress = Data(addressBytes)
-        imageWithAddress.append(bmpData)
-
-        // Calculate CRC32-XZ like MentraOS (not standard CRC32)
-        let crc32Value = calculateCRC32XZ(data: imageWithAddress)
-        let crcBytes = Data([
-            UInt8((crc32Value >> 24) & 0xFF),
-            UInt8((crc32Value >> 16) & 0xFF),
-            UInt8((crc32Value >> 8) & 0xFF),
-            UInt8(crc32Value & 0xFF),
+        centralManager!.scanForPeripherals(withServices: nil, options: [
+            CBCentralManagerScanOptionAllowDuplicatesKey: false,
         ])
-
-        var crcCommand = Data([0x16])
-        crcCommand.append(crcBytes)
-
-        chunks.append(Array(crcCommand))
-        queueChunks(chunks)
         return true
     }
 
-    // Helper function to calculate CRC32-XZ like MentraOS (matches Dart crclib)
-    private func calculateCRC32XZ(data: Data) -> UInt32 {
-        // CRC32-XZ table-based implementation (matches Dart crclib exactly)
-        let polynomial: UInt32 = 0x04C1_1DB7
-        var crc: UInt32 = 0xFFFF_FFFF
+    private func stopScan() {
+        centralManager?.stopScan()
+    }
 
-        // Build CRC table for efficiency (matches crclib behavior)
-        var table: [UInt32] = Array(repeating: 0, count: 256)
-        for i in 0 ..< 256 {
-            var entry = UInt32(i) << 24
-            for _ in 0 ..< 8 {
-                if (entry & 0x8000_0000) != 0 {
-                    entry = (entry << 1) ^ polynomial
-                } else {
-                    entry <<= 1
+    private func connectByUUID() -> Bool {
+        guard let leftUUID = leftGlassUUID, let rightUUID = rightGlassUUID else { return false }
+
+        let knownLeft = centralManager?.retrievePeripherals(withIdentifiers: [leftUUID])
+        let knownRight = centralManager?.retrievePeripherals(withIdentifiers: [rightUUID])
+
+        guard let left = knownLeft?.first, let right = knownRight?.first else { return false }
+
+        leftPeripheral = left
+        rightPeripheral = right
+        left.delegate = self
+        right.delegate = self
+        centralManager?.connect(left, options: nil)
+        centralManager?.connect(right, options: nil)
+        return true
+    }
+
+    private func getConnectedDevices() -> [CBPeripheral] {
+        return centralManager?.retrieveConnectedPeripherals(withServices: [G2BLE.SERVICE_UUID]) ?? []
+    }
+
+    private func emitDiscoveredDevice(_ name: String) {
+        // Extract the numeric ID from name like "Even G2_32_R_3FFA6D" -> "32"
+        guard let idNumber = extractIdNumber(name) else {
+            Bridge.log("G2: Could not extract ID from: \(name)")
+            return
+        }
+        Bridge.sendDiscoveredDevice(DeviceTypes.G2, "\(idNumber)")
+    }
+
+    private func extractIdNumber(_ name: String) -> Int? {
+        // Name format: "Even G2_XX_L_XXXXXX" or "Even G2_XX_R_XXXXXX"
+        // Extract XX (the numeric ID between G2_ and _L_/_R_)
+        let pattern = "G2_(\\d+)_"
+        guard let regex = try? NSRegularExpression(pattern: pattern),
+              let match = regex.firstMatch(in: name, range: NSRange(name.startIndex..., in: name)),
+              let range = Range(match.range(at: 1), in: name) else {
+            return nil
+        }
+        return Int(name[range])
+    }
+
+    // MARK: - Incoming Data Handling
+
+    private func handleNotifyData(_ data: Data, from peripheral: CBPeripheral) {
+        guard let result = receiveManager.handlePacket(data) else { return }
+
+        // Route based on service ID
+        switch result.serviceId {
+        case ServiceID.evenHub.rawValue:
+            handleEvenHubResponse(result.payload)
+        case ServiceID.deviceSettings.rawValue:
+            handleDevSettingsResponse(result.payload)
+        case ServiceID.g2Setting.rawValue:
+            handleG2SettingResponse(result.payload)
+        default:
+            Bridge.log("G2: Unhandled service \(result.serviceId) (\(result.payload.count) bytes)")
+        }
+    }
+
+    private func handleEvenHubResponse(_ payload: Data) {
+        // Parse evenhub_main_msg_ctx: field 1 = Cmd (varint), field 13 = DevEvent (submessage)
+        var reader = ProtobufReader(payload)
+        let fields = reader.parseFields()
+
+        guard let cmdValue = fields[1] as? Int32 else { return }
+
+        if cmdValue == EvenHubResponseCmd.osNotifyEventToApp.rawValue {
+            // Touch/gesture event from glasses
+            guard let devEventData = fields[13] as? Data else { return }
+            handleTouchEvent(devEventData)
+        }
+    }
+
+    private func handleTouchEvent(_ devEventData: Data) {
+        // Parse SendDeviceEvent: field 1=ListEvent, field 2=TextEvent, field 3=SysEvent
+        var reader = ProtobufReader(devEventData)
+        let fields = reader.parseFields()
+
+        let timestamp = Int64(Date().timeIntervalSince1970 * 1000)
+
+        // SysEvent (field 3) - system-level gestures
+        if let sysData = fields[3] as? Data {
+            var sysReader = ProtobufReader(sysData)
+            let sysFields = sysReader.parseFields()
+            if let eventTypeRaw = sysFields[1] as? Int32,
+               let eventType = OsEventType(rawValue: eventTypeRaw) {
+                let gestureName = mapEventTypeToGesture(eventType)
+                if let gestureName = gestureName {
+                    Bridge.sendTouchEvent(deviceModel: DeviceTypes.G2, gestureName: gestureName, timestamp: timestamp)
+                    Bridge.log("G2: SysEvent → \(gestureName)")
+                }
+                return
+            }
+        }
+
+        // TextEvent (field 2) - tap on text container
+        if let textData = fields[2] as? Data {
+            var textReader = ProtobufReader(textData)
+            let textFields = textReader.parseFields()
+            if let eventTypeRaw = textFields[3] as? Int32,
+               let eventType = OsEventType(rawValue: eventTypeRaw) {
+                let gestureName = mapEventTypeToGesture(eventType)
+                if let gestureName = gestureName {
+                    Bridge.sendTouchEvent(deviceModel: DeviceTypes.G2, gestureName: gestureName, timestamp: timestamp)
+                    Bridge.log("G2: TextEvent → \(gestureName)")
                 }
             }
-            table[i] = entry
+            return
         }
 
-        // Calculate CRC using table lookup (matches MentraOS's crclib)
-        for byte in data {
-            let tableIndex = Int((crc >> 24) ^ UInt32(byte)) & 0xFF
-            crc = (crc << 8) ^ table[tableIndex]
-        }
-
-        return ~crc
-    }
-
-    // Helper function to calculate CRC32 (simple implementation)
-    private func calculateCRC32(data: Data) -> UInt32 {
-        let polynomial: UInt32 = 0xEDB8_8320
-        var crc: UInt32 = 0xFFFF_FFFF
-
-        for byte in data {
-            crc ^= UInt32(byte)
-            for _ in 0 ..< 8 {
-                if (crc & 1) != 0 {
-                    crc = (crc >> 1) ^ polynomial
-                } else {
-                    crc = crc >> 1
+        // ListEvent (field 1) - interaction with list container
+        if let listData = fields[1] as? Data {
+            var listReader = ProtobufReader(listData)
+            let listFields = listReader.parseFields()
+            if let eventTypeRaw = listFields[5] as? Int32,
+               let eventType = OsEventType(rawValue: eventTypeRaw) {
+                let gestureName = mapEventTypeToGesture(eventType)
+                if let gestureName = gestureName {
+                    Bridge.sendTouchEvent(deviceModel: DeviceTypes.G2, gestureName: gestureName, timestamp: timestamp)
+                    Bridge.log("G2: ListEvent → \(gestureName)")
                 }
             }
         }
-
-        return ~crc
     }
 
-    /// Create BMP chunks with MentraOS-compatible headers
-    private func createBmpChunks(from bmpData: Data, chunkSize: Int) -> [[UInt8]] {
-        var chunks: [[UInt8]] = []
-        let glassesAddress: [UInt8] = [0x00, 0x1C, 0x00, 0x00] // MentraOS uses address 0x1c
+    private func mapEventTypeToGesture(_ eventType: OsEventType) -> String? {
+        switch eventType {
+        case .click:           return "single_tap"
+        case .doubleClick:     return "double_tap"
+        case .scrollTop:       return "swipe_up"
+        case .scrollBottom:    return "swipe_down"
+        case .foregroundEnter: return "foreground_enter"
+        case .foregroundExit:  return "foreground_exit"
+        case .systemExit:      return "system_exit"
+        case .abnormalExit:    return nil // don't report abnormal exits as gestures
+        }
+    }
 
-        let totalChunks = (bmpData.count + chunkSize - 1) / chunkSize
+    private func handleDevSettingsResponse(_ payload: Data) {
+        // DevSettings responses (auth acks, heartbeat acks) — mostly informational
+    }
 
-        for i in 0 ..< totalChunks {
-            let start = i * chunkSize
-            let end = min(start + chunkSize, bmpData.count)
-            let chunkData = bmpData.subdata(in: start ..< end)
+    private func handleG2SettingResponse(_ payload: Data) {
+        // Parse G2SettingPackage: field 1=commandId, field 4=DeviceReceiveRequestFromAPP (response), field 5=DeviceSendInfoToAPP
+        var reader = ProtobufReader(payload)
+        let fields = reader.parseFields()
 
-            var chunk: [UInt8] = []
+        guard let cmdValue = fields[1] as? Int32 else { return }
 
-            // First chunk needs address bytes
-            if i == 0 {
-                chunk.append(0x15) // Command
-                chunk.append(UInt8(i & 0xFF)) // Sequence
-                chunk.append(contentsOf: glassesAddress) // Address
-                chunk.append(contentsOf: chunkData)
-            } else {
-                chunk.append(0x15) // Command
-                chunk.append(UInt8(i & 0xFF)) // Sequence
-                chunk.append(contentsOf: chunkData)
+        // DeviceReceiveRequest response (glasses sends back requested info)
+        if cmdValue == G2SettingCommandId.deviceReceiveRequest.rawValue ||
+           cmdValue == G2SettingCommandId.deviceSendToApp.rawValue {
+
+            // The response data might be in field 4 (deviceReceiveRequestFromApp) or field 5 (deviceSendInfoToApp)
+            if let requestData = fields[4] as? Data {
+                parseDeviceRequestResponse(requestData)
             }
-
-            chunks.append(chunk)
+            if let sendData = fields[5] as? Data {
+                parseDeviceSendToApp(sendData)
+            }
         }
-
-        return chunks
     }
 
-    /// Send CRC with retry logic
-    private func sendBmpCrcWithRetry(
-        bmpData: Data,
-        sendLeft: Bool,
-        sendRight: Bool,
-        maxAttempts: Int,
-        timeoutMs: Int
-    ) async -> Bool {
-        // Create data with address for CRC calculation (MentraOS pattern)
-        let glassesAddress: [UInt8] = [0x00, 0x1C, 0x00, 0x00] // Same address as in chunks
-        var dataWithAddress = Data(glassesAddress)
-        dataWithAddress.append(bmpData)
+    private func parseDeviceRequestResponse(_ data: Data) {
+        // DeviceReceiveRequestFromAPP fields:
+        //   5 = leftSoftwareVersion (string), 6 = rightSoftwareVersion (string)
+        //   12 = battery (int32), 13 = chargingStatus (int32)
+        var reader = ProtobufReader(data)
+        let fields = reader.parseFields()
 
-        // Calculate CRC32 (simplified - in a real implementation, use proper CRC32-XZ)
-        let crcValue = dataWithAddress.crc32
-
-        // Create CRC command packet
-        var crcCommand: [UInt8] = [0x16] // CRC command
-        crcCommand.append(UInt8((crcValue >> 24) & 0xFF))
-        crcCommand.append(UInt8((crcValue >> 16) & 0xFF))
-        crcCommand.append(UInt8((crcValue >> 8) & 0xFF))
-        crcCommand.append(UInt8(crcValue & 0xFF))
-
-        Bridge.log("G2: Sending CRC command, CRC value: \(String(format: "%08x", crcValue))")
-
-        // Send CRC with retry
-        for attempt in 0 ..< maxAttempts {
-            queueChunks([crcCommand], sendLeft: sendLeft, sendRight: sendRight)
-
-            // Wait for CRC command to process
-            try? await Task.sleep(nanoseconds: UInt64(timeoutMs * 1_000_000))
-
-            // For now, assume success (in a real implementation, you'd check for ACK)
-            Bridge.log("G2: CRC command sent successfully")
-            return true
+        // Battery
+        if let battery = fields[12] as? Int32 {
+            let level = Int(battery)
+            if level >= 0 && level <= 100 {
+                Bridge.log("G2: Battery level: \(level)%")
+                batteryLevel = level
+            }
         }
-        // Bridge.log("G2: CRC command failed, attempt \(attempt + 1)")
-        Bridge.log("G2: Failed to send CRC command after \(maxAttempts) attempts")
-        return false
+
+        // Charging status
+        if let charging = fields[13] as? Int32 {
+            isCharging = charging != 0
+            Bridge.log("G2: Charging: \(isCharging)")
+            // Re-send battery status with updated charging info
+            if batteryLevel >= 0 {
+                Bridge.sendBatteryStatus(level: batteryLevel, charging: isCharging)
+            }
+        }
+
+        // Software versions
+        if let leftVer = fields[5] as? Data, let leftVersion = String(data: leftVer, encoding: .utf8) {
+            Bridge.log("G2: Left firmware: \(leftVersion)")
+            GlassesStore.shared.apply("glasses", "leftFirmwareVersion", leftVersion)
+        }
+        if let rightVer = fields[6] as? Data, let rightVersion = String(data: rightVer, encoding: .utf8) {
+            Bridge.log("G2: Right firmware: \(rightVersion)")
+            GlassesStore.shared.apply("glasses", "rightFirmwareVersion", rightVersion)
+            // Use right version as the main version
+            GlassesStore.shared.apply("glasses", "firmwareVersion", rightVersion)
+        }
+    }
+
+    private func parseDeviceSendToApp(_ data: Data) {
+        // DeviceSendInfoToAPP: field 1 = currentRecalibrationStatus, field 2 = silentModeSwitch
+        // Informational — just log for now
+        var reader = ProtobufReader(data)
+        let fields = reader.parseFields()
+        if let silentMode = fields[2] as? Int32 {
+            Bridge.log("G2: Silent mode: \(silentMode != 0)")
+        }
+    }
+
+    private func handleAudioData(_ data: Data) {
+        // G2 audio arrives on AUDIO_NOTIFY characteristic
+        // Format: ~200+ byte chunks, use first 200 bytes, split into 40-byte LC3 frames
+        // Each frame: LC3, 16kHz, mono, 10ms, 40 bytes
+
+        let usableLength = min(data.count, 200)
+        guard usableLength >= 40 else { return }
+
+        let audioData = data.prefix(usableLength)
+
+        // Forward LC3 data to CoreManager for decoding
+        // G2 uses 40-byte frames (vs G1's 20-byte frames)
+        CoreManager.shared.handleGlassesMicData(Data(audioData), 40)
     }
 }
 
-// MARK: BLE Stubs
+// MARK: - CBCentralManagerDelegate
 
-extension G2: CBCentralManagerDelegate, CBPeripheralDelegate {
-    func getWriteCharacteristic(for peripheral: CBPeripheral?) -> CBCharacteristic? {
-        guard let peripheral = peripheral else { return nil }
-        for service in peripheral.services ?? [] {
-            if service.uuid == UART_SERVICE_UUID {
-                for characteristic in service.characteristics ?? []
-                    where characteristic.uuid == UART_TX_CHAR_UUID
-                {
-                    return characteristic
-                }
+extension G2: CBCentralManagerDelegate {
+    nonisolated func centralManagerDidUpdateState(_ central: CBCentralManager) {
+        let state = central.state
+        DispatchQueue.main.async { [weak self] in
+            guard let self = self else { return }
+            Bridge.log("G2: Bluetooth state: \(state.rawValue)")
+            if state == .poweredOn {
+                _ = self.startScan()
             }
         }
-        return nil
     }
 
-    func extractIdNumber(_ string: String) -> Int? {
-        // Pattern to match "G1_" followed by digits, followed by "_"
-        let pattern = "G2_(\\d+)_"
-
-        // Create a regular expression
-        guard let regex = try? NSRegularExpression(pattern: pattern, options: []) else {
-            return nil
-        }
-
-        // Look for matches in the input string
-        let range = NSRange(string.startIndex ..< string.endIndex, in: string)
-        guard let match = regex.firstMatch(in: string, options: [], range: range) else {
-            return nil
-        }
-
-        // Extract the captured group (the digits)
-        if let matchRange = Range(match.range(at: 1), in: string) {
-            let idString = String(string[matchRange])
-            return Int(idString)
-        }
-
-        return nil
-    }
-
-    func emitDiscoveredDevice(_ name: String) {
-        if name.contains("_L_") || name.contains("_R_") {
-            // exampleName = "Even G1_74_L_57863C", "Even G1_3_L_57863C", "Even G1_100_L_57863C"
-            guard let deviceName = extractIdNumber(name) else {
-                Bridge.log("Failed to extract ID number from device name: \(name)")
-                return
-            }
-            let modelName = "Even Realities G1"
-            let dName = "\(deviceName)"
-            Bridge.sendDiscoveredDevice(modelName, dName)
-        } else {
-            Bridge.log("Unknown device type: \(name)")
-        }
-    }
-
-    // On BT discovery, automatically connect to both arms if we have them:
-    func centralManager(
-        _: CBCentralManager, didDiscover peripheral: CBPeripheral, advertisementData: [String: Any],
-        rssi _: NSNumber
+    nonisolated func centralManager(
+        _ central: CBCentralManager,
+        didDiscover peripheral: CBPeripheral,
+        advertisementData: [String: Any],
+        rssi RSSI: NSNumber
     ) {
-        guard let name = peripheral.name else { return }
-        guard name.contains("Even G2") else { return }
+        guard let name = peripheral.name ?? advertisementData[CBAdvertisementDataLocalNameKey] as? String else { return }
 
-        Bridge.log("G2: found peripheral: \(name) - SEARCH_ID: \(DEVICE_SEARCH_ID)")
-
-        // Only process serial number for devices that match our search ID
-        if name.contains(DEVICE_SEARCH_ID) {
-            // Extract manufacturer data to decode serial number
-            if let manufacturerData = advertisementData[CBAdvertisementDataManufacturerDataKey]
-                as? Data
-            {
-                Bridge.log("G2: 📱 Found manufacturer data: \(manufacturerData.hexEncodedString())")
-
-                // Try to decode serial number from manufacturer data
-                if let decodedSerial = decodeSerialFromManufacturerData(manufacturerData) {
-                    Bridge.log("G2: 📱 Decoded serial number: \(decodedSerial)")
-
-                    // Decode style and color from serial number
-                    let (style, color) = G1.decodeEvenG1SerialNumber(decodedSerial)
-                    Bridge.log("G2: 📱 Style: \(style), Color: \(color)")
-
-                    // Store the information
-                    glassesSerialNumber = decodedSerial
-                    glassesStyle = style
-                    glassesColor = color
-
-                    // Emit the serial number information
-                    emitSerialNumberInfo(serialNumber: decodedSerial, style: style, color: color)
-                } else {
-                    Bridge.log("G2: 📱 Could not decode serial number from manufacturer data")
-                }
-            } else {
-                Bridge.log("G2: 📱 No manufacturer data found in advertisement")
-            }
-        }
-
-        if name.contains("_L_"), name.contains(DEVICE_SEARCH_ID) {
-            Bridge.log("G2: Found left arm: \(name)")
-            leftPeripheral = peripheral
-        } else if name.contains("_R_"), name.contains(DEVICE_SEARCH_ID) {
-            Bridge.log("G2: Found right arm: \(name)")
-            rightPeripheral = peripheral
-        }
-
-        emitDiscoveredDevice(name)
-
-        if leftPeripheral != nil, rightPeripheral != nil {
-            //      central.stopScan()
-            RN_connectGlasses()
-        }
-    }
-
-    func centralManager(_: CBCentralManager, didConnect peripheral: CBPeripheral) {
-        // BLE operations stay on _bluetoothQueue (where this callback runs)
-        peripheral.delegate = self
-        peripheral.discoverServices([UART_SERVICE_UUID])
+        // G2 glasses have "Even" prefix and "G2" in name, with _L_ or _R_ for side
+        guard name.contains("G2") else { return }
 
         DispatchQueue.main.async { [weak self] in
             guard let self = self else { return }
 
-            Bridge.log("G2: device connected: \(peripheral.name ?? "Unknown")")
+            Bridge.log("G2: Discovered: \(name) (RSSI: \(RSSI))")
 
-            if peripheral == self.leftPeripheral || (peripheral.name?.contains("_L_") ?? false) {
-                self.leftGlassUUID = peripheral.identifier
-                self.leftPeripheral = peripheral
+            // Always emit discovered device to frontend
+            self.emitDiscoveredDevice(name)
+
+            // If scan-only mode (no search ID set), don't auto-connect
+            guard self.DEVICE_SEARCH_ID != "NOT_SET" else { return }
+
+            // Only connect to devices matching our search ID
+            guard name.contains(self.DEVICE_SEARCH_ID) else { return }
+
+            if name.contains("_L_") {
+                if self.leftPeripheral == nil {
+                    self.leftPeripheral = peripheral
+                    peripheral.delegate = self
+                    central.connect(peripheral, options: nil)
+                    Bridge.log("G2: Connecting to LEFT: \(name)")
+                }
+            } else if name.contains("_R_") {
+                if self.rightPeripheral == nil {
+                    self.rightPeripheral = peripheral
+                    peripheral.delegate = self
+                    central.connect(peripheral, options: nil)
+                    Bridge.log("G2: Connecting to RIGHT: \(name)")
+                }
             }
 
-            if peripheral == self.rightPeripheral || (peripheral.name?.contains("_R_") ?? false) {
-                self.rightGlassUUID = peripheral.identifier
-                self.rightPeripheral = peripheral
+            // Stop scanning once we have both
+            if self.leftPeripheral != nil && self.rightPeripheral != nil {
+                self.stopScan()
             }
-
-            self.lastConnectionTimestamp = Date()
-            Bridge.log("G2: Connected to peripheral: \(peripheral.name ?? "Unknown")")
         }
     }
 
-    func centralManager(
-        _: CBCentralManager, didDisconnectPeripheral peripheral: CBPeripheral, error _: (any Error)?
-    ) {
-        let side =
-            peripheral == leftPeripheral
-                ? "LEFT" : peripheral == rightPeripheral ? "RIGHT" : "unknown"
-        Bridge.log("G2: @@@@@ \(side) PERIPHERAL DISCONNECTED @@@@@")
+    nonisolated func centralManager(_ central: CBCentralManager, didConnect peripheral: CBPeripheral) {
+        DispatchQueue.main.async { [weak self] in
+            guard let self = self else { return }
+            Bridge.log("G2: Connected to \(peripheral.name ?? "unknown")")
 
-        // only reconnect if we're not intentionally disconnecting:
-        if isDisconnecting {
-            return
+            // Store UUID for reconnection
+            if peripheral === self.leftPeripheral {
+                self.leftGlassUUID = peripheral.identifier
+            } else if peripheral === self.rightPeripheral {
+                self.rightGlassUUID = peripheral.identifier
+            }
+
+            // Discover services - scan for all since we need to find the EvenHub characteristics
+            peripheral.discoverServices(nil)
         }
+    }
 
-        if peripheral == leftPeripheral || peripheral == rightPeripheral {
-            // force reconnection to both before considering us ready again:
-            leftPeripheral = nil
-            rightPeripheral = nil
-            setReadiness(left: false, right: false)
-            startReconnectionTimer() // Start periodic reconnection attempts
+    nonisolated func centralManager(_ central: CBCentralManager, didDisconnectPeripheral peripheral: CBPeripheral, error: Error?) {
+        DispatchQueue.main.async { [weak self] in
+            guard let self = self else { return }
+            let side = peripheral === self.leftPeripheral ? "LEFT" : "RIGHT"
+            Bridge.log("G2: Disconnected \(side): \(error?.localizedDescription ?? "clean")")
+
+            // Only reconnect if not intentionally disconnecting
+            if self.isDisconnecting { return }
+
+            // Clear both sides to force re-discovery (like G1)
+            self.leftPeripheral = nil
+            self.rightPeripheral = nil
+            self.leftInitialized = false
+            self.rightInitialized = false
+            self.leftWriteChar = nil
+            self.rightWriteChar = nil
+            self.leftNotifyChar = nil
+            self.rightNotifyChar = nil
+            self.leftAudioChar = nil
+            self.rightAudioChar = nil
+            self.authStarted = false
+
+            self.ready = false
+            self.pageCreated = false
+            GlassesStore.shared.apply("glasses", "connected", false)
+            GlassesStore.shared.apply("glasses", "fullyBooted", false)
+
+            // Start persistent reconnection loop (every 30s, unlimited attempts)
+            self.startReconnectionTimer()
         }
     }
 
@@ -2138,182 +1859,116 @@ extension G2: CBCentralManagerDelegate, CBPeripheralDelegate {
                 // Check if already connected
                 if await MainActor.run(body: { self.ready }) {
                     Bridge.log("G2: Already connected, stopping reconnection")
-                    return true // Returning true stops the reconnection loop
+                    return true
                 }
 
                 Bridge.log("G2: Attempting reconnection...")
 
-                // Attempt to reconnect
                 await MainActor.run {
                     self.startScan()
                 }
 
-                // Return false to keep trying, true if connected
+                // Return false to keep trying
                 return false
             }
         }
     }
+}
 
-    private func stopReconnectionTimer() {
-        Task {
-            await reconnectionManager.stop()
+// MARK: - CBPeripheralDelegate
+
+extension G2: CBPeripheralDelegate {
+    nonisolated func peripheral(_ peripheral: CBPeripheral, didDiscoverServices error: Error?) {
+        guard let services = peripheral.services else { return }
+        for service in services {
+            peripheral.discoverCharacteristics(nil, for: service)
         }
     }
 
-    // Connect by UUID
-    func connectByUUID() -> Bool {
-        // don't do this if we don't have a search id set:
-        if DEVICE_SEARCH_ID == "NOT_SET" || DEVICE_SEARCH_ID.isEmpty {
-            Bridge.log("G2: 🔵 No DEVICE_SEARCH_ID set, skipping connect by UUID")
-            return false
-        }
-
-        Bridge.log("G2: 🔵 Attempting to connect by UUID")
-        var foundAny = false
-
-        if let leftUUID = leftGlassUUID {
-            Bridge.log("G2: 🔵 Found stored left glass UUID: \(leftUUID.uuidString)")
-            let leftDevices = centralManager!.retrievePeripherals(withIdentifiers: [leftUUID])
-
-            if let leftDevice = leftDevices.first {
-                Bridge.log(
-                    "G2: 🔵 Successfully retrieved left glass: \(leftDevice.name ?? "Unknown")")
-                foundAny = true
-                leftPeripheral = leftDevice
-                leftDevice.delegate = self
-                centralManager!.connect(
-                    leftDevice,
-                    options: [
-                        CBConnectPeripheralOptionNotifyOnConnectionKey: true,
-                        CBConnectPeripheralOptionNotifyOnDisconnectionKey: true,
-                    ]
-                )
-            }
-        }
-
-        if let rightUUID = rightGlassUUID {
-            Bridge.log("G2: 🔵 Found stored right glass UUID: \(rightUUID.uuidString)")
-            let rightDevices = centralManager!.retrievePeripherals(withIdentifiers: [rightUUID])
-
-            if let rightDevice = rightDevices.first {
-                Bridge.log(
-                    "G2: 🔵 Successfully retrieved right glass: \(rightDevice.name ?? "Unknown")")
-                foundAny = true
-                rightPeripheral = rightDevice
-                rightDevice.delegate = self
-                centralManager!.connect(
-                    rightDevice,
-                    options: [
-                        CBConnectPeripheralOptionNotifyOnConnectionKey: true,
-                        CBConnectPeripheralOptionNotifyOnDisconnectionKey: true,
-                    ]
-                )
-            }
-        }
-
-        return foundAny
-    }
-
-    func peripheral(_ peripheral: CBPeripheral, didDiscoverServices _: Error?) {
-        if let services = peripheral.services {
-            for service in services where service.uuid == UART_SERVICE_UUID {
-                peripheral.discoverCharacteristics(
-                    [UART_TX_CHAR_UUID, UART_RX_CHAR_UUID], for: service
-                )
-            }
-        }
-    }
-
-    // Update peripheral(_:didDiscoverCharacteristicsFor:error:) to set services waiters
-    func peripheral(
-        _ peripheral: CBPeripheral, didDiscoverCharacteristicsFor service: CBService,
-        error _: Error?
-    ) {
+    nonisolated func peripheral(_ peripheral: CBPeripheral, didDiscoverCharacteristicsFor service: CBService, error: Error?) {
         guard let characteristics = service.characteristics else { return }
 
-        if service.uuid.isEqual(UART_SERVICE_UUID) {
-            for characteristic in characteristics {
-                if characteristic.uuid == UART_TX_CHAR_UUID {
-                    sendInitCommand(to: peripheral)
-                } else if characteristic.uuid == UART_RX_CHAR_UUID {
-                    peripheral.setNotifyValue(true, for: characteristic)
+        DispatchQueue.main.async { [weak self] in
+            guard let self = self else { return }
+            let side = peripheral === self.leftPeripheral ? "LEFT" : "RIGHT"
 
-                    // enable notification (needed for pairing from scracth!)
-                    Thread.sleep(forTimeInterval: 0.5) // 500ms delay
-                    let CLIENT_CHARACTERISTIC_CONFIG_UUID = CBUUID(
-                        string: "00002902-0000-1000-8000-00805f9b34fb")
-                    if let descriptor = characteristic.descriptors?.first(where: {
-                        $0.uuid == CLIENT_CHARACTERISTIC_CONFIG_UUID
-                    }) {
-                        let value = Data([0x01, 0x00]) // ENABLE_NOTIFICATION_VALUE in iOS
-                        peripheral.writeValue(value, for: descriptor)
+            for char in characteristics {
+                let uuid = char.uuid
+                let props = char.properties
+
+                // Log all characteristics with their properties for debugging
+                var propStr: [String] = []
+                if props.contains(.read) { propStr.append("read") }
+                if props.contains(.write) { propStr.append("write") }
+                if props.contains(.writeWithoutResponse) { propStr.append("writeNoResp") }
+                if props.contains(.notify) { propStr.append("notify") }
+                if props.contains(.indicate) { propStr.append("indicate") }
+                Bridge.log("G2: \(side) char \(uuid) props=[\(propStr.joined(separator: ","))]")
+
+                if uuid == G2BLE.CHAR_WRITE {
+                    Bridge.log("G2: Found WRITE char on \(side)")
+                    if peripheral === self.leftPeripheral {
+                        self.leftWriteChar = char
                     } else {
-                        Bridge.log("PROC_QUEUE - descriptor not found")
+                        self.rightWriteChar = char
                     }
+                } else if uuid == G2BLE.CHAR_NOTIFY {
+                    Bridge.log("G2: Found NOTIFY char on \(side)")
+                    if peripheral === self.leftPeripheral {
+                        self.leftNotifyChar = char
+                    } else {
+                        self.rightNotifyChar = char
+                    }
+                    peripheral.setNotifyValue(true, for: char)
+                } else if uuid == G2BLE.AUDIO_NOTIFY {
+                    Bridge.log("G2: Found AUDIO char on \(side)")
+                    if peripheral === self.leftPeripheral {
+                        self.leftAudioChar = char
+                    } else {
+                        self.rightAudioChar = char
+                    }
+                    peripheral.setNotifyValue(true, for: char)
                 }
             }
 
-            // // Mark the services as ready
-            // if peripheral == leftPeripheral {
-            //     Bridge.log("G2: Left glass services discovered and ready")
-            //     setReadiness(left: true, right: nil)
-            // } else if peripheral == rightPeripheral {
-            //     Bridge.log("G2: Right glass services discovered and ready")
-            //     setReadiness(left: nil, right: true)
-            // }
+            // Check if this side is fully initialized
+            if peripheral === self.leftPeripheral && self.leftWriteChar != nil {
+                self.leftInitialized = true
+                Bridge.log("G2: LEFT initialized")
+            } else if peripheral === self.rightPeripheral && self.rightWriteChar != nil && self.rightNotifyChar != nil {
+                self.rightInitialized = true
+                Bridge.log("G2: RIGHT initialized")
+            }
+
+            // Both sides ready -> run auth (once)
+            if self.leftInitialized && self.rightInitialized && !self.authStarted {
+                self.authStarted = true
+                Bridge.log("G2: Both sides initialized, starting auth sequence")
+                self.runAuthSequence()
+            }
         }
     }
 
-    // called whenever bluetooth is initialized / turned on or off:
-    func centralManagerDidUpdateState(_ central: CBCentralManager) {
+    nonisolated func peripheral(_ peripheral: CBPeripheral, didUpdateValueFor characteristic: CBCharacteristic, error: Error?) {
+        guard let data = characteristic.value, error == nil else { return }
+
         DispatchQueue.main.async { [weak self] in
             guard let self = self else { return }
 
-            if central.state == .poweredOn {
-                Bridge.log("G2: Bluetooth was powered on")
-                self.setReadiness(left: false, right: false)
-
-                if self.DEVICE_SEARCH_ID != "NOT_SET", !self.DEVICE_SEARCH_ID.isEmpty {
-                    self.startScan()
-                }
-            } else {
-                Bridge.log("G2: Bluetooth was turned off.")
+            if characteristic.uuid == G2BLE.AUDIO_NOTIFY {
+                // Audio data - forward to mic system
+                self.handleAudioData(data)
+            } else if characteristic.uuid == G2BLE.CHAR_NOTIFY {
+                // Protocol data
+                self.handleNotifyData(data, from: peripheral)
             }
         }
     }
 
-    // called when we get data from the glasses:
-    func peripheral(
-        _ peripheral: CBPeripheral, didUpdateValueFor characteristic: CBCharacteristic,
-        error: Error?
-    ) {
+    nonisolated func peripheral(_ peripheral: CBPeripheral, didWriteValueFor characteristic: CBCharacteristic, error: Error?) {
         if let error = error {
-            Bridge.log("G2: Error updating value for characteristic: \(error.localizedDescription)")
-            return
-        }
-
-        guard let data = characteristic.value else {
-            Bridge.log("G2: Characteristic value is nil.")
-            return
-        }
-
-        // Process the notification data
-        DispatchQueue.main.async { [weak self] in
-            self?.handleNotification(from: peripheral, data: data)
-        }
-    }
-
-    // L/R Synchronization - Handle BLE write completions
-    func peripheral(_ peripheral: CBPeripheral, didWriteValueFor _: CBCharacteristic, error: Error?) {
-        DispatchQueue.main.async { [weak self] in
-            guard let self = self else { return }
-
-            if let error = error {
-                Bridge.log(
-                    "G2: ❌ BLE write error for \(peripheral.name ?? "unknown"): \(error.localizedDescription)"
-                )
-            } else {
-                self.writeCompletionCount += 1
+            DispatchQueue.main.async {
+                Bridge.log("G2: Write error: \(error.localizedDescription)")
             }
         }
     }
