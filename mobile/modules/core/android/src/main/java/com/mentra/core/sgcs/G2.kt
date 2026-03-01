@@ -35,7 +35,8 @@ class G2 : SGCManager() {
             webhookUrl: String?,
             authToken: String?,
             compress: String?,
-            silent: Boolean
+            flash: Boolean,
+            sound: Boolean
     ) {
         Bridge.log("G2: requestPhoto - not supported (no camera)")
     }
@@ -64,7 +65,7 @@ class G2 : SGCManager() {
         Bridge.log("G2: saveBufferVideo - not supported")
     }
 
-    override fun startVideoRecording(requestId: String, save: Boolean, silent: Boolean) {
+    override fun startVideoRecording(requestId: String, save: Boolean, flash: Boolean, sound: Boolean) {
         Bridge.log("G2: startVideoRecording - not supported")
     }
 
