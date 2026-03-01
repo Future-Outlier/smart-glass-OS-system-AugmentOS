@@ -53,6 +53,14 @@ const TIMING = {
   ALERT_DELAY_MS: 100, // Delay before showing alerts to allow UI to settle
 } as const
 
+/** Format video duration in milliseconds to m:ss display string */
+function formatDuration(ms: number): string {
+  const totalSeconds = Math.floor(ms / 1000)
+  const minutes = Math.floor(totalSeconds / 60)
+  const seconds = totalSeconds % 60
+  return `${minutes}:${seconds.toString().padStart(2, "0")}`
+}
+
 interface GalleryItem {
   id: string
   type: "server" | "local" | "placeholder"
@@ -971,7 +979,11 @@ export function GalleryScreen() {
           )}
           {item.photo.is_video && !isSelectionMode && (
             <View style={themed($videoIndicator)}>
-              <Icon name="video" size={14} color="white" />
+              {item.photo.duration ? (
+                <Text style={$videoDurationText}>{formatDuration(item.photo.duration)}</Text>
+              ) : (
+                <Icon name="video" size={14} color="white" />
+              )}
             </View>
           )}
           {isSelectionMode &&
@@ -1249,6 +1261,13 @@ const $videoIndicator: ThemedStyle<ViewStyle> = ({spacing}) => ({
   shadowRadius: 2,
   elevation: 3,
 })
+
+const $videoDurationText: TextStyle = {
+  color: "white",
+  fontSize: 11,
+  fontWeight: "600",
+  fontVariant: ["tabular-nums"],
+}
 
 const $progressRingOverlay: ThemedStyle<ViewStyle> = () => ({
   position: "absolute",
