@@ -24,10 +24,12 @@ import com.mentra.asg_client.service.core.handlers.RtmpCommandHandler;
 import com.mentra.asg_client.service.core.handlers.WifiCommandHandler;
 import com.mentra.asg_client.service.core.handlers.BatteryCommandHandler;
 import com.mentra.asg_client.service.core.handlers.ImuCommandHandler;
+import com.mentra.asg_client.service.core.handlers.KeepAwakeCommandHandler;
 import com.mentra.asg_client.service.core.handlers.GalleryCommandHandler;
 import com.mentra.asg_client.service.core.handlers.RgbLedCommandHandler;
 import com.mentra.asg_client.service.core.handlers.BleConfigCommandHandler;
 import com.mentra.asg_client.service.core.handlers.UserEmailCommandHandler;
+import com.mentra.asg_client.service.core.handlers.UploadIncidentLogsCommandHandler;
 import com.mentra.asg_client.reporting.core.ReportManager;
 
 import org.json.JSONObject;
@@ -309,6 +311,9 @@ public class CommandProcessor {
             commandHandlerRegistry.registerHandler(new PingCommandHandler(communicationManager, responseBuilder, serviceManager));
             Log.d(TAG, "✅ Registered PingCommandHandler");
 
+            commandHandlerRegistry.registerHandler(new KeepAwakeCommandHandler());
+            Log.d(TAG, "✅ Registered KeepAwakeCommandHandler");
+
             commandHandlerRegistry.registerHandler(new RtmpCommandHandler(context, stateManager, streamingManager));
             Log.d(TAG, "✅ Registered RtmpCommandHandler");
 
@@ -350,6 +355,9 @@ public class CommandProcessor {
 
             commandHandlerRegistry.registerHandler(new com.mentra.asg_client.service.core.handlers.PowerCommandHandler(context));
             Log.d(TAG, "✅ Registered PowerCommandHandler");
+
+            commandHandlerRegistry.registerHandler(new UploadIncidentLogsCommandHandler(context, configurationManager));
+            Log.d(TAG, "✅ Registered UploadIncidentLogsCommandHandler");
 
             Log.i(TAG, "✅ Successfully registered " + commandHandlerRegistry.getHandlerCount() + " command handlers");
 
