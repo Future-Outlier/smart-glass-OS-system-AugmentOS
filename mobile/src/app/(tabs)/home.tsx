@@ -66,6 +66,7 @@ export default function Homepage() {
             <PairGlassesCard />
           </Group>
           <View className="flex-1" />
+          <AppsGrid />
         </>
       )
     }
@@ -122,6 +123,7 @@ export default function Homepage() {
         {/* spacer for scrolling to the bottom of the screen */}
         {/* {appSwitcherUi && <View className="h-25" />} */}
       </ScrollView>
+      {/* <View className="h-3 absolute bottom-0 w-screen bg-red-500 z-10" /> */}
       {appSwitcherUi && <AppSwitcherButton swipeProgress={swipeProgress} />}
       {appSwitcherUi && <AppSwitcher swipeProgress={swipeProgress} />}
     </Screen>

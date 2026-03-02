@@ -6,10 +6,8 @@ import {ClientAppletInterface, DUMMY_APPLET, useApplets} from "@/stores/applets"
 import {useAppTheme} from "@/contexts/ThemeContext"
 import {
   BottomSheetBackdrop,
-  BottomSheetFlatList,
   BottomSheetModal,
   BottomSheetScrollView,
-  BottomSheetView,
 } from "@gorhom/bottom-sheet"
 import {AppsGrid} from "@/components/home/AppsGrid"
 import {translate} from "@/i18n"

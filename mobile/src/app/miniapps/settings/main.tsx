@@ -30,8 +30,7 @@ export default function AccountPage() {
     <Screen preset="fixed" safeAreaEdges={["top"]} ref={viewShotRef}>
       <MiniAppDualButtonHeader packageName="com.mentra.settings" viewShotRef={viewShotRef} />
 
-      <ScrollView style={themed($styles.scrollView)} className="pt-6" contentInsetAdjustmentBehavior="automatic">
-        <ProfileCard />
+      <ScrollView style={themed($styles.scrollView)} className="pt-8" contentInsetAdjustmentBehavior="automatic">
 
         <View style={{flex: 1, gap: theme.spacing.s6}}>
           <Group title={translate("account:accountSettings")}>

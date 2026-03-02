@@ -169,7 +169,7 @@ export default function AppWebView() {
 
   const renderLoadingOverlay = () => {
     const app = useAppletStatusStore.getState().apps.find((a) => a.packageName === packageName)
-
+    
     // disabled for now:
     // const screenshot = screenshotComponent()
     // if (screenshot) {
@@ -194,6 +194,9 @@ export default function AppWebView() {
       )
     }
 
+    // force loading to false for the app icon:
+    let appCopy = {...app, loading: false}
+
     return (
       <Animated.View
         className="absolute top-0 left-0 right-0 bottom-0 z-10"
@@ -202,7 +205,7 @@ export default function AppWebView() {
         {/* show the app icon and app name */}
         <View className="flex-1 flex-row items-center justify-center">
           <View className="flex-col">
-            <AppIcon app={app} className="w-32 h-32" />
+            <AppIcon app={appCopy} className="w-32 h-32" />
             {/* <Text text={appName} className="text-foreground text-2xl font-medium text-center" numberOfLines={1} /> */}
           </View>
         </View>

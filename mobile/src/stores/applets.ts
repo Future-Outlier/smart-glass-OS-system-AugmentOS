@@ -161,7 +161,7 @@ export const getLastOpenTime = (packageName: string): AsyncResult<number, Error>
 }
 
 const getRawPackageNamePriority = (pkg: string) => {
-  if (pkg.includes("__empty")) {
+  if (pkg.includes("@empty")) {
     return 1000
   }
   switch (pkg) {
@@ -317,7 +317,7 @@ const getOfflineApplets = async (): Promise<ClientAppletInterface[]> => {
       healthy: true,
       hidden: false,
       permissions: [],
-      offlineRoute: "/miniapps/settings/account",
+      offlineRoute: "/miniapps/settings/main",
       webviewUrl: "",
       hardwareRequirements: [],
       onStart: () => saveLocalAppRunningState(settingsPackageName, true),

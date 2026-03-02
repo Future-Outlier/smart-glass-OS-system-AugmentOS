@@ -233,7 +233,8 @@ export default function AppSwitcher({swipeProgress}: AppSwitcherProps) {
   const prevAppsLength = useRef(0)
   const [blurPointerEvents, setBlurPointerEvents] = useState<"auto" | "none">("none")
   const [androidBlur] = useSetting(SETTINGS.android_blur.key)
-  const [showNoAppsMessage, setShowNoAppsMessage] = useState(false)
+  const [showNoAppsMessage, setShowNoAppsMessage] = useState(true)
+  const dotsPanGestureRef = useRef(Gesture.Pan())
 
   // for testing:
   //   apps = [...DUMMY_APPS, ...apps]
@@ -334,6 +335,7 @@ export default function AppSwitcher({swipeProgress}: AppSwitcherProps) {
   // )
 
   const panGesture = Gesture.Pan()
+    .requireExternalGestureToFail(dotsPanGestureRef)
     .activeOffsetX([-10, 10])
     .onStart(() => {
       offsetX.value = translateX.value
@@ -446,6 +448,40 @@ export default function AppSwitcher({swipeProgress}: AppSwitcherProps) {
         stiffness: 200,
         velocity: velocity,
         // overshootClamping: true,
+      })
+    })
+
+  const dotsPanGesture = Gesture.Pan()
+    .withRef(dotsPanGestureRef)
+    .activateAfterLongPress(200)
+    .activeOffsetX([-5, 5])
+    .onStart(() => {
+      offsetX.value = translateX.value
+    })
+    .onUpdate((event) => {
+      const cardWidth = CARD_WIDTH + CARD_SPACING
+      const sensitivity = 5
+      const raw = offsetX.value - event.translationX * sensitivity
+      const snappedIndex = Math.round(-raw / cardWidth)
+      const clamped = Math.max(-1, Math.min(snappedIndex, apps.length - 2))
+      translateX.value = withSpring(-clamped * cardWidth, {
+        damping: 200,
+        stiffness: 800,
+      })
+    })
+    .onEnd((event) => {
+      const cardWidth = CARD_WIDTH + CARD_SPACING
+      const velocity = event.velocityX * 3
+
+      let newTarget = Math.round(-translateX.value / cardWidth)
+      newTarget = Math.max(-1, Math.min(newTarget, apps.length - 2))
+
+      targetIndex.value = newTarget
+
+      translateX.value = withSpring(-newTarget * cardWidth, {
+        damping: 4000,
+        stiffness: 200,
+        velocity: velocity,
       })
     })
 
@@ -662,11 +698,17 @@ export default function AppSwitcher({swipeProgress}: AppSwitcherProps) {
         </GestureDetector>
 
         {apps.length > 0 && (
-          <View className="mb-5 px-4 py-2 rounded-full mx-auto bg-black/30 items-center justify-center gap-1.5 flex-row">
-            {apps.map((_, index) => (
-              <PageDot key={index} index={index} activeIndex={activeIndex} />
-            ))}
-          </View>
+          <GestureDetector gesture={dotsPanGesture}>
+            <Animated.View>
+              {/* <Pressable onPress={handleClose}> */}
+              <View className="mb-5 px-4 py-2 rounded-full mx-auto bg-black/30 items-center justify-center gap-1.5 flex-row">
+                {apps.map((_, index) => (
+                  <PageDot key={index} index={index} activeIndex={activeIndex} />
+                ))}
+              </View>
+              {/* </Pressable> */}
+            </Animated.View>
+          </GestureDetector>
         )}
 
         {/* test button to switch active index */}

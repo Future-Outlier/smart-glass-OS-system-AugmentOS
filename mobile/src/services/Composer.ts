@@ -217,12 +217,16 @@ class Composer {
   public getPackageNames(): string[] {
     try {
       const lmasDir = new Directory(Paths.document, "lmas")
+      if (!lmasDir.exists) {
+        console.log("COMPOSER: No lmas directory found, returning empty array")
+        return []
+      }
       let lmas = lmasDir.list()
       // keep only package directories that contain at least one version directory/file
       lmas = lmas.filter((lma): lma is Directory => lma instanceof Directory && lma.list().length > 0)
       return lmas.map((lma) => lma.name)
     } catch (error) {
-      console.warn("COMPOSER: Error getting locally installed package names", error)
+      console.error("COMPOSER: Error getting locally installed package names", error)
       return []
     }
   }

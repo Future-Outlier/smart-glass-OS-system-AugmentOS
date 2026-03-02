@@ -141,7 +141,7 @@ export function AppsGrid({showAllApps = false, onOpenApp, onAddToHome, searchQue
   const [appSwitcherUi] = useSetting(SETTINGS.app_switcher_ui.key)
   const apps = useForegroundApps()
 
-  const [orderMap, setOrderMap] = useState<OrderMap | null>(null)
+  const [orderMap, setOrderMap] = useState<OrderMap>({})
   const [popoverVisible, setPopoverVisible] = useState(false)
   const [popoverPosition, setPopoverPosition] = useState<PopoverPosition>({x: 0, y: 0, screenX: 0, screenY: 0})
   const [selectedApp, setSelectedApp] = useState<ClientAppletInterface | null>(null)
@@ -160,10 +160,21 @@ export function AppsGrid({showAllApps = false, onOpenApp, onAddToHome, searchQue
 
   const gridData: MasonryAppItem[] = useMemo(() => {
     let filteredApps = apps.filter((app) => {
-      if (showAllApps) return true
-      if (app.hidden) return false
-      if (app.running && !appSwitcherUi) return false
-      if (!app.compatibility?.isCompatible) return false
+      if (showAllApps) {
+        if (!app.compatibility?.isCompatible) {
+          return false
+        }
+        return true
+      }
+      if (app.hidden) {
+        return false
+      }
+      if (app.running && !appSwitcherUi) {
+        return false
+      }
+      if (!app.compatibility?.isCompatible) {
+        return false
+      }
       return true
     })
 
@@ -194,15 +205,62 @@ export function AppsGrid({showAllApps = false, onOpenApp, onAddToHome, searchQue
         emptySlots += GRID_COLUMNS
       }
     }
-    if (showAllApps) {
-      emptySlots = 0
-    }
+    // if (showAllApps) {
+    //   emptySlots = 0
+    // }
     
-    for (let i = 0; i < emptySlots; i++) {
-      filteredApps.push({...DUMMY_APPLET, packageName: `__empty_${i}`})
+    if (!appSwitcherUi) {
+      for (let i = 0; i < emptySlots; i++) {
+        filteredApps.push({...DUMMY_APPLET, packageName: `@empty${totalItems + i}`})
+      }
     }
 
-    if (orderMap && !showAllApps && appSwitcherUi) {
+    // Fill gaps in orderMap with dummy apps
+    if (!showAllApps && appSwitcherUi) {
+      const orderedPackages = new Set(
+        filteredApps.filter((app) => orderMap[app.packageName] !== undefined).map((app) => app.packageName),
+      )
+      const usedIndices = new Set<number>()
+      orderedPackages.forEach((pkg) => usedIndices.add(orderMap[pkg]))
+
+      // console.log("emptySlots", emptySlots)
+
+      if (usedIndices.size > 0) {
+        const highestRealIndex = Math.max(...usedIndices)
+        let maxIndex = filteredApps.length + emptySlots
+        // console.log("maxIndex", maxIndex)
+        for (let i = 0; i <= highestRealIndex; i++) {
+          if (!usedIndices.has(i)) {
+            // console.log(`adding dummy app @empty${i}`)
+            filteredApps.push({...DUMMY_APPLET, packageName: `@empty${i}`})
+            orderMap[`@empty${i}`] = i
+            emptySlots -= 1
+            maxIndex = filteredApps.length + emptySlots
+          }
+        }
+
+        // add the remaining dummy apps:
+        for (let i = highestRealIndex + 1; i <= maxIndex - 1; i++) {
+          // console.log(`adding dummy app @empty${i}`)
+          filteredApps.push({...DUMMY_APPLET, packageName: `@empty${i}`})
+          // Add the gap dummy to the orderMap so it sorts correctly
+          orderMap[`@empty${i}`] = i
+          emptySlots -= 1
+        }
+      }
+    }
+
+    if (showAllApps) {
+      // console.log("adding empty slots", emptySlots)
+      emptySlots = Math.min(emptySlots, GRID_COLUMNS * 2)
+      for (let i = 0; i < emptySlots; i++) {
+        let index = filteredApps.length + i + 100
+        filteredApps.push({...DUMMY_APPLET, packageName: `@empty${index}`})
+        orderMap[`@empty${index}`] = index
+      }
+    }
+
+    if (appSwitcherUi) {
       filteredApps.sort((a, b) => {
         const aIndex = orderMap[a.packageName]
         const bIndex = orderMap[b.packageName]
@@ -290,7 +348,7 @@ export function AppsGrid({showAllApps = false, onOpenApp, onAddToHome, searchQue
   )
 
   const handlePress = async (app: ClientAppletInterface) => {
-    if (app.packageName.includes("__empty")) return // ignore dummy apps
+    if (app.packageName.includes("@empty")) return // ignore dummy apps
     const result = await askPermissionsUI(app, theme)
     if (result !== 1) return
     startApplet(app.packageName)

@@ -254,6 +254,7 @@ export function Screen(props: ScreenProps & {ref?: any}) {
 
   let $containerInsets = useSafeAreaInsetsStyle(safeAreaEdges, "padding")
   // const [debugCoreStatusBarEnabled] = useSetting(SETTINGS.debug_core_status_bar.key)
+  // console.log("$containerInsets", $containerInsets)
 
   return (
     // separate view for screenshots:
