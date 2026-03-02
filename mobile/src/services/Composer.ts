@@ -222,7 +222,7 @@ class Composer {
       lmas = lmas.filter((lma): lma is Directory => lma instanceof Directory && lma.list().length > 0)
       return lmas.map((lma) => lma.name)
     } catch (error) {
-      console.error("COMPOSER: Error getting locally installed package names", error)
+      console.warn("COMPOSER: Error getting locally installed package names", error)
       return []
     }
   }

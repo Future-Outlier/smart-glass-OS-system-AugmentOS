@@ -1,5 +1,5 @@
-import React, {useCallback, useEffect, useMemo, useRef, useState} from "react"
-import {View, Dimensions, Pressable, Image, TouchableOpacity, Platform} from "react-native"
+import React, {useCallback, useEffect, useRef, useState} from "react"
+import {View, Dimensions, Pressable, Image, Platform} from "react-native"
 import {Text} from "@/components/ignite/"
 import Animated, {
   useSharedValue,
@@ -565,7 +565,7 @@ export default function AppSwitcher({swipeProgress}: AppSwitcherProps) {
         if (apps.length > 1) {
           runOnJS(goToIndex)(apps.length - 1, true)
         }
-        openX.value = withSpring(0, {damping: 200, stiffness: 500, overshootClamping: false})
+        openX.value = withSpring(0, {damping: 200, stiffness: 1000, overshootClamping: true})
         // }, 200)
         // scheduleOnRN(() => {setIsOpen(true)})
       } else if (previous !== null && current == 0 && previous > 0) {

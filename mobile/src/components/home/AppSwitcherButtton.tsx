@@ -110,7 +110,7 @@ export default function AppSwitcherButton({swipeProgress}: AppSwitcherButtonProp
     })
 
   const tapGesture = Gesture.Tap().onEnd(() => {
-    swipeProgress.value = withSpring(1, {damping: 20, stiffness: 300, overshootClamping: true})
+    swipeProgress.value = withSpring(1, {damping: 20, stiffness: 1000, overshootClamping: true})
   })
 
   const composedGesture = Gesture.Exclusive(panGesture, tapGesture)

@@ -146,9 +146,9 @@ module.exports = ({config}: ConfigContext): Partial<ExpoConfig> => {
           imageWidth: 100,
           backgroundColor: "#fff",
           dark: {
-            backgroundColor: "#fff",
-            // backgroundColor: "#171717",
-            // image: "./assets/logo/logo_dark.png",
+            // backgroundColor: "#fff",
+            backgroundColor: "#171717",
+            image: "./assets/logo/logo_dark.png",
           },
         },
       ],

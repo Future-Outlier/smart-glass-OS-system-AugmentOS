@@ -1,10 +1,10 @@
 import {Button, Icon} from "@/components/ignite"
 import {focusEffectPreventBack, useNavigationHistory} from "@/contexts/NavigationHistoryContext"
 import {useAppTheme} from "@/contexts/ThemeContext"
-import {ClientAppletInterface, useAppletStatusStore} from "@/stores/applets"
+import {ClientAppletInterface, SYSTEM_APPS, uninstallAppUI, useAppletStatusStore} from "@/stores/applets"
 import {SETTINGS, useSetting} from "@/stores/settings"
 import {BottomSheetBackdrop, BottomSheetModal} from "@gorhom/bottom-sheet"
-import {View} from "react-native"
+import {Share, View} from "react-native"
 import {Pressable} from "react-native-gesture-handler"
 import {captureRef} from "react-native-view-shot"
 import {Text} from "@/components/ignite"
@@ -118,6 +118,30 @@ export const MiniAppMoreActionsSheet = forwardRef<BottomSheetModal, MiniAppMoreA
       [],
     )
 
+    const handleUninstall = useCallback(() => {
+      // Composer.getInstance().uninstallMiniApp(packageName)
+      const app = useAppletStatusStore.getState().apps.find((app) => app.packageName === packageName)
+      if (app) {
+        uninstallAppUI(app)
+      }
+    }, [packageName])
+
+    const handleAddToHome = useCallback(() => {
+      useAppletStatusStore.getState().setHiddenStatus(packageName, false)
+    }, [packageName])
+
+    const handleShare = useCallback(() => {
+      // open system share sheet:
+      Share.share({
+        message: `Share ${app?.name}`,
+        url: `https://apps.mentraglass.com/package/${packageName}`,
+      })
+    }, [packageName])
+
+    const isSystemApp = SYSTEM_APPS.includes(packageName)
+    const isUninstallable = isSystemApp ? false : true
+    const size = 28
+
     return (
       <BottomSheetModal
         ref={internalRef}
@@ -143,31 +167,36 @@ export const MiniAppMoreActionsSheet = forwardRef<BottomSheetModal, MiniAppMoreA
             </View>
           </View>
 
-          <View className="flex-1 flex-row justify-between">
-            <View className="flex-col gap-2 items-center">
-              <Button compactIcon onPress={() => {}} preset="alternate" className="rounded-2xl">
-                <Icon name="share" color={theme.colors.foreground} size={60} />
+          <View className="flex-1 flex-row justify-between px-6">
+            {/* <View className="flex-col gap-2 items-center w-16">
+              <Button compactIcon onPress={() => {}} preset="alternate" className="rounded-2xl w-16 h-16">
+                <Icon name="share" color={theme.colors.foreground} size={size} />
               </Button>
-              <Text className="text-sm text-muted-foreground" text="[settings]" />
-            </View>
-            <View className="flex-col gap-2 items-center">
-              <Button compactIcon onPress={() => {}} preset="alternate" className="rounded-2xl">
-                <Icon name="share" color={theme.colors.foreground} size={60} />
+              <Text className="text-sm text-muted-foreground w-full text-center" text="[settings]" />
+            </View> */}
+            <View className="flex-col gap-2 items-center w-16">
+              <Button compactIcon onPress={handleShare} preset="alternate" className="rounded-2xl w-16 h-16">
+                <Icon name="share" color={theme.colors.foreground} size={size} />
               </Button>
-              <Text className="text-sm text-muted-foreground" tx="appInfo:share" />
+              <Text className="text-sm text-muted-foreground w-full text-center" tx="appInfo:share" />
             </View>
-            <View className="flex-col gap-2 items-center">
-              <Button compactIcon onPress={() => {}} preset="alternate" className="rounded-2xl">
-                <Icon name="plus" color={theme.colors.foreground} size={60} />
-              </Button>
-              <Text className="text-sm text-muted-foreground" tx="appInfo:addToHome" />
-            </View>
-            <View className="flex-col gap-2 items-center">
-              <Button compactIcon onPress={() => {}} preset="alternate" className="rounded-2xl">
-                <Icon name="trash" color={theme.colors.destructive} size={60} />
-              </Button>
-              <Text className="text-sm text-muted-foreground" tx="appInfo:uninstall" />
-            </View>
+            {app && app.hidden && (
+              <View className="flex-col gap-2 items-center w-16">
+                <Button compactIcon onPress={handleAddToHome} preset="alternate" className="rounded-2xl w-16 h-16">
+                  <Icon name="plus" color={theme.colors.foreground} size={size} />
+                </Button>
+                <Text className="text-sm text-muted-foreground w-full text-center" tx="appInfo:addToHome" />
+              </View>
+            )}
+
+            {isUninstallable && (
+              <View className="flex-col gap-2 items-center w-16">
+                <Button compactIcon onPress={handleUninstall} preset="alternate" className="rounded-2xl w-16 h-16">
+                  <Icon name="trash" color={theme.colors.destructive} size={size} />
+                </Button>
+                <Text className="text-sm text-muted-foreground w-full text-center" tx="appInfo:uninstall" />
+              </View>
+            )}
           </View>
 
           <View className="flex-1" />
