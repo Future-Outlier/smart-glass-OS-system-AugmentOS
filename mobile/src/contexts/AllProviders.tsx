@@ -19,7 +19,7 @@ import {NavigationHistoryProvider, useNavigationHistory} from "@/contexts/Naviga
 import {useThemeProvider} from "@/contexts/ThemeContext"
 import {SETTINGS, useSetting, useSettingsStore} from "@/stores/settings"
 import {ModalProvider} from "@/utils/AlertUtils"
-import {KonamiCodeProvider} from "@/utils/debug/konami"
+import {KonamiCodeProvider} from "@/utils/dev/konami"
 import ConnectionOverlayProvider from "@/contexts/ConnectionOverlayContext"
 import { SaferAreaProvider, useSaferAreaInsets } from "@/contexts/SaferAreaContext"
 // JsStack imports commented out - were used for Android-specific navigation (currently disabled)

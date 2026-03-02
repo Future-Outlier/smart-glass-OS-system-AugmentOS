@@ -1,5 +1,5 @@
-// mobile/src/services/LogRingBuffer.ts
-// Ring buffer for capturing logs to include in bug reports
+import {LogBox} from "react-native"
+import {configureReanimatedLogger, ReanimatedLogLevel} from "react-native-reanimated"
 
 export interface LogEntry {
   timestamp: number
@@ -15,32 +15,20 @@ class LogRingBuffer {
   private maxEntries = 10000
   private isIntercepting = false
 
-  /**
-   * Append a log entry to the buffer
-   */
   append(entry: Omit<LogEntry, "timestamp">) {
     this.logs.push({...entry, timestamp: Date.now()})
     this.prune()
   }
 
-  /**
-   * Get all recent logs (within maxAgeMs window)
-   */
   getRecentLogs(): LogEntry[] {
     this.prune()
     return [...this.logs]
   }
 
-  /**
-   * Clear all logs from the buffer
-   */
   clear() {
     this.logs = []
   }
 
-  /**
-   * Get buffer statistics
-   */
   getStats(): {count: number; oldestTimestamp: number | null; newestTimestamp: number | null} {
     this.prune()
     return {
@@ -50,9 +38,6 @@ class LogRingBuffer {
     }
   }
 
-  /**
-   * Remove old entries beyond maxAgeMs or maxEntries
-   */
   private prune() {
     const cutoff = Date.now() - this.maxAgeMs
     this.logs = this.logs.filter((l) => l.timestamp > cutoff)
@@ -61,15 +46,48 @@ class LogRingBuffer {
     }
   }
 
-  /**
-   * Start intercepting console methods to capture logs.
-   * Should be called once at app startup.
-   */
   startConsoleInterception() {
     if (this.isIntercepting) {
       return
     }
     this.isIntercepting = true
+
+    // prevent the annoying warning box at the bottom of the screen from getting in the way:
+    const IGNORED_LOGS = [
+      /Failed to open debugger. Please check that the dev server is running and reload the app./,
+      /Require cycle:/,
+      /is missing the required default export./,
+      /Attempted to import the module/,
+      /The action 'RESET' with payload/,
+      /The action 'POP_TO_TOP' was not handled/,
+      /socket-0 binding/,
+      /socket-0 bound to/,
+      /Error while flushing PostHog/,
+    ]
+
+    LogBox.ignoreLogs(IGNORED_LOGS)
+
+    if (__DEV__) {
+      const withoutIgnored =
+        (logger: any) =>
+        (...args: any[]) => {
+          const output = args.join(" ")
+
+          if (!IGNORED_LOGS.some((log) => log.test(output))) {
+            logger(...args)
+          }
+        }
+
+      console.log = withoutIgnored(console.log)
+      console.info = withoutIgnored(console.info)
+      console.warn = withoutIgnored(console.warn)
+      console.error = withoutIgnored(console.error)
+    }
+
+    configureReanimatedLogger({
+      level: ReanimatedLogLevel.warn,
+      strict: false, // Reanimated runs in strict mode by default
+    })
 
     const originalConsole = {
       log: console.log,

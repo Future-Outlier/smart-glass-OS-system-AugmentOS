@@ -6,7 +6,7 @@ import {
   HardwareType,
 } from "@/../../cloud/packages/types/src"
 import {useMemo} from "react"
-import {AsyncResult, result as Res, Result} from "typesafe-ts"
+import {AsyncResult, result as Res} from "typesafe-ts"
 import {create} from "zustand"
 import * as Sentry from "@sentry/react-native"
 

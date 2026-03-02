@@ -6,7 +6,7 @@ import {Header, Screen} from "@/components/ignite"
 import SliderSetting from "@/components/settings/SliderSetting"
 import {useNavigationHistory} from "@/contexts/NavigationHistoryContext"
 import {SETTINGS, useSetting} from "@/stores/settings"
-import {useKonamiCode} from "@/utils/debug/konami"
+import {useKonamiCode} from "@/utils/dev/konami"
 
 export default function ScreenSettingsScreen() {
   const {goBack} = useNavigationHistory()
