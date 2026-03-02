@@ -233,6 +233,7 @@ export default function AppSwitcher({swipeProgress}: AppSwitcherProps) {
   const prevAppsLength = useRef(0)
   const [blurPointerEvents, setBlurPointerEvents] = useState<"auto" | "none">("none")
   const [androidBlur] = useSetting(SETTINGS.android_blur.key)
+  const [showNoAppsMessage, setShowNoAppsMessage] = useState(false)
 
   // for testing:
   //   apps = [...DUMMY_APPS, ...apps]
@@ -487,9 +488,7 @@ export default function AppSwitcher({swipeProgress}: AppSwitcherProps) {
 
       // auto-close if there are no more apps left:
       if (apps.length === 1) {
-        setTimeout(() => {
-          handleClose()
-        }, 250)
+        handleClose()
       }
     },
     [apps.length, translateX.value, apps],
@@ -584,10 +583,14 @@ export default function AppSwitcher({swipeProgress}: AppSwitcherProps) {
         // console.log("just opened")
         runOnJS(goToIndex)(apps.length - 1, true)
         runOnJS(setBlurPointerEvents)("auto")
+        if (apps.length > 0) {
+          runOnJS(setShowNoAppsMessage)(false)
+        }
       }
       if (previous !== null && current == 0 && previous > 0) {
         // console.log("just closed")
         runOnJS(setBlurPointerEvents)("none")
+        runOnJS(setShowNoAppsMessage)(true)
       }
     },
   )
@@ -630,7 +633,7 @@ export default function AppSwitcher({swipeProgress}: AppSwitcherProps) {
           <Text className="text-white/50 text-sm font-medium" tx="appSwitcher:swipeUpToClose" />
         </View> */}
 
-        {apps.length == 0 && (
+        {apps.length == 0 && showNoAppsMessage && (
           <View className="flex-1 items-center justify-center">
             <Text className="text-foreground text-[22px] font-semibold mb-2" tx="appSwitcher:noAppsOpen" />
             <Text className="text-muted-foreground text-base" tx="appSwitcher:yourRecentlyUsedAppsWillAppearHere" />
