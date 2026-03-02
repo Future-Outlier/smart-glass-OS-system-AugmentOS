@@ -218,6 +218,8 @@ interface AppSwitcherProps {
 //   })
 // }
 
+const AnimatedBlurView = Animated.createAnimatedComponent(BlurView)
+
 export default function AppSwitcher({swipeProgress}: AppSwitcherProps) {
   const translateX = useSharedValue(0)
   const offsetX = useSharedValue(0)
@@ -286,7 +288,6 @@ export default function AppSwitcher({swipeProgress}: AppSwitcherProps) {
     opacity: swipeProgress.value,
   }))
 
-  const AnimatedBlurView = Animated.createAnimatedComponent(BlurView)
   const blurAnimatedProps = useAnimatedProps(() => ({
     intensity: interpolate(swipeProgress.value, [0, 1], [0, 50], Extrapolation.CLAMP),
   }))
@@ -483,6 +484,13 @@ export default function AppSwitcher({swipeProgress}: AppSwitcherProps) {
       // setTimeout(() => {
       useAppletStatusStore.getState().stopApplet(packageName)
       // }, 100)
+
+      // auto-close if there are no more apps left:
+      if (apps.length === 1) {
+        setTimeout(() => {
+          handleClose()
+        }, 250)
+      }
     },
     [apps.length, translateX.value, apps],
   )
