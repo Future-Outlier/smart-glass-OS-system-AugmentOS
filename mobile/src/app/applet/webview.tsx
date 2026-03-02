@@ -127,7 +127,7 @@ export default function AppWebView() {
 
     // Fade in WebView, fade out loading
     webViewOpacity.value = withTiming(1, {duration: 200})
-    loadingOpacity.value = withTiming(0, {duration: 800})
+    loadingOpacity.value = withTiming(0, {duration: 400})
   }
 
   const handleError = (syntheticEvent: any) => {
@@ -170,17 +170,18 @@ export default function AppWebView() {
   const renderLoadingOverlay = () => {
     const app = useAppletStatusStore.getState().apps.find((a) => a.packageName === packageName)
 
-    const screenshot = screenshotComponent()
-    if (screenshot) {
-      return (
-        <Animated.View
-          className="absolute top-0 left-0 right-0 bottom-0 z-10"
-          style={[loadingAnimatedStyle]}
-          pointerEvents={isWebViewReady ? "none" : "auto"}>
-          {screenshot}
-        </Animated.View>
-      )
-    }
+    // disabled for now:
+    // const screenshot = screenshotComponent()
+    // if (screenshot) {
+    //   return (
+    //     <Animated.View
+    //       className="absolute top-0 left-0 right-0 bottom-0 z-10"
+    //       style={[loadingAnimatedStyle]}
+    //       pointerEvents={isWebViewReady ? "none" : "auto"}>
+    //       {screenshot}
+    //     </Animated.View>
+    //   )
+    // }
 
     if (!app) {
       return (

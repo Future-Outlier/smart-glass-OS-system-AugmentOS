@@ -456,7 +456,7 @@ const startStopOfflineApplet = (applet: ClientAppletInterface, status: boolean):
     if (!status && applet.onStop) {
       const result = await applet.onStop()
       if (result.is_error()) {
-        console.error(`APPLET: Failed to stop applet onStop() for ${applet.packageName}: ${result.error}`)
+        console.log(`APPLET: Failed to stop applet onStop() for ${applet.packageName}: ${result.error}`)
         return
       }
     }
@@ -464,23 +464,10 @@ const startStopOfflineApplet = (applet: ClientAppletInterface, status: boolean):
     if (status && applet.onStart) {
       const result = await applet.onStart()
       if (result.is_error()) {
-        console.error(`APPLET: Failed to start applet onStart() for ${applet.packageName}: ${result.error}`)
+        console.log(`APPLET: Failed to start applet onStart() for ${applet.packageName}: ${result.error}`)
         return
       }
     }
-
-    // // Captions app special handling
-    // if (packageName === captionsPackageName) {
-    //   console.log(`APPLET: Captions app ${status ? "started" : "stopped"}`)
-    //   await useSettingsStore.getState().setSetting(SETTINGS.offline_captions_running.key, status)
-    // }
-
-    // // Camera app special handling - track running state separately from gallery_mode
-    // if (packageName === cameraPackageName) {
-    //   console.log(`APPLET: Camera app ${status ? "started" : "stopped"}`)
-    //   await useSettingsStore.getState().setSetting(SETTINGS.offline_camera_running.key, status)
-    //   // Note: GalleryModeSync will detect this change and update gallery_mode accordingly
-    // }
   })
 }
 
@@ -648,7 +635,7 @@ export const useAppletStatusStore = create<AppStatusState>((set, get) => ({
         if (applet.offline) {
           const offlineRoute = applet.offlineRoute
           if (offlineRoute) {
-            push(offlineRoute, {transition: "fade"})
+            push(offlineRoute, {transition: "none"})
           }
         }
 
@@ -658,7 +645,7 @@ export const useAppletStatusStore = create<AppStatusState>((set, get) => ({
             webviewURL: applet.webviewUrl,
             appName: applet.name,
             packageName: applet.packageName,
-            transition: "fade",
+            transition: "none",
           })
         }
 
@@ -668,7 +655,7 @@ export const useAppletStatusStore = create<AppStatusState>((set, get) => ({
             packageName: applet.packageName,
             version: applet.version,
             appName: applet.name,
-            transition: "fade",
+            transition: "none",
           })
         }
       }
