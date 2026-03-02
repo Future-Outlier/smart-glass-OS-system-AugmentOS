@@ -89,6 +89,7 @@ app.post("/", async (c) => {
       phoneLogs: [], // Populated via POST /api/incidents/:id/logs
       cloudLogs: [], // Populated by background job
       glassesLogs: [], // Populated async via same endpoint
+      glassesFirmwareLogs: [], // Populated via POST with source "glasses_firmware" (BES)
       appTelemetryLogs: {}, // Populated via same endpoint, keyed by package name
     });
 
@@ -125,14 +126,14 @@ app.post("/", async (c) => {
  *
  * Body:
  * {
- *   "source": "phone" | "glasses" | omit for apps,
+ *   "source": "phone" | "glasses" | "glasses_firmware" (BES) | omit for apps,
  *   "logs": [{ timestamp, level, message, source?, metadata? }]
  * }
  */
 app.post("/:incidentId/logs", async (c) => {
   const incidentId = c.req.param("incidentId");
   let source: string;
-  let logCategory: "phoneLogs" | "glassesLogs" | null = null;
+  let logCategory: "phoneLogs" | "glassesLogs" | "glassesFirmwareLogs" | null = null;
   let appPackageName: string | null = null;
   let userEmail: string | null = null;
 
@@ -162,7 +163,8 @@ app.post("/:incidentId/logs", async (c) => {
       }
       userEmail = decoded.email;
       source = body.source || "phone";
-      logCategory = source === "glasses" ? "glassesLogs" : "phoneLogs";
+      logCategory =
+        source === "glasses" ? "glassesLogs" : source === "glasses_firmware" ? "glassesFirmwareLogs" : "phoneLogs";
     } catch {
       return c.json({ success: false, message: "Invalid token" }, 401);
     }
