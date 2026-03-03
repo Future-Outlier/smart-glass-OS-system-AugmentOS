@@ -4,43 +4,31 @@ import {TextInput, TouchableOpacity, View} from "react-native"
 import {Button, Icon, Text} from "@/components/ignite"
 import {ClientAppletInterface, DUMMY_APPLET, useApplets} from "@/stores/applets"
 import {useAppTheme} from "@/contexts/ThemeContext"
-import {
-  BottomSheetBackdrop,
-  BottomSheetModal,
-  BottomSheetScrollView,
-} from "@gorhom/bottom-sheet"
+import BottomSheet, {BottomSheetBackdrop, BottomSheetModal, BottomSheetScrollView} from "@gorhom/bottom-sheet"
 import {AppsGrid} from "@/components/home/AppsGrid"
 import {translate} from "@/i18n"
 
 const GRID_COLUMNS = 4
 
-export default function AllAppsGridButton({onPress}: {onPress: () => void}) {
+export default function AllAppsGridSheet({bottomSheetRef}: {bottomSheetRef: React.RefObject<BottomSheet>}) {
   const {theme} = useAppTheme()
-  const bottomSheetRef = useRef<BottomSheetModal>(null)
+  
   const [searchQuery, setSearchQuery] = useState("")
 
   const snapPoints = useMemo(() => ["90%"], [])
-
-  const handleOpenSheet = useCallback(() => {
-    bottomSheetRef.current?.present()
-  }, [])
 
   const renderBackdrop = useCallback(
     (props: any) => <BottomSheetBackdrop {...props} disappearsOnIndex={-1} appearsOnIndex={0} pressBehavior="close" />,
     [],
   )
 
-
   return (
     <>
-      <Button
-        compactIcon
-        onPress={onPress}
-        hitSlop={10}
-        className="flex-1 border-0 px-0 py-0 rounded-none bg-transparent">
-        <Icon name="grid-3x3" color={theme.colors.foreground} size={32} />
-      </Button>
-      {/* <BottomSheetModal
+      <BottomSheet
+      // style={{position: "relative", bottom: 0, left: 0, right: 0, top: 0, width: 500}}
+        // style={{position: "absolute", bottom: 0, left: 0, right: 0, top: 0, width: 500}}
+        // containerStyle={{position: "absolute", left: 0}}
+        index={-1}
         ref={bottomSheetRef}
         snapPoints={snapPoints}
         backdropComponent={renderBackdrop}
@@ -48,6 +36,20 @@ export default function AllAppsGridButton({onPress}: {onPress: () => void}) {
         enableDynamicSizing={false}
         backgroundStyle={{backgroundColor: theme.colors.background}}
         handleIndicatorStyle={{backgroundColor: theme.colors.primary_foreground, width: 100, height: 5}}>
+        {/* <View className="px-4"> */}
+        {/* <View className="gap-4 px-4 mb-2">
+            <Text className="text-lg font-bold text-foreground text-center" tx="home:apps" />
+            <Text className="text-sm text-muted-foreground font-medium" tx="home:incompatibleAppsDescription" />
+          </View> */}
+        {/* <BottomSheetFlatList
+            data={gridData}
+            renderItem={renderItem}
+            keyExtractor={(item: ClientAppletInterface) => item.packageName}
+            numColumns={GRID_COLUMNS}
+            showsVerticalScrollIndicator={false}
+            contentContainerStyle={{paddingBottom: 21 * 4 + 6 * 4 * 2}}
+          /> */}
+        {/* </View> */}
         <BottomSheetScrollView>
           <View className="px-6">
             <View className="">
@@ -82,7 +84,7 @@ export default function AllAppsGridButton({onPress}: {onPress: () => void}) {
             />
           </View>
         </BottomSheetScrollView>
-      </BottomSheetModal> */}
+      </BottomSheet>
     </>
   )
 }

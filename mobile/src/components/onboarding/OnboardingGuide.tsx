@@ -1,7 +1,7 @@
 import {Image, ImageSource} from "expo-image"
 import {useVideoPlayer, VideoView, VideoSource, VideoPlayer} from "expo-video"
 import {useState, useCallback, useEffect, useMemo, useRef} from "react"
-import {View, ViewStyle, ActivityIndicator, Platform, Animated} from "react-native"
+import {View, ViewStyle, ActivityIndicator, Platform, Animated, ScrollView} from "react-native"
 
 import {MentraLogoStandalone} from "@/components/brands/MentraLogoStandalone"
 import {Text, Button, Header, Icon} from "@/components/ignite"
@@ -891,14 +891,14 @@ export function OnboardingGuide({
         {step.title && (
           <Text
             className={`${
-              (step.titleCentered ?? false) ? "text-center" : "text-start"
+              step.titleCentered ?? false ? "text-center" : "text-start"
             } text-2xl font-semibold text-foreground`}
             text={step.title}
           />
         )}
         {step.subtitle && (
           <Text
-            className={`${(step.subtitleCentered ?? false) ? "text-center" : "text-start"} text-[18px] text-foreground`}
+            className={`${step.subtitleCentered ?? false ? "text-center" : "text-start"} text-[18px] text-foreground`}
             text={step.subtitle}
           />
         )}
@@ -962,7 +962,7 @@ export function OnboardingGuide({
 
   return (
     <>
-      <View id="main" className="flex-1">
+      <View id="main" className="flex-1 justify-between">
         {showHeader && (
           <Header
             leftIcon={showCloseButton && hasStarted ? "x" : undefined}
@@ -978,7 +978,7 @@ export function OnboardingGuide({
             onLeftPress={handleClose}
           />
         )}
-        <View id="top">
+        <ScrollView id="top" className="flex-1 -mx-6 px-6">
           {showContent && renderStepContent()}
           <View className="-mx-6">
             <Animated.View
@@ -999,9 +999,9 @@ export function OnboardingGuide({
           <View className="flex-shrink">{renderStepCheck()}</View>
           {renderBullets()}
           {renderNumberedBullets()}
-        </View>
+        </ScrollView>
 
-        <View id="bottom" className={`absolute bottom-0 left-0 right-0 flex justify-end min-h-12`}>
+        <View id="bottom" className={`flex justify-end flex-shrink min-h-12`}>
           {!hasStarted && (
             <View className="flex-col">
               <View className="absolute w-full bottom-15 z-10">

@@ -373,7 +373,11 @@ export default function PairingPrepScreen() {
     return (
       <View className="flex-1 flex-col justify-start mt-6">
         <View className="flex-col items-center justify-center bg-primary-foreground rounded-xl mb-6">
-          <Image source={require("../../../assets/glasses/even_realities_g2/even_realities_g2.png")} resizeMode="contain" className="w-50 h-25" />
+          <Image
+            source={require("../../../assets/glasses/even_realities_g2/even_realities_g2.png")}
+            resizeMode="contain"
+            className="w-50 h-25"
+          />
           <Icon name="chevron-down" size={36} color={theme.colors.text} />
           <Image
             source={require("../../../assets/guide/image_g1_pair.png")}
@@ -457,9 +461,7 @@ export default function PairingPrepScreen() {
         RightActionComponent={<MentraLogoStandalone />}
       />
       <Spacer height={theme.spacing.s6} />
-      <ScrollView className="-mx-6 px-6" contentContainerStyle={{flexGrow: 1}} showsVerticalScrollIndicator={false}>
-        {renderGuide()}
-      </ScrollView>
+      {renderGuide()}
       {renderButtons()}
     </Screen>
   )

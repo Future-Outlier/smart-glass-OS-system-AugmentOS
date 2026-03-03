@@ -24,6 +24,8 @@ import AppSwitcher from "@/components/home/AppSwitcher"
 import {DeviceStatus} from "@/components/home/DeviceStatus"
 import {attemptReconnectToDefaultWearable} from "@/effects/Reconnect"
 import {useSaferAreaInsets} from "@/contexts/SaferAreaContext"
+import AllAppsGridSheet from "@/components/home/AllAppsGridSheet"
+import BottomSheet from "@gorhom/bottom-sheet"
 
 export default function Homepage() {
   const refreshApplets = useRefreshApplets()
@@ -36,6 +38,7 @@ export default function Homepage() {
   const [appSwitcherUi] = useSetting(SETTINGS.app_switcher_ui.key)
   const swipeProgress = useSharedValue(0)
   const insets = useSaferAreaInsets()
+  const bottomSheetRef = useRef<BottomSheet>(null)
 
   useFocusEffect(
     useCallback(() => {
@@ -86,6 +89,11 @@ export default function Homepage() {
     )
   }
 
+  const handleGridButtonPress = () => {
+    // allAppsGridSheetRef.current?.present()
+    bottomSheetRef.current?.expand()
+  }
+
   return (
     <Screen preset="fixed">
       {appSwitcherUi && <View style={{paddingTop: insets.top}} />}
@@ -124,8 +132,9 @@ export default function Homepage() {
         {/* {appSwitcherUi && <View className="h-25" />} */}
       </ScrollView>
       {/* <View className="h-3 absolute bottom-0 w-screen bg-red-500 z-10" /> */}
-      {appSwitcherUi && <AppSwitcherButton swipeProgress={swipeProgress} />}
+      {appSwitcherUi && <AppSwitcherButton swipeProgress={swipeProgress} onGridButtonPress={handleGridButtonPress}/>}
       {appSwitcherUi && <AppSwitcher swipeProgress={swipeProgress} />}
+      {appSwitcherUi && <AllAppsGridSheet bottomSheetRef={bottomSheetRef as React.RefObject<BottomSheet>} />}
     </Screen>
   )
 }

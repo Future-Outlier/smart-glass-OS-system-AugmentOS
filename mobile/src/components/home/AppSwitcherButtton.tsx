@@ -18,6 +18,7 @@ import {useSaferAreaInsets} from "@/contexts/SaferAreaContext"
 
 interface AppSwitcherButtonProps {
   swipeProgress: SharedValue<number>
+  onGridButtonPress: () => void
 }
 
 const SWIPE_DISTANCE_THRESHOLD = 300 // Distance needed to trigger open
@@ -25,7 +26,7 @@ const SWIPE_DISTANCE_MULTIPLIER = 1
 const SWIPE_PERCENT_THRESHOLD = 0.2
 // const SWIPE_VELOCITY_THRESHOLD = 800 // Velocity threshold for quick swipes
 
-export default function AppSwitcherButton({swipeProgress}: AppSwitcherButtonProps) {
+export default function AppSwitcherButton({swipeProgress, onGridButtonPress}: AppSwitcherButtonProps) {
   const {theme} = useAppTheme()
   const backgroundApps = useActiveBackgroundApps()
   const foregroundApp = useActiveForegroundApp()
@@ -186,7 +187,7 @@ export default function AppSwitcherButton({swipeProgress}: AppSwitcherButtonProp
           </View>
         </GestureDetector>
         <View className="bg-primary-foreground items-center p-2 rounded-2xl h-15" style={{marginBottom: bottomPadding}}>
-          <AllAppsGridButton />
+          <AllAppsGridButton onPress={onGridButtonPress} />
         </View>
       </View>
     )
@@ -233,7 +234,7 @@ export default function AppSwitcherButton({swipeProgress}: AppSwitcherButtonProp
         </View>
       </GestureDetector>
       <View className="bg-primary-foreground items-center p-2 rounded-2xl h-15" style={{marginBottom: bottomPadding}}>
-        <AllAppsGridButton />
+        <AllAppsGridButton onPress={onGridButtonPress} />
       </View>
     </View>
   )
