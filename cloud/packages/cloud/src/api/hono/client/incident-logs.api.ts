@@ -173,7 +173,8 @@ app.post("/:incidentId/logs", async (c) => {
       source = body.source || "phone";
       logCategory =
         source === "glasses" ? "glassesLogs" : source === "glasses_firmware" ? "glassesFirmwareLogs" : "phoneLogs";
-      if (!body.source || (source !== "glasses" && source !== "glasses_firmware")) {
+      const knownSources = ["phone", "glasses", "glasses_firmware"];
+      if (!body.source || !knownSources.includes(body.source)) {
         logger.warn(
           { incidentId, userEmail, bodySource: body.source, resolvedSource: source, logCategory },
           "[incident-logs] Source not found or unrecognized — defaulting to phone/phoneLogs",
@@ -234,6 +235,12 @@ app.post("/:incidentId/logs", async (c) => {
     );
     return c.json({ success: false, message: "Forbidden" }, 403);
   }
+
+  // [LOGS] Resolved category — if firmware shows phoneLogs here, body.source was wrong or missing
+  logger.info(
+    { tag: "[LOGS]", incidentId, bodySource: body.source, logCategory, logsCount: body.logs.length },
+    "[LOGS] Resolved log category for append (expected glasses_firmware→glassesFirmwareLogs)",
+  );
 
   // Append logs to R2
   try {
