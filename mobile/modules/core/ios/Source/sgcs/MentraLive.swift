@@ -1010,6 +1010,7 @@ class MentraLive: NSObject, SGCManager {
 
     // BLE Properties
     private var centralManager: CBCentralManager?
+
     private var connectedPeripheral: CBPeripheral?
     private var txCharacteristic: CBCharacteristic?
     private var rxCharacteristic: CBCharacteristic?
