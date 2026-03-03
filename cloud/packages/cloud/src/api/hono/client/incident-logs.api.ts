@@ -173,6 +173,12 @@ app.post("/:incidentId/logs", async (c) => {
       source = body.source || "phone";
       logCategory =
         source === "glasses" ? "glassesLogs" : source === "glasses_firmware" ? "glassesFirmwareLogs" : "phoneLogs";
+      if (!body.source || (source !== "glasses" && source !== "glasses_firmware")) {
+        logger.warn(
+          { incidentId, userEmail, bodySource: body.source, resolvedSource: source, logCategory },
+          "[incident-logs] Source not found or unrecognized — defaulting to phone/phoneLogs",
+        );
+      }
       logger.info(
         { incidentId, source, logCategory, userEmail },
         "[incident-logs] CoreToken auth OK — routing to category",
