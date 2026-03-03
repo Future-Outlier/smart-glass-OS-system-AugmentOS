@@ -27,6 +27,7 @@ type ProgressState =
 const MAX_RETRIES = 3
 const RETRY_INTERVAL_MS = 5000 // 5 seconds between retries
 const PROGRESS_TIMEOUT_MS = 120000 // 120 seconds - for APK/BES updates with regular progress
+const DOWNLOAD_STUCK_TIMEOUT_MS = 70000
 const MTK_INSTALL_TIMEOUT_MS = 300000 // 5 minutes - MTK system install takes much longer with no progress updates
 const TRANSITION_TIMEOUT_MS = 30000 // 30 seconds max wait for next update to start
 const OTA_COVER_VIDEO_URL = "https://mentra-videos-cdn.mentraglass.com/onboarding/ota/ota_video_2.mp4"
@@ -47,6 +48,8 @@ export default function OtaProgressScreen() {
   const [retryCount, setRetryCount] = useState(0)
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
   const [continueButtonDisabled, setContinueButtonDisabled] = useState(false)
+  const [timeEstimation, setTimeEstimation] = useState<string | null>(null)
+  const [elapsedTime, setElapsedTime] = useState<string>("")
 
   // Track the full update sequence and current position
   const updateSequenceRef = useRef<string[]>([])
@@ -63,9 +66,10 @@ export default function OtaProgressScreen() {
 
   // Track if we've received any progress from glasses
   const hasReceivedProgress = useRef(false)
-  const retryTimeoutRef = useRef<NodeJS.Timeout | null>(null)
-  const progressTimeoutRef = useRef<NodeJS.Timeout | null>(null)
-  const transitionTimeoutRef = useRef<NodeJS.Timeout | null>(null)
+  const retryTimeoutRef = useRef<number | null>(null)
+  const stuckTimeoutRef = useRef<number | null>(null)
+  const progressTimeoutRef = useRef<number | null>(null)
+  const transitionTimeoutRef = useRef<number | null>(null)
 
   // Track initial build number to detect successful install
   const initialBuildNumber = useRef<string | null>(null)
@@ -83,9 +87,44 @@ export default function OtaProgressScreen() {
   // Uses timeout-based stall detection: when no real progress for 20s in the 45-55% zone,
   // start incrementing by 1% every 15s to keep user informed (caps at 60%)
   const [simulatedProgress, setSimulatedProgress] = useState<number | null>(null)
-  const simulationTimerRef = useRef<NodeJS.Timeout | null>(null)
-  const stallDetectionRef = useRef<NodeJS.Timeout | null>(null)
+  const simulationTimerRef = useRef<number | null>(null)
+  const stallDetectionRef = useRef<number | null>(null)
   const lastRealProgressRef = useRef<number>(0)
+  const timeEstimationStartTimeRef = useRef<number>(0)
+  const pingIntervalRef = useRef<number | null>(null)
+
+  // Keep glasses awake during OTA by sending periodic pings
+  // This prevents the glasses from sleeping during long OTA operations
+  useEffect(() => {
+    const isOtaActive =
+      progressState === "starting" ||
+      progressState === "downloading" ||
+      progressState === "installing" ||
+      progressState === "transitioning"
+
+    if (isOtaActive && glassesConnected) {
+      // Send initial ping immediately
+      CoreModule.ping().catch((err) => console.log("OTA: ping failed:", err))
+
+      // Set up interval to ping every 10 seconds
+      pingIntervalRef.current = setInterval(() => {
+        CoreModule.ping().catch((err) => console.log("OTA: ping failed:", err))
+      }, 10000) as unknown as number
+
+      return () => {
+        if (pingIntervalRef.current) {
+          clearInterval(pingIntervalRef.current)
+          pingIntervalRef.current = null
+        }
+      }
+    } else {
+      // Clear interval if OTA is not active or glasses disconnected
+      if (pingIntervalRef.current) {
+        clearInterval(pingIntervalRef.current)
+        pingIntervalRef.current = null
+      }
+    }
+  }, [progressState, glassesConnected])
 
   focusEffectPreventBack()
 
@@ -287,11 +326,27 @@ export default function OtaProgressScreen() {
     [completedUpdates],
   )
 
+  useEffect(() => {
+    if (!timeEstimationStartTimeRef.current) return;
+  
+    const interval = setInterval(() => {
+      const diff = Date.now() - timeEstimationStartTimeRef.current;
+      const totalSeconds = Math.floor(diff / 1000);
+      // const h = String(Math.floor(totalSeconds / 3600)).padStart(2, "0");
+      const m = String(Math.floor((totalSeconds % 3600) / 60)).padStart(2, "0");
+      const s = String(totalSeconds % 60).padStart(2, "0");
+      setElapsedTime(`${m}:${s}`);
+    }, 1000);
+  
+    return () => clearInterval(interval);
+  }, [timeEstimationStartTimeRef.current]);
+
   // Send OTA start command with retry logic
   const sendOtaStartCommand = useCallback(async () => {
     try {
       console.log(`OTA: Sending start command to glasses (attempt ${retryCount + 1}/${MAX_RETRIES})`)
       await CoreModule.sendOtaStart()
+      timeEstimationStartTimeRef.current = Date.now()
 
       // Set up timeout to check if we received progress
       retryTimeoutRef.current = setTimeout(() => {
@@ -306,6 +361,19 @@ export default function OtaProgressScreen() {
           }
         }
       }, RETRY_INTERVAL_MS)
+      // if after 30 seconds we have received progress, but the progress is still 0, (detect if we're stuck at 0%):
+      stuckTimeoutRef.current = setTimeout(() => {
+        if (otaProgress?.progress === 0) {
+          // cancel the retry timeout
+          if (retryTimeoutRef.current) {
+            clearTimeout(retryTimeoutRef.current)
+            retryTimeoutRef.current = null
+          }
+          console.log("OTA: Stuck at 0% - showing failed")
+          setErrorMessage("Update may have failed. Ensure glasses have internet access and try again.")
+          setProgressState("failed")
+        }
+      }, DOWNLOAD_STUCK_TIMEOUT_MS)
     } catch (error) {
       console.error("OTA: Failed to send start command:", error)
       if (retryCount < MAX_RETRIES - 1) {
@@ -363,13 +431,7 @@ export default function OtaProgressScreen() {
 
   // Watch for WiFi disconnection during active download/install
   useEffect(() => {
-    if (
-      !wifiConnected &&
-      (progressState === "downloading" || progressState === "starting") &&
-      progressState !== "wifi_disconnected" &&
-      progressState !== "failed" &&
-      progressState !== "completed"
-    ) {
+    if (!wifiConnected && (progressState === "downloading" || progressState === "starting")) {
       console.log("OTA: WiFi disconnected during download - showing WiFi disconnected state")
       if (retryTimeoutRef.current) {
         clearTimeout(retryTimeoutRef.current)
@@ -479,7 +541,9 @@ export default function OtaProgressScreen() {
           let target = prev !== null ? Math.max(prev, stalledAt + 1) : stalledAt + 1
           target = Math.max(target, 51)
           console.log(
-            `🎯 OTA SIMULATION: Stall detected at ${stalledAt}%, ${prev !== null ? `resuming from ${prev}%` : `starting at ${target}% (min 51%)`}`,
+            `🎯 OTA SIMULATION: Stall detected at ${stalledAt}%, ${
+              prev !== null ? `resuming from ${prev}%` : `starting at ${target}% (min 51%)`
+            }`,
           )
           return target
         })
@@ -754,7 +818,7 @@ export default function OtaProgressScreen() {
       return "Update"
     }
     const index = currentUpdateIndex + 1
-    return `Update ${index} of ${sequence.length}`
+    return `Step ${index} of ${sequence.length}`
   }
 
   // Get next update position string like "update 2 of 3"
@@ -762,9 +826,9 @@ export default function OtaProgressScreen() {
     const sequence = updateSequenceRef.current
     const nextIndex = currentUpdateIndex + 1
     if (nextIndex >= sequence.length) {
-      return "next update"
+      return "next step"
     }
-    return `update ${nextIndex + 1} of ${sequence.length}`
+    return `step ${nextIndex + 1} of ${sequence.length}`
   }
 
   // DEBUG: Log render values
@@ -778,6 +842,22 @@ export default function OtaProgressScreen() {
     "index:",
     currentUpdateIndex,
   )
+
+  const renderTimeEstimation = () => {
+    return (
+      <View className="bg-primary-foreground rounded-2xl px-6 w-full py-2 mt-12 gap-3 items-center justify-center">
+        <View className="flex-row items-center justify-between w-full">
+          <Text text="Elapsed time:" className="text-sm text-center" />
+          {/* current time - time estimation start time */}
+          <Text text={`${elapsedTime ?? "00:00"}`} className="text-sm text-center" />
+        </View>
+        <View className="flex-row items-center justify-between w-full">
+          <Text text={`Estimated time remaining:`} className="text-sm text-center" />
+          <Text text="~4min" className="text-sm text-center" />
+        </View>
+      </View>
+    )
+  }
 
   const renderContent = () => {
     console.log(
@@ -802,6 +882,7 @@ export default function OtaProgressScreen() {
           <ActivityIndicator size="large" color={theme.colors.foreground} />
           <View className="h-4" />
           <Text tx="ota:doNotDisconnect" className="text-sm text-center text-secondary-foreground" />
+          {renderTimeEstimation()}
         </View>
       )
     }
@@ -822,6 +903,7 @@ export default function OtaProgressScreen() {
             className="text-sm text-center"
             style={{color: theme.colors.textDim}}
           />
+          {renderTimeEstimation()}
         </View>
       )
     }
@@ -836,9 +918,8 @@ export default function OtaProgressScreen() {
           <View className="h-4" />
           <Text text={`${displayProgress}%`} className="text-3xl font-bold" style={{color: theme.colors.primary}} />
           <View className="h-4" />
-          <ActivityIndicator size="large" color={theme.colors.foreground} />
-          <View className="h-4" />
           <Text tx="ota:doNotDisconnect" className="text-sm text-center" style={{color: theme.colors.textDim}} />
+          {renderTimeEstimation()}
         </View>
       )
     }
@@ -860,7 +941,6 @@ export default function OtaProgressScreen() {
               <View className="h-4" />
             </>
           )}
-          <ActivityIndicator size="large" color={theme.colors.foreground} />
           <View className="h-4" />
           {isMtk ? (
             <Text
@@ -871,6 +951,7 @@ export default function OtaProgressScreen() {
           ) : (
             <Text tx="ota:doNotDisconnect" className="text-sm text-center" style={{color: theme.colors.textDim}} />
           )}
+          {renderTimeEstimation()}
         </View>
       )
     }
@@ -943,8 +1024,8 @@ export default function OtaProgressScreen() {
             />
           </View>
 
-          <View className="gap-3 pb-2">
-            <Button preset="primary" tx="Retry" flexContainer onPress={handleRetry} />
+          <View className="gap-3">
+            <Button preset="primary" text="Retry" flexContainer onPress={handleRetry} />
             {superMode && <Button preset="secondary" text="Skip (super)" onPress={handleContinue} />}
           </View>
         </>
@@ -966,7 +1047,7 @@ export default function OtaProgressScreen() {
             />
           </View>
 
-          <View className="gap-3 pb-2">
+          <View className="gap-3">
             <Button preset="primary" tx="common:continue" flexContainer onPress={() => push("/wifi/scan")} />
           </View>
         </>
@@ -993,8 +1074,8 @@ export default function OtaProgressScreen() {
           />
         </View>
 
-        <View className="gap-3 pb-2">
-          <Button preset="primary" tx="Retry" flexContainer onPress={() => replace("/ota/check-for-updates")} />
+        <View className="gap-3">
+          <Button preset="primary" text="Retry" flexContainer onPress={() => replace("/ota/check-for-updates")} />
           <Button preset="secondary" text="Change WiFi" flexContainer onPress={() => push("/wifi/scan")} />
         </View>
       </>
@@ -1035,8 +1116,8 @@ export default function OtaProgressScreen() {
         ? `active (${simulatedProgress}%)`
         : `holding (${simulatedProgress}%)`
       : stallDetectionRef.current
-        ? "detecting stall..."
-        : "none"
+      ? "detecting stall..."
+      : "none"
 
     const info = `progressState: ${progressState}
 currentUpdate: ${currentUpdate || "null"}

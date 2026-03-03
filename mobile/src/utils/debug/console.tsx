@@ -3,18 +3,17 @@ import {ScrollView, View, ViewStyle, TextStyle, NativeScrollEvent, NativeSynthet
 import {Gesture, GestureDetector} from "react-native-gesture-handler"
 import Animated, {useSharedValue, useAnimatedStyle, withSpring} from "react-native-reanimated"
 
-
 import {Button} from "@/components/ignite"
 import {Text} from "@/components/ignite/Text"
 import {useAppTheme} from "@/contexts/ThemeContext"
 import {SETTINGS, useSetting} from "@/stores/settings"
 import {ThemedStyle} from "@/theme"
-import { useSafeAreaInsets } from "react-native-safe-area-context"
+import {useSaferAreaInsets} from "@/contexts/SaferAreaContext"
 
 const TOGGLE_MIN_X = -54
 const TOGGLE_MAX_X = 70
 const OPEN_MIN_X = 0
-const OPEN_PADDING = 80;
+const OPEN_PADDING = 80
 
 export const ConsoleLogger = () => {
   const {themed} = useAppTheme()
@@ -26,11 +25,11 @@ export const ConsoleLogger = () => {
   const isAtBottom = useRef(true)
 
   const {width, height} = Dimensions.get("window")
-  const insets = useSafeAreaInsets()
-  const openRightEdge = width - (insets.right + OPEN_PADDING);
-  const openBottomEdge = height - (insets.bottom + OPEN_PADDING);
-  const toggleRightEdge = width-TOGGLE_MAX_X;
-  const toggleBottomEdge = height - (insets.bottom + 80);
+  const insets = useSaferAreaInsets()
+  const openRightEdge = width - (insets.right + OPEN_PADDING)
+  const openBottomEdge = height - (insets.bottom + OPEN_PADDING)
+  const toggleRightEdge = width - TOGGLE_MAX_X
+  const toggleBottomEdge = height - (insets.bottom + 80)
 
   // Console window position
   const panX = useSharedValue(OPEN_MIN_X)
@@ -76,7 +75,8 @@ export const ConsoleLogger = () => {
     .onUpdate((event) => {
       toggleX.value = toggleStartX.value + event.translationX
       toggleY.value = toggleStartY.value + event.translationY
-    }).onEnd(() => {
+    })
+    .onEnd(() => {
       if (toggleY.value < insets.top) {
         toggleY.value = withSpring(insets.top)
       }

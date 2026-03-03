@@ -7,7 +7,7 @@ import {MentraLogoStandalone} from "@/components/brands/MentraLogoStandalone"
 import {ActiveForegroundApp} from "@/components/home/ActiveForegroundApp"
 import {BackgroundAppsLink} from "@/components/home/BackgroundAppsLink"
 import {CompactDeviceStatus} from "@/components/home/CompactDeviceStatus"
-import {ForegroundAppsGrid} from "@/components/home/ForegroundAppsGrid"
+import {AppsGrid} from "@/components/home/AppsGrid"
 import {IncompatibleApps} from "@/components/home/IncompatibleApps"
 import {PairGlassesCard} from "@/components/home/PairGlassesCard"
 import {Header, Screen} from "@/components/ignite"
@@ -23,7 +23,7 @@ import AppSwitcherButton from "@/components/home/AppSwitcherButtton"
 import AppSwitcher from "@/components/home/AppSwitcher"
 import {DeviceStatus} from "@/components/home/DeviceStatus"
 import {attemptReconnectToDefaultWearable} from "@/effects/Reconnect"
-import {useSafeAreaInsets} from "react-native-safe-area-context"
+import {useSaferAreaInsets} from "@/contexts/SaferAreaContext"
 
 export default function Homepage() {
   const refreshApplets = useRefreshApplets()
@@ -35,7 +35,7 @@ export default function Homepage() {
   const hasAttemptedInitialConnect = useRef(false)
   const [appSwitcherUi] = useSetting(SETTINGS.app_switcher_ui.key)
   const swipeProgress = useSharedValue(0)
-  const insets = useSafeAreaInsets()
+  const insets = useSaferAreaInsets()
 
   useFocusEffect(
     useCallback(() => {
@@ -80,7 +80,7 @@ export default function Homepage() {
         </Group>
         <View className="h-2" />
         {!appSwitcherUi && <ActiveForegroundApp />}
-        <ForegroundAppsGrid />
+        <AppsGrid />
       </>
     )
   }
@@ -119,6 +119,8 @@ export default function Homepage() {
         {renderContent()}
         <View className="h-4" />
         {!appSwitcherUi && <IncompatibleApps />}
+        {/* spacer for scrolling to the bottom of the screen */}
+        {/* {appSwitcherUi && <View className="h-25" />} */}
       </ScrollView>
       {appSwitcherUi && <AppSwitcherButton swipeProgress={swipeProgress} />}
       {appSwitcherUi && <AppSwitcher swipeProgress={swipeProgress} />}
