@@ -22,7 +22,7 @@ export default function SuperSettingsScreen() {
     <Screen preset="fixed">
       <Header title="Super Settings" leftIcon="chevron-left" onLeftPress={() => goBack()} />
 
-      <ScrollView className="flex px-4 -mx-4">
+      <ScrollView className="flex px-6 -mx-6">
         <View className="flex gap-6 mt-6">
           <Group title="Settings">
             <ToggleSetting

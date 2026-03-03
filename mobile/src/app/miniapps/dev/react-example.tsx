@@ -25,10 +25,10 @@ export default function LocalCaptionsExampleDev() {
     loadHtml()
   }, [])
   return (
-    <Screen preset="fixed" safeAreaEdges={["top"]} ref={viewShotRef}>
+    <Screen preset="fixed" safeAreaEdges={["top"]} ref={viewShotRef} className="px-0">
       <MiniAppDualButtonHeader packageName="com.mentra.react_example" viewShotRef={viewShotRef} />
 
-      <View className="flex-1 -mx-6">
+      <View className="flex-1">
         <LocalMiniApp html={html} packageName="com.mentra.react_example" />
       </View>
     </Screen>

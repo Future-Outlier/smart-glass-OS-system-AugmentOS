@@ -1,7 +1,6 @@
 import {Platform, View} from "react-native"
 import {ScrollView} from "react-native-gesture-handler"
 
-import {ProfileCard} from "@/components/account/ProfileCard"
 import {VersionInfo} from "@/components/dev/VersionInfo"
 import {Icon, Screen} from "@/components/ignite"
 import {Group} from "@/components/ui/Group"
@@ -11,12 +10,8 @@ import {useNavigationHistory} from "@/contexts/NavigationHistoryContext"
 import {useAppTheme} from "@/contexts/ThemeContext"
 import {translate} from "@/i18n"
 import {SETTINGS, useSetting} from "@/stores/settings"
-import {$styles} from "@/theme"
-import {focusEffectPreventBack} from "@/contexts/NavigationHistoryContext"
-import {useAppletStatusStore} from "@/stores/applets"
-import {captureRef} from "react-native-view-shot"
 import {useRef} from "react"
-import {DualButton, MiniAppDualButtonHeader} from "@/components/miniapps/DualButton"
+import {MiniAppDualButtonHeader} from "@/components/miniapps/DualButton"
 
 export default function AccountPage() {
   const {theme, themed} = useAppTheme()
@@ -27,10 +22,10 @@ export default function AccountPage() {
   const viewShotRef = useRef<View>(null)
 
   return (
-    <Screen preset="fixed" safeAreaEdges={["top"]} ref={viewShotRef}>
+    <Screen preset="fixed" safeAreaEdges={["top"]} ref={viewShotRef} className="px-0">
       <MiniAppDualButtonHeader packageName="com.mentra.settings" viewShotRef={viewShotRef} />
 
-      <ScrollView style={themed($styles.scrollView)} className="pt-8" contentInsetAdjustmentBehavior="automatic">
+      <ScrollView className="pt-8 px-6" contentInsetAdjustmentBehavior="automatic">
 
         <View style={{flex: 1, gap: theme.spacing.s6}}>
           <Group title={translate("account:accountSettings")}>

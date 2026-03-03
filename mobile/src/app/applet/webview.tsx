@@ -169,7 +169,7 @@ export default function AppWebView() {
 
   const renderLoadingOverlay = () => {
     const app = useAppletStatusStore.getState().apps.find((a) => a.packageName === packageName)
-    
+
     // disabled for now:
     // const screenshot = screenshotComponent()
     // if (screenshot) {
@@ -249,24 +249,27 @@ export default function AppWebView() {
       preset="fixed"
       safeAreaEdges={[appSwitcherUi && "top"]}
       KeyboardAvoidingViewProps={{enabled: true}}
+      className="px-0"
       ref={viewShotRef}>
       {appSwitcherUi && <MiniAppDualButtonHeader packageName={packageName} viewShotRef={viewShotRef} />}
       {!appSwitcherUi && (
-        <Header
-          leftIcon="chevron-left"
-          onLeftPress={() => goBack()}
-          title={appName}
-          rightIcon="settings"
-          onRightPress={() => {
-            push("/applet/settings", {
-              packageName: packageName as string,
-              appName: appName as string,
-              fromWebView: "true",
-            })
-          }}
-        />
+        <View className="px-6">
+          <Header
+            leftIcon="chevron-left"
+            onLeftPress={() => goBack()}
+            title={appName}
+            rightIcon="settings"
+            onRightPress={() => {
+              push("/applet/settings", {
+                packageName: packageName as string,
+                appName: appName as string,
+                fromWebView: "true",
+              })
+            }}
+          />
+        </View>
       )}
-      <View className="flex-1 -mx-6">
+      <View className="flex-1">
         {renderLoadingOverlay()}
         {finalUrl && (
           <Animated.View className="flex-1" style={[webViewAnimatedStyle]}>

@@ -188,7 +188,7 @@ export default function MiniAppInstaller() {
 
   if (url) {
     return (
-      <Screen preset="fixed" safeAreaEdges={["top"]} ref={viewShotRef}>
+      <Screen preset="fixed" safeAreaEdges={["top"]} ref={viewShotRef} className="px-0">
         <MiniAppDualButtonHeader
           packageName="com.mentra.lma_installer"
           viewShotRef={viewShotRef}
@@ -201,11 +201,11 @@ export default function MiniAppInstaller() {
   }
 
   return (
-    <Screen preset="fixed" safeAreaEdges={["top"]} ref={viewShotRef}>
+    <Screen preset="fixed" safeAreaEdges={["top"]} ref={viewShotRef} className="px-0">
       <MiniAppDualButtonHeader packageName="com.mentra.lma_installer" viewShotRef={viewShotRef} />
       {/* <View className="h-24" /> */}
 
-      <ScrollView className="-mx-6 px-6" contentContainerClassName="flex-grow">
+      <ScrollView className="px-6" contentContainerClassName="flex-grow">
         <View className="flex-1 gap-12 pt-13 pb-13">
           {/* install a mini app from an .mmk file */}
           {renderInstallerInput()}

@@ -42,7 +42,7 @@ export default function DeveloperSettingsScreen() {
     <Screen preset="fixed">
       <Header title="Developer Settings" leftIcon="chevron-left" onLeftPress={() => goBack()} />
 
-      <ScrollView className="flex px-4 -mx-4">
+      <ScrollView className="flex px-6 -mx-6">
         <View className="flex gap-6">
           <View className="mt-6 border-destructive border-2 bg-destructive/10 rounded-lg px-4 py-3">
             <View className="flex flex-row items-center gap-2">

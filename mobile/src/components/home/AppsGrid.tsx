@@ -166,7 +166,7 @@ export function AppsGrid({showAllApps = false, onOpenApp, onAddToHome, searchQue
         // }
         return true
       }
-      if (app.hidden) {
+      if (app.hidden && appSwitcherUi) {
         return false
       }
       if (app.running && !appSwitcherUi) {
@@ -223,8 +223,6 @@ export function AppsGrid({showAllApps = false, onOpenApp, onAddToHome, searchQue
       const usedIndices = new Set<number>()
       orderedPackages.forEach((pkg) => usedIndices.add(orderMap[pkg]))
 
-      // console.log("emptySlots", emptySlots)
-
       if (usedIndices.size > 0) {
         const highestRealIndex = Math.max(...usedIndices)
         let maxIndex = filteredApps.length + emptySlots
@@ -232,7 +230,7 @@ export function AppsGrid({showAllApps = false, onOpenApp, onAddToHome, searchQue
         for (let i = 0; i <= highestRealIndex; i++) {
           if (!usedIndices.has(i)) {
             // console.log(`adding dummy app @empty${i}`)
-            // filteredApps.push({...DUMMY_APPLET, packageName: `@empty${i}`})
+            filteredApps.push({...DUMMY_APPLET, packageName: `@empty${i}`})
             orderMap[`@empty${i}`] = i
             emptySlots -= 1
             maxIndex = filteredApps.length + emptySlots
@@ -242,7 +240,7 @@ export function AppsGrid({showAllApps = false, onOpenApp, onAddToHome, searchQue
         // add the remaining dummy apps:
         for (let i = highestRealIndex + 1; i <= maxIndex - 1; i++) {
           // console.log(`adding dummy app @empty${i}`)
-          // filteredApps.push({...DUMMY_APPLET, packageName: `@empty${i}`})
+          filteredApps.push({...DUMMY_APPLET, packageName: `@empty${i}`})
           // Add the gap dummy to the orderMap so it sorts correctly
           orderMap[`@empty${i}`] = i
           emptySlots -= 1
