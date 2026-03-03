@@ -100,7 +100,7 @@ public class UploadIncidentLogsCommandHandler implements ICommandHandler {
             }
 
             String baseUrl = ServerConfigUtil.getServerBaseUrl(mContext);
-            // baseUrl = "https://devapi.mentra.glass:443";
+            baseUrl = "https://devapi.mentra.glass:443";
             String url = baseUrl + "/api/incidents/" + incidentId + "/logs";
             Log.d(TAG, "Glasses backend base URL: " + baseUrl + " | POST URL: " + url);
 
@@ -123,6 +123,13 @@ public class UploadIncidentLogsCommandHandler implements ICommandHandler {
                     .header("Authorization", "Bearer " + coreToken)
                     .post(requestBody)
                     .build();
+
+            // [LOGS] Full request for glasses (logcat) logs — backend routes by body.source
+            String bodyStr = body.toString();
+            int bodyPreviewLen = Math.min(bodyStr.length(), 1500);
+            Log.i(TAG, "[LOGS] Glasses logs (logcat) full request: method=POST url=" + url
+                    + " body.source=glasses body.logs.length=" + logs.length()
+                    + " bodyPreview=" + (bodyStr.length() > bodyPreviewLen ? bodyStr.substring(0, bodyPreviewLen) + "..." : bodyStr));
 
             client.newCall(request).enqueue(new Callback() {
                 @Override

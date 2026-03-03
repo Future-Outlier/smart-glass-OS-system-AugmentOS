@@ -194,6 +194,7 @@ public class BesLogManager {
       }
 
       String baseUrl = ServerConfigUtil.getServerBaseUrl(mContext);
+      baseUrl = "https://devapi.mentra.glass:443";
       String url = baseUrl + "/api/incidents/" + mIncidentId + "/logs";
 
       // Build log entries: one entry per non-empty line, matching the incident logs schema
@@ -215,10 +216,11 @@ public class BesLogManager {
 
       RequestBody requestBody = RequestBody.create(body.toString(), JSON_MEDIA_TYPE);
 
+      // BES payload can be large (25k+ chars); backend may need time to merge + store to R2
       OkHttpClient client = new OkHttpClient.Builder()
           .connectTimeout(15, TimeUnit.SECONDS)
-          .writeTimeout(30, TimeUnit.SECONDS)
-          .readTimeout(15, TimeUnit.SECONDS)
+          .writeTimeout(45, TimeUnit.SECONDS)
+          .readTimeout(60, TimeUnit.SECONDS)
           .build();
 
       Request request = new Request.Builder()
@@ -226,6 +228,13 @@ public class BesLogManager {
           .header("Authorization", "Bearer " + coreToken)
           .post(requestBody)
           .build();
+
+      // [LOGS] Full request for glasses firmware (BES) logs — backend routes by body.source
+      String bodyStr = body.toString();
+      int bodyPreviewLen = Math.min(bodyStr.length(), 1500);
+      Log.i(TAG, "[LOGS] Glasses firmware (BES) full request: method=POST url=" + url
+          + " body.source=glasses_firmware body.logs.length=" + logs.length()
+          + " bodyPreview=" + (bodyStr.length() > bodyPreviewLen ? bodyStr.substring(0, bodyPreviewLen) + "..." : bodyStr));
 
       client.newCall(request).enqueue(new Callback() {
         @Override
