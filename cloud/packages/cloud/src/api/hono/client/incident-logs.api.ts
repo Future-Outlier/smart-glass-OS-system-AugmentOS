@@ -153,6 +153,23 @@ app.post("/:incidentId/logs", async (c) => {
     "[incident-logs] Request body parsed (source + logs count)",
   );
 
+  // [LOGS] Full request as received — use this to verify glasses vs glasses_firmware vs phone
+  const firstLog = body.logs?.[0];
+  logger.info(
+    {
+      tag: "[LOGS]",
+      method: "POST",
+      path: `/api/incidents/${incidentId}/logs`,
+      bodySource: body.source ?? "(missing)",
+      bodyLogsLength: body.logs?.length ?? 0,
+      firstLogMessage:
+        firstLog && typeof firstLog === "object" && "message" in firstLog
+          ? String((firstLog as LogEntry).message).slice(0, 120)
+          : undefined,
+    },
+    "[LOGS] Received logs request (body.source drives routing: glasses→glassesLogs, glasses_firmware→glassesFirmwareLogs, else→phoneLogs)",
+  );
+
   // Validate logs array
   if (!body.logs || !Array.isArray(body.logs)) {
     return c.json({ success: false, message: "Invalid payload: logs array required" }, 400);
@@ -234,6 +251,12 @@ app.post("/:incidentId/logs", async (c) => {
     );
     return c.json({ success: false, message: "Forbidden" }, 403);
   }
+
+  // [LOGS] Resolved category — if firmware shows phoneLogs here, body.source was wrong or missing
+  logger.info(
+    { tag: "[LOGS]", incidentId, bodySource: body.source, logCategory, logsCount: body.logs.length },
+    "[LOGS] Resolved log category for append (expected glasses_firmware→glassesFirmwareLogs)",
+  );
 
   // Append logs to R2
   try {
