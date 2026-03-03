@@ -40,7 +40,7 @@ export interface ClientAppletInterface extends AppletInterface {
 interface AppStatusState {
   apps: ClientAppletInterface[]
   refreshApplets: () => Promise<void>
-  startApplet: (packageName: string, appType?: string) => Promise<void>
+  startApplet: (applet: ClientAppletInterface) => Promise<void>
   stopApplet: (packageName: string) => Promise<void>
   stopAllApplets: () => AsyncResult<void, Error>
   saveScreenshot: (packageName: string, screenshot: string) => Promise<void>
@@ -577,9 +577,9 @@ export const useAppletStatusStore = create<AppStatusState>((set, get) => ({
     set({apps: applets})
   },
 
-  startApplet: async (packageName: string) => {
+  startApplet: async (applet: ClientAppletInterface) => {
     let allApps = [...get().apps]
-    const applet = allApps.find((a) => a.packageName === packageName)
+    const packageName = applet.packageName
 
     if (!applet) {
       console.error(`Applet not found for package name: ${packageName}`)
@@ -589,6 +589,25 @@ export const useAppletStatusStore = create<AppStatusState>((set, get) => ({
     // do nothing if any applet is currently loading:
     if (get().apps.some((a) => a.loading)) {
       console.log(`APPLETS: Skipping start applet ${packageName} because another applet is currently loading`)
+      return
+    }
+
+    console.log(`APPLETS: Starting applet ${packageName}`, applet.compatibility)
+    console.log(`APPLETS: All apps: ${applet}`)
+
+    // show incompatible alert if the applet is incompatible:
+    if (!applet.compatibility?.isCompatible) {
+      const missingHardware =
+        applet.compatibility?.missingRequired?.map((req) => req.type.toLowerCase()).join(", ") || "required features"
+
+      showAlert(
+        translate("home:hardwareIncompatible"),
+        translate("home:hardwareIncompatibleMessage", {
+          app: applet.name,
+          missing: missingHardware,
+        }),
+        [{text: translate("common:ok")}],
+      )
       return
     }
 

@@ -161,9 +161,9 @@ export function AppsGrid({showAllApps = false, onOpenApp, onAddToHome, searchQue
   const gridData: MasonryAppItem[] = useMemo(() => {
     let filteredApps = apps.filter((app) => {
       if (showAllApps) {
-        if (!app.compatibility?.isCompatible) {
-          return false
-        }
+        // if (!app.compatibility?.isCompatible) {
+          // return false
+        // }
         return true
       }
       if (app.hidden) {
@@ -172,9 +172,9 @@ export function AppsGrid({showAllApps = false, onOpenApp, onAddToHome, searchQue
       if (app.running && !appSwitcherUi) {
         return false
       }
-      if (!app.compatibility?.isCompatible) {
-        return false
-      }
+      // if (!app.compatibility?.isCompatible) {
+      //   return false
+      // }
       return true
     })
 
@@ -232,7 +232,7 @@ export function AppsGrid({showAllApps = false, onOpenApp, onAddToHome, searchQue
         for (let i = 0; i <= highestRealIndex; i++) {
           if (!usedIndices.has(i)) {
             // console.log(`adding dummy app @empty${i}`)
-            filteredApps.push({...DUMMY_APPLET, packageName: `@empty${i}`})
+            // filteredApps.push({...DUMMY_APPLET, packageName: `@empty${i}`})
             orderMap[`@empty${i}`] = i
             emptySlots -= 1
             maxIndex = filteredApps.length + emptySlots
@@ -242,7 +242,7 @@ export function AppsGrid({showAllApps = false, onOpenApp, onAddToHome, searchQue
         // add the remaining dummy apps:
         for (let i = highestRealIndex + 1; i <= maxIndex - 1; i++) {
           // console.log(`adding dummy app @empty${i}`)
-          filteredApps.push({...DUMMY_APPLET, packageName: `@empty${i}`})
+          // filteredApps.push({...DUMMY_APPLET, packageName: `@empty${i}`})
           // Add the gap dummy to the orderMap so it sorts correctly
           orderMap[`@empty${i}`] = i
           emptySlots -= 1
@@ -295,7 +295,7 @@ export function AppsGrid({showAllApps = false, onOpenApp, onAddToHome, searchQue
           icon: "external-link",
           onPress: () => {
             if (selectedApp) {
-              startApplet(selectedApp.packageName)
+              startApplet(selectedApp)
               if (onOpenApp) {
                 onOpenApp?.(selectedApp)
               }
@@ -351,7 +351,7 @@ export function AppsGrid({showAllApps = false, onOpenApp, onAddToHome, searchQue
     if (app.packageName.includes("@empty")) return // ignore dummy apps
     const result = await askPermissionsUI(app, theme)
     if (result !== 1) return
-    startApplet(app.packageName)
+    startApplet(app)
     if (onOpenApp) {
       onOpenApp?.(app)
     }

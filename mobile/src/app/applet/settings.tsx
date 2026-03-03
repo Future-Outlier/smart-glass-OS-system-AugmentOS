@@ -140,7 +140,7 @@ export default function AppSettings() {
         return
       }
 
-      startApp(packageName)
+      startApp(appInfo)
     } catch (error) {
       // Refresh the app status to get the accurate state from the server
       refreshApplets()
