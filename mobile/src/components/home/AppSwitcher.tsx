@@ -646,7 +646,7 @@ export default function AppSwitcher({swipeProgress}: AppSwitcherProps) {
         pointerEvents={blurPointerEvents}
         className="absolute inset-0"
         style={blurStyle}
-        experimentalBlurMethod="dimezisBlurView">
+        blurMethod="dimezisBlurView">
         <Pressable className="flex-1" onPress={handleClose} />
       </AnimatedBlurView>
     )

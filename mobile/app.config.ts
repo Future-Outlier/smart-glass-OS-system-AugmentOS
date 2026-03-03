@@ -20,7 +20,6 @@ module.exports = ({config}: ConfigContext): Partial<ExpoConfig> => {
     updates: {
       fallbackToCacheTimeout: 0,
     },
-    newArchEnabled: true,
     jsEngine: "hermes",
     assetBundlePatterns: ["**/*"],
     android: {
@@ -236,6 +235,7 @@ module.exports = ({config}: ConfigContext): Partial<ExpoConfig> => {
           supportsPictureInPicture: true,
         },
       ],
+      "expo-web-browser",
     ],
     experiments: {
       tsconfigPaths: true,
