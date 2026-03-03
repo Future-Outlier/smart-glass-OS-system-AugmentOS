@@ -887,7 +887,7 @@ export function OnboardingGuide({
     // }
 
     return (
-      <View id="step-content" className="flex mb-4 h-34 gap-3 w-full justify-start">
+      <View id="step-content" className="flex mb-4 h-34 pt-3 gap-3 w-full justify-start">
         {step.title && (
           <Text
             className={`${

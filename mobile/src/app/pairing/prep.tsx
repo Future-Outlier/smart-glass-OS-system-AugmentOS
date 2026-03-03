@@ -460,7 +460,6 @@ export default function PairingPrepScreen() {
         onLeftPress={goBack}
         RightActionComponent={<MentraLogoStandalone />}
       />
-      <Spacer height={theme.spacing.s6} />
       {renderGuide()}
       {renderButtons()}
     </Screen>
