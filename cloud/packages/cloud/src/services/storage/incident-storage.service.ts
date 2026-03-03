@@ -244,6 +244,13 @@ class IncidentStorageService {
       // Append to the appropriate category
       existing[category] = [...(existing[category] || []), ...taggedLogs];
 
+      if (category === "glassesFirmwareLogs") {
+        logger.info(
+          { incidentId, count: taggedLogs.length },
+          "[incident-storage] Appended glasses_firmware (BES) logs to incident",
+        );
+      }
+
       // Store back to R2
       await this.storeIncidentLogs(incidentId, existing);
 
