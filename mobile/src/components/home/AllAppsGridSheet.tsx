@@ -10,9 +10,9 @@ import {translate} from "@/i18n"
 
 const GRID_COLUMNS = 4
 
-export default function AllAppsGridSheet({bottomSheetRef}: {bottomSheetRef: React.RefObject<BottomSheet>}) {
+export default function AllAppsGridSheet({bottomSheetRef}: {bottomSheetRef: React.RefObject<BottomSheet | null>}) {
   const {theme} = useAppTheme()
-  
+
   const [searchQuery, setSearchQuery] = useState("")
 
   const snapPoints = useMemo(() => ["90%"], [])
@@ -25,7 +25,7 @@ export default function AllAppsGridSheet({bottomSheetRef}: {bottomSheetRef: Reac
   return (
     <>
       <BottomSheet
-      // style={{position: "relative", bottom: 0, left: 0, right: 0, top: 0, width: 500}}
+        // style={{position: "relative", bottom: 0, left: 0, right: 0, top: 0, width: 500}}
         // style={{position: "absolute", bottom: 0, left: 0, right: 0, top: 0, width: 500}}
         // containerStyle={{position: "absolute", left: 0}}
         index={-1}
