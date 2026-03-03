@@ -82,6 +82,7 @@ import {
   isStreamStatusCheckResponse,
   isDeviceStateUpdate,
 } from "../../types/messages/cloud-to-app"
+import type {PhotoResponse} from "../../types/messages/glasses-to-cloud"
 import {SimpleStorage} from "./modules/simple-storage"
 import {DeviceState} from "./device-state"
 import {readNotificationWarnLog} from "../../utils/permissions-utils"
@@ -296,6 +297,7 @@ export class AppSession {
       this.unsubscribe.bind(this),
       this.config.packageName,
       this.getHttpsServerUrl() || "",
+      this.logger,
     )
     this.layouts = new LayoutManager(config.packageName, this.send.bind(this))
 
@@ -1541,12 +1543,53 @@ export class AppSession {
             this.audio.handleAudioPlayResponse(message as AudioPlayResponse)
           }
         } else if (isPhotoResponse(message)) {
-          // Legacy photo response handling - now photos come directly via webhook
-          // This branch can be removed in the future as all photos now go through /photo-upload
-          this.logger.warn(
-            {message},
-            "Received legacy photo response - photos should now come via /photo-upload webhook",
-          )
+          // Photo responses can arrive via WebSocket when the cloud forwards error/success
+          // from the phone's REST endpoint (POST /api/client/photo/response).
+          // Success photos normally arrive via HTTP to /photo-upload, but errors always
+          // come through WebSocket because the phone reports them to cloud, not directly
+          // to the SDK. We MUST handle errors here to reject the pending promise immediately
+          // instead of letting the developer wait 30s for a generic timeout.
+          // See: OS-947, OS-951
+          const photoResponse = message as PhotoResponse
+          const {requestId, success} = photoResponse
+
+          if (requestId && this.appServer) {
+            const pending = this.appServer.completePhotoRequest(requestId)
+            if (pending) {
+              if (success) {
+                // Success via WebSocket (legacy path — normally comes via /photo-upload HTTP)
+                this.logger.info({requestId}, "📸 Photo success received via WebSocket (legacy path)")
+                pending.resolve({
+                  buffer: Buffer.from([]),
+                  mimeType: "image/jpeg",
+                  filename: "photo.jpg",
+                  requestId,
+                  size: 0,
+                  timestamp: new Date(),
+                  photoUrl: photoResponse.photoUrl,
+                } as any)
+              } else {
+                // Error response — this is the critical path for OS-947/OS-951
+                const errorCode = photoResponse.error?.code || "UNKNOWN_ERROR"
+                const errorMessage = photoResponse.error?.message || "Photo capture failed"
+                this.logger.warn(
+                  {requestId, errorCode, errorMessage},
+                  `📸 Photo error received via WebSocket: ${errorCode} - ${errorMessage}`,
+                )
+                pending.reject(new Error(`${errorCode}: ${errorMessage}`))
+              }
+            } else {
+              this.logger.debug(
+                {requestId, success},
+                "Photo response received via WebSocket but no pending request found (may have timed out or been completed via /photo-upload)",
+              )
+            }
+          } else {
+            this.logger.warn(
+              {requestId, hasAppServer: !!this.appServer},
+              "Photo response received via WebSocket but missing requestId or appServer",
+            )
+          }
         } else if (isRgbLedControlResponse(message)) {
           // LED control responses are no longer handled - fire-and-forget mode
           this.logger.debug({message}, "Received LED control response (ignored - fire-and-forget mode)")

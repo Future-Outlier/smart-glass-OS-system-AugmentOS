@@ -179,9 +179,11 @@ export class AppAudioStreamManager {
       return false;
     }
 
-    // Create a TransformStream for the initial phone connection
-    const { readable, writable } = new TransformStream<Uint8Array, Uint8Array>();
-    const writer = writable.getWriter();
+    // DON'T create a TransformStream yet — the phone hasn't connected.
+    // Any SDK writes before the phone GETs the relay URL go into pendingChunks
+    // and get flushed when claimStream() creates the first TransformStream.
+    // Creating one here would waste it: claimStream() closes the old writer
+    // and creates a fresh one, silently discarding any queued data.
 
     const stream: ActiveStream = {
       streamId,
@@ -192,19 +194,19 @@ export class AppAudioStreamManager {
       lastWriteTime: Date.now(),
       ended: false,
 
-      writer,
-      readable,
+      writer: null,
+      readable: null,
       pendingChunks: [],
       reconnecting: false,
 
       timer: null,
     };
 
-    // Start initial claim timeout — if the phone never connects, clean up
+    // Start initial claim timeout — if the phone never connects, clean up.
+    // writer starts null, so we check that it's STILL null after the timeout
+    // (claimStream sets it to a real writer when the phone connects).
     stream.timer = setTimeout(() => {
       if (!stream.writer) {
-        // Writer was nulled = phone never connected or already disconnected
-        // and no data is flowing. Safe to clean up.
         this.logger.warn({ streamId, packageName }, "Stream never claimed by phone, cleaning up");
         this.destroyStream(streamId);
       }

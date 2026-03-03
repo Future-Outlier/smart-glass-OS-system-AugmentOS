@@ -529,6 +529,17 @@ function handleGlassesClose(ws: GlassesServerWebSocket, code: number, reason: st
     return;
   }
 
+  // Guard: if the session already has a NEWER WebSocket (from a reconnect that
+  // raced ahead of this close), this close event is for the OLD connection.
+  // Don't mark the session as disconnected — it's actively connected on the new WS.
+  if (userSession.websocket && userSession.websocket !== (ws as any)) {
+    userSession.logger.info(
+      { code, reason },
+      "Glasses connection closed (stale — newer WebSocket already active, ignoring)",
+    );
+    return;
+  }
+
   userSession.logger.warn({ code, reason }, "Glasses connection closed");
 
   // Mark session as disconnected

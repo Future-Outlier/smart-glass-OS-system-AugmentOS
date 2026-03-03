@@ -1,5 +1,5 @@
 import type {UserSession} from "../UserSession"
-import type {AppSession, AudioOutputStream} from "@mentra/sdk"
+import type {AppSession} from "@mentra/sdk"
 import type {RealtimeProvider, ProviderType, ProviderConfig} from "./realtime-provider"
 import {OpenAIRealtimeProvider} from "./openai-realtime.provider"
 import {GeminiRealtimeProvider} from "./gemini-realtime.provider"
@@ -44,7 +44,6 @@ export interface RealtimeStartOptions {
 
 export class RealtimeManager {
   private provider: RealtimeProvider | null = null
-  private outputStream: AudioOutputStream | null = null
   private audioCleanup: (() => void) | null = null
   private audioChunkCount = 0
   private activeProvider: ProviderType | null = null
@@ -136,16 +135,9 @@ export class RealtimeManager {
     //    The developer just writes chunks — gaps between AI responses are fine.
     //    The cloud relay handles phone reconnection transparently.
     try {
-      this.outputStream = await currentSession.audio.createOutputStream({
-        format: "pcm16",
-        sampleRate: 24000,
-        channels: 1,
-        bitrate: 64,
-        trackId: 1,
-        stopOtherAudio: true,
-      })
-      console.log("[RealtimeManager] Audio output stream created, URL:", this.outputStream.streamUrl)
-      console.log("[RealtimeManager] Output stream state:", this.outputStream.state)
+      const stream = await this.userSession.outputStream.claim("realtime")
+      console.log("[RealtimeManager] Audio output stream ready, URL:", stream.streamUrl)
+      console.log("[RealtimeManager] Output stream state:", stream.state)
     } catch (err: any) {
       console.error("[RealtimeManager] Failed to create output stream:", err.message)
       // Clean up the connected provider since we can't deliver audio
@@ -178,8 +170,9 @@ export class RealtimeManager {
     if (!this.isActive) return
 
     // Flush the output stream (silences immediately)
-    if (this.outputStream && this.outputStream.state === "streaming") {
-      await this.outputStream.flush()
+    const stream = this.userSession.outputStream.getActiveStream()
+    if (this.userSession.outputStream.isOwnedBy("realtime") && stream && stream.state === "streaming") {
+      await stream.flush()
     }
 
     // Tell the provider to cancel the current response
@@ -256,7 +249,8 @@ export class RealtimeManager {
     // AI sent audio — write PCM to the output stream.
     // Just write and forget. The cloud relay handles gaps and phone reconnection.
     this.provider.on("audio", (pcmBytes: Buffer) => {
-      if (!this.outputStream || this.outputStream.state !== "streaming") {
+      const outputStream = this.userSession.outputStream.getActiveStream()
+      if (!this.userSession.outputStream.isOwnedBy("realtime") || !outputStream || outputStream.state !== "streaming") {
         if (this.audioChunkCount === 0) {
           console.warn("[RealtimeManager] Audio received but output stream not ready, dropping")
         }
@@ -264,7 +258,7 @@ export class RealtimeManager {
       }
 
       try {
-        this.outputStream.write(pcmBytes)
+        outputStream.write(pcmBytes)
         this.audioChunkCount++
 
         if (this.audioChunkCount === 1) {
@@ -326,10 +320,7 @@ export class RealtimeManager {
       }
 
       // End output stream if still active
-      if (this.outputStream && this.outputStream.state === "streaming") {
-        this.outputStream.end().catch(() => {})
-        this.outputStream = null
-      }
+      this.userSession.outputStream.release("realtime", true).catch(() => {})
 
       this.activeProvider = null
     })
@@ -347,7 +338,7 @@ export class RealtimeManager {
       if (!this.provider || !this.provider.isConnected) return
 
       try {
-        const base64Audio = bufferToBase64(chunk.arrayBuffer)
+        const base64Audio = bufferToBase64(new Uint8Array(chunk.arrayBuffer))
         this.provider.sendAudio(base64Audio)
       } catch {
         // Silently skip if provider is closing
@@ -378,15 +369,8 @@ export class RealtimeManager {
       this.provider = null
     }
 
-    // End the output stream gracefully
-    if (this.outputStream) {
-      try {
-        await this.outputStream.end()
-      } catch {
-        // Already ended
-      }
-      this.outputStream = null
-    }
+    // End the shared output stream if realtime owns it
+    await this.userSession.outputStream.release("realtime", true)
 
     this.activeProvider = null
     this.audioChunkCount = 0

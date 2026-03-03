@@ -1,5 +1,5 @@
 import {useState, useEffect, useCallback, useRef} from "react"
-import {Mic, Square, Loader2, Wifi, WifiOff, Camera, X, ChevronDown, ChevronUp} from "lucide-react"
+import {Mic, Square, Loader2, Wifi, WifiOff, Camera, X, ChevronDown, ChevronUp, Volume2} from "lucide-react"
 
 interface HomePageProps {
   userId: string
@@ -29,6 +29,8 @@ export default function HomePage({userId}: HomePageProps) {
   const [photosExpanded, setPhotosExpanded] = useState(true)
   const [selectedPhoto, setSelectedPhoto] = useState<Photo | null>(null)
   const [provider, setProvider] = useState<"gemini" | "openai">("gemini")
+  const [toneActive, setToneActive] = useState(false)
+  const toneStartTime = useRef<number>(0)
   const transcriptEndRef = useRef<HTMLDivElement>(null)
   const idCounter = useRef(0)
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null)
@@ -176,6 +178,37 @@ export default function HomePage({userId}: HomePageProps) {
       startSession()
     }
   }, [status, startSession, stopSession])
+
+  // ─── Tone test (press-and-hold) ──────────────────────────────────────────
+
+  const startTone = useCallback(async () => {
+    if (toneActive) return
+    setToneActive(true)
+    toneStartTime.current = Date.now()
+    try {
+      await fetch("/api/audio/tone/start", {
+        method: "POST",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify({userId, frequency: 440}),
+      })
+    } catch {
+      setToneActive(false)
+    }
+  }, [userId, toneActive])
+
+  const stopTone = useCallback(async () => {
+    if (!toneActive) return
+    setToneActive(false)
+    try {
+      await fetch("/api/audio/tone/stop", {
+        method: "POST",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify({userId}),
+      })
+    } catch {
+      // ignore
+    }
+  }, [userId, toneActive])
 
   const statusLabel = {
     idle: "Tap to start",
@@ -355,6 +388,25 @@ export default function HomePage({userId}: HomePageProps) {
 
         {/* Hint */}
         {status === "active" && <p className="text-[11px] text-zinc-600">Tap to stop</p>}
+
+        {/* Tone Test Button — press and hold */}
+        <button
+          onPointerDown={startTone}
+          onPointerUp={stopTone}
+          onPointerLeave={stopTone}
+          onContextMenu={(e) => e.preventDefault()}
+          className={`
+            flex items-center gap-2 px-4 py-2 rounded-full text-xs font-medium
+            select-none touch-none transition-all duration-150
+            ${
+              toneActive
+                ? "bg-amber-500/20 border border-amber-500/50 text-amber-300 scale-95"
+                : "bg-zinc-800/50 border border-zinc-700/30 text-zinc-500 hover:text-zinc-300 hover:border-zinc-600"
+            }
+          `}>
+          <Volume2 className={`w-3.5 h-3.5 ${toneActive ? "text-amber-400" : ""}`} />
+          {toneActive ? "Playing tone..." : "Hold to test audio"}
+        </button>
       </div>
 
       {/* Photo Lightbox */}

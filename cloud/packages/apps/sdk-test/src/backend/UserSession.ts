@@ -5,6 +5,7 @@ import {AudioManager} from "./managers/audio.manager"
 import {StorageManager} from "./managers/storage.manager"
 import {InputManager} from "./managers/input.manager"
 import {RealtimeManager} from "./managers/realtime.manager"
+import {OutputStreamManager} from "./managers/output-stream.manager"
 
 /**
  * UserSession — per-user state container.
@@ -80,7 +81,11 @@ export class UserSession {
   /** OpenAI Realtime conversational AI */
   realtime: RealtimeManager
 
+  /** Shared output stream owner (tone + realtime) */
+  outputStream: OutputStreamManager
+
   constructor(public readonly userId: string) {
+    this.outputStream = new OutputStreamManager(this)
     this.photo = new PhotoManager(this)
     this.transcription = new TranscriptionManager(this)
     this.audio = new AudioManager(this)
@@ -103,6 +108,7 @@ export class UserSession {
     if (this.realtime.isActive) {
       this.realtime.stop().catch(() => {})
     }
+    this.outputStream.dispose().catch(() => {})
     this.appSession = null
   }
 
@@ -112,6 +118,7 @@ export class UserSession {
     if (this.realtime.isActive) {
       this.realtime.stop().catch(() => {})
     }
+    this.outputStream.dispose().catch(() => {})
     this.transcription.destroy()
     this.photo.destroy()
     this.appSession = null

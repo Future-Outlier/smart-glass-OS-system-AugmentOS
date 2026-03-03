@@ -749,6 +749,10 @@ function handleAudioStreamStart(
   const protocol = cloudHost.includes("localhost") ? "http" : "https";
   const streamUrl = `${protocol}://${cloudHost}/api/audio/stream/${encodeURIComponent(userSession.userId)}/${streamId}`;
 
+  // Store the URL on the stream so the cloud can re-send AUDIO_PLAY_REQUEST
+  // to the phone if ExoPlayer disconnects during a conversational gap.
+  userSession.appAudioStreamManager.setStreamUrl(streamId, streamUrl);
+
   // Send the relay URL back to the SDK
   const ready = {
     type: CloudToAppMessageType.AUDIO_STREAM_READY,

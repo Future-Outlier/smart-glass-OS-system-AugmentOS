@@ -488,10 +488,15 @@ export class AudioManager {
    * @returns The AudioOutputStream (already connected and playing)
    */
   async createOutputStream(options: AudioOutputStreamOptions = {}): Promise<AudioOutputStream> {
-    // End any existing stream first (one at a time)
+    // Enforce explicit stream lifecycle: callers must end/flush before creating another stream.
     if (this.activeOutputStream && this.activeOutputStream.state === "streaming") {
-      this.logger.debug("Ending previous output stream before creating new one")
-      await this.activeOutputStream.end()
+      const activeStreamId = this.activeOutputStream.streamId
+      const error = new Error(
+        `AUDIO_STREAM_ALREADY_ACTIVE: Stream ${activeStreamId} is still active. Call end() or flush() before creating a new output stream.`,
+      ) as Error & {code?: string}
+      error.code = "AUDIO_STREAM_ALREADY_ACTIVE"
+      this.logger.warn({activeStreamId}, "Refusing to create a second output stream while one is active")
+      throw error
     }
 
     // Generate a unique stream ID
