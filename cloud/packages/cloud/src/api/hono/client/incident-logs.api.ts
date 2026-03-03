@@ -190,7 +190,8 @@ app.post("/:incidentId/logs", async (c) => {
       source = body.source || "phone";
       logCategory =
         source === "glasses" ? "glassesLogs" : source === "glasses_firmware" ? "glassesFirmwareLogs" : "phoneLogs";
-      if (!body.source || (source !== "glasses" && source !== "glasses_firmware")) {
+      const knownSources = ["phone", "glasses", "glasses_firmware"];
+      if (!body.source || !knownSources.includes(body.source)) {
         logger.warn(
           { incidentId, userEmail, bodySource: body.source, resolvedSource: source, logCategory },
           "[incident-logs] Source not found or unrecognized — defaulting to phone/phoneLogs",

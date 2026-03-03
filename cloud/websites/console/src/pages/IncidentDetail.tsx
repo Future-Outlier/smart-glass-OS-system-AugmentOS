@@ -170,7 +170,7 @@ const IncidentDetail: React.FC = () => {
     { id: "feedback", label: "Feedback", icon: Bug, count: null },
     { id: "phone", label: "Phone Logs", icon: Smartphone, count: logs?.phoneLogs?.length || 0 },
     { id: "cloud", label: "Cloud Logs", icon: Cloud, count: logs?.cloudLogs?.length || 0 },
-    { id: "glasses", label: "Glasses Logs", icon: Glasses, count: logs?.glassesLogs?.length || 0 },
+    { id: "glasses", label: "Glasses Logs (ASG Client)", icon: Glasses, count: logs?.glassesLogs?.length || 0 },
     {
       id: "glasses_firmware",
       label: "Glasses firmware (BES)",
