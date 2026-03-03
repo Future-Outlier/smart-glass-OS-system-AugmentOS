@@ -4,6 +4,7 @@ import android.content.Context;
 import android.util.Log;
 
 import com.mentra.asg_client.reporting.GlassesLogBuffer;
+import com.mentra.asg_client.service.core.handlers.K900CommandHandler;
 import com.mentra.asg_client.service.legacy.interfaces.ICommandHandler;
 import com.mentra.asg_client.service.system.interfaces.IConfigurationManager;
 import com.mentra.asg_client.utils.ServerConfigUtil;
@@ -41,11 +42,14 @@ public class UploadIncidentLogsCommandHandler implements ICommandHandler {
 
     private final Context mContext;
     private final IConfigurationManager mConfigurationManager;
+    private final K900CommandHandler mK900CommandHandler;
 
     public UploadIncidentLogsCommandHandler(Context context,
-                                            IConfigurationManager configurationManager) {
+                                            IConfigurationManager configurationManager,
+                                            K900CommandHandler k900CommandHandler) {
         mContext = context;
         mConfigurationManager = configurationManager;
+        mK900CommandHandler = k900CommandHandler;
     }
 
     @Override
@@ -76,6 +80,13 @@ public class UploadIncidentLogsCommandHandler implements ICommandHandler {
 
         final String finalIncidentId = incidentId;
         new Thread(() -> uploadLogs(finalIncidentId)).start();
+
+        // Collect BES chip trace buffer and upload separately as "glasses_firmware"
+        if (mK900CommandHandler != null) {
+            mK900CommandHandler.requestBesLogs(incidentId, mContext, mConfigurationManager);
+        } else {
+            Log.d(TAG, "K900CommandHandler not available — skipping BES log collection");
+        }
 
         return true;
     }

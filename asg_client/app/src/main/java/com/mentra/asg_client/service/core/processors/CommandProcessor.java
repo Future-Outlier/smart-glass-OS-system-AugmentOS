@@ -356,7 +356,7 @@ public class CommandProcessor {
             commandHandlerRegistry.registerHandler(new com.mentra.asg_client.service.core.handlers.PowerCommandHandler(context));
             Log.d(TAG, "✅ Registered PowerCommandHandler");
 
-            commandHandlerRegistry.registerHandler(new UploadIncidentLogsCommandHandler(context, configurationManager));
+            commandHandlerRegistry.registerHandler(new UploadIncidentLogsCommandHandler(context, configurationManager, k900CommandHandler));
             Log.d(TAG, "✅ Registered UploadIncidentLogsCommandHandler");
 
             Log.i(TAG, "✅ Successfully registered " + commandHandlerRegistry.getHandlerCount() + " command handlers");
@@ -438,6 +438,19 @@ public class CommandProcessor {
             k900CommandHandler.requestSystemVersion();
         } else {
             Log.w(TAG, "⚠️ K900CommandHandler not available - cannot request BES system version");
+        }
+    }
+
+    /**
+     * Request BES chip trace buffer logs and print them to logcat.
+     * Pass a non-null incidentId to also upload to the incident backend as "glasses_firmware".
+     */
+    public void requestBesLogs(String incidentId, android.content.Context context,
+                               com.mentra.asg_client.service.system.interfaces.IConfigurationManager configManager) {
+        if (k900CommandHandler != null) {
+            k900CommandHandler.requestBesLogs(incidentId, context, configManager);
+        } else {
+            Log.w(TAG, "⚠️ K900CommandHandler not available — cannot request BES logs");
         }
     }
 
