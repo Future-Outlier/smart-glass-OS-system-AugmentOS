@@ -9,7 +9,7 @@ import {useAppTheme} from "@/contexts/ThemeContext"
 import {
   ClientAppletInterface,
   DUMMY_APPLET,
-  getPackageNamePriority,
+  sortAppsByPackageNamePriority,
   SYSTEM_APPS,
   uninstallAppUI,
   useAppletStatusStore,
@@ -263,14 +263,18 @@ export function AppsGrid({showAllApps = false, onOpenApp, onAddToHome, searchQue
         const aIndex = orderMap[a.packageName]
         const bIndex = orderMap[b.packageName]
         if (aIndex === undefined && bIndex === undefined) {
-          return getPackageNamePriority(a, b)
+          return sortAppsByPackageNamePriority(a, b)
         }
         if (aIndex === undefined) return 1
         if (bIndex === undefined) return -1
         return aIndex - bIndex
       })
     } else {
-      filteredApps.sort(getPackageNamePriority)
+      filteredApps.sort(sortAppsByPackageNamePriority)
+    }
+    
+    if (showAllApps) {
+      filteredApps.sort(sortAppsByPackageNamePriority)
     }
 
     return filteredApps.map((app) => ({

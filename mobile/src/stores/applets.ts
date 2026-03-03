@@ -164,29 +164,16 @@ const getRawPackageNamePriority = (pkg: string) => {
   if (pkg.includes("@empty")) {
     return 1000
   }
-  switch (pkg) {
-    case cameraPackageName:
-      return 0
-    case galleryPackageName:
-      return 2
-    case settingsPackageName:
-      return 3
-    case storePackageName:
-      return 4
-    default:
-      return 1
-  }
+  return 0
 }
-export const getPackageNamePriority = (a: ClientAppletInterface, b: ClientAppletInterface): number => {
-  // const pa = getRawPackageNamePriority(a.packageName)
-  // const pb = getRawPackageNamePriority(b.packageName)
-  // if (pa !== pb) return pa - pb
-  const appSwitcherUi = useSettingsStore.getState().getSetting(SETTINGS.app_switcher_ui.key)
-  if (!appSwitcherUi) {
-    const pa = getRawPackageNamePriority(a.packageName)
-    const pb = getRawPackageNamePriority(b.packageName)
-    if (pa !== pb) return pa - pb
+
+export const sortAppsByPackageNamePriority = (a: ClientAppletInterface, b: ClientAppletInterface): number => {
+  const pa = getRawPackageNamePriority(a.packageName)
+  const pb = getRawPackageNamePriority(b.packageName)
+  if (pa !== pb) {
+    return pa - pb
   }
+
   return a.name.localeCompare(b.name)
 }
 
