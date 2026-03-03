@@ -132,6 +132,8 @@ app.post("/", async (c) => {
  */
 app.post("/:incidentId/logs", async (c) => {
   const incidentId = c.req.param("incidentId");
+  logger.info({ incidentId }, "[incident-logs] POST /:incidentId/logs received");
+
   let source: string;
   let logCategory: "phoneLogs" | "glassesLogs" | "glassesFirmwareLogs" | null = null;
   let appPackageName: string | null = null;
@@ -142,8 +144,14 @@ app.post("/:incidentId/logs", async (c) => {
   try {
     body = await c.req.json();
   } catch {
+    logger.warn({ incidentId }, "[incident-logs] Invalid JSON body");
     return c.json({ success: false, message: "Invalid JSON body" }, 400);
   }
+
+  logger.info(
+    { incidentId, source: body.source, logsCount: body.logs?.length },
+    "[incident-logs] Request body parsed (source + logs count)",
+  );
 
   // Validate logs array
   if (!body.logs || !Array.isArray(body.logs)) {
@@ -165,6 +173,10 @@ app.post("/:incidentId/logs", async (c) => {
       source = body.source || "phone";
       logCategory =
         source === "glasses" ? "glassesLogs" : source === "glasses_firmware" ? "glassesFirmwareLogs" : "phoneLogs";
+      logger.info(
+        { incidentId, source, logCategory, userEmail },
+        "[incident-logs] CoreToken auth OK — routing to category",
+      );
     } catch {
       return c.json({ success: false, message: "Invalid token" }, 401);
     }
@@ -204,11 +216,16 @@ app.post("/:incidentId/logs", async (c) => {
   // Check if incident exists and verify ownership
   const incident = await Incident.findOne({ incidentId });
   if (!incident) {
+    logger.warn({ incidentId, source: body.source }, "[incident-logs] Incident not found (404)");
     return c.json({ success: false, message: "Incident not found" }, 404);
   }
 
   // Verify the authenticated user owns this incident
   if (incident.userId !== userEmail) {
+    logger.warn(
+      { incidentId, incidentUserId: incident.userId, tokenUser: userEmail },
+      "[incident-logs] Forbidden: incident owner mismatch (403)",
+    );
     return c.json({ success: false, message: "Forbidden" }, 403);
   }
 
@@ -218,8 +235,14 @@ app.post("/:incidentId/logs", async (c) => {
       // App telemetry - use dedicated method that organizes by package name
       await incidentStorage.appendAppTelemetry(incidentId, appPackageName, body.logs);
     } else if (logCategory) {
-      // Phone or glasses logs
+      // Phone or glasses logs (including glasses_firmware)
+      logger.info(
+        { incidentId, logCategory, count: body.logs.length },
+        "[incident-logs] Calling appendLogs (phone/glasses/glasses_firmware)",
+      );
       await incidentStorage.appendLogs(incidentId, logCategory, body.logs, source);
+    } else {
+      logger.warn({ incidentId, source: body.source }, "[incident-logs] No logCategory — request not appended");
     }
 
     logger.info(
@@ -235,7 +258,7 @@ app.post("/:incidentId/logs", async (c) => {
 
     return c.json({ success: true });
   } catch (err) {
-    logger.error({ incidentId, source, err }, "Failed to append logs to incident");
+    logger.error({ incidentId, source: body.source, logCategory, err }, "[incident-logs] Failed to append logs (500)");
     return c.json({ success: false, message: "Storage error" }, 500);
   }
 });
