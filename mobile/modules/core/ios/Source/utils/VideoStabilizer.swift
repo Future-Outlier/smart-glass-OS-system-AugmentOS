@@ -169,68 +169,72 @@ class VideoStabilizer {
           return
         }
 
-        let presentationTime = CMSampleBufferGetPresentationTimeStamp(sampleBuffer)
-        let frameTimeMs = CMTimeGetSeconds(presentationTime) * 1000.0
+        // autoreleasepool prevents CIImage/CIFilter intermediates from accumulating
+        // in the tight while loop, which otherwise causes OOM crashes on longer videos.
+        autoreleasepool {
+          let presentationTime = CMSampleBufferGetPresentationTimeStamp(sampleBuffer)
+          let frameTimeMs = CMTimeGetSeconds(presentationTime) * 1000.0
 
-        // Find correction for this frame
-        let ratio = imuDurationMs > 0 ? frameTimeMs / imuDurationMs : 0
-        let imuIdx = max(0, min(Int(ratio * Double(imuSamples.count - 1)), imuSamples.count - 1))
+          // Find correction for this frame
+          let ratio = imuDurationMs > 0 ? frameTimeMs / imuDurationMs : 0
+          let imuIdx = max(0, min(Int(ratio * Double(imuSamples.count - 1)), imuSamples.count - 1))
 
-        let rollCorr = corrRoll[imuIdx]
-        let pitchCorr = corrPitch[imuIdx]
-        let yawCorr = corrYaw[imuIdx]
+          let rollCorr = corrRoll[imuIdx]
+          let pitchCorr = corrPitch[imuIdx]
+          let yawCorr = corrYaw[imuIdx]
 
-        guard let pixelBuffer = CMSampleBufferGetImageBuffer(sampleBuffer) else { continue }
-        var ciImage = CIImage(cvPixelBuffer: pixelBuffer)
+          guard let pixelBuffer = CMSampleBufferGetImageBuffer(sampleBuffer) else { return }
+          var ciImage = CIImage(cvPixelBuffer: pixelBuffer)
 
-        // Apply color corrections (same pipeline as ImageProcessor)
-        ciImage = applyToneCurve(ciImage)
-        ciImage = applyVibrance(ciImage)
-        ciImage = applyColorCorrection(ciImage)
+          // Apply color corrections (same pipeline as ImageProcessor)
+          ciImage = applyToneCurve(ciImage)
+          ciImage = applyVibrance(ciImage)
+          ciImage = applyColorCorrection(ciImage)
 
-        // Always apply crop+scale for consistent framing, plus stabilization correction
-        let cx = videoSize.width / 2
-        let cy = videoSize.height / 2
-        let scale = 1.0 / (1.0 - 2.0 * CROP_MARGIN)
+          // Always apply crop+scale for consistent framing, plus stabilization correction
+          let cx = videoSize.width / 2
+          let cy = videoSize.height / 2
+          let scale = 1.0 / (1.0 - 2.0 * CROP_MARGIN)
 
-        // Clamp corrections to the crop margin so we never show black edges
-        let maxShiftX = CROP_MARGIN * Double(videoSize.width)
-        let maxShiftY = CROP_MARGIN * Double(videoSize.height)
-        let maxRollRad = CROP_MARGIN * 0.5
+          // Clamp corrections to the crop margin so we never show black edges
+          let maxShiftX = CROP_MARGIN * Double(videoSize.width)
+          let maxShiftY = CROP_MARGIN * Double(videoSize.height)
+          let maxRollRad = CROP_MARGIN * 0.5
 
-        let clampedRoll = min(max(rollCorr, -maxRollRad), maxRollRad)
-        let clampedPitchShift = min(max(-pitchCorr * Double(cx), -maxShiftX), maxShiftX)
-        let clampedYawShift = min(max(yawCorr * Double(cy), -maxShiftY), maxShiftY)
+          let clampedRoll = min(max(rollCorr, -maxRollRad), maxRollRad)
+          let clampedPitchShift = min(max(-pitchCorr * Double(cx), -maxShiftX), maxShiftX)
+          let clampedYawShift = min(max(yawCorr * Double(cy), -maxShiftY), maxShiftY)
 
-        // Build transform: center → scale → rotate → translate → uncenter
-        let transform = CGAffineTransform.identity
-          .translatedBy(x: cx, y: cy)
-          .scaledBy(x: CGFloat(scale), y: CGFloat(scale))
-          .rotated(by: CGFloat(-clampedRoll))
-          .translatedBy(x: CGFloat(clampedPitchShift), y: CGFloat(clampedYawShift))
-          .translatedBy(x: -cx, y: -cy)
+          // Build transform: center → scale → rotate → translate → uncenter
+          let transform = CGAffineTransform.identity
+            .translatedBy(x: cx, y: cy)
+            .scaledBy(x: CGFloat(scale), y: CGFloat(scale))
+            .rotated(by: CGFloat(-clampedRoll))
+            .translatedBy(x: CGFloat(clampedPitchShift), y: CGFloat(clampedYawShift))
+            .translatedBy(x: -cx, y: -cy)
 
-        ciImage = ciImage.transformed(by: transform)
+          ciImage = ciImage.transformed(by: transform)
 
-        // Crop back to original size
-        ciImage = ciImage.cropped(to: CGRect(
-          x: ciImage.extent.origin.x + (ciImage.extent.width - videoSize.width) / 2,
-          y: ciImage.extent.origin.y + (ciImage.extent.height - videoSize.height) / 2,
-          width: videoSize.width,
-          height: videoSize.height
-        ))
+          // Crop back to original size
+          ciImage = ciImage.cropped(to: CGRect(
+            x: ciImage.extent.origin.x + (ciImage.extent.width - videoSize.width) / 2,
+            y: ciImage.extent.origin.y + (ciImage.extent.height - videoSize.height) / 2,
+            width: videoSize.width,
+            height: videoSize.height
+          ))
 
-        // Render to pixel buffer
-        if let pool = adaptor.pixelBufferPool {
-          var outputBuffer: CVPixelBuffer?
-          CVPixelBufferPoolCreatePixelBuffer(nil, pool, &outputBuffer)
-          if let outBuf = outputBuffer {
-            ciContext.render(ciImage, to: outBuf)
-            adaptor.append(outBuf, withPresentationTime: presentationTime)
+          // Render to pixel buffer
+          if let pool = adaptor.pixelBufferPool {
+            var outputBuffer: CVPixelBuffer?
+            CVPixelBufferPoolCreatePixelBuffer(nil, pool, &outputBuffer)
+            if let outBuf = outputBuffer {
+              ciContext.render(ciImage, to: outBuf)
+              adaptor.append(outBuf, withPresentationTime: presentationTime)
+            }
           }
-        }
 
-        frameCount += 1
+          frameCount += 1
+        }
       }
     }
 

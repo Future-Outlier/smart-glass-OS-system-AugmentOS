@@ -600,7 +600,9 @@ export class AsgCameraApiClient {
   }
 
   /**
-   * Batch sync files from server with controlled concurrency
+   * Batch sync files from server with controlled concurrency.
+   * Used by the legacy executeDownload path for old asg_client firmware
+   * that doesn't send api_version=2.
    */
   async batchSyncFiles(
     files: PhotoInfo[],
@@ -625,8 +627,7 @@ export class AsgCameraApiClient {
 
     // Process files in parallel batches for better performance
     // Use controlled concurrency to avoid overwhelming the network
-    const CONCURRENCY_LIMIT = 1 // Process 3 files simultaneously
-    const deletePromises: Promise<void>[] = [] // Track delete operations for cleanup
+    const CONCURRENCY_LIMIT = 1
 
     // Process files in batches
     for (let i = 0; i < files.length; i += CONCURRENCY_LIMIT) {
@@ -669,21 +670,8 @@ export class AsgCameraApiClient {
             onProgress(globalIndex + 1, files.length, file.name, 100, downloadedFile)
           }
 
-          // Schedule delete operation (non-blocking)
-          const deletePromise = this.deleteFilesFromServer([file.name])
-            .then((deleteResult) => {
-              if (deleteResult.deleted.length > 0) {
-                console.log(`[ASG Camera API] Successfully deleted ${file.name} from glasses`)
-              } else if (deleteResult.failed.length > 0) {
-                console.warn(`[ASG Camera API] Failed to delete ${file.name} from glasses, but keeping downloaded file`)
-              }
-            })
-            .catch((deleteError) => {
-              // Log the error but don't fail the sync - the file was downloaded successfully
-              console.warn(`[ASG Camera API] Error deleting ${file.name} from glasses (non-fatal):`, deleteError)
-            })
-
-          deletePromises.push(deletePromise)
+          // Don't delete from glasses here — deletion is deferred until after
+          // processing completes (in mediaProcessingQueue) to avoid data loss on crash.
 
           return {downloadedFile, fileSize: file.size}
         } catch (error) {
@@ -711,11 +699,6 @@ export class AsgCameraApiClient {
         await new Promise((resolve) => setTimeout(resolve, 300))
       }
     }
-
-    // Wait for all delete operations to complete (non-blocking for sync completion)
-    Promise.all(deletePromises).catch((error) => {
-      console.warn(`[ASG Camera API] Some delete operations failed:`, error)
-    })
 
     console.log(
       `[ASG Camera API] Batch sync completed: ${results.downloaded.length} downloaded, ${results.failed.length} failed`,

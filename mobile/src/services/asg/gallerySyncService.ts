@@ -1248,7 +1248,10 @@ class GallerySyncService {
   }
 
   /**
-   * Execute the actual file download
+   * Execute the actual file download.
+   * Used for old asg_client firmware that doesn't send api_version=2 / captures.
+   * NOTE: The sidecar/bracket filtering within is likely dead code — old firmware
+   * only produces flat photos/videos with no sidecars or HDR brackets.
    */
   private async executeDownload(files: PhotoInfo[], serverTime: number): Promise<void> {
     const downloadStartTime = Date.now()
@@ -1373,6 +1376,7 @@ class GallerySyncService {
                   glassesModel: defaultWearable,
                   shouldProcess: !!shouldProcessImages,
                   shouldAutoSave: !!shouldAutoSave,
+                  deleteFromGlasses: [downloadedFile.name],
                 })
               }
             }
@@ -1550,6 +1554,7 @@ class GallerySyncService {
           downloadedCount++
 
           // Enqueue for processing (runs concurrently with next download)
+          // Delete from glasses happens after processing completes to avoid data loss on crash
           mediaProcessingQueue.enqueue({
             id: capture.capture_id,
             type: capture.type,
@@ -1564,11 +1569,7 @@ class GallerySyncService {
             glassesModel: defaultWearable,
             shouldProcess: !!shouldProcessImages,
             shouldAutoSave: !!shouldAutoSave,
-          })
-
-          // Delete capture folder from glasses (non-blocking)
-          asgCameraApi.deleteFilesFromServer([capture.capture_id]).catch((err) => {
-            console.warn(`[GallerySyncService]   Delete error for ${capture.capture_id} (non-fatal):`, err)
+            deleteFromGlasses: [capture.capture_id],
           })
         } catch (captureError: any) {
           if (captureError?.message === "Sync cancelled") throw captureError

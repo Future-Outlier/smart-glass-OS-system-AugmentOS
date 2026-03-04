@@ -7,6 +7,7 @@
 
 import CoreModule from "core"
 
+import {asgCameraApi} from "@/services/asg/asgCameraApi"
 import {localStorageService} from "@/services/asg/localStorageService"
 import {useGallerySyncStore} from "@/stores/gallerySync"
 import {MediaLibraryPermissions} from "@/utils/permissions/MediaLibraryPermissions"
@@ -39,6 +40,8 @@ export interface ProcessingItem {
   shouldProcess: boolean
   /** Whether to auto-save to camera roll */
   shouldAutoSave: boolean
+  /** File names to delete from glasses after processing completes */
+  deleteFromGlasses?: string[]
 }
 
 class MediaProcessingQueue {
@@ -239,6 +242,16 @@ class MediaProcessingQueue {
       thumbnailPath: localThumbUrl,
       duration: item.duration,
     })
+
+    // 8. Delete from glasses now that processing is complete
+    if (item.deleteFromGlasses && item.deleteFromGlasses.length > 0) {
+      try {
+        await asgCameraApi.deleteFilesFromServer(item.deleteFromGlasses)
+        console.log(`${TAG} 🗑️ Deleted ${item.deleteFromGlasses.join(", ")} from glasses`)
+      } catch (deleteError) {
+        console.warn(`${TAG} Delete from glasses failed for ${item.id} (non-fatal):`, deleteError)
+      }
+    }
 
     const elapsed = Date.now() - startTime
     console.log(`${TAG} ✅ Finished ${item.id} in ${elapsed}ms`)

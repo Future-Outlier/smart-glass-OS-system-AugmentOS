@@ -150,6 +150,8 @@ export const useGallerySyncStore = create<GallerySyncState>()(
         currentFileProgress: 0,
         failedFiles: [],
         lastError: null,
+        processedFiles: 0,
+        processingFiles: new Set<string>(),
       }),
 
     setSyncComplete: () =>
