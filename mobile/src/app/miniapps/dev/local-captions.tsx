@@ -18,7 +18,7 @@ export default function LocalCaptionsExampleDev() {
       // const asset = Asset.fromModule(
       //   require("../../../../webview-sdk/examples/local-captions/dist/index.html"),
       // )
-      const asset = Asset.fromModule(require("../../../../webview-sdk/examples/react-app/dist/index.html"))
+      const asset = Asset.fromModule(require("../../../../webview/examples/react-app/dist/index.html"))
       await asset.downloadAsync()
       const res = await new File(asset.localUri!).text()
       setHtml(res)

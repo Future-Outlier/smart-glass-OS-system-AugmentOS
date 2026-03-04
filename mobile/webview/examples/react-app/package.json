@@ -10,7 +10,7 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "@mentra/webview-sdk": "file:../../",
+    "@mentra/webview-sdk": "workspace:*",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
     "vite-plugin-singlefile": "^2.3.0"
