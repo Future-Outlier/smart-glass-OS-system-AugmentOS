@@ -442,8 +442,6 @@ async function handleAudioPlayRequest(
       userSession.websocket.send(JSON.stringify(glassesAudioRequest));
       metricsService.incrementClientMessagesOut();
       logger.debug(`🔊 Forwarded audio request ${message.requestId} to glasses`);
-      // Disabled: Server-side playback via Go bridge/LiveKit - now handled client-side via expo-av
-      // void userSession.speakerManager.start(message);
     } else {
       userSession.audioPlayRequestMapping.delete(message.requestId);
       sendError(appWebsocket, AppErrorCode.INTERNAL_ERROR, "Glasses not connected", logger);
@@ -482,8 +480,6 @@ async function handleAudioStopRequest(
       userSession.websocket.send(JSON.stringify(glassesAudioStopRequest));
       metricsService.incrementClientMessagesOut();
       logger.debug(`🔇 Forwarded audio stop request from ${message.packageName} to glasses`);
-      // Disabled: Server-side stop via Go bridge/LiveKit - now handled client-side via expo-av
-      // void userSession.speakerManager.stop(message);
     } else {
       sendError(appWebsocket, AppErrorCode.INTERNAL_ERROR, "Glasses not connected", logger);
     }

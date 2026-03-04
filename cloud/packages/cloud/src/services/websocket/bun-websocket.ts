@@ -101,12 +101,7 @@ function handleGlassesUpgrade(req: Request, server: any, url: URL): Response | u
       );
     }
 
-    const livekitRequested = url.searchParams.get("livekit") === "true" || req.headers.get("livekit") === "true";
     const udpEncryptionRequested = url.searchParams.get("udpEncryption") === "true";
-
-    if (livekitRequested) {
-      logger.info({ userId, feature: "livekit" }, "Client requested LiveKit transport");
-    }
 
     if (udpEncryptionRequested) {
       logger.info({ userId, feature: "udp-audio-encryption" }, "Client requested UDP encryption");
@@ -116,7 +111,6 @@ function handleGlassesUpgrade(req: Request, server: any, url: URL): Response | u
       data: {
         type: "glasses",
         userId,
-        livekitRequested,
         udpEncryptionRequested,
       } as GlassesWebSocketData,
     });
@@ -278,14 +272,11 @@ export const websocketHandlers = {
  * Handle glasses WebSocket connection open
  */
 async function handleGlassesOpen(ws: GlassesServerWebSocket): Promise<void> {
-  const { userId, livekitRequested, udpEncryptionRequested } = ws.data;
+  const { userId, udpEncryptionRequested } = ws.data;
 
   try {
     // Create or reconnect user session
     const { userSession, reconnection } = await UserSession.createOrReconnect(ws as any, userId);
-
-    // Store LiveKit preference
-    userSession.livekitRequested = livekitRequested;
 
     // Initialize UDP encryption if requested
     if (udpEncryptionRequested) {
@@ -293,12 +284,12 @@ async function handleGlassesOpen(ws: GlassesServerWebSocket): Promise<void> {
     }
 
     userSession.logger.info(
-      { reconnection, livekitRequested, udpEncryptionRequested },
+      { reconnection, udpEncryptionRequested },
       `Glasses WebSocket connection opened for user: ${userId}`,
     );
 
     // Handle connection initialization
-    await handleGlassesConnectionInit(userSession, ws, reconnection, livekitRequested, udpEncryptionRequested);
+    await handleGlassesConnectionInit(userSession, ws, reconnection, udpEncryptionRequested);
 
     // Track connection in analytics
     PosthogService.trackEvent("glasses_connection", userId, {
@@ -319,7 +310,6 @@ async function handleGlassesConnectionInit(
   userSession: UserSession,
   ws: GlassesServerWebSocket,
   reconnection: boolean,
-  livekitRequested: boolean,
   udpEncryptionRequested: boolean,
 ): Promise<void> {
   if (!reconnection) {
@@ -344,28 +334,9 @@ async function handleGlassesConnectionInit(
     });
   }
 
-  // Handle reconnection - check LiveKit bridge status and resurrect dormant apps
+  // Handle reconnection - resurrect dormant apps
   if (reconnection) {
-    try {
-      const hadBridge =
-        typeof userSession.liveKitManager.getBridgeClient === "function" &&
-        !!userSession.liveKitManager.getBridgeClient();
-
-      if (hadBridge || livekitRequested) {
-        const status = await userSession.liveKitManager.getBridgeStatus?.();
-        userSession.logger.info({ feature: "livekit", status, reconnection }, "Reconnect: bridge status");
-
-        if (!status || status.connected === false) {
-          await userSession.liveKitManager.rejoinBridge?.();
-          userSession.logger.info({ feature: "livekit" }, "Reconnect: bridge rejoin attempted");
-        } else {
-          userSession.logger.info({ feature: "livekit" }, "Reconnect: bridge healthy, keeping session");
-        }
-      }
-    } catch (err) {
-      userSession.logger.warn({ feature: "livekit", err }, "Reconnect: bridge status check failed");
-    }
-
+    // Resurrect dormant apps on reconnection
     // Resurrect any apps that went dormant while user was disconnected
     // See AppManager.resurrectDormantApps() for detailed explanation of why
     // we wait for user reconnection before resurrecting
@@ -381,9 +352,6 @@ async function handleGlassesConnectionInit(
       userSession.logger.error({ err }, "Error resurrecting dormant apps after reconnect");
     }
   }
-  // Testing client livekit reconnection logic.
-  // if (reconnection)
-  //   return userSession.logger.warn({ feature: "livekit" }, "Reconnecting, skipping CONNECTION_ACK message");
 
   // Prepare ACK message
   const ackMessage: ConnectionAck = {
@@ -417,29 +385,6 @@ async function handleGlassesConnectionInit(
     }
   }
 
-  // Include LiveKit info if requested
-  if (livekitRequested) {
-    try {
-      const livekitInfo = await userSession.liveKitManager.handleLiveKitInit();
-      if (livekitInfo) {
-        (ackMessage as any).livekit = {
-          url: livekitInfo.url,
-          roomName: livekitInfo.roomName,
-          token: livekitInfo.token,
-        };
-        userSession.logger.info(
-          { url: livekitInfo.url, roomName: livekitInfo.roomName, feature: "livekit" },
-          "Included LiveKit info in CONNECTION_ACK",
-        );
-      }
-    } catch (error) {
-      userSession.logger.warn({ error, feature: "livekit" }, "Failed to initialize LiveKit for CONNECTION_ACK");
-    }
-  }
-
-  // Log when we send CONNECTION_ACK, and if it's a reconnection or not.
-  const _logger = userSession.logger.child({ function: "sendConnectionAck" });
-  _logger.info({ feature: "websocket", ackMessage, reconnection }, "Sending CONNECTION_ACK");
   ws.send(JSON.stringify(ackMessage));
   metricsService.incrementClientMessagesOut();
 }
@@ -486,13 +431,7 @@ async function handleGlassesMessage(ws: GlassesServerWebSocket, message: string 
     // Handle connection init specially (re-init after reconnect)
     if (parsed.type === GlassesToCloudMessageType.CONNECTION_INIT) {
       userSession.logger.info("Received CONNECTION_INIT from glasses");
-      await handleGlassesConnectionInit(
-        userSession,
-        ws,
-        true,
-        userSession.livekitRequested || false,
-        userSession.udpAudioManager.encryptionRequested,
-      );
+      await handleGlassesConnectionInit(userSession, ws, true, userSession.udpAudioManager.encryptionRequested);
       return;
     }
 
