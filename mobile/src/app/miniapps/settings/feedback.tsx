@@ -277,7 +277,7 @@ export default function FeedbackPage() {
 
       // Trigger glasses to upload their own logs directly over WiFi (fire-and-forget)
       if (glassesConnected) {
-        CoreModule.sendIncidentId(incidentId).catch(() => {})
+        CoreModule.sendIncidentId(incidentId)
       }
 
       // Upload screenshots if any

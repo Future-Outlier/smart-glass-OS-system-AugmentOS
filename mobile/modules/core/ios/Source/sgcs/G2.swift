@@ -783,6 +783,8 @@ actor G2ReconnectionManager {
 
 @MainActor
 class G2: NSObject, SGCManager {
+    func sendIncidentId(_ incidentId: String) {}
+    
     
     var type = DeviceTypes.G2
     let hasMic = true
