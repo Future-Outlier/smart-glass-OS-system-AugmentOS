@@ -783,6 +783,7 @@ actor G2ReconnectionManager {
 
 @MainActor
 class G2: NSObject, SGCManager {
+    
     var type = DeviceTypes.G2
     let hasMic = true
 
