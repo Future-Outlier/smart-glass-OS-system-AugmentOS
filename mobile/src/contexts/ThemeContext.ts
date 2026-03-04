@@ -2,12 +2,12 @@ import {DarkTheme, DefaultTheme, useTheme as _useNavTheme} from "@react-navigati
 import * as SystemUI from "expo-system-ui"
 import {createContext, useCallback, useContext, useEffect, useMemo, useRef, useState} from "react"
 import {Appearance, ColorSchemeName, Platform, StyleProp, useColorScheme} from "react-native"
-import {Uniwind} from "uniwind"
 import * as NavigationBar from "expo-navigation-bar"
 
 import {useSetting, SETTINGS} from "@/stores/settings"
 import {type Theme, type ThemeContexts, type ThemedStyle, type ThemedStyleArray, lightTheme, darkTheme} from "@/theme"
 import {setStatusBarStyle} from "expo-status-bar"
+import {BackgroundTimer} from "@/utils/timers"
 
 type ThemeContextType = {
   themeScheme: ThemeContexts
@@ -41,69 +41,64 @@ export type ThemeType = "light" | "dark" | "system"
 export const useThemeProvider = (initialTheme: ThemeContexts = undefined) => {
   const colorScheme = useColorScheme()
   const [overrideTheme, setTheme] = useState<ThemeContexts>(initialTheme)
-  const [savedTheme, _setSavedTheme] = useSetting(SETTINGS.theme_preference.key)
-  const [originalNavBarColor, setOriginalNavBarColor] = useState<string | null>(null)
+  const [savedTheme] = useSetting(SETTINGS.theme_preference.key)
+  // const [originalNavBarColor, setOriginalNavBarColor] = useState<string | null>(null)
   const hasLoaded = useRef(false)
 
   const setThemeContextOverride = useCallback((newTheme: ThemeContexts) => {
     setTheme(newTheme)
   }, [])
 
+  const update = (saved: string) => {
+    console.log("update", saved)
+  }
+
   // Load saved theme preference on mount
-  // useEffect(() => {
-  //   const loadThemePreference = async () => {
-  //     console.log("loadThemePreference", savedTheme, colorScheme)
+  useEffect(() => {
+    console.log("loadThemePreference", savedTheme, colorScheme)
 
-  //     if (savedTheme !== "system") {
-  //       // setStatusBarStyle(savedTheme === "dark" ? "light" : "dark")
-  //       console.log("setStatusBarStyle", savedTheme)
-  //       setStatusBarStyle(savedTheme === "dark" ? "light" : "dark", true)
-  //       setTheme(savedTheme)
-  //       try {
-  //         // Uniwind.setTheme(savedTheme)
-  //       } catch (error) {
-  //         console.error("Error loading theme preference:", error)
-  //       }
-  //     } else {
-  //       let themeType: "light" | "dark" = colorScheme === "dark" ? "dark" : "light"
-  //       try {
-  //         setTimeout(() => {
-  //           console.log("setStatusBarStyle", themeType)
-  //           setStatusBarStyle(themeType === "dark" ? "light" : "dark", true)
-  //         }, 1000)
-  //       } catch (error) {
-  //         console.error("Error loading theme preference:", error)
-  //       }
-  //       try {
-  //         // Uniwind.setTheme(themeType)
-  //       } catch (error) {
-  //         console.error("Error loading theme preference:", error)
-  //       }
-  //       setTheme(themeType)
-  //     }
+    // if (savedTheme !== "system") {
+    //   // setStatusBarStyle(savedTheme === "dark" ? "light" : "dark")
+    //   console.log("setStatusBarStyle", savedTheme)
+    //   setStatusBarStyle(savedTheme === "dark" ? "light" : "dark", true)
+    //   setTheme(savedTheme)
+    //   try {
+    //     // Uniwind.setTheme(savedTheme)
+    //   } catch (error) {
+    //     console.error("Error loading theme preference:", error)
+    //   }
+    // } else {
+    //   let themeType: "light" | "dark" = colorScheme === "dark" ? "dark" : "light"
+    //   try {
+    //     setTimeout(() => {
+    //       console.log("setStatusBarStyle", themeType)
+    //       setStatusBarStyle(themeType === "dark" ? "light" : "dark", true)
+    //     }, 1000)
+    //   } catch (error) {
+    //     console.error("Error loading theme preference:", error)
+    //   }
+    //   try {
+    //     // Uniwind.setTheme(themeType)
+    //   } catch (error) {
+    //     console.error("Error loading theme preference:", error)
+    //   }
+    //   setTheme(themeType)
+    // }
 
-  //     setTimeout(() => {
-  //       console.log("setHasLoaded", hasLoaded.current)
-  //       hasLoaded.current = true
-  //     }, 1000)
-  //     // get if the system is dark or light
-  //     // const isDark = Appearance.getColorScheme() === "dark"
-  //     // if (!isDark && colorScheme === "unspecified") {
-  //     //   // do nothing
-  //     // } else {
-  //     //   setTheme(isDark ? "dark" : "light")
-  //     // }
+    BackgroundTimer.setTimeout(() => {
+      console.log("setHasLoaded", hasLoaded.current)
+      hasLoaded.current = true
+    }, 1000)
 
-  //     // if (colorScheme !== "unspecified") {
-  //     //   setTheme(colorScheme === "dark" ? "dark" : "light")
-  //     // } else {
-  //     //   setTheme(savedTheme)
-  //     // }
-  //     // Uniwind.setTheme(savedTheme)
-  //   }
+    let sub = Appearance.addChangeListener(({colorScheme}) => {
+      console.log("Appearance.addChangeListener", colorScheme)
+      // setTheme(colorScheme === "dark" ? "dark" : "light")
+    })
 
-  //   loadThemePreference()
-  // }, [])
+    return () => {
+      sub.remove()
+    }
+  }, [])
 
   useEffect(() => {
     console.log("useEffect", colorScheme)
@@ -111,20 +106,17 @@ export const useThemeProvider = (initialTheme: ThemeContexts = undefined) => {
       return
     }
 
-    const onColorSchemeChanged = async () => {
-      console.log("onColorSchemeChanged", colorScheme)
+    console.log("onColorSchemeChanged", colorScheme)
 
-      setTheme(colorScheme === "dark" ? "dark" : "light")
+    setTheme(colorScheme === "dark" ? "dark" : "light")
 
-      if (savedTheme !== "system") {
-        return
-      }
-
-      let themeType: "light" | "dark" = colorScheme === "dark" ? "dark" : "light"
+    if (savedTheme !== "system") {
+      return
     }
-    onColorSchemeChanged()
-  }, [colorScheme])
 
+    // let themeType: "light" | "dark" = colorScheme === "dark" ? "dark" : "light"
+    
+  }, [colorScheme])
 
   // useEffect(() => {
   //   if (!hasLoaded.current) {
