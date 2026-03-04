@@ -8,6 +8,7 @@ import {useSetting, SETTINGS} from "@/stores/settings"
 import {type Theme, type ThemeContexts, type ThemedStyle, type ThemedStyleArray, lightTheme, darkTheme} from "@/theme"
 import {setStatusBarStyle} from "expo-status-bar"
 import {BackgroundTimer} from "@/utils/timers"
+import {Uniwind} from "uniwind"
 
 type ThemeContextType = {
   themeScheme: ThemeContexts
@@ -24,18 +25,6 @@ export const ThemeContext = createContext<ThemeContextType>({
 
 const themeNameToTheme = (name: ColorSchemeName): Theme => (name === "dark" ? darkTheme : lightTheme)
 
-const setImperativeTheming = async (theme: Theme) => {
-  setStatusBarStyle(theme.isDark ? "light" : "dark")
-  // this is the color of the navigation bar on android and so it should be the end of the gradient:
-  // on ios it doesn't matter much other than for transitional screens and should be the same as the background
-  if (Platform.OS === "ios") {
-    SystemUI.setBackgroundColorAsync(theme.colors.background)
-  } else {
-    SystemUI.setBackgroundColorAsync(theme.colors.backgroundStart)
-    NavigationBar.setButtonStyleAsync(theme.isDark ? "light" : "dark")
-  }
-}
-
 export type ThemeType = "light" | "dark" | "system"
 
 export const useThemeProvider = (initialTheme: ThemeContexts = undefined) => {
@@ -49,129 +38,68 @@ export const useThemeProvider = (initialTheme: ThemeContexts = undefined) => {
     setTheme(newTheme)
   }, [])
 
-  const update = (saved: string) => {
-    console.log("update", saved)
+  const updateThemeType = (lightOrDark: "light" | "dark") => {
+    // somehow this helps with getting the status bar style to update:
+    BackgroundTimer.setTimeout(() => {
+      setStatusBarStyle(lightOrDark === "dark" ? "light" : "dark", true)
+      let theme = themeNameToTheme(lightOrDark)
+      SystemUI.setBackgroundColorAsync(theme.colors.background)
+      NavigationBar.setButtonStyleAsync(lightOrDark === "dark" ? "light" : "dark")
+      NavigationBar.setStyle(lightOrDark == "dark" ? "light" : "dark")
+    }, 1000)
+    setTheme(lightOrDark)
+    Uniwind.setTheme(lightOrDark)
   }
 
   // Load saved theme preference on mount
   useEffect(() => {
     console.log("loadThemePreference", savedTheme, colorScheme)
 
-    // if (savedTheme !== "system") {
-    //   // setStatusBarStyle(savedTheme === "dark" ? "light" : "dark")
-    //   console.log("setStatusBarStyle", savedTheme)
-    //   setStatusBarStyle(savedTheme === "dark" ? "light" : "dark", true)
-    //   setTheme(savedTheme)
-    //   try {
-    //     // Uniwind.setTheme(savedTheme)
-    //   } catch (error) {
-    //     console.error("Error loading theme preference:", error)
-    //   }
-    // } else {
-    //   let themeType: "light" | "dark" = colorScheme === "dark" ? "dark" : "light"
-    //   try {
-    //     setTimeout(() => {
-    //       console.log("setStatusBarStyle", themeType)
-    //       setStatusBarStyle(themeType === "dark" ? "light" : "dark", true)
-    //     }, 1000)
-    //   } catch (error) {
-    //     console.error("Error loading theme preference:", error)
-    //   }
-    //   try {
-    //     // Uniwind.setTheme(themeType)
-    //   } catch (error) {
-    //     console.error("Error loading theme preference:", error)
-    //   }
-    //   setTheme(themeType)
-    // }
+    if (savedTheme !== "system") {
+      updateThemeType(savedTheme)
+    } else {
+      let themeType: "light" | "dark" = colorScheme === "dark" ? "dark" : "light"
+      updateThemeType(themeType)
+    }
 
     BackgroundTimer.setTimeout(() => {
-      console.log("setHasLoaded", hasLoaded.current)
       hasLoaded.current = true
     }, 1000)
-
-    let sub = Appearance.addChangeListener(({colorScheme}) => {
-      console.log("Appearance.addChangeListener", colorScheme)
-      // setTheme(colorScheme === "dark" ? "dark" : "light")
-    })
-
-    return () => {
-      sub.remove()
-    }
   }, [])
 
   useEffect(() => {
-    console.log("useEffect", colorScheme)
+    console.log("colorScheme changed", colorScheme)
     if (!hasLoaded.current) {
       return
     }
 
-    console.log("onColorSchemeChanged", colorScheme)
-
-    setTheme(colorScheme === "dark" ? "dark" : "light")
-
     if (savedTheme !== "system") {
+      updateThemeType(savedTheme)
       return
     }
 
-    // let themeType: "light" | "dark" = colorScheme === "dark" ? "dark" : "light"
-    
+    let themeType: "light" | "dark" = colorScheme === "dark" ? "dark" : "light"
+    updateThemeType(themeType)
   }, [colorScheme])
 
-  // useEffect(() => {
-  //   if (!hasLoaded.current) {
-  //     return
-  //   }
+  // react to the setting being changed:
+  useEffect(() => {
+    if (!hasLoaded.current) {
+      return
+    }
 
-  //   if (savedTheme !== "system") {
-  //     setStatusBarStyle(savedTheme === "dark" ? "light" : "dark", true)
-  //     setTheme(savedTheme)
-  //     Uniwind.setTheme(savedTheme)
-  //     return
-  //   }
+    if (savedTheme !== "system") {
+      updateThemeType(savedTheme)
+      return
+    }
 
-  //   let scheme = Appearance.getColorScheme()
-  //   let themeType: "light" | "dark" = scheme === "dark" ? "dark" : "light"
-  //   setStatusBarStyle(themeType === "dark" ? "light" : "dark", true)
-  //   setTheme(themeType)
-  //   Uniwind.setTheme(themeType)
-  // }, [savedTheme])
+    let scheme = Appearance.getColorScheme()
+    let themeType: "light" | "dark" = scheme === "dark" ? "dark" : "light"
+    updateThemeType(themeType)
+  }, [savedTheme])
 
   const themeScheme: ColorSchemeName = overrideTheme || colorScheme || "light"
   const navigationTheme = themeScheme === "dark" ? DarkTheme : DefaultTheme
-
-  // useEffect(() => {
-  //   if (isLoaded) {
-  //     setImperativeTheming(themeNameToTheme(themeScheme))
-  //   }
-  // }, [themeScheme, isLoaded, colorScheme])
-
-  // Handle navigation bar color changes when modal visibility changes
-  // useEffect(() => {
-  //   const updateNavigationBarColor = async () => {
-  //     const isDark = colorScheme == "dark" || savedTheme === "dark"
-  //     if (Platform.OS === "android") {
-  //       try {
-  //         console.log("updateNavigationBarColor", isDark)
-  //         NavigationBar.setStyle(isDark ? "dark" : "light")
-  //         // Store the original color before changing
-  //         // if (!originalNavBarColor) {
-  //         //   // Get current navigation bar color based on theme
-  //         //   const currentColor = isDark ? "#090A14" : "#FFFFFF"
-  //         //   setOriginalNavBarColor(currentColor)
-  //         // }
-  //         // Restore original navigation bar color
-  //         // await NavigationBar.setBackgroundColorAsync(originalNavBarColor ?? "")
-  //         // await NavigationBar.setButtonStyleAsync(isDark ? "light" : "dark")
-  //         // setOriginalNavBarColor(null)
-  //       } catch (error) {
-  //         console.warn("Failed to update navigation bar color for modal:", error)
-  //       }
-  //     }
-  //   }
-
-  //   updateNavigationBarColor()
-  // }, [savedTheme, colorScheme])
 
   return {
     themeScheme,
