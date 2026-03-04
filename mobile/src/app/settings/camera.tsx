@@ -228,7 +228,7 @@ export default function CameraSettingsScreen() {
             )
           })}
         </View>
-
+        {_devMode &&
         <View style={themed($settingsGroup)}>
           <ToggleSetting
             label={translate("settings:postProcessing")}
@@ -237,6 +237,7 @@ export default function CameraSettingsScreen() {
             onValueChange={(v) => setPostProcessing(v)}
           />
         </View>
+        }
       </ScrollView>
     </Screen>
   )

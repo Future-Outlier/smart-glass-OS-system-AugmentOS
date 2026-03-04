@@ -22,6 +22,7 @@ import {asgCameraApi} from "./asgCameraApi"
 import {gallerySettingsService} from "./gallerySettingsService"
 import {gallerySyncNotifications} from "./gallerySyncNotifications"
 import {localStorageService} from "./localStorageService"
+import {mediaProcessingQueue} from "./mediaProcessingQueue"
 import {
   checkConnectivityRequirementsUI,
   checkFeaturePermissions,
@@ -341,6 +342,9 @@ class GallerySyncService {
 
     const store = useGallerySyncStore.getState()
     const glassesStore = useGlassesStore.getState()
+
+    // Reset processing queue for new sync session
+    mediaProcessingQueue.reset()
 
     // Check if already syncing
     if (store.syncState === "syncing" || store.syncState === "connecting_wifi") {
@@ -1202,7 +1206,9 @@ class GallerySyncService {
         const userVisibleCount = filesToSync.filter(
           (f: any) => !f.name?.match(/_ev-?\d+\.(jpg|jpeg)$/i) && !f.name?.match(/\.imu\.json$/i),
         ).length
-        console.log(`[GallerySyncService]   📊 Found ${filesToSync.length} files to download (${userVisibleCount} media items, legacy path):`)
+        console.log(
+          `[GallerySyncService]   📊 Found ${filesToSync.length} files to download (${userVisibleCount} media items, legacy path):`,
+        )
 
         console.log("[GallerySyncService]   📋 First 5 files:")
         filesToSync.slice(0, 5).forEach((_file: any, _idx: number) => {
@@ -1263,8 +1269,6 @@ class GallerySyncService {
     const shouldProcessImages = useSettingsStore.getState().getSetting(SETTINGS.media_post_processing.key)
     console.log(`[GallerySyncService]   📸 Auto-save to camera roll: ${shouldAutoSave}`)
     console.log(`[GallerySyncService]   🎨 Image processing: ${shouldProcessImages}`)
-    let cameraRollSavedCount = 0
-    let _cameraRollFailedCount = 0
 
     try {
       const downloadResult = await asgCameraApi.batchSyncFiles(
@@ -1347,127 +1351,30 @@ class GallerySyncService {
                 }
               }
 
-              // Determine the file path to save (process first if enabled)
+              // Enqueue for background processing (non-blocking)
               const isPhoto = downloadedFile.name?.match(/\.(jpg|jpeg|png)$/i)
               const isVideo = downloadedFile.name?.match(/\.(mp4|mov)$/i)
-              const isImuSidecar = downloadedFile.name?.match(/\.imu\.json$/i)
-              const isHdrBracket = downloadedFile.name?.match(/_ev-?\d+\.(jpg|jpeg)$/i)
-              const processAndSave = async () => {
-                // Skip non-displayable files from camera roll save
-                if (isImuSidecar || isHdrBracket) return
+              const leaf = downloadedFile.name?.includes("/")
+                ? downloadedFile.name.substring(downloadedFile.name.lastIndexOf("/") + 1)
+                : downloadedFile.name
+              const isImuSidecar = leaf?.match(/^imu\.json$/i)
+              const isHdrBracket = leaf?.match(/^ev-?\d+\.jpe?g$/i)
 
-                let filePathToSave = downloadedFile.filePath!
-
-                // HDR merge: check if bracket files exist alongside this photo
-                if (shouldProcessImages && isPhoto) {
-                  try {
-                    const basePath = downloadedFile.filePath!.replace(/\.[^.]+$/, '')
-                    const underPath = basePath + '_ev-2.jpg'
-                    const normalPath = basePath + '_ev0.jpg'
-                    const overPath = basePath + '_ev2.jpg'
-                    const RNFS = require('@dr.pogodin/react-native-fs')
-                    const [hasUnder, hasNormal, hasOver] = await Promise.all([
-                      RNFS.exists(underPath),
-                      RNFS.exists(normalPath),
-                      RNFS.exists(overPath),
-                    ])
-                    if (hasUnder && hasNormal && hasOver) {
-                      const hdrPath = downloadedFile.filePath! + '.hdr.jpg'
-                      const hdrResult = await CoreModule.mergeHdrBrackets(
-                        underPath, normalPath, overPath, hdrPath,
-                      )
-                      if (hdrResult.success && hdrResult.outputPath) {
-                        filePathToSave = hdrResult.outputPath
-                        console.log(
-                          `[GallerySyncService] HDR merged ${downloadedFile.name} in ${hdrResult.processingTimeMs}ms`,
-                        )
-                      }
-                    }
-                  } catch (hdrError) {
-                    console.warn(`[GallerySyncService] HDR merge error, continuing:`, hdrError)
-                  }
-                }
-
-                // Process image if enabled (photos only — lens + color correction)
-                if (shouldProcessImages && isPhoto) {
-                  try {
-                    const processedPath = filePathToSave + '.processed.jpg'
-                    const result = await CoreModule.processGalleryImage(
-                      filePathToSave,
-                      processedPath,
-                      {lensCorrection: true, colorCorrection: true},
-                    )
-                    if (result.success && result.outputPath) {
-                      filePathToSave = result.outputPath
-                      console.log(
-                        `[GallerySyncService] 🎨 Processed ${downloadedFile.name} in ${result.processingTimeMs}ms`,
-                      )
-                    } else {
-                      console.warn(
-                        `[GallerySyncService] 🎨 Processing failed for ${downloadedFile.name}: ${result.error}, using original`,
-                      )
-                    }
-                  } catch (processingError) {
-                    console.warn(
-                      `[GallerySyncService] 🎨 Processing error for ${downloadedFile.name}, using original:`,
-                      processingError,
-                    )
-                    // Fall through to save original
-                  }
-                }
-
-                // Stabilize video if IMU sidecar is available
-                if (shouldProcessImages && isVideo) {
-                  try {
-                    const imuSidecarPath = downloadedFile.filePath!.replace(/\.[^.]+$/, '.imu.json')
-                    const RNFS = require('@dr.pogodin/react-native-fs')
-                    const imuExists = await RNFS.exists(imuSidecarPath)
-                    if (imuExists) {
-                      const stabilizedPath = downloadedFile.filePath! + '.stabilized.mp4'
-                      const result = await CoreModule.stabilizeVideo(
-                        downloadedFile.filePath!,
-                        imuSidecarPath,
-                        stabilizedPath,
-                      )
-                      if (result.success && result.outputPath) {
-                        filePathToSave = result.outputPath
-                        console.log(
-                          `[GallerySyncService] 📹 Stabilized ${downloadedFile.name} in ${result.processingTimeMs}ms`,
-                        )
-                      } else {
-                        console.warn(
-                          `[GallerySyncService] 📹 Stabilization failed for ${downloadedFile.name}: ${result.error}, using original`,
-                        )
-                      }
-                    }
-                  } catch (stabError) {
-                    console.warn(
-                      `[GallerySyncService] 📹 Stabilization error for ${downloadedFile.name}, using original:`,
-                      stabError,
-                    )
-                  }
-                }
-
-                // Save to camera roll if auto-save is enabled
-                if (shouldAutoSave) {
-                  const success = await MediaLibraryPermissions.saveToLibrary(filePathToSave, captureTime)
-                  if (success) {
-                    cameraRollSavedCount++
-                    console.log(
-                      `[GallerySyncService] ✅ Saved to camera roll: ${downloadedFile.name} (${cameraRollSavedCount} total)`,
-                    )
-                  } else {
-                    _cameraRollFailedCount++
-                    console.warn(`[GallerySyncService] ❌ Failed to save to camera roll: ${downloadedFile.name}`)
-                  }
-                }
+              if (!isImuSidecar && !isHdrBracket && downloadedFile.filePath) {
+                const imuSidecarPath = downloadedFile.filePath.replace(/\.[^.]+$/, ".imu.json")
+                mediaProcessingQueue.enqueue({
+                  id: downloadedFile.name,
+                  type: isVideo ? "video" : "photo",
+                  primaryPath: downloadedFile.filePath,
+                  sidecarPath: isVideo ? imuSidecarPath : undefined,
+                  timestamp: captureTime,
+                  totalSize: downloadedFile.size,
+                  duration: downloadedFile.duration,
+                  glassesModel: defaultWearable,
+                  shouldProcess: !!shouldProcessImages,
+                  shouldAutoSave: !!shouldAutoSave,
+                })
               }
-
-              // Fire and forget (non-blocking) - errors caught internally
-              processAndSave().catch((error) => {
-                _cameraRollFailedCount++
-                console.error(`[GallerySyncService] ❌ Error in process+save for ${downloadedFile.name}:`, error)
-              })
             }
           }
 
@@ -1530,12 +1437,10 @@ class GallerySyncService {
         currentStore.onFileFailed(failedFileName)
       }
 
-      // Camera roll saves already happened immediately after each download (if enabled)
-      if (shouldAutoSave) {
-        console.log("[GallerySyncService]   📸 Camera roll immediate save summary:")
-        console.log(`[GallerySyncService]      - Saved: ${cameraRollSavedCount}`)
-        console.log(`[GallerySyncService]      - Failed: ${_cameraRollFailedCount}`)
-      }
+      // Wait for processing queue to finish before marking complete
+      console.log("[GallerySyncService]   ⏳ Waiting for processing queue to drain...")
+      await mediaProcessingQueue.waitUntilDrained()
+      console.log("[GallerySyncService]   ✅ Processing queue drained")
 
       // Update sync state
       console.log("[GallerySyncService]   💾 Updating sync state in local storage...")
@@ -1566,6 +1471,7 @@ class GallerySyncService {
       store.setSyncComplete()
       await this.onSyncComplete(downloadedCount, failedCount)
     } catch (error: any) {
+      mediaProcessingQueue.abort()
       if (error?.message === "Sync cancelled") {
         console.log("[GallerySyncService] Sync was cancelled")
         store.setSyncCancelled()
@@ -1603,7 +1509,6 @@ class GallerySyncService {
 
     const shouldAutoSave = await gallerySettingsService.getAutoSaveToCameraRoll()
     const shouldProcessImages = useSettingsStore.getState().getSetting(SETTINGS.media_post_processing.key)
-    let cameraRollSavedCount = 0
 
     try {
       for (let i = 0; i < captures.length; i++) {
@@ -1624,19 +1529,18 @@ class GallerySyncService {
         currentStore.setCurrentFile(capture.capture_id, 0)
 
         try {
-          console.log(`[GallerySyncService]   📦 Downloading capture ${i + 1}/${captures.length}: ${capture.capture_id} (${capture.files.length} files)`)
+          console.log(
+            `[GallerySyncService]   📦 Downloading capture ${i + 1}/${captures.length}: ${capture.capture_id} (${capture.files.length} files)`,
+          )
 
           // Download all files in this capture
-          const result = await asgCameraApi.downloadCapture(
-            capture,
-            (bytesDownloaded, totalBytes) => {
-              if (this.abortController?.signal.aborted) throw new Error("Sync cancelled")
-              const progress = totalBytes > 0 ? Math.round((bytesDownloaded / totalBytes) * 100) : 0
-              const cs = useGallerySyncStore.getState()
-              cs.onFileProgress(capture.capture_id, Math.min(progress, 99))
-              gallerySyncNotifications.updateProgress(i + 1, captures.length, capture.capture_id, progress)
-            },
-          )
+          const result = await asgCameraApi.downloadCapture(capture, (bytesDownloaded, totalBytes) => {
+            if (this.abortController?.signal.aborted) throw new Error("Sync cancelled")
+            const progress = totalBytes > 0 ? Math.round((bytesDownloaded / totalBytes) * 100) : 0
+            const cs = useGallerySyncStore.getState()
+            cs.onFileProgress(capture.capture_id, Math.min(progress, 99))
+            gallerySyncNotifications.updateProgress(i + 1, captures.length, capture.capture_id, progress)
+          })
 
           // Mark 100% progress
           const cs2 = useGallerySyncStore.getState()
@@ -1645,131 +1549,27 @@ class GallerySyncService {
           totalSizeDownloaded += capture.total_size
           downloadedCount++
 
-          // Process capture (HDR merge, image processing, video stabilization)
-          let filePathToSave = result.primaryPath
-          const isPhoto = capture.type === "photo"
-          const isVideo = capture.type === "video"
-
-          // HDR merge if brackets exist
-          if (shouldProcessImages && isPhoto && result.bracketPaths.length >= 3) {
-            try {
-              // Find bracket paths by EV value
-              const underPath = result.bracketPaths.find((p) => p.includes("ev-2")) || result.bracketPaths[0]
-              const normalPath = result.bracketPaths.find((p) => p.includes("ev0")) || result.bracketPaths[1]
-              const overPath = result.bracketPaths.find((p) => p.includes("ev2") && !p.includes("ev-2")) || result.bracketPaths[2]
-
-              const hdrPath = result.primaryPath + ".hdr.jpg"
-              const hdrResult = await CoreModule.mergeHdrBrackets(underPath, normalPath, overPath, hdrPath)
-              if (hdrResult.success && hdrResult.outputPath) {
-                filePathToSave = hdrResult.outputPath
-                console.log(`[GallerySyncService]   🌟 HDR merged ${capture.capture_id} in ${hdrResult.processingTimeMs}ms`)
-              }
-            } catch (hdrError) {
-              console.warn(`[GallerySyncService]   HDR merge error for ${capture.capture_id}, continuing:`, hdrError)
-            }
-          }
-
-          // Image processing (lens + color correction)
-          if (shouldProcessImages && isPhoto) {
-            try {
-              const processedPath = filePathToSave + ".processed.jpg"
-              const procResult = await CoreModule.processGalleryImage(filePathToSave, processedPath, {
-                lensCorrection: true,
-                colorCorrection: true,
-              })
-              if (procResult.success && procResult.outputPath) {
-                filePathToSave = procResult.outputPath
-                console.log(`[GallerySyncService]   🎨 Processed ${capture.capture_id} in ${procResult.processingTimeMs}ms`)
-              }
-            } catch (procError) {
-              console.warn(`[GallerySyncService]   Processing error for ${capture.capture_id}, using original:`, procError)
-            }
-          }
-
-          // Video stabilization with IMU sidecar
-          if (shouldProcessImages && isVideo && result.sidecarPath) {
-            try {
-              const stabilizedPath = result.primaryPath + ".stabilized.mp4"
-              const stabResult = await CoreModule.stabilizeVideo(result.primaryPath, result.sidecarPath, stabilizedPath)
-              if (stabResult.success && stabResult.outputPath) {
-                filePathToSave = stabResult.outputPath
-                console.log(`[GallerySyncService]   📹 Stabilized ${capture.capture_id} in ${stabResult.processingTimeMs}ms`)
-              }
-            } catch (stabError) {
-              console.warn(`[GallerySyncService]   Stabilization error for ${capture.capture_id}, using original:`, stabError)
-            }
-          }
-
-          // Save to camera roll
-          if (shouldAutoSave) {
-            const captureTime = capture.timestamp || undefined
-            const success = await MediaLibraryPermissions.saveToLibrary(filePathToSave, captureTime)
-            if (success) {
-              cameraRollSavedCount++
-              console.log(`[GallerySyncService]   ✅ Saved to camera roll: ${capture.capture_id}`)
-            }
-          }
-
-          // Save thumbnail_data as a local file for persistent gallery display
-          let localThumbnailPath: string | undefined
-          if (capture.thumbnail_data) {
-            try {
-              const RNFS = require('@dr.pogodin/react-native-fs')
-              const thumbPath = `${result.captureDir}/.thumb.jpg`
-              // Strip data URI prefix if present
-              const base64Data = capture.thumbnail_data.startsWith("data:")
-                ? capture.thumbnail_data.split(",")[1]
-                : capture.thumbnail_data
-              await RNFS.writeFile(thumbPath, base64Data, 'base64')
-              localThumbnailPath = thumbPath
-            } catch (thumbError) {
-              console.warn(`[GallerySyncService]   Failed to save thumbnail for ${capture.capture_id}:`, thumbError)
-            }
-          }
-
-          // Save metadata — one entry per capture using capture_id as key
-          const downloadedFile = localStorageService.convertToDownloadedFile(
-            {
-              name: capture.capture_id,
-              url: "",
-              download: "",
-              size: capture.total_size,
-              modified: capture.timestamp,
-              is_video: isVideo,
-              thumbnail_data: capture.thumbnail_data,
-              duration: capture.duration,
-              filePath: filePathToSave,
-            },
-            filePathToSave,
-            localThumbnailPath,
-            defaultWearable,
-          )
-          await localStorageService.saveDownloadedFile(downloadedFile)
-
-          // Update file in queue with local paths
-          const localFileUrl = filePathToSave.startsWith("file://") ? filePathToSave : `file://${filePathToSave}`
-          const localThumbUrl = localThumbnailPath
-            ? localThumbnailPath.startsWith("file://") ? localThumbnailPath : `file://${localThumbnailPath}`
-            : undefined
-          cs2.updateFileInQueue(capture.capture_id, {
-            name: capture.capture_id,
-            url: localFileUrl,
-            download: localFileUrl,
-            size: capture.total_size,
-            modified: capture.timestamp,
-            is_video: isVideo,
-            filePath: filePathToSave,
-            mime_type: isVideo ? "video/mp4" : "image/jpeg",
-            thumbnail_data: capture.thumbnail_data,
-            thumbnailPath: localThumbUrl,
+          // Enqueue for processing (runs concurrently with next download)
+          mediaProcessingQueue.enqueue({
+            id: capture.capture_id,
+            type: capture.type,
+            primaryPath: result.primaryPath,
+            bracketPaths: result.bracketPaths,
+            sidecarPath: result.sidecarPath,
+            thumbnailData: capture.thumbnail_data,
+            captureDir: result.captureDir,
+            timestamp: capture.timestamp,
+            totalSize: capture.total_size,
             duration: capture.duration,
+            glassesModel: defaultWearable,
+            shouldProcess: !!shouldProcessImages,
+            shouldAutoSave: !!shouldAutoSave,
           })
 
-          // Delete capture folder from glasses (single folder delete)
+          // Delete capture folder from glasses (non-blocking)
           asgCameraApi.deleteFilesFromServer([capture.capture_id]).catch((err) => {
             console.warn(`[GallerySyncService]   Delete error for ${capture.capture_id} (non-fatal):`, err)
           })
-
         } catch (captureError: any) {
           if (captureError?.message === "Sync cancelled") throw captureError
           const errMsg = captureError?.message || captureError?.toString?.() || JSON.stringify(captureError)
@@ -1796,9 +1596,10 @@ class GallerySyncService {
       console.log(`[GallerySyncService]   📊 Downloaded: ${downloadedCount}, Failed: ${failedCount}`)
       console.log(`[GallerySyncService]   ⏱️ Duration: ${(downloadDuration / 1000).toFixed(1)}s`)
 
-      if (shouldAutoSave) {
-        console.log(`[GallerySyncService]   📸 Camera roll saved: ${cameraRollSavedCount}`)
-      }
+      // Wait for processing queue to finish before marking complete
+      console.log("[GallerySyncService]   ⏳ Waiting for processing queue to drain...")
+      await mediaProcessingQueue.waitUntilDrained()
+      console.log("[GallerySyncService]   ✅ Processing queue drained")
 
       // Update sync state
       const currentSyncState = await localStorageService.getSyncState()
@@ -1811,6 +1612,7 @@ class GallerySyncService {
       store.setSyncComplete()
       await this.onSyncComplete(downloadedCount, failedCount)
     } catch (error: any) {
+      mediaProcessingQueue.abort()
       if (error?.message === "Sync cancelled") {
         console.log("[GallerySyncService] Sync was cancelled")
         store.setSyncCancelled()

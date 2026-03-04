@@ -10,7 +10,9 @@ import Foundation
 /// + exponential moving average smoothing.
 class VideoStabilizer {
   private static let TAG = "VideoStabilizer"
-  private static let SMOOTH_FACTOR = 0.85
+  private static let SMOOTH_FACTOR = 0.98
+  private static let SMOOTH_PASSES = 3
+  private static let CROP_MARGIN = 0.08
 
   struct ImuSample {
     let timeMs: Double
@@ -52,10 +54,10 @@ class VideoStabilizer {
       cumulativeYaw[i] = cumulativeYaw[i - 1] + imuSamples[i].gz * dt
     }
 
-    // Smooth with bidirectional EMA
-    let smoothRoll = smoothEma(cumulativeRoll)
-    let smoothPitch = smoothEma(cumulativePitch)
-    let smoothYaw = smoothEma(cumulativeYaw)
+    // Smooth with multi-pass bidirectional EMA for aggressive stabilization
+    let smoothRoll = smoothEmaMultiPass(cumulativeRoll)
+    let smoothPitch = smoothEmaMultiPass(cumulativePitch)
+    let smoothYaw = smoothEmaMultiPass(cumulativeYaw)
 
     // Correction = smooth - actual
     var corrRoll = [Double](repeating: 0, count: imuSamples.count)
@@ -178,47 +180,53 @@ class VideoStabilizer {
         let pitchCorr = corrPitch[imuIdx]
         let yawCorr = corrYaw[imuIdx]
 
-        // If correction is negligible, pass through without re-rendering
-        if abs(rollCorr) < 0.001 && abs(pitchCorr) < 0.001 && abs(yawCorr) < 0.001 {
-          if adaptor.assetWriterInput.isReadyForMoreMediaData,
-            let pixelBuffer = CMSampleBufferGetImageBuffer(sampleBuffer)
-          {
-            adaptor.append(pixelBuffer, withPresentationTime: presentationTime)
-          }
-        } else {
-          // Apply roll + pitch + yaw correction via affine transform
-          guard let pixelBuffer = CMSampleBufferGetImageBuffer(sampleBuffer) else { continue }
-          let ciImage = CIImage(cvPixelBuffer: pixelBuffer)
+        guard let pixelBuffer = CMSampleBufferGetImageBuffer(sampleBuffer) else { continue }
+        var ciImage = CIImage(cvPixelBuffer: pixelBuffer)
 
-          // rollCorr: Z-axis rotation around center
-          // pitchCorr: horizontal shift (small-angle approx)
-          // yawCorr: vertical shift (small-angle approx)
-          let cx = videoSize.width / 2
-          let cy = videoSize.height / 2
-          let transform = CGAffineTransform.identity
-            .translatedBy(x: cx, y: cy)
-            .rotated(by: CGFloat(-rollCorr))
-            .translatedBy(x: CGFloat(-pitchCorr) * cx, y: CGFloat(yawCorr) * cy)
-            .translatedBy(x: -cx, y: -cy)
+        // Apply color corrections (same pipeline as ImageProcessor)
+        ciImage = applyToneCurve(ciImage)
+        ciImage = applyVibrance(ciImage)
+        ciImage = applyColorCorrection(ciImage)
 
-          let transformed = ciImage.transformed(by: transform)
+        // Always apply crop+scale for consistent framing, plus stabilization correction
+        let cx = videoSize.width / 2
+        let cy = videoSize.height / 2
+        let scale = 1.0 / (1.0 - 2.0 * CROP_MARGIN)
 
-          // Crop back to original size (transform may expand bounds)
-          let cropped = transformed.cropped(to: CGRect(
-            x: transformed.extent.origin.x + (transformed.extent.width - videoSize.width) / 2,
-            y: transformed.extent.origin.y + (transformed.extent.height - videoSize.height) / 2,
-            width: videoSize.width,
-            height: videoSize.height
-          ))
+        // Clamp corrections to the crop margin so we never show black edges
+        let maxShiftX = CROP_MARGIN * Double(videoSize.width)
+        let maxShiftY = CROP_MARGIN * Double(videoSize.height)
+        let maxRollRad = CROP_MARGIN * 0.5
 
-          // Render to pixel buffer
-          if let pool = adaptor.pixelBufferPool {
-            var outputBuffer: CVPixelBuffer?
-            CVPixelBufferPoolCreatePixelBuffer(nil, pool, &outputBuffer)
-            if let outBuf = outputBuffer {
-              ciContext.render(cropped, to: outBuf)
-              adaptor.append(outBuf, withPresentationTime: presentationTime)
-            }
+        let clampedRoll = min(max(rollCorr, -maxRollRad), maxRollRad)
+        let clampedPitchShift = min(max(-pitchCorr * Double(cx), -maxShiftX), maxShiftX)
+        let clampedYawShift = min(max(yawCorr * Double(cy), -maxShiftY), maxShiftY)
+
+        // Build transform: center → scale → rotate → translate → uncenter
+        let transform = CGAffineTransform.identity
+          .translatedBy(x: cx, y: cy)
+          .scaledBy(x: CGFloat(scale), y: CGFloat(scale))
+          .rotated(by: CGFloat(-clampedRoll))
+          .translatedBy(x: CGFloat(clampedPitchShift), y: CGFloat(clampedYawShift))
+          .translatedBy(x: -cx, y: -cy)
+
+        ciImage = ciImage.transformed(by: transform)
+
+        // Crop back to original size
+        ciImage = ciImage.cropped(to: CGRect(
+          x: ciImage.extent.origin.x + (ciImage.extent.width - videoSize.width) / 2,
+          y: ciImage.extent.origin.y + (ciImage.extent.height - videoSize.height) / 2,
+          width: videoSize.width,
+          height: videoSize.height
+        ))
+
+        // Render to pixel buffer
+        if let pool = adaptor.pixelBufferPool {
+          var outputBuffer: CVPixelBuffer?
+          CVPixelBufferPoolCreatePixelBuffer(nil, pool, &outputBuffer)
+          if let outBuf = outputBuffer {
+            ciContext.render(ciImage, to: outBuf)
+            adaptor.append(outBuf, withPresentationTime: presentationTime)
           }
         }
 
@@ -258,6 +266,47 @@ class VideoStabilizer {
     return elapsed
   }
 
+  // MARK: - Color Processing
+
+  // Color correction matrix (same as ImageProcessor)
+  private static let rVector = CIVector(x: 1.06, y: 0.02, z: -0.01, w: 0)
+  private static let gVector = CIVector(x: 0.01, y: 1.04, z: -0.01, w: 0)
+  private static let bVector = CIVector(x: -0.02, y: 0.01, z: 1.02, w: 0)
+  private static let aVector = CIVector(x: 0, y: 0, z: 0, w: 1)
+  private static let biasVector = CIVector(x: 5.0 / 255.0, y: 3.0 / 255.0, z: 0, w: 0)
+
+  /// Apply S-curve tone mapping (same curve as ImageProcessor).
+  private static func applyToneCurve(_ image: CIImage) -> CIImage {
+    guard let filter = CIFilter(name: "CIToneCurve") else { return image }
+    filter.setValue(image, forKey: kCIInputImageKey)
+    filter.setValue(CIVector(x: 0.00, y: 0.05), forKey: "inputPoint0")  // lift blacks
+    filter.setValue(CIVector(x: 0.25, y: 0.22), forKey: "inputPoint1")  // shadow region
+    filter.setValue(CIVector(x: 0.50, y: 0.50), forKey: "inputPoint2")  // midtone anchor
+    filter.setValue(CIVector(x: 0.75, y: 0.78), forKey: "inputPoint3")  // highlight region
+    filter.setValue(CIVector(x: 1.00, y: 0.95), forKey: "inputPoint4")  // compress whites
+    return filter.outputImage ?? image
+  }
+
+  /// Apply vibrance — selectively boosts undersaturated colors.
+  private static func applyVibrance(_ image: CIImage) -> CIImage {
+    guard let filter = CIFilter(name: "CIVibrance") else { return image }
+    filter.setValue(image, forKey: kCIInputImageKey)
+    filter.setValue(0.3, forKey: "inputAmount")  // +30% selective boost
+    return filter.outputImage ?? image
+  }
+
+  /// Apply color correction (warmth/white balance) via CIColorMatrix.
+  private static func applyColorCorrection(_ image: CIImage) -> CIImage {
+    guard let filter = CIFilter(name: "CIColorMatrix") else { return image }
+    filter.setValue(image, forKey: kCIInputImageKey)
+    filter.setValue(rVector, forKey: "inputRVector")
+    filter.setValue(gVector, forKey: "inputGVector")
+    filter.setValue(bVector, forKey: "inputBVector")
+    filter.setValue(aVector, forKey: "inputAVector")
+    filter.setValue(biasVector, forKey: "inputBiasVector")
+    return filter.outputImage ?? image
+  }
+
   // MARK: - Private Helpers
 
   private static func parseImuData(_ path: String) -> [ImuSample]? {
@@ -282,18 +331,22 @@ class VideoStabilizer {
     }
   }
 
-  private static func smoothEma(_ data: [Double]) -> [Double] {
+  private static func smoothEmaMultiPass(_ data: [Double]) -> [Double] {
     guard !data.isEmpty else { return data }
-    var smooth = [Double](repeating: 0, count: data.count)
-    smooth[0] = data[0]
-    // Forward pass
-    for i in 1..<data.count {
-      smooth[i] = SMOOTH_FACTOR * smooth[i - 1] + (1 - SMOOTH_FACTOR) * data[i]
+    var result = data
+    for _ in 0..<SMOOTH_PASSES {
+      var smooth = [Double](repeating: 0, count: result.count)
+      smooth[0] = result[0]
+      // Forward pass
+      for i in 1..<result.count {
+        smooth[i] = SMOOTH_FACTOR * smooth[i - 1] + (1 - SMOOTH_FACTOR) * result[i]
+      }
+      // Backward pass (zero-phase)
+      for i in stride(from: result.count - 2, through: 0, by: -1) {
+        smooth[i] = SMOOTH_FACTOR * smooth[i + 1] + (1 - SMOOTH_FACTOR) * smooth[i]
+      }
+      result = smooth
     }
-    // Backward pass (zero-phase)
-    for i in stride(from: data.count - 2, through: 0, by: -1) {
-      smooth[i] = SMOOTH_FACTOR * smooth[i + 1] + (1 - SMOOTH_FACTOR) * smooth[i]
-    }
-    return smooth
+    return result
   }
 }

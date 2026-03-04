@@ -2,6 +2,7 @@ package com.mentra.core.utils
 
 import android.graphics.Bitmap
 import android.graphics.Canvas
+import android.graphics.Color
 import android.graphics.Matrix
 import android.graphics.Paint
 import android.media.Image
@@ -30,11 +31,40 @@ import kotlin.math.min
 object VideoStabilizer {
   private const val TAG = "VideoStabilizer"
 
-  // EMA smoothing factor: lower = more aggressive stabilization.
-  // 0.85 removes most hand/head jitter while preserving intentional pans.
-  private const val SMOOTH_FACTOR = 0.85
+  // EMA smoothing factor: higher = smoother path = more aggressive stabilization.
+  // 0.98 aggressively removes head/hand jitter while preserving slow intentional pans.
+  private const val SMOOTH_FACTOR = 0.98
+
+  // Number of bidirectional EMA passes for stronger smoothing.
+  private const val SMOOTH_PASSES = 3
+
+  // Crop margin: fraction of frame to crop on each edge to hide black borders
+  // from stabilization shifts. 0.08 = 8% crop per side (16% total zoom).
+  private const val CROP_MARGIN = 0.08
 
   private const val CODEC_TIMEOUT_US = 10_000L
+
+  // Precomputed tone LUT matching iOS CIToneCurve anchor points
+  private val TONE_LUT = IntArray(256).also { lut ->
+    val ax = doubleArrayOf(0.0, 0.25, 0.50, 0.75, 1.0)
+    val ay = doubleArrayOf(0.05, 0.22, 0.50, 0.78, 0.95)
+    for (i in 0 until 256) {
+      val x = i / 255.0
+      val y = when {
+        x <= ax[1] -> ay[0] + (ay[1] - ay[0]) * (x - ax[0]) / (ax[1] - ax[0])
+        x <= ax[2] -> ay[1] + (ay[2] - ay[1]) * (x - ax[1]) / (ax[2] - ax[1])
+        x <= ax[3] -> ay[2] + (ay[3] - ay[2]) * (x - ax[2]) / (ax[3] - ax[2])
+        else       -> ay[3] + (ay[4] - ay[3]) * (x - ax[3]) / (ax[4] - ax[3])
+      }
+      lut[i] = (y * 255 + 0.5).toInt().coerceIn(0, 255)
+    }
+  }
+
+  // Color correction matrix coefficients (same as ImageProcessor)
+  // R' = 1.06*R + 0.02*G - 0.01*B + 5
+  // G' = 0.01*R + 1.04*G - 0.01*B + 3
+  // B' = -0.02*R + 0.01*G + 1.02*B + 0
+  private const val VIBRANCE_AMOUNT = 0.3f
 
   /**
    * Stabilize a video using gyroscope data from an IMU sidecar file.
@@ -73,10 +103,10 @@ object VideoStabilizer {
         cumYaw[i] = cumYaw[i - 1] + imuSamples[i][6] * dt      // gz
       }
 
-      // Smooth with bidirectional EMA
-      val smoothRoll = smoothEma(cumRoll)
-      val smoothPitch = smoothEma(cumPitch)
-      val smoothYaw = smoothEma(cumYaw)
+      // Smooth with multi-pass bidirectional EMA for aggressive stabilization
+      val smoothRoll = smoothEmaMultiPass(cumRoll)
+      val smoothPitch = smoothEmaMultiPass(cumPitch)
+      val smoothYaw = smoothEmaMultiPass(cumYaw)
 
       // Correction = smooth - actual
       val corrRoll = DoubleArray(n) { smoothRoll[it] - cumRoll[it] }
@@ -201,30 +231,40 @@ object VideoStabilizer {
                 val pitch = corrPitch[imuIdx]
                 val yaw = corrYaw[imuIdx]
 
-                val outBitmap = if (abs(roll) < 0.001 && abs(pitch) < 0.001 && abs(yaw) < 0.001) {
-                  srcBitmap // pass through
-                } else {
-                  // Apply correction via Matrix transform
-                  val dst = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
-                  val canvas = Canvas(dst)
-                  val cx = width / 2f
-                  val cy = height / 2f
+                // Always apply crop+scale for consistent framing, plus stabilization correction
+                val dst = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
+                val canvas = Canvas(dst)
+                val cx = width / 2f
+                val cy = height / 2f
 
-                  val matrix = Matrix().apply {
-                    postTranslate(-cx, -cy)
-                    // Roll: Z-axis rotation
-                    postRotate(Math.toDegrees(-roll).toFloat())
-                    // Pitch: horizontal shift (small-angle approx)
-                    postTranslate((-pitch * cx).toFloat(), 0f)
-                    // Yaw: vertical shift (small-angle approx)
-                    postTranslate(0f, (yaw * cy).toFloat())
-                    postTranslate(cx, cy)
-                  }
+                // Scale factor to zoom in and hide black edges from stabilization
+                val scale = 1.0f / (1.0f - 2.0f * CROP_MARGIN.toFloat())
 
-                  canvas.drawBitmap(srcBitmap, matrix, paint)
-                  srcBitmap.recycle()
-                  dst
+                // Clamp corrections to the crop margin so we never show black edges
+                val maxShiftX = CROP_MARGIN * width
+                val maxShiftY = CROP_MARGIN * height
+                val maxRollRad = CROP_MARGIN * 0.5 // conservative limit for rotation
+
+                val clampedRoll = roll.coerceIn(-maxRollRad, maxRollRad)
+                val clampedPitchShift = (-pitch * cx).toFloat().coerceIn(-maxShiftX.toFloat(), maxShiftX.toFloat())
+                val clampedYawShift = (yaw * cy).toFloat().coerceIn(-maxShiftY.toFloat(), maxShiftY.toFloat())
+
+                val matrix = Matrix().apply {
+                  postTranslate(-cx, -cy)
+                  // Crop zoom
+                  postScale(scale, scale)
+                  // Roll: Z-axis rotation
+                  postRotate(Math.toDegrees(-clampedRoll).toFloat())
+                  // Pitch: horizontal shift
+                  postTranslate(clampedPitchShift, 0f)
+                  // Yaw: vertical shift
+                  postTranslate(0f, clampedYawShift)
+                  postTranslate(cx, cy)
                 }
+
+                canvas.drawBitmap(srcBitmap, matrix, paint)
+                srcBitmap.recycle()
+                val outBitmap = dst
 
                 feedBitmapToEncoder(encoder, outBitmap, decInfo.presentationTimeUs, width, height)
                 outBitmap.recycle()
@@ -337,20 +377,37 @@ object VideoStabilizer {
     val uvRowStride = uPlane.rowStride
     val uvPixelStride = uPlane.pixelStride
 
+    val hsv = FloatArray(3)
+
     for (y in 0 until h) {
       for (x in 0 until w) {
         val argb = pixels[y * w + x]
-        val r = (argb shr 16) and 0xFF
-        val g = (argb shr 8) and 0xFF
-        val b = argb and 0xFF
+        // 1. S-curve tone mapping via LUT
+        var r = TONE_LUT[(argb shr 16) and 0xFF]
+        var g = TONE_LUT[(argb shr 8) and 0xFF]
+        var b = TONE_LUT[argb and 0xFF]
+
+        // 2. Vibrance: selectively boost undersaturated colors
+        Color.RGBToHSV(r, g, b, hsv)
+        val boost = VIBRANCE_AMOUNT * (1.0f - hsv[1])
+        hsv[1] = (hsv[1] + boost).coerceAtMost(1.0f)
+        val vibrant = Color.HSVToColor(hsv)
+        r = (vibrant shr 16) and 0xFF
+        g = (vibrant shr 8) and 0xFF
+        b = vibrant and 0xFF
+
+        // 3. Color correction matrix (warmth/white balance)
+        val cr = (1.06f * r + 0.02f * g - 0.01f * b + 5).toInt().coerceIn(0, 255)
+        val cg = (0.01f * r + 1.04f * g - 0.01f * b + 3).toInt().coerceIn(0, 255)
+        val cb = (-0.02f * r + 0.01f * g + 1.02f * b).toInt().coerceIn(0, 255)
 
         // BT.601 RGB → YUV
-        val yVal = ((66 * r + 129 * g + 25 * b + 128) shr 8) + 16
+        val yVal = ((66 * cr + 129 * cg + 25 * cb + 128) shr 8) + 16
         yBuf.put(y * yRowStride + x, yVal.coerceIn(0, 255).toByte())
 
         if (y % 2 == 0 && x % 2 == 0) {
-          val uVal = ((-38 * r - 74 * g + 112 * b + 128) shr 8) + 128
-          val vVal = ((112 * r - 94 * g - 18 * b + 128) shr 8) + 128
+          val uVal = ((-38 * cr - 74 * cg + 112 * cb + 128) shr 8) + 128
+          val vVal = ((112 * cr - 94 * cg - 18 * cb + 128) shr 8) + 128
           val uvIdx = (y / 2) * uvRowStride + (x / 2) * uvPixelStride
           uBuf.put(uvIdx, uVal.coerceIn(0, 255).toByte())
           vBuf.put(uvIdx, vVal.coerceIn(0, 255).toByte())
@@ -434,19 +491,23 @@ object VideoStabilizer {
     }
   }
 
-  /** Bidirectional EMA smoothing (zero-phase filter). */
-  private fun smoothEma(data: DoubleArray): DoubleArray {
+  /** Multi-pass bidirectional EMA smoothing for aggressive stabilization. */
+  private fun smoothEmaMultiPass(data: DoubleArray): DoubleArray {
     if (data.isEmpty()) return data
-    val smooth = DoubleArray(data.size)
-    smooth[0] = data[0]
-    // Forward pass
-    for (i in 1 until data.size) {
-      smooth[i] = SMOOTH_FACTOR * smooth[i - 1] + (1 - SMOOTH_FACTOR) * data[i]
+    var result = data.copyOf()
+    repeat(SMOOTH_PASSES) {
+      val smooth = DoubleArray(result.size)
+      smooth[0] = result[0]
+      // Forward pass
+      for (i in 1 until result.size) {
+        smooth[i] = SMOOTH_FACTOR * smooth[i - 1] + (1 - SMOOTH_FACTOR) * result[i]
+      }
+      // Backward pass
+      for (i in result.size - 2 downTo 0) {
+        smooth[i] = SMOOTH_FACTOR * smooth[i + 1] + (1 - SMOOTH_FACTOR) * smooth[i]
+      }
+      result = smooth
     }
-    // Backward pass
-    for (i in data.size - 2 downTo 0) {
-      smooth[i] = SMOOTH_FACTOR * smooth[i + 1] + (1 - SMOOTH_FACTOR) * smooth[i]
-    }
-    return smooth
+    return result
   }
 }

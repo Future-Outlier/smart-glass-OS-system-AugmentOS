@@ -29,24 +29,38 @@ public class ImageProcessor {
   private static final double P1 = 0.0;     // Tangential distortion
   private static final double P2 = 0.0;     // Tangential distortion
 
-  // Precomputed S-curve LUT for tone mapping (built once at class load)
+  // Precomputed tone-curve LUT matching iOS CIToneCurve anchor points:
+  //   (0.00, 0.05), (0.25, 0.22), (0.50, 0.50), (0.75, 0.78), (1.00, 0.95)
+  // Uses piecewise-linear interpolation between anchors.
   private static final int[] TONE_LUT = buildToneLut();
 
   private static int[] buildToneLut() {
     int[] lut = new int[256];
-    double lo = 1.0 / (1.0 + Math.exp(5.0));
-    double hi = 1.0 / (1.0 + Math.exp(-5.0));
+    // Anchor points matching iOS CIToneCurve
+    double[] ax = {0.0, 0.25, 0.50, 0.75, 1.0};
+    double[] ay = {0.05, 0.22, 0.50, 0.78, 0.95};
     for (int i = 0; i < 256; i++) {
       double x = i / 255.0;
-      double y = 1.0 / (1.0 + Math.exp(-10.0 * (x - 0.5)));
-      double mapped = (y - lo) / (hi - lo);
-      lut[i] = Math.max(0, Math.min(255, (int) (mapped * 255 + 0.5)));
+      // Find which segment x falls in
+      double y;
+      if (x <= ax[1]) {
+        y = ay[0] + (ay[1] - ay[0]) * (x - ax[0]) / (ax[1] - ax[0]);
+      } else if (x <= ax[2]) {
+        y = ay[1] + (ay[2] - ay[1]) * (x - ax[1]) / (ax[2] - ax[1]);
+      } else if (x <= ax[3]) {
+        y = ay[2] + (ay[3] - ay[2]) * (x - ax[2]) / (ax[3] - ax[2]);
+      } else {
+        y = ay[3] + (ay[4] - ay[3]) * (x - ax[3]) / (ax[4] - ax[3]);
+      }
+      lut[i] = Math.max(0, Math.min(255, (int) (y * 255 + 0.5)));
     }
     return lut;
   }
 
-  // Color correction matrix: slight warmth, saturation boost, contrast S-curve
-  // Applied as a 4x5 ColorMatrix (RGBA + offset)
+  // Color correction matrix: slight warmth, saturation boost
+  // Applied as a 4x5 ColorMatrix (RGBA + offset in 0-255 scale)
+  // Bias values match iOS: 5.0/255.0 * 255 ≈ 5, 3.0/255.0 * 255 ≈ 3
+  // Note: Android ColorMatrix offsets are in 0-255 space (correct as-is)
   private static final float[] COLOR_MATRIX = {
     1.06f, 0.02f, -0.01f, 0, 5,     // R: slight warmth
     0.01f, 1.04f, -0.01f, 0, 3,     // G: subtle boost

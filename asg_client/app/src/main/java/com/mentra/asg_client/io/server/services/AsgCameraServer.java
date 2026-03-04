@@ -583,10 +583,10 @@ public class AsgCameraServer extends AsgServer {
         String lower = leaf.toLowerCase();
 
         // Sidecar files
-        if (lower.endsWith(".imu.json") || lower.equals("imu.json")) return "sidecar";
+        if (lower.equals("imu.json")) return "sidecar";
 
-        // Bracket files (ev-2.jpg, ev0.jpg, ev2.jpg or legacy _ev-2.jpg)
-        if (lower.matches("ev-?\\d+\\.jpe?g") || lower.matches(".*_ev-?\\d+\\.jpe?g")) return "bracket";
+        // Bracket files (ev-2.jpg, ev0.jpg, ev2.jpg)
+        if (lower.matches("ev-?\\d+\\.jpe?g")) return "bracket";
 
         // Everything else is primary
         return "primary";
@@ -603,7 +603,8 @@ public class AsgCameraServer extends AsgServer {
      */
     private boolean isImuSidecar(String filename) {
         if (filename == null) return false;
-        return filename.toLowerCase().endsWith(".imu.json");
+        String leaf = filename.contains("/") ? filename.substring(filename.lastIndexOf('/') + 1) : filename;
+        return leaf.equalsIgnoreCase("imu.json");
     }
 
     /**
@@ -612,8 +613,9 @@ public class AsgCameraServer extends AsgServer {
      */
     private boolean isHdrBracket(String filename) {
         if (filename == null) return false;
-        // Match files ending with _ev-2.jpg, _ev0.jpg, _ev2.jpg (case-insensitive)
-        return filename.matches("(?i).*_ev-?\\d+\\.jpe?g$");
+        String leaf = filename.contains("/") ? filename.substring(filename.lastIndexOf('/') + 1) : filename;
+        // Match folder-based bracket files: ev-2.jpg, ev0.jpg, ev2.jpg
+        return leaf.toLowerCase().matches("ev-?\\d+\\.jpe?g");
     }
 
     private boolean isAvifTransferArtifact(String filename) {

@@ -92,12 +92,10 @@ public class GalleryStatusHelper {
         // Get leaf filename for folder-based paths
         String leaf = lower.contains("/") ? lower.substring(lower.lastIndexOf('/') + 1) : lower;
 
-        // IMU sidecar files (both folder-based "imu.json" and legacy "xxx.imu.json")
-        if (leaf.equals("imu.json") || leaf.endsWith(".imu.json")) return true;
-        // HDR bracket files in folder (ev-2.jpg, ev0.jpg, ev2.jpg)
+        // IMU sidecar files (imu.json inside capture folder)
+        if (leaf.equals("imu.json")) return true;
+        // HDR bracket files (ev-2.jpg, ev0.jpg, ev2.jpg)
         if (leaf.matches("ev-?\\d+\\.jpe?g$")) return true;
-        // Legacy HDR bracket files (IMG_xxx_ev-2.jpg)
-        if (leaf.matches(".*_ev-?\\d+\\.jpe?g$")) return true;
         return false;
     }
 
