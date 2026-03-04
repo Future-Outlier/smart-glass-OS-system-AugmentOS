@@ -1,8 +1,8 @@
-import {Platform, Pressable, View} from "react-native"
+import {Platform, Pressable, TouchableOpacity, View} from "react-native"
 import {SharedValue, useSharedValue, withSpring} from "react-native-reanimated"
 import {Gesture, GestureDetector} from "react-native-gesture-handler"
 
-import {Text} from "@/components/ignite"
+import {Icon, Text} from "@/components/ignite"
 import AppIcon from "@/components/home/AppIcon"
 import {useAppTheme} from "@/contexts/ThemeContext"
 import {translate} from "@/i18n"
@@ -15,6 +15,8 @@ import {BlurView} from "expo-blur"
 import {LinearGradient} from "expo-linear-gradient"
 import MaskedView from "@react-native-masked-view/masked-view"
 import {useSaferAreaInsets} from "@/contexts/SaferAreaContext"
+import {withUniwind} from "uniwind"
+import {GlassView} from "expo-glass-effect"
 
 interface AppSwitcherButtonProps {
   swipeProgress: SharedValue<number>
@@ -170,6 +172,18 @@ export default function AppSwitcherButton({swipeProgress, onGridButtonPress}: Ap
   }
 
   let paddingTop = Platform.OS === "android" ? theme.spacing.s10 : theme.spacing.s16
+  const GlassViewT = withUniwind(GlassView)
+  const bgClass = Platform.OS === "android" ? "bg-primary-foreground" : "bg-transparent"
+
+  const renderGridButton = () => {
+    return (
+      <GlassViewT className={`${bgClass} h-15 rounded-2xl`} style={{marginBottom: bottomPadding}}>
+        <TouchableOpacity onPress={onGridButtonPress} className="items-center justify-center w-15 h-15">
+          <Icon name="grid-3x3" color={theme.colors.foreground} size={32} />
+        </TouchableOpacity>
+      </GlassViewT>
+    )
+  }
 
   if (appsCount === 0) {
     return (
@@ -179,16 +193,15 @@ export default function AppSwitcherButton({swipeProgress, onGridButtonPress}: Ap
         {renderBackground()}
         <GestureDetector gesture={composedGesture}>
           <View className="flex-1" style={{paddingBottom: bottomPadding}}>
-            <View className="bg-primary-foreground flex-1 py-1.5 pl-3 min-h-15 rounded-2xl flex-row justify-between items-center">
+            <GlassViewT
+              className={`${bgClass} flex-1 py-1.5 pl-3 min-h-15 rounded-2xl flex-row justify-between items-center`}>
               <View className="flex-row items-center justify-center flex-1">
                 <Text className="text-muted-foreground text-md" tx="home:appletPlaceholder2" />
               </View>
-            </View>
+            </GlassViewT>
           </View>
         </GestureDetector>
-        <View className="bg-primary-foreground items-center p-2 rounded-2xl h-15" style={{marginBottom: bottomPadding}}>
-          <AllAppsGridButton onPress={onGridButtonPress} />
-        </View>
+        {renderGridButton()}
       </View>
     )
   }
@@ -201,7 +214,8 @@ export default function AppSwitcherButton({swipeProgress, onGridButtonPress}: Ap
       {renderBackground()}
       <GestureDetector gesture={composedGesture}>
         <View className="flex-1" style={{paddingBottom: bottomPadding}}>
-          <View className="bg-primary-foreground flex-1 py-1.5 pl-3 pr-2 rounded-2xl flex-row justify-between items-center min-h-15">
+          <GlassViewT
+            className={`${bgClass} flex-1 py-1.5 pl-3 pr-2 rounded-2xl flex-row justify-between items-center min-h-15`}>
             <Pressable style={({pressed}) => [{opacity: pressed ? 0.7 : 1}]} className="flex-1 flex-row">
               <View className="flex-row flex-1">
                 <View className="flex-col gap-1 flex-1">
@@ -232,12 +246,10 @@ export default function AppSwitcherButton({swipeProgress, onGridButtonPress}: Ap
                 </View>
               </View>
             </Pressable>
-          </View>
+          </GlassViewT>
         </View>
       </GestureDetector>
-      <View className="bg-primary-foreground items-center p-2 rounded-2xl h-15" style={{marginBottom: bottomPadding}}>
-        <AllAppsGridButton onPress={onGridButtonPress} />
-      </View>
+      {renderGridButton()}
     </View>
   )
 }

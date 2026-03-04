@@ -150,35 +150,35 @@ export const AllProviders = withWrappers(
     const animation = "simple_push"
 
     // if (Platform.OS === "ios") {
-    return (
-      <>
-        {props.children}
-        <Stack
-          screenOptions={{
-            headerShown: false,
-            gestureEnabled: !preventBack,
-            gestureDirection: "horizontal",
-            animation: animation,
-          }}
-        />
-      </>
-    )
-    // }
-
     // return (
     //   <>
     //     {props.children}
-    //     <JsStack
+    //     <Stack
     //       screenOptions={{
     //         headerShown: false,
-    //         ...woltScreenOptions,
     //         gestureEnabled: !preventBack,
     //         gestureDirection: "horizontal",
-    //         cardStyleInterpolator: getAnimation(animation),
+    //         animation: animation,
     //       }}
     //     />
     //   </>
     // )
+    // }
+
+    return (
+      <>
+        {props.children}
+        <JsStack
+          screenOptions={{
+            headerShown: false,
+            ...woltScreenOptions,
+            gestureEnabled: !preventBack,
+            gestureDirection: "horizontal",
+            cardStyleInterpolator: getAnimation(animation),
+          }}
+        />
+      </>
+    )
   },
 )
 

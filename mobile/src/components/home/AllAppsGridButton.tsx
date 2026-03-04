@@ -12,19 +12,6 @@ const GRID_COLUMNS = 4
 
 export default function AllAppsGridButton({onPress}: {onPress: () => void}) {
   const {theme} = useAppTheme()
-  const bottomSheetRef = useRef<BottomSheetModal>(null)
-  const [searchQuery, setSearchQuery] = useState("")
-
-  const snapPoints = useMemo(() => ["90%"], [])
-
-  const handleOpenSheet = useCallback(() => {
-    bottomSheetRef.current?.present()
-  }, [])
-
-  const renderBackdrop = useCallback(
-    (props: any) => <BottomSheetBackdrop {...props} disappearsOnIndex={-1} appearsOnIndex={0} pressBehavior="close" />,
-    [],
-  )
 
   return (
     <>

@@ -1,12 +1,16 @@
 import {createStackNavigator, StackNavigationOptions, TransitionPresets} from "@react-navigation/stack"
+import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import {withLayoutContext} from "expo-router"
 import {Animated, Easing, Platform} from "react-native"
 import {StackAnimationTypes} from "react-native-screens"
 
 const {Navigator} = createStackNavigator()
+const {Navigator: NativeStackNavigator} = createNativeStackNavigator()
 
 // @ts-ignore
 export const JsStack = withLayoutContext<StackNavigationOptions, typeof Navigator>(Navigator)
+// @ts-ignore
+export const NativeJsStack = withLayoutContext<StackNavigationOptions, typeof NativeStackNavigator>(NativeStackNavigator)
 
 // Constants for the transition effects
 const INITIAL_SCALE = 0.1

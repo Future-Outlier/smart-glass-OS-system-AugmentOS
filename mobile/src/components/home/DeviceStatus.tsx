@@ -2,6 +2,7 @@ import {DeviceTypes, getModelCapabilities} from "@/../../cloud/packages/types/sr
 import CoreModule, {GlassesNotReadyEvent} from "core"
 import {useState, useEffect} from "react"
 import {ActivityIndicator, Image, ImageStyle, Linking, TextStyle, TouchableOpacity, View, ViewStyle} from "react-native"
+import {GlassView} from "expo-glass-effect"
 
 import {BatteryStatus} from "@/components/glasses/info/BatteryStatus"
 import {Button, Icon, Text} from "@/components/ignite"
@@ -27,6 +28,7 @@ import {
 
 import MicIcon from "assets/icons/component/MicIcon"
 import {useCoreStore} from "@/stores/core"
+import {withUniwind} from "uniwind"
 
 const getBatteryIcon = (batteryLevel: number): string => {
   if (batteryLevel >= 75) return "battery-3"
@@ -218,11 +220,12 @@ export const DeviceStatus = ({style}: {style?: ViewStyle}) => {
     )
   }
 
+  // const GlassViewT = withUniwind(GlassView)
+  const GlassViewT = View
+
   return (
-    <TouchableOpacity
-      className="bg-primary-foreground px-6 py-0 justify-center flex rounded-2xl"
-      onPress={() => push("/miniapps/settings/glasses")}>
-      <View className="justify-center items-center flex-row max-h-20">
+    <TouchableOpacity onPress={() => push("/miniapps/settings/glasses")}>
+      <GlassViewT className="bg-primary-foreground px-6 py-0 justify-center flex rounded-2xl flex-row max-h-20">
         <View className="flex-1 self-start">
           <Image source={getCurrentGlassesImage()} className="w-full h-full max-w-32" style={{resizeMode: "contain"}} />
         </View>
@@ -254,64 +257,7 @@ export const DeviceStatus = ({style}: {style?: ViewStyle}) => {
           </View>
           <Text className="font-semibold text-secondary-foreground text-end self-end" text={defaultWearable} />
         </View>
-      </View>
-
-      {/* Expanded Content */}
-      {false && (
-        <View className="flex-1 gap-3">
-          {/* Brightness Settings */}
-          {features?.display?.adjustBrightness && glassesConnected && (
-            <BrightnessSetting
-              icon={<Icon name="brightness-half" size={24} color={theme.colors.secondary_foreground} />}
-              label={translate("deviceSettings:autoBrightness")}
-              autoBrightnessValue={autoBrightness}
-              brightnessValue={brightness}
-              onAutoBrightnessChange={setAutoBrightness}
-              onBrightnessChange={() => {}}
-              onBrightnessSet={setBrightness}
-              style={{backgroundColor: theme.colors.background}}
-            />
-          )}
-
-          <BatteryStatus compact={true} />
-
-          <View style={{flexDirection: "row", justifyContent: "space-between", gap: theme.spacing.s2}}>
-            {/* Glasses Mirror - only show for devices with display */}
-            {features?.display && (
-              <Button
-                flex
-                tx="home:glassesMirror"
-                preset="alternate"
-                onPress={() => setShowSimulatedGlasses(!showSimulatedGlasses)}
-              />
-            )}
-            {/* WiFi Status - show for devices with WiFi but no display */}
-            {features?.hasWifi && !features?.display && (
-              <StatusCard
-                style={{
-                  flex: 1,
-                  backgroundColor: theme.colors.background,
-                  paddingHorizontal: theme.spacing.s4,
-                }}
-                label={translate("wifi:wifi")}
-                onPress={() => push("/wifi/scan")}
-                iconEnd={
-                  <View className="flex-row items-center gap-1">
-                    <Icon name={wifiConnected ? "wifi" : "wifi-off"} size={16} color={theme.colors.text} />
-                    <Text className="text-sm font-semibold text-secondary-foreground" numberOfLines={1}>
-                      {wifiConnected ? wifiSsid || "Connected" : "Disconnected"}
-                    </Text>
-                  </View>
-                }
-              />
-            )}
-            <Button compactIcon preset="alternate" onPress={() => push("/miniapps/settings/glasses")}>
-              <Icon name="settings" size={24} color={theme.colors.foreground} />
-            </Button>
-          </View>
-          <Spacer height={theme.spacing.s3} />
-        </View>
-      )}
+      </GlassViewT>
     </TouchableOpacity>
   )
 }
