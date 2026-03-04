@@ -30,8 +30,7 @@
   "homepage": "https://github.com/fossephate/crust#readme",
   "dependencies": {},
   "devDependencies": {
-    "@types/react": "~19.1.0",
-    "expo-module-scripts": "^5.0.8"
+    "expo-module-scripts": "^55.0.2"
   },
   "peerDependencies": {
     "expo": "*",
