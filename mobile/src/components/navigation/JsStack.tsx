@@ -78,7 +78,7 @@ export const simplePush = ({current, next, layouts}: any) => {
     next
       ? next.progress.interpolate({
           inputRange: [0, 1],
-          outputRange: [0, -width * 0.3],
+          outputRange: [0, -width],
         })
       : 0,
   )

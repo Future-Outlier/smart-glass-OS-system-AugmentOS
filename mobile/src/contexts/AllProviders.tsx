@@ -22,6 +22,7 @@ import {ModalProvider} from "@/utils/AlertUtils"
 import {KonamiCodeProvider} from "@/utils/dev/konami"
 import ConnectionOverlayProvider from "@/contexts/ConnectionOverlayContext"
 import { SaferAreaProvider, useSaferAreaInsets } from "@/contexts/SaferAreaContext"
+import { getAnimation, JsStack, woltScreenOptions } from "@/components/navigation/JsStack"
 // JsStack imports commented out - were used for Android-specific navigation (currently disabled)
 // import {getAnimation, JsStack, woltScreenOptions} from "@/components/navigation/JsStack"
 
@@ -144,38 +145,40 @@ export const AllProviders = withWrappers(
   },
   ConnectionOverlayProvider,
   (props) => {
-    const {preventBack, animation} = useNavigationHistory()
+    // const {preventBack, animation} = useNavigationHistory()
+    const preventBack = false
+    const animation = "simple_push"
 
     // if (Platform.OS === "ios") {
-    return (
-      <>
-        {props.children}
-        <Stack
-          screenOptions={{
-            headerShown: false,
-            gestureEnabled: !preventBack,
-            gestureDirection: "horizontal",
-            animation: animation,
-          }}
-        />
-      </>
-    )
-    // }
-
     // return (
     //   <>
     //     {props.children}
-    //     <JsStack
+    //     <Stack
     //       screenOptions={{
     //         headerShown: false,
-    //         ...woltScreenOptions,
     //         gestureEnabled: !preventBack,
     //         gestureDirection: "horizontal",
-    //         cardStyleInterpolator: getAnimation(animation),
+    //         animation: animation,
     //       }}
     //     />
     //   </>
     // )
+    // }
+
+    return (
+      <>
+        {props.children}
+        <JsStack
+          screenOptions={{
+            headerShown: false,
+            ...woltScreenOptions,
+            gestureEnabled: !preventBack,
+            gestureDirection: "horizontal",
+            cardStyleInterpolator: getAnimation(animation),
+          }}
+        />
+      </>
+    )
   },
 )
 
