@@ -89,8 +89,8 @@ export function RouteButton({
   const labelColor = disabled
     ? theme.colors.textDim
     : isDestructive
-    ? theme.colors.destructive
-    : theme.colors.secondary_foreground
+      ? theme.colors.destructive
+      : theme.colors.secondary_foreground
 
   return (
     <View style={[themed($settingsGroup), {paddingVertical: 0}, disabled && {opacity: 0.5}, style]}>

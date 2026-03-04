@@ -13,7 +13,7 @@ import {useSettingsStore, SETTINGS} from "@/stores/settings"
 import {showAlert} from "@/utils/AlertUtils"
 import restComms from "@/services/RestComms"
 import {checkFeaturePermissions, PermissionFeatures} from "@/utils/PermissionsUtils"
-import { throttle } from "@/utils/timers"
+import {throttle} from "@/utils/timers"
 
 class SocketComms {
   private static instance: SocketComms | null = null

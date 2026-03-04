@@ -2,7 +2,7 @@ import {ScrollView, Image, View} from "react-native"
 
 import {ConnectDeviceButton} from "@/components/glasses/ConnectDeviceButton"
 import {NotConnectedInfo} from "@/components/glasses/info/NotConnectedInfo"
-import {Header, Screen} from "@/components/ignite"
+import {Header, Screen, Icon} from "@/components/ignite"
 import {Spacer} from "@/components/ui/Spacer"
 import {useNavigationHistory} from "@/contexts/NavigationHistoryContext"
 import {useAppTheme} from "@/contexts/ThemeContext"
@@ -20,7 +20,6 @@ import OtaProgressSection from "@/components/glasses/OtaProgressSection"
 import {BatteryStatus} from "@/components/glasses/info/BatteryStatus"
 import {EmptyState} from "@/components/glasses/info/EmptyState"
 import {ButtonSettings} from "@/components/glasses/settings/ButtonSettings"
-import {Icon} from "@/components/ignite"
 import BrightnessSetting from "@/components/settings/BrightnessSetting"
 import {useApplets, useAppletStatusStore} from "@/stores/applets"
 import showAlert from "@/utils/AlertUtils"
@@ -98,7 +97,9 @@ function DeviceSettings() {
 
   return (
     <View className="gap-6">
-      {superMode && <RouteButton label={translate("settings:layoutSettings")} onPress={() => push("/miniapps/settings/layout")} />}
+      {superMode && (
+        <RouteButton label={translate("settings:layoutSettings")} onPress={() => push("/miniapps/settings/layout")} />
+      )}
 
       {/* Screen settings for binocular glasses */}
       <Group

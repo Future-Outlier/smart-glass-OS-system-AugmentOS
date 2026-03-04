@@ -1,4 +1,4 @@
-import { getBridge } from './bridge'
+import {getBridge} from "./bridge"
 import type {
   TranscriptionOptions,
   AudioOptions,
@@ -7,7 +7,7 @@ import type {
   TranscriptionPayload,
   AudioPayload,
   MovementPayload,
-} from './types'
+} from "./types"
 
 /**
  * Events module for subscribing to MentraOS events
@@ -18,20 +18,17 @@ export class Events {
    * @param options - Transcription options (online/local, fallback)
    * @param handler - Callback function to handle transcription text
    */
-  requestTranscriptions(
-    options: TranscriptionOptions,
-    handler: SubscriptionHandler<string>
-  ): void {
+  requestTranscriptions(options: TranscriptionOptions, handler: SubscriptionHandler<string>): void {
     const bridge = getBridge()
 
     // Subscribe to transcription events
-    bridge.subscribe('transcription', (payload: TranscriptionPayload) => {
+    bridge.subscribe("transcription", (payload: TranscriptionPayload) => {
       handler(payload.message)
     })
 
     // Send subscription request to native
     bridge.send({
-      type: 'sub_transcription',
+      type: "sub_transcription",
       payload: options,
     })
   }
@@ -41,18 +38,15 @@ export class Events {
    * @param options - Audio options (sample rate, channels)
    * @param handler - Callback function to handle audio data
    */
-  requestAudio(
-    options: AudioOptions,
-    handler: SubscriptionHandler<AudioPayload>
-  ): void {
+  requestAudio(options: AudioOptions, handler: SubscriptionHandler<AudioPayload>): void {
     const bridge = getBridge()
 
     // Subscribe to audio events
-    bridge.subscribe('audio', handler)
+    bridge.subscribe("audio", handler)
 
     // Send subscription request to native
     bridge.send({
-      type: 'sub_audio',
+      type: "sub_audio",
       payload: options,
     })
   }
@@ -62,18 +56,15 @@ export class Events {
    * @param options - Movement options (frequency)
    * @param handler - Callback function to handle movement data
    */
-  requestMovement(
-    options: MovementOptions,
-    handler: SubscriptionHandler<MovementPayload>
-  ): void {
+  requestMovement(options: MovementOptions, handler: SubscriptionHandler<MovementPayload>): void {
     const bridge = getBridge()
 
     // Subscribe to movement events
-    bridge.subscribe('movement', handler)
+    bridge.subscribe("movement", handler)
 
     // Send subscription request to native
     bridge.send({
-      type: 'sub_movement',
+      type: "sub_movement",
       payload: options,
     })
   }
@@ -83,9 +74,9 @@ export class Events {
    */
   stopTranscriptions(): void {
     const bridge = getBridge()
-    bridge.unsubscribe('transcription')
+    bridge.unsubscribe("transcription")
     bridge.send({
-      type: 'unsub_transcription',
+      type: "unsub_transcription",
     })
   }
 
@@ -94,9 +85,9 @@ export class Events {
    */
   stopAudio(): void {
     const bridge = getBridge()
-    bridge.unsubscribe('audio')
+    bridge.unsubscribe("audio")
     bridge.send({
-      type: 'unsub_audio',
+      type: "unsub_audio",
     })
   }
 
@@ -105,9 +96,9 @@ export class Events {
    */
   stopMovement(): void {
     const bridge = getBridge()
-    bridge.unsubscribe('movement')
+    bridge.unsubscribe("movement")
     bridge.send({
-      type: 'unsub_movement',
+      type: "unsub_movement",
     })
   }
 }

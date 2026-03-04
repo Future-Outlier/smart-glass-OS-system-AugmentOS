@@ -5,6 +5,7 @@ import {StackAnimationTypes} from "react-native-screens"
 
 const {Navigator} = createStackNavigator()
 
+// @ts-ignore
 export const JsStack = withLayoutContext<StackNavigationOptions, typeof Navigator>(Navigator)
 
 // Constants for the transition effects
@@ -128,17 +129,21 @@ export const woltScreenOptions: StackNavigationOptions = {
   // cardStyleInterpolator: simplePush,
   transitionSpec: {
     open: {
-      animation: "timing",
+      animation: "spring",
       config: {
-        duration: 200,
-        easing: Easing.out(Easing.bounce),
+        overshootClamping: true,
+        stiffness: 80,
+        // duration: 1000,
+        // easing: Easing.out(Easing.linear),
       },
     },
     close: {
-      animation: "timing",
+      animation: "spring",
       config: {
-        duration: 200,
-        easing: Easing.in(Easing.cubic),
+        overshootClamping: true,
+        stiffness: 80,
+        // duration: 1000,
+        // easing: Easing.in(Easing.linear),
       },
     },
   },

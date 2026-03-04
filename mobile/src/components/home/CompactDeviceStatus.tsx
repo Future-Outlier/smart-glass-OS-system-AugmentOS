@@ -232,7 +232,11 @@ export const CompactDeviceStatus = ({style}: {style?: ViewStyle}) => {
         <View style={themed($iconRow)}>
           {!isExpanded && batteryLevel !== -1 && (
             <View style={{flexDirection: "row", alignItems: "center", gap: theme.spacing.s1}}>
-              <Icon name={charging ? "battery-charging" : getBatteryIcon(batteryLevel)} size={18} color={theme.colors.foreground} />
+              <Icon
+                name={charging ? "battery-charging" : getBatteryIcon(batteryLevel)}
+                size={18}
+                color={theme.colors.foreground}
+              />
               <Text style={themed($iconText)}>{batteryLevel}%</Text>
             </View>
           )}

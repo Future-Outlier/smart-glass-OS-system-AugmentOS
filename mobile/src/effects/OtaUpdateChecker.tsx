@@ -7,7 +7,7 @@ import {SETTINGS, useSetting} from "@/stores/settings"
 import showAlert from "@/utils/AlertUtils"
 import {translate} from "@/i18n/translate"
 import {usePathname} from "expo-router"
-import { BackgroundTimer } from "@/utils/timers"
+import {BackgroundTimer} from "@/utils/timers"
 
 export interface VersionInfo {
   versionCode: number

@@ -207,7 +207,10 @@ const getOfflineApplets = async (): Promise<ClientAppletInterface[]> => {
       loading: false,
       healthy: true,
       hidden: false,
-      hardwareRequirements: [{type: HardwareType.CAMERA, level: HardwareRequirementLevel.REQUIRED}],
+      hardwareRequirements: [
+        {type: HardwareType.CAMERA, level: HardwareRequirementLevel.REQUIRED},
+        {type: HardwareType.EXIST, level: HardwareRequirementLevel.REQUIRED},
+      ],
       onStart: (): AsyncResult<void, Error> => {
         return Res.try_async(async () => {
           await storage.save(`${cameraPackageName}_running`, true)
@@ -241,7 +244,10 @@ const getOfflineApplets = async (): Promise<ClientAppletInterface[]> => {
       running: false,
       loading: false,
       local: false,
-      hardwareRequirements: [{type: HardwareType.DISPLAY, level: HardwareRequirementLevel.REQUIRED}],
+      hardwareRequirements: [
+        {type: HardwareType.DISPLAY, level: HardwareRequirementLevel.REQUIRED},
+        {type: HardwareType.EXIST, level: HardwareRequirementLevel.REQUIRED},
+      ],
       onStart: (): AsyncResult<void, Error> => {
         return Res.try_async(async () => {
           const modelAvailable = await STTModelManager.isModelAvailable()
@@ -288,7 +294,10 @@ const getOfflineApplets = async (): Promise<ClientAppletInterface[]> => {
       permissions: [],
       offlineRoute: "/asg/gallery",
       webviewUrl: "",
-      hardwareRequirements: [{type: HardwareType.CAMERA, level: HardwareRequirementLevel.REQUIRED}],
+      hardwareRequirements: [
+        {type: HardwareType.CAMERA, level: HardwareRequirementLevel.REQUIRED},
+        {type: HardwareType.EXIST, level: HardwareRequirementLevel.REQUIRED},
+      ],
       onStart: () => saveLocalAppRunningState(galleryPackageName, true),
       onStop: () => saveLocalAppRunningState(galleryPackageName, false),
     },
@@ -355,7 +364,10 @@ const getOfflineApplets = async (): Promise<ClientAppletInterface[]> => {
       offline: true,
       running: false,
       loading: false,
-      hardwareRequirements: [{type: HardwareType.DISPLAY, level: HardwareRequirementLevel.REQUIRED}],
+      hardwareRequirements: [
+        {type: HardwareType.DISPLAY, level: HardwareRequirementLevel.REQUIRED},
+        {type: HardwareType.EXIST, level: HardwareRequirementLevel.REQUIRED},
+      ],
       type: "background",
       logoUrl: require("@assets/applet-icons/mirror.png"),
       local: false,
@@ -515,6 +527,10 @@ export const useAppletStatusStore = create<AppStatusState>((set, get) => ({
         offlineRoute: "",
         local: false,
         hidden: false,
+        hardwareRequirements: [
+          ...app.hardwareRequirements,
+          {type: HardwareType.EXIST, level: HardwareRequirementLevel.REQUIRED},
+        ],
       }))
     }
 
@@ -565,7 +581,6 @@ export const useAppletStatusStore = create<AppStatusState>((set, get) => ({
   },
 
   startApplet: async (applet: ClientAppletInterface) => {
-    let allApps = [...get().apps]
     const packageName = applet.packageName
 
     if (!applet) {
@@ -579,8 +594,8 @@ export const useAppletStatusStore = create<AppStatusState>((set, get) => ({
       return
     }
 
-    console.log(`APPLETS: Starting applet ${packageName}`, applet.compatibility)
-    console.log(`APPLETS: All apps: ${applet}`)
+    // console.log(`APPLETS: Starting applet ${packageName}`, applet.compatibility)
+    // console.log(`APPLETS: All apps: ${applet}`)
 
     // show incompatible alert if the applet is incompatible:
     if (!applet.compatibility?.isCompatible) {

@@ -1,9 +1,4 @@
-import type {
-  IncomingMessage,
-  OutgoingMessage,
-  SubscriptionHandler,
-  SubscriptionType,
-} from './types'
+import type {IncomingMessage, OutgoingMessage, SubscriptionHandler, SubscriptionType} from "./types"
 
 /**
  * Extended Window interface for React Native WebView
@@ -25,19 +20,19 @@ export class Bridge {
 
   constructor() {
     this.subscriptions = new Map([
-      ['transcription', null],
-      ['audio', null],
-      ['movement', null],
+      ["transcription", null],
+      ["audio", null],
+      ["movement", null],
     ])
 
     // Set up global message receiver
-    if (typeof window !== 'undefined') {
+    if (typeof window !== "undefined") {
       window.receiveNativeMessage = (messageStr: string) => {
         try {
           const message = JSON.parse(messageStr) as IncomingMessage
           this.handleNativeMessage(message)
         } catch (error) {
-          console.error('Error parsing native message:', error)
+          console.error("Error parsing native message:", error)
         }
       }
     }
@@ -57,8 +52,8 @@ export class Bridge {
    * Send message to native
    */
   send(message: OutgoingMessage): void {
-    if (typeof window === 'undefined' || !window.ReactNativeWebView) {
-      console.error('ReactNativeWebView not available')
+    if (typeof window === "undefined" || !window.ReactNativeWebView) {
+      console.error("ReactNativeWebView not available")
       return
     }
     window.ReactNativeWebView.postMessage(JSON.stringify(message))

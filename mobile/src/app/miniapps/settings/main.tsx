@@ -26,7 +26,6 @@ export default function AccountPage() {
       <MiniAppDualButtonHeader packageName="com.mentra.settings" viewShotRef={viewShotRef} />
 
       <ScrollView className="pt-8 px-6" contentInsetAdjustmentBehavior="automatic">
-
         <View style={{flex: 1, gap: theme.spacing.s6}}>
           <Group title={translate("account:accountSettings")}>
             <RouteButton

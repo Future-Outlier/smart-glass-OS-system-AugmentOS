@@ -43,7 +43,6 @@ export const DeviceStatus = ({style}: {style?: ViewStyle}) => {
   const [autoBrightness, setAutoBrightness] = useSetting(SETTINGS.auto_brightness.key)
   const [brightness, setBrightness] = useSetting(SETTINGS.brightness.key)
   const [showSimulatedGlasses, setShowSimulatedGlasses] = useState(false)
-  const [isExpanded, setIsExpanded] = useState(false)
   const glassesConnected = useGlassesStore((state) => state.connected)
   const glassesFullyBooted = useGlassesStore((state) => state.fullyBooted)
   const glassesStyle = useGlassesStore((state) => state.style)
@@ -148,7 +147,9 @@ export const DeviceStatus = ({style}: {style?: ViewStyle}) => {
 
   if (!glassesConnected || !glassesFullyBooted || isSearching) {
     return (
-      <TouchableOpacity style={[themed($disconnectedContainer), style]} onPress={() => push("/miniapps/settings/glasses")}>
+      <TouchableOpacity
+        style={[themed($disconnectedContainer), style]}
+        onPress={() => push("/miniapps/settings/glasses")}>
         <View className="justify-between items-center flex-row">
           <Text className="font-semibold text-secondary-foreground text-lg" text={defaultWearable} />
           <Icon name="bluetooth-off" size={18} color={theme.colors.foreground} />
@@ -230,7 +231,11 @@ export const DeviceStatus = ({style}: {style?: ViewStyle}) => {
           <View className="flex-row items-center gap-3">
             {batteryLevel !== -1 && (
               <View className="flex-row items-center gap-1">
-                <Icon name={charging ? "battery-charging" : getBatteryIcon(batteryLevel) as any} size={18} color={theme.colors.foreground} />
+                <Icon
+                  name={charging ? "battery-charging" : (getBatteryIcon(batteryLevel) as any)}
+                  size={18}
+                  color={theme.colors.foreground}
+                />
                 <Text className="text-secondary-foreground text-sm" text={`${batteryLevel}%`} />
               </View>
             )}
@@ -311,60 +316,10 @@ export const DeviceStatus = ({style}: {style?: ViewStyle}) => {
   )
 }
 
-const $container: ThemedStyle<ViewStyle> = ({spacing, colors}) => ({
-  backgroundColor: colors.primary_foreground,
-  padding: spacing.s6,
-})
-
-const $imageContainer: ThemedStyle<ViewStyle> = ({spacing}) => ({
-  flex: 2,
-  alignItems: "center",
-  justifyContent: "center",
-  alignSelf: "stretch",
-  paddingHorizontal: spacing.s4,
-})
-
 const $glassesImage: ThemedStyle<ImageStyle> = () => ({
   maxWidth: 180,
   height: 90,
   resizeMode: "contain",
-})
-
-const $glassesImageExpanded: ThemedStyle<ImageStyle> = () => ({
-  maxWidth: 200,
-  height: 100,
-  resizeMode: "contain",
-})
-
-const $headerText: ThemedStyle<TextStyle> = ({colors}) => ({
-  color: colors.secondary_foreground,
-  fontSize: 20,
-  fontWeight: 600,
-})
-
-const $iconRow: ThemedStyle<ViewStyle> = ({spacing}) => ({
-  flexDirection: "row",
-  alignItems: "center",
-  gap: spacing.s3,
-})
-
-const $iconText: ThemedStyle<TextStyle> = ({colors}) => ({
-  color: colors.secondary_foreground,
-  fontSize: 14,
-  fontWeight: 500,
-})
-
-const $sideBySideContainer: ThemedStyle<ViewStyle> = ({spacing}) => ({
-  flexDirection: "row",
-  justifyContent: "space-between",
-  paddingVertical: spacing.s6,
-  alignItems: "center",
-})
-
-const $expandButton: ThemedStyle<ViewStyle> = ({spacing}) => ({
-  alignItems: "center",
-  justifyContent: "center",
-  paddingTop: spacing.s4,
 })
 
 const $disconnectedContainer: ThemedStyle<ViewStyle> = ({spacing, colors}) => ({

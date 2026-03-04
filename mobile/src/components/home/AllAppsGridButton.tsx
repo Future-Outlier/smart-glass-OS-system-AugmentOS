@@ -4,11 +4,7 @@ import {TextInput, TouchableOpacity, View} from "react-native"
 import {Button, Icon, Text} from "@/components/ignite"
 import {ClientAppletInterface, DUMMY_APPLET, useApplets} from "@/stores/applets"
 import {useAppTheme} from "@/contexts/ThemeContext"
-import {
-  BottomSheetBackdrop,
-  BottomSheetModal,
-  BottomSheetScrollView,
-} from "@gorhom/bottom-sheet"
+import {BottomSheetBackdrop, BottomSheetModal, BottomSheetScrollView} from "@gorhom/bottom-sheet"
 import {AppsGrid} from "@/components/home/AppsGrid"
 import {translate} from "@/i18n"
 
@@ -29,7 +25,6 @@ export default function AllAppsGridButton({onPress}: {onPress: () => void}) {
     (props: any) => <BottomSheetBackdrop {...props} disappearsOnIndex={-1} appearsOnIndex={0} pressBehavior="close" />,
     [],
   )
-
 
   return (
     <>

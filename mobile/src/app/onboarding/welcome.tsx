@@ -100,12 +100,12 @@ export default function OnboardingWelcome() {
 
       <View style={themed($infoContainer)}>
         <Text style={themed($title)} tx="onboarding:welcome" className="font-semibold" />
-        <View className="h-4"/>
+        <View className="h-4" />
         <Text style={themed($subtitle)} tx="onboarding:doYouHaveGlasses" />
       </View>
-      <View className="h-12"/>
+      <View className="h-12" />
       <CardButton onPress={handleHasGlasses} tx="onboarding:haveGlasses" SvgComponent={HaveGlassesSvg} />
-      <View className="h-8"/>
+      <View className="h-8" />
       <CardButton onPress={handleNoGlasses} tx="onboarding:dontHaveGlasses" SvgComponent={DontHaveGlassesSvg} />
     </Screen>
   )

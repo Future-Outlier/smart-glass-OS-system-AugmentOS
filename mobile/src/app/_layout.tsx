@@ -17,8 +17,6 @@ import {AllProviders} from "@/contexts/AllProviders"
 import "@/global.css"
 import {logBuffer} from "@/utils/dev/logging"
 
-
-
 SentrySetup()
 logBuffer.startConsoleInterception()
 

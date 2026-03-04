@@ -327,19 +327,19 @@ export default function OtaProgressScreen() {
   )
 
   useEffect(() => {
-    if (!timeEstimationStartTimeRef.current) return;
-  
+    if (!timeEstimationStartTimeRef.current) return
+
     const interval = setInterval(() => {
-      const diff = Date.now() - timeEstimationStartTimeRef.current;
-      const totalSeconds = Math.floor(diff / 1000);
+      const diff = Date.now() - timeEstimationStartTimeRef.current
+      const totalSeconds = Math.floor(diff / 1000)
       // const h = String(Math.floor(totalSeconds / 3600)).padStart(2, "0");
-      const m = String(Math.floor((totalSeconds % 3600) / 60)).padStart(2, "0");
-      const s = String(totalSeconds % 60).padStart(2, "0");
-      setElapsedTime(`${m}:${s}`);
-    }, 1000);
-  
-    return () => clearInterval(interval);
-  }, [timeEstimationStartTimeRef.current]);
+      const m = String(Math.floor((totalSeconds % 3600) / 60)).padStart(2, "0")
+      const s = String(totalSeconds % 60).padStart(2, "0")
+      setElapsedTime(`${m}:${s}`)
+    }, 1000)
+
+    return () => clearInterval(interval)
+  }, [timeEstimationStartTimeRef.current])
 
   // Send OTA start command with retry logic
   const sendOtaStartCommand = useCallback(async () => {
@@ -1116,8 +1116,8 @@ export default function OtaProgressScreen() {
         ? `active (${simulatedProgress}%)`
         : `holding (${simulatedProgress}%)`
       : stallDetectionRef.current
-      ? "detecting stall..."
-      : "none"
+        ? "detecting stall..."
+        : "none"
 
     const info = `progressState: ${progressState}
 currentUpdate: ${currentUpdate || "null"}

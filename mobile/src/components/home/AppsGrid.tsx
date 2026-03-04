@@ -162,7 +162,7 @@ export function AppsGrid({showAllApps = false, onOpenApp, onAddToHome, searchQue
     let filteredApps = apps.filter((app) => {
       if (showAllApps) {
         // if (!app.compatibility?.isCompatible) {
-          // return false
+        // return false
         // }
         return true
       }
@@ -208,7 +208,7 @@ export function AppsGrid({showAllApps = false, onOpenApp, onAddToHome, searchQue
     // if (showAllApps) {
     //   emptySlots = 0
     // }
-    
+
     if (!appSwitcherUi) {
       for (let i = 0; i < emptySlots; i++) {
         filteredApps.push({...DUMMY_APPLET, packageName: `@empty${totalItems + i}`})
@@ -272,7 +272,7 @@ export function AppsGrid({showAllApps = false, onOpenApp, onAddToHome, searchQue
     } else {
       filteredApps.sort(sortAppsByPackageNamePriority)
     }
-    
+
     if (showAllApps) {
       filteredApps.sort(sortAppsByPackageNamePriority)
     }

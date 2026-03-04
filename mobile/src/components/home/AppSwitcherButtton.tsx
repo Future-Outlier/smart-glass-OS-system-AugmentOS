@@ -159,9 +159,7 @@ export default function AppSwitcherButton({swipeProgress, onGridButtonPress}: Ap
           // <View className="flex-1 h-full bg-[#324376]" />
         }>
         {Platform.OS === "android" && <View className="flex-1 h-full bg-background" />}
-        {Platform.OS === "ios" && (
-          <BlurView intensity={70} className="absolute inset-0" blurMethod="dimezisBlurView" />
-        )}
+        {Platform.OS === "ios" && <BlurView intensity={70} className="absolute inset-0" blurMethod="dimezisBlurView" />}
         {/* <BlurView intensity={30} className="absolute inset-0" blurMethod="dimezisBlurView" /> */}
         {/* <View className="flex-1 h-full bg-[#324376]" />
         <View className="flex-1 h-full bg-[#F5DD90]" />
@@ -175,7 +173,9 @@ export default function AppSwitcherButton({swipeProgress, onGridButtonPress}: Ap
 
   if (appsCount === 0) {
     return (
-      <View className="w-screen flex-row justify-between items-center gap-4 bottom-0 -ml-6 px-6 absolute" style={{paddingTop: paddingTop}}>
+      <View
+        className="w-screen flex-row justify-between items-center gap-4 bottom-0 -ml-6 px-6 absolute"
+        style={{paddingTop: paddingTop}}>
         {renderBackground()}
         <GestureDetector gesture={composedGesture}>
           <View className="flex-1" style={{paddingBottom: bottomPadding}}>
@@ -195,7 +195,9 @@ export default function AppSwitcherButton({swipeProgress, onGridButtonPress}: Ap
 
   // base 15 height
   return (
-    <View className="w-screen flex-row justify-between items-center gap-4 bottom-0 -ml-6 px-6 absolute" style={{paddingTop: paddingTop}}>
+    <View
+      className="w-screen flex-row justify-between items-center gap-4 bottom-0 -ml-6 px-6 absolute"
+      style={{paddingTop: paddingTop}}>
       {renderBackground()}
       <GestureDetector gesture={composedGesture}>
         <View className="flex-1" style={{paddingBottom: bottomPadding}}>
