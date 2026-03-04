@@ -435,6 +435,91 @@ class CoreModule : Module() {
             true
         }
 
+        // MARK: - Image Processing Commands
+
+        AsyncFunction("processGalleryImage") { inputPath: String, outputPath: String, options: Map<String, Any?> ->
+            try {
+                val inputFile = java.io.File(inputPath)
+                if (!inputFile.exists()) {
+                    throw IllegalArgumentException("Input file does not exist: $inputPath")
+                }
+
+                val lensCorrection = options["lensCorrection"] as? Boolean ?: true
+                val colorCorrection = options["colorCorrection"] as? Boolean ?: true
+
+                val processingTimeMs = com.mentra.core.utils.ImageProcessor.process(
+                    inputPath, outputPath, lensCorrection, colorCorrection, 95
+                )
+
+                if (processingTimeMs >= 0) {
+                    mapOf(
+                        "success" to true,
+                        "outputPath" to outputPath,
+                        "processingTimeMs" to processingTimeMs
+                    )
+                } else {
+                    mapOf("success" to false, "error" to "Processing failed")
+                }
+            } catch (e: Exception) {
+                android.util.Log.e("CoreModule", "processGalleryImage error: ${e.message}", e)
+                mapOf("success" to false, "error" to (e.message ?: "Unknown error"))
+            }
+        }
+
+        // MARK: - HDR Merge Commands
+
+        AsyncFunction("mergeHdrBrackets") { underPath: String, normalPath: String, overPath: String, outputPath: String ->
+            try {
+                val processingTimeMs = com.mentra.core.utils.ImageProcessor.mergeHdr(
+                    underPath, normalPath, overPath, outputPath, 95
+                )
+                if (processingTimeMs >= 0) {
+                    mapOf(
+                        "success" to true,
+                        "outputPath" to outputPath,
+                        "processingTimeMs" to processingTimeMs
+                    )
+                } else {
+                    mapOf("success" to false, "error" to "HDR merge failed")
+                }
+            } catch (e: Exception) {
+                android.util.Log.e("CoreModule", "mergeHdrBrackets error: ${e.message}", e)
+                mapOf("success" to false, "error" to (e.message ?: "Unknown error"))
+            }
+        }
+
+        // MARK: - Video Stabilization Commands
+
+        AsyncFunction("stabilizeVideo") { inputPath: String, imuPath: String, outputPath: String ->
+            try {
+                val inputFile = java.io.File(inputPath)
+                val imuFile = java.io.File(imuPath)
+                if (!inputFile.exists()) {
+                    throw IllegalArgumentException("Input video does not exist: $inputPath")
+                }
+                if (!imuFile.exists()) {
+                    throw IllegalArgumentException("IMU sidecar does not exist: $imuPath")
+                }
+
+                val processingTimeMs = com.mentra.core.utils.VideoStabilizer.stabilize(
+                    inputPath, imuPath, outputPath
+                )
+
+                if (processingTimeMs >= 0) {
+                    mapOf(
+                        "success" to true,
+                        "outputPath" to outputPath,
+                        "processingTimeMs" to processingTimeMs
+                    )
+                } else {
+                    mapOf("success" to false, "error" to "Stabilization failed")
+                }
+            } catch (e: Exception) {
+                android.util.Log.e("CoreModule", "stabilizeVideo error: ${e.message}", e)
+                mapOf("success" to false, "error" to (e.message ?: "Unknown error"))
+            }
+        }
+
         // MARK: - Media Library Commands
 
         AsyncFunction("saveToGalleryWithDate") { filePath: String, captureTimeMillis: Long? ->

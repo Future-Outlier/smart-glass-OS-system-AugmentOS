@@ -440,6 +440,8 @@ const en = {
     dashboardDescription: "Configure the contextual dashboard and HeadUp settings",
     cameraSettings: "Camera Settings",
     cameraSettingsDescription: "Configure photo and video resolution for button capture",
+    postProcessing: "Post Processing",
+    postProcessingSubtitle: "Improves photo and video quality. Sync may take longer.",
     positionSettings: "Display position",
     screenDescription: "Adjust depth and height of the display content.",
     glassesWifiSettings: "Wi-Fi Networks",

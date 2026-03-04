@@ -105,6 +105,44 @@ declare class CoreModule extends NativeModule<CoreModuleEvents> {
     }>
   >
 
+  // Image Processing Commands
+  processGalleryImage(
+    inputPath: string,
+    outputPath: string,
+    options: {
+      lensCorrection?: boolean
+      colorCorrection?: boolean
+    },
+  ): Promise<{
+    success: boolean
+    outputPath?: string
+    processingTimeMs?: number
+    error?: string
+  }>
+
+  mergeHdrBrackets(
+    underPath: string,
+    normalPath: string,
+    overPath: string,
+    outputPath: string,
+  ): Promise<{
+    success: boolean
+    outputPath?: string
+    processingTimeMs?: number
+    error?: string
+  }>
+
+  stabilizeVideo(
+    inputPath: string,
+    imuPath: string,
+    outputPath: string,
+  ): Promise<{
+    success: boolean
+    outputPath?: string
+    processingTimeMs?: number
+    error?: string
+  }>
+
   // Media Library Commands
   saveToGalleryWithDate(
     filePath: string,

@@ -46,12 +46,15 @@ export function PhotoImage({photo, style, showPlaceholder = true}: PhotoImagePro
       // No thumbnail available - return null to show video placeholder
       return null
     }
-    // For photos: prefer thumbnail_data (small base64 from sync) over full URL
-    // This avoids loading full-resolution photos as thumbnails during sync
+    // For photos: prefer thumbnail_data (small base64 from sync), then thumbnailPath
+    // (local file saved during sync), then full URL as last resort
     if (photo.thumbnail_data) {
       return photo.thumbnail_data.startsWith("data:")
         ? photo.thumbnail_data
         : `data:image/jpeg;base64,${photo.thumbnail_data}`
+    }
+    if (photo.thumbnailPath) {
+      return photo.thumbnailPath
     }
     return photo.url
   })()

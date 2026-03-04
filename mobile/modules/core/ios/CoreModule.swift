@@ -375,6 +375,86 @@ public class CoreModule: Module {
             return []
         }
 
+        // MARK: - Image Processing Commands
+
+        AsyncFunction("processGalleryImage") {
+            (inputPath: String, outputPath: String, options: [String: Any]) -> [String: Any] in
+            let lensCorrection = options["lensCorrection"] as? Bool ?? true
+            let colorCorrection = options["colorCorrection"] as? Bool ?? true
+
+            guard FileManager.default.fileExists(atPath: inputPath) else {
+                return ["success": false, "error": "Input file does not exist"]
+            }
+
+            let processingTimeMs = ImageProcessor.process(
+                inputPath: inputPath,
+                outputPath: outputPath,
+                lensCorrection: lensCorrection,
+                colorCorrection: colorCorrection
+            )
+
+            if processingTimeMs >= 0 {
+                return [
+                    "success": true,
+                    "outputPath": outputPath,
+                    "processingTimeMs": processingTimeMs,
+                ]
+            } else {
+                return ["success": false, "error": "Processing failed"]
+            }
+        }
+
+        // MARK: - HDR Merge Commands
+
+        AsyncFunction("mergeHdrBrackets") {
+            (underPath: String, normalPath: String, overPath: String, outputPath: String)
+                -> [String: Any] in
+            let processingTimeMs = ImageProcessor.mergeHdr(
+                underPath: underPath,
+                normalPath: normalPath,
+                overPath: overPath,
+                outputPath: outputPath
+            )
+            if processingTimeMs >= 0 {
+                return [
+                    "success": true,
+                    "outputPath": outputPath,
+                    "processingTimeMs": processingTimeMs,
+                ]
+            } else {
+                return ["success": false, "error": "HDR merge failed"]
+            }
+        }
+
+        // MARK: - Video Stabilization Commands
+
+        AsyncFunction("stabilizeVideo") {
+            (inputPath: String, imuPath: String, outputPath: String) -> [String: Any] in
+
+            guard FileManager.default.fileExists(atPath: inputPath) else {
+                return ["success": false, "error": "Input video does not exist"]
+            }
+            guard FileManager.default.fileExists(atPath: imuPath) else {
+                return ["success": false, "error": "IMU sidecar does not exist"]
+            }
+
+            let processingTimeMs = VideoStabilizer.stabilize(
+                inputPath: inputPath,
+                imuPath: imuPath,
+                outputPath: outputPath
+            )
+
+            if processingTimeMs >= 0 {
+                return [
+                    "success": true,
+                    "outputPath": outputPath,
+                    "processingTimeMs": processingTimeMs,
+                ]
+            } else {
+                return ["success": false, "error": "Stabilization failed"]
+            }
+        }
+
         // MARK: - Media Library Commands
 
         AsyncFunction("saveToGalleryWithDate") {

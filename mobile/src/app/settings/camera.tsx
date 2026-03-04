@@ -2,6 +2,7 @@ import {getModelCapabilities} from "@/../../cloud/packages/types/src"
 import {View, ScrollView, TouchableOpacity, ViewStyle, TextStyle} from "react-native"
 
 import {Icon, Text, Screen, Header} from "@/components/ignite"
+import ToggleSetting from "@/components/settings/ToggleSetting"
 import {useNavigationHistory} from "@/contexts/NavigationHistoryContext"
 import {useAppTheme} from "@/contexts/ThemeContext"
 import {translate} from "@/i18n"
@@ -43,6 +44,7 @@ export default function CameraSettingsScreen() {
   const [_ledEnabled, setLedEnabled] = useSetting(SETTINGS.button_camera_led.key)
   const [videoSettings, setVideoSettings] = useSetting(SETTINGS.button_video_settings.key)
   const [maxRecordingTime, setMaxRecordingTime] = useSetting(SETTINGS.button_max_recording_time.key)
+  const [postProcessing, setPostProcessing] = useSetting(SETTINGS.media_post_processing.key)
   const [defaultWearable] = useSetting(SETTINGS.default_wearable.key)
   const glassesConnected = useGlassesStore((state) => state.connected)
 
@@ -225,6 +227,15 @@ export default function CameraSettingsScreen() {
               </TouchableOpacity>
             )
           })}
+        </View>
+
+        <View style={themed($settingsGroup)}>
+          <ToggleSetting
+            label={translate("settings:postProcessing")}
+            subtitle={translate("settings:postProcessingSubtitle")}
+            value={postProcessing}
+            onValueChange={(v) => setPostProcessing(v)}
+          />
         </View>
       </ScrollView>
     </Screen>

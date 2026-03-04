@@ -364,6 +364,13 @@ export const SETTINGS: Record<string, Setting> = {
     saveOnServer: true,
     persist: true,
   },
+  media_post_processing: {
+    key: "media_post_processing",
+    defaultValue: () => true,
+    writable: true,
+    saveOnServer: true,
+    persist: true,
+  },
 
   // time zone settings
   time_zone: {

@@ -1,0 +1,452 @@
+package com.mentra.core.utils
+
+import android.graphics.Bitmap
+import android.graphics.Canvas
+import android.graphics.Matrix
+import android.graphics.Paint
+import android.media.Image
+import android.media.MediaCodec
+import android.media.MediaCodecInfo
+import android.media.MediaExtractor
+import android.media.MediaFormat
+import android.media.MediaMuxer
+import android.util.Log
+import org.json.JSONObject
+import java.io.File
+import java.nio.ByteBuffer
+import kotlin.math.abs
+import kotlin.math.max
+import kotlin.math.min
+
+/**
+ * Gyroscope-based video stabilizer.
+ * Uses IMU sidecar data (from ImuRecorder) to apply motion-compensated
+ * frame warping, correcting rotation jitter in videos.
+ *
+ * Algorithm: integrate gyro → cumulative rotation per axis →
+ * bidirectional EMA smooth → correction = smooth - actual →
+ * per-frame affine transform (rotation + translation).
+ */
+object VideoStabilizer {
+  private const val TAG = "VideoStabilizer"
+
+  // EMA smoothing factor: lower = more aggressive stabilization.
+  // 0.85 removes most hand/head jitter while preserving intentional pans.
+  private const val SMOOTH_FACTOR = 0.85
+
+  private const val CODEC_TIMEOUT_US = 10_000L
+
+  /**
+   * Stabilize a video using gyroscope data from an IMU sidecar file.
+   *
+   * @param inputPath  Path to the input MP4 video
+   * @param imuPath    Path to the IMU sidecar JSON file
+   * @param outputPath Path to write the stabilized MP4
+   * @return Processing time in milliseconds, or -1 on failure
+   */
+  @JvmStatic
+  fun stabilize(inputPath: String, imuPath: String, outputPath: String): Long {
+    val startTime = System.currentTimeMillis()
+
+    try {
+      // Parse IMU data
+      val imuSamples = parseImuData(imuPath)
+      if (imuSamples.isEmpty()) {
+        Log.w(TAG, "No IMU data available")
+        return -1
+      }
+      Log.d(TAG, "Loaded ${imuSamples.size} IMU samples")
+
+      val n = imuSamples.size
+
+      // Integrate gyro to get cumulative rotation (3 axes)
+      val cumRoll = DoubleArray(n)   // gx
+      val cumPitch = DoubleArray(n)  // gy
+      val cumYaw = DoubleArray(n)    // gz
+
+      for (i in 1 until n) {
+        var dt = (imuSamples[i][0] - imuSamples[i - 1][0]) / 1000.0
+        if (dt <= 0 || dt > 0.1) dt = 0.01
+
+        cumRoll[i] = cumRoll[i - 1] + imuSamples[i][4] * dt   // gx
+        cumPitch[i] = cumPitch[i - 1] + imuSamples[i][5] * dt  // gy
+        cumYaw[i] = cumYaw[i - 1] + imuSamples[i][6] * dt      // gz
+      }
+
+      // Smooth with bidirectional EMA
+      val smoothRoll = smoothEma(cumRoll)
+      val smoothPitch = smoothEma(cumPitch)
+      val smoothYaw = smoothEma(cumYaw)
+
+      // Correction = smooth - actual
+      val corrRoll = DoubleArray(n) { smoothRoll[it] - cumRoll[it] }
+      val corrPitch = DoubleArray(n) { smoothPitch[it] - cumPitch[it] }
+      val corrYaw = DoubleArray(n) { smoothYaw[it] - cumYaw[it] }
+
+      val imuDurationMs = imuSamples.last()[0]
+
+      // Setup video extractor
+      val videoExtractor = MediaExtractor().apply { setDataSource(inputPath) }
+      val videoTrackIdx = findTrack(videoExtractor, "video/")
+      if (videoTrackIdx < 0) {
+        Log.e(TAG, "No video track found")
+        videoExtractor.release()
+        return -1
+      }
+
+      videoExtractor.selectTrack(videoTrackIdx)
+      val videoFormat = videoExtractor.getTrackFormat(videoTrackIdx)
+      val width = videoFormat.getInteger(MediaFormat.KEY_WIDTH)
+      val height = videoFormat.getInteger(MediaFormat.KEY_HEIGHT)
+      val bitRate = if (videoFormat.containsKey(MediaFormat.KEY_BIT_RATE))
+        videoFormat.getInteger(MediaFormat.KEY_BIT_RATE)
+      else (width * height * 4.0).toInt()
+      val frameRate = if (videoFormat.containsKey(MediaFormat.KEY_FRAME_RATE))
+        videoFormat.getInteger(MediaFormat.KEY_FRAME_RATE)
+      else 30
+      val durationUs = if (videoFormat.containsKey(MediaFormat.KEY_DURATION))
+        videoFormat.getLong(MediaFormat.KEY_DURATION)
+      else 0L
+
+      Log.d(TAG, "Video ${width}x${height} fps=$frameRate duration=${durationUs / 1_000_000.0}s")
+
+      // Setup audio extractor
+      val audioExtractor = MediaExtractor().apply { setDataSource(inputPath) }
+      val audioTrackIdx = findTrack(audioExtractor, "audio/")
+
+      // Remove output if exists
+      File(outputPath).let { if (it.exists()) it.delete() }
+
+      // Setup muxer
+      val muxer = MediaMuxer(outputPath, MediaMuxer.OutputFormat.MUXER_OUTPUT_MPEG_4)
+
+      // Setup decoder
+      val videoMime = videoFormat.getString(MediaFormat.KEY_MIME)!!
+      val decoder = MediaCodec.createDecoderByType(videoMime).apply {
+        videoFormat.setInteger(
+          MediaFormat.KEY_COLOR_FORMAT,
+          MediaCodecInfo.CodecCapabilities.COLOR_FormatYUV420Flexible
+        )
+        configure(videoFormat, null, null, 0)
+        start()
+      }
+
+      // Setup encoder
+      val encFormat = MediaFormat.createVideoFormat(MediaFormat.MIMETYPE_VIDEO_AVC, width, height).apply {
+        setInteger(MediaFormat.KEY_COLOR_FORMAT, MediaCodecInfo.CodecCapabilities.COLOR_FormatYUV420Flexible)
+        setInteger(MediaFormat.KEY_BIT_RATE, bitRate)
+        setInteger(MediaFormat.KEY_FRAME_RATE, frameRate)
+        setInteger(MediaFormat.KEY_I_FRAME_INTERVAL, 1)
+      }
+      val encoder = MediaCodec.createEncoderByType(MediaFormat.MIMETYPE_VIDEO_AVC).apply {
+        configure(encFormat, null, null, MediaCodec.CONFIGURE_FLAG_ENCODE)
+        start()
+      }
+
+      var muxVideoTrack = -1
+      var muxAudioTrack = -1
+      var muxerStarted = false
+      var decoderDone = false
+      var encoderDone = false
+      var inputDone = false
+      var frameCount = 0
+
+      val decInfo = MediaCodec.BufferInfo()
+      val encInfo = MediaCodec.BufferInfo()
+      val paint = Paint(Paint.FILTER_BITMAP_FLAG or Paint.ANTI_ALIAS_FLAG)
+
+      while (!encoderDone) {
+        // Feed decoder
+        if (!inputDone) {
+          val inIdx = decoder.dequeueInputBuffer(CODEC_TIMEOUT_US)
+          if (inIdx >= 0) {
+            val inBuf = decoder.getInputBuffer(inIdx)!!
+            val sampleSize = videoExtractor.readSampleData(inBuf, 0)
+            if (sampleSize < 0) {
+              decoder.queueInputBuffer(inIdx, 0, 0, 0, MediaCodec.BUFFER_FLAG_END_OF_STREAM)
+              inputDone = true
+            } else {
+              val pts = videoExtractor.sampleTime
+              decoder.queueInputBuffer(inIdx, 0, sampleSize, pts, 0)
+              videoExtractor.advance()
+            }
+          }
+        }
+
+        // Drain decoder → transform → feed encoder
+        if (!decoderDone) {
+          val outIdx = decoder.dequeueOutputBuffer(decInfo, CODEC_TIMEOUT_US)
+          if (outIdx >= 0) {
+            if (decInfo.flags and MediaCodec.BUFFER_FLAG_END_OF_STREAM != 0) {
+              decoderDone = true
+              decoder.releaseOutputBuffer(outIdx, false)
+              // Signal encoder EOS
+              val encInIdx = encoder.dequeueInputBuffer(CODEC_TIMEOUT_US)
+              if (encInIdx >= 0) {
+                encoder.queueInputBuffer(encInIdx, 0, 0, 0, MediaCodec.BUFFER_FLAG_END_OF_STREAM)
+              }
+            } else {
+              val image = decoder.getOutputImage(outIdx)
+              if (image != null) {
+                val srcBitmap = yuvImageToBitmap(image, width, height)
+                image.close()
+                decoder.releaseOutputBuffer(outIdx, false)
+
+                // Find IMU correction for this frame
+                val frameTimeMs = decInfo.presentationTimeUs / 1000.0
+                val ratio = if (imuDurationMs > 0) frameTimeMs / imuDurationMs else 0.0
+                val imuIdx = max(0, min((ratio * (n - 1)).toInt(), n - 1))
+
+                val roll = corrRoll[imuIdx]
+                val pitch = corrPitch[imuIdx]
+                val yaw = corrYaw[imuIdx]
+
+                val outBitmap = if (abs(roll) < 0.001 && abs(pitch) < 0.001 && abs(yaw) < 0.001) {
+                  srcBitmap // pass through
+                } else {
+                  // Apply correction via Matrix transform
+                  val dst = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
+                  val canvas = Canvas(dst)
+                  val cx = width / 2f
+                  val cy = height / 2f
+
+                  val matrix = Matrix().apply {
+                    postTranslate(-cx, -cy)
+                    // Roll: Z-axis rotation
+                    postRotate(Math.toDegrees(-roll).toFloat())
+                    // Pitch: horizontal shift (small-angle approx)
+                    postTranslate((-pitch * cx).toFloat(), 0f)
+                    // Yaw: vertical shift (small-angle approx)
+                    postTranslate(0f, (yaw * cy).toFloat())
+                    postTranslate(cx, cy)
+                  }
+
+                  canvas.drawBitmap(srcBitmap, matrix, paint)
+                  srcBitmap.recycle()
+                  dst
+                }
+
+                feedBitmapToEncoder(encoder, outBitmap, decInfo.presentationTimeUs, width, height)
+                outBitmap.recycle()
+                frameCount++
+              } else {
+                decoder.releaseOutputBuffer(outIdx, false)
+              }
+            }
+          }
+        }
+
+        // Drain encoder output
+        val encOutIdx = encoder.dequeueOutputBuffer(encInfo, CODEC_TIMEOUT_US)
+        when {
+          encOutIdx == MediaCodec.INFO_OUTPUT_FORMAT_CHANGED -> {
+            if (!muxerStarted) {
+              muxVideoTrack = muxer.addTrack(encoder.outputFormat)
+              if (audioTrackIdx >= 0) {
+                audioExtractor.selectTrack(audioTrackIdx)
+                muxAudioTrack = muxer.addTrack(audioExtractor.getTrackFormat(audioTrackIdx))
+              }
+              muxer.start()
+              muxerStarted = true
+            }
+          }
+          encOutIdx >= 0 -> {
+            val encBuf = encoder.getOutputBuffer(encOutIdx)!!
+            if (encInfo.size > 0 && muxerStarted) {
+              encBuf.position(encInfo.offset)
+              encBuf.limit(encInfo.offset + encInfo.size)
+              muxer.writeSampleData(muxVideoTrack, encBuf, encInfo)
+            }
+            encoder.releaseOutputBuffer(encOutIdx, false)
+            if (encInfo.flags and MediaCodec.BUFFER_FLAG_END_OF_STREAM != 0) {
+              encoderDone = true
+            }
+          }
+        }
+      }
+
+      // Copy audio track
+      if (muxerStarted && muxAudioTrack >= 0) {
+        val audioBuf = ByteBuffer.allocate(1024 * 1024)
+        val audioInfo = MediaCodec.BufferInfo()
+        while (true) {
+          val size = audioExtractor.readSampleData(audioBuf, 0)
+          if (size < 0) break
+          audioInfo.offset = 0
+          audioInfo.size = size
+          audioInfo.presentationTimeUs = audioExtractor.sampleTime
+          audioInfo.flags = audioExtractor.sampleFlags
+          muxer.writeSampleData(muxAudioTrack, audioBuf, audioInfo)
+          audioExtractor.advance()
+        }
+      }
+
+      // Cleanup
+      decoder.stop(); decoder.release()
+      encoder.stop(); encoder.release()
+      videoExtractor.release()
+      audioExtractor.release()
+      if (muxerStarted) muxer.stop()
+      muxer.release()
+
+      val elapsed = System.currentTimeMillis() - startTime
+      Log.d(TAG, "Stabilization complete: $frameCount frames in ${elapsed}ms")
+      return elapsed
+
+    } catch (e: Exception) {
+      Log.e(TAG, "Video stabilization failed", e)
+      try { File(outputPath).delete() } catch (_: Exception) {}
+      return -1
+    }
+  }
+
+  // -- Private helpers --
+
+  /** Feed a Bitmap to the encoder by converting ARGB → YUV420. */
+  private fun feedBitmapToEncoder(
+    encoder: MediaCodec, bitmap: Bitmap, presentationTimeUs: Long, width: Int, height: Int
+  ) {
+    var inIdx = -1
+    while (inIdx < 0) {
+      inIdx = encoder.dequeueInputBuffer(CODEC_TIMEOUT_US)
+      if (inIdx < 0) drainEncoderSilently(encoder)
+    }
+
+    encoder.getInputImage(inIdx)?.let { image ->
+      bitmapToYuv420(bitmap, image)
+      image.close()
+    }
+
+    encoder.queueInputBuffer(inIdx, 0, width * height * 3 / 2, presentationTimeUs, 0)
+  }
+
+  /** Convert ARGB_8888 Bitmap to YUV420 Image planes. */
+  private fun bitmapToYuv420(bitmap: Bitmap, image: Image) {
+    val w = bitmap.width
+    val h = bitmap.height
+    val pixels = IntArray(w * h)
+    bitmap.getPixels(pixels, 0, w, 0, 0, w, h)
+
+    val yPlane = image.planes[0]
+    val uPlane = image.planes[1]
+    val vPlane = image.planes[2]
+    val yBuf = yPlane.buffer
+    val uBuf = uPlane.buffer
+    val vBuf = vPlane.buffer
+    val yRowStride = yPlane.rowStride
+    val uvRowStride = uPlane.rowStride
+    val uvPixelStride = uPlane.pixelStride
+
+    for (y in 0 until h) {
+      for (x in 0 until w) {
+        val argb = pixels[y * w + x]
+        val r = (argb shr 16) and 0xFF
+        val g = (argb shr 8) and 0xFF
+        val b = argb and 0xFF
+
+        // BT.601 RGB → YUV
+        val yVal = ((66 * r + 129 * g + 25 * b + 128) shr 8) + 16
+        yBuf.put(y * yRowStride + x, yVal.coerceIn(0, 255).toByte())
+
+        if (y % 2 == 0 && x % 2 == 0) {
+          val uVal = ((-38 * r - 74 * g + 112 * b + 128) shr 8) + 128
+          val vVal = ((112 * r - 94 * g - 18 * b + 128) shr 8) + 128
+          val uvIdx = (y / 2) * uvRowStride + (x / 2) * uvPixelStride
+          uBuf.put(uvIdx, uVal.coerceIn(0, 255).toByte())
+          vBuf.put(uvIdx, vVal.coerceIn(0, 255).toByte())
+        }
+      }
+    }
+  }
+
+  /** Drain encoder output without writing (used when waiting for input buffer). */
+  private fun drainEncoderSilently(encoder: MediaCodec) {
+    val info = MediaCodec.BufferInfo()
+    val idx = encoder.dequeueOutputBuffer(info, CODEC_TIMEOUT_US)
+    if (idx >= 0) encoder.releaseOutputBuffer(idx, false)
+  }
+
+  /** Convert a decoded YUV420 Image to ARGB_8888 Bitmap. */
+  private fun yuvImageToBitmap(image: Image, width: Int, height: Int): Bitmap {
+    val yPlane = image.planes[0]
+    val uPlane = image.planes[1]
+    val vPlane = image.planes[2]
+    val yBuf = yPlane.buffer
+    val uBuf = uPlane.buffer
+    val vBuf = vPlane.buffer
+    val yRowStride = yPlane.rowStride
+    val uvRowStride = uPlane.rowStride
+    val uvPixelStride = uPlane.pixelStride
+
+    val pixels = IntArray(width * height)
+
+    for (y in 0 until height) {
+      for (x in 0 until width) {
+        val yy = (yBuf.get(y * yRowStride + x).toInt() and 0xFF) - 16
+        val uvIdx = (y / 2) * uvRowStride + (x / 2) * uvPixelStride
+        val uu = (uBuf.get(uvIdx).toInt() and 0xFF) - 128
+        val vv = (vBuf.get(uvIdx).toInt() and 0xFF) - 128
+
+        // BT.601 YUV → RGB
+        val r = ((298 * yy + 409 * vv + 128) shr 8).coerceIn(0, 255)
+        val g = ((298 * yy - 100 * uu - 208 * vv + 128) shr 8).coerceIn(0, 255)
+        val b = ((298 * yy + 516 * uu + 128) shr 8).coerceIn(0, 255)
+
+        pixels[y * width + x] = (0xFF shl 24) or (r shl 16) or (g shl 8) or b
+      }
+    }
+
+    return Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888).apply {
+      setPixels(pixels, 0, width, 0, 0, width, height)
+    }
+  }
+
+  /** Find a track in a MediaExtractor by MIME type prefix. */
+  private fun findTrack(extractor: MediaExtractor, mimePrefix: String): Int {
+    for (i in 0 until extractor.trackCount) {
+      val mime = extractor.getTrackFormat(i).getString(MediaFormat.KEY_MIME)
+      if (mime?.startsWith(mimePrefix) == true) return i
+    }
+    return -1
+  }
+
+  /** Parse IMU sidecar JSON into list of [timeMs, ax, ay, az, gx, gy, gz]. */
+  private fun parseImuData(path: String): List<DoubleArray> {
+    return try {
+      val json = JSONObject(File(path).readText())
+      val samples = json.getJSONArray("samples")
+      (0 until samples.length()).mapNotNull { i ->
+        val s = samples.getJSONArray(i)
+        if (s.length() < 7) return@mapNotNull null
+        doubleArrayOf(
+          s.getDouble(0), // timeMs
+          s.getDouble(1), // ax
+          s.getDouble(2), // ay
+          s.getDouble(3), // az
+          s.getDouble(4), // gx
+          s.getDouble(5), // gy
+          s.getDouble(6), // gz
+        )
+      }
+    } catch (e: Exception) {
+      Log.e(TAG, "Failed to parse IMU data", e)
+      emptyList()
+    }
+  }
+
+  /** Bidirectional EMA smoothing (zero-phase filter). */
+  private fun smoothEma(data: DoubleArray): DoubleArray {
+    if (data.isEmpty()) return data
+    val smooth = DoubleArray(data.size)
+    smooth[0] = data[0]
+    // Forward pass
+    for (i in 1 until data.size) {
+      smooth[i] = SMOOTH_FACTOR * smooth[i - 1] + (1 - SMOOTH_FACTOR) * data[i]
+    }
+    // Backward pass
+    for (i in data.size - 2 downTo 0) {
+      smooth[i] = SMOOTH_FACTOR * smooth[i + 1] + (1 - SMOOTH_FACTOR) * smooth[i]
+    }
+    return smooth
+  }
+}
