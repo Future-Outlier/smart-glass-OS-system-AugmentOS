@@ -5,6 +5,7 @@ import path from "path"
 import {
   ConfigPlugin,
   withAppBuildGradle,
+  withProjectBuildGradle,
   // withSettingsGradle,
   withGradleProperties,
   withAndroidManifest,
@@ -16,6 +17,7 @@ import {
  */
 const withAndroidWorkingConfig: ConfigPlugin = (config) => {
   // Apply all modifications in sequence
+  config = withProjectBuildGradleModifications(config)
   config = withAppBuildGradleModifications(config)
   config = withAndroidManifestModifications(config)
   config = withXmlResourceFiles(config)
@@ -23,6 +25,30 @@ const withAndroidWorkingConfig: ConfigPlugin = (config) => {
   // config = withSettingsGradleModifications(config)
 
   return config
+}
+
+/**
+ * Modify root build.gradle to exclude protobuf-javalite globally
+ * (conflicts with protobuf-java required by core module's MentraosBle)
+ */
+function withProjectBuildGradleModifications(config: any) {
+  return withProjectBuildGradle(config, (config) => {
+    let buildGradle = config.modResults.contents
+
+    if (!buildGradle.includes("exclude group: 'com.google.protobuf', module: 'protobuf-javalite'")) {
+      buildGradle = buildGradle.replace(
+        /(allprojects\s*\{[^}]*repositories\s*\{[^}]*\})/s,
+        `$1
+  // Exclude protobuf-javalite globally to avoid conflicts with protobuf-java
+  configurations.all {
+    exclude group: 'com.google.protobuf', module: 'protobuf-javalite'
+  }`,
+      )
+    }
+
+    config.modResults.contents = buildGradle
+    return config
+  })
 }
 
 /**
