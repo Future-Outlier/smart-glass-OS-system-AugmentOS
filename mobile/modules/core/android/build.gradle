@@ -84,8 +84,12 @@ dependencies {
   implementation 'com.vuzix:ultralite-sdk-android:1.8'
   implementation 'com.squareup.picasso:picasso:2.8'
 
-  implementation 'com.google.protobuf:protobuf-java:4.32.0'
-  implementation 'com.google.protobuf:protobuf-java-util:4.32.0'
+  implementation 'com.google.protobuf:protobuf-javalite:4.32.0'
+}
+
+// Exclude protobuf-java to avoid conflicts with protobuf-javalite
+configurations.all {
+  exclude group: 'com.google.protobuf', module: 'protobuf-java'
 }
 
 // Force override onnxruntime version to 1.17.1
