@@ -21,6 +21,7 @@ import {SETTINGS, useSetting} from "@/stores/settings"
 import {storage} from "@/utils/storage"
 import {useNavigationHistory} from "@/contexts/NavigationHistoryContext"
 import {translate} from "@/i18n"
+import GlassView from "@/components/ui/GlassView"
 
 const GRID_COLUMNS = 4
 const APP_ORDER_KEY = "foreground_apps_order"
@@ -114,13 +115,7 @@ const AppPopover: React.FC<{
             top: top,
             width: POPOVER_WIDTH,
           }}>
-          {Platform.OS === "ios" ? (
-            <BlurView intensity={80} tint="default" className="rounded-2xl overflow-hidden">
-              {popoverContent}
-            </BlurView>
-          ) : (
-            <View className="rounded-2xl overflow-hidden bg-primary-foreground/95">{popoverContent}</View>
-          )}
+          <GlassView className="rounded-2xl overflow-hidden bg-primary-foreground/95">{popoverContent}</GlassView>
         </View>
       </Pressable>
     </View>

@@ -7,7 +7,6 @@ import {withUniwind} from "uniwind"
 import {Icon} from "@/components/ignite"
 import {useAppTheme} from "@/contexts/ThemeContext"
 import {ClientAppletInterface} from "@/stores/applets"
-import {SETTINGS, useSetting} from "@/stores/settings"
 
 // Helper to extract style properties for width/height override
 const extractStyleProps = (style: StyleProp<ViewStyle>): Partial<ViewStyle> => {
@@ -27,7 +26,6 @@ interface AppIconProps {
 
 const AppIcon = ({app, onClick, style}: AppIconProps) => {
   const {theme} = useAppTheme()
-  const [enableSquircles] = useSetting(SETTINGS.enable_squircles.key)
   const WrapperComponent = onClick ? TouchableOpacity : View
   const flatStyle = extractStyleProps(style)
 
