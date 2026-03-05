@@ -13,13 +13,11 @@ import {PermissionFeatures, checkConnectivityRequirementsUI, requestFeaturePermi
 import GlassesDisplayMirror from "@/components/mirror/GlassesDisplayMirror"
 import {useState} from "react"
 import GlassesTroubleshootingModal from "@/components/glasses/GlassesTroubleshootingModal"
-import {Spacer} from "@/components/ui/Spacer"
 import {OnboardingGuide, OnboardingStep} from "@/components/onboarding/OnboardingGuide"
 import {useAppletStatusStore} from "@/stores/applets"
 
 export default function PairingPrepScreen() {
   const route = useRoute()
-  const {theme} = useAppTheme()
   const {deviceModel} = route.params as {deviceModel: string}
   const {goBack, push, clearHistoryAndGoHome} = useNavigationHistory()
 

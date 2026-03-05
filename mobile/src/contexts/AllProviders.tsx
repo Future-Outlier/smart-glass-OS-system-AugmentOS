@@ -16,7 +16,7 @@ import {AppStoreProvider} from "@/contexts/AppStoreContext"
 import {AuthProvider} from "@/contexts/AuthContext"
 import {DeeplinkProvider} from "@/contexts/DeeplinkContext"
 import {NavigationHistoryProvider, useNavigationHistory} from "@/contexts/NavigationHistoryContext"
-import {useThemeProvider} from "@/contexts/ThemeContext"
+import {ThemeProvider} from "@/contexts/ThemeContext"
 import {SETTINGS, useSetting, useSettingsStore} from "@/stores/settings"
 import {ModalProvider as LegacyModalProvider} from "@/utils/AlertUtils"
 import {ModalProvider} from "@/contexts/ModalContext"
@@ -65,10 +65,7 @@ export const AllProviders = withWrappers(
   //     </Sentry.ErrorBoundary>
   //   )
   // },
-  (props) => {
-    const {themeScheme, setThemeContextOverride, ThemeProvider} = useThemeProvider()
-    return <ThemeProvider value={{themeScheme, setThemeContextOverride}}>{props.children}</ThemeProvider>
-  },
+  ThemeProvider,
   Suspense,
   SafeAreaProvider,
   SaferAreaProvider,

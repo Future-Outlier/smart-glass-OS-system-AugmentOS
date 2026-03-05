@@ -1,7 +1,7 @@
-import {DarkTheme, DefaultTheme, useTheme as _useNavTheme} from "@react-navigation/native"
+import React from "react"
 import * as SystemUI from "expo-system-ui"
-import {createContext, useCallback, useContext, useEffect, useMemo, useRef, useState} from "react"
-import {Appearance, ColorSchemeName, Platform, StyleProp, useColorScheme} from "react-native"
+import {createContext, FC, useCallback, useContext, useEffect, useMemo, useRef, useState} from "react"
+import {Appearance, ColorSchemeName, StyleProp, useColorScheme} from "react-native"
 import * as NavigationBar from "expo-navigation-bar"
 
 import {useSetting, SETTINGS} from "@/stores/settings"
@@ -15,9 +15,8 @@ type ThemeContextType = {
   setThemeContextOverride: (newTheme: ThemeContexts) => void
 }
 
-// create a React context and provider for the current theme
-export const ThemeContext = createContext<ThemeContextType>({
-  themeScheme: undefined, // default to the system theme
+const ThemeContext = createContext<ThemeContextType>({
+  themeScheme: undefined,
   setThemeContextOverride: (_newTheme: ThemeContexts) => {
     console.error("Tried to call setThemeContextOverride before the ThemeProvider was initialized")
   },
@@ -27,11 +26,10 @@ const themeNameToTheme = (name: ColorSchemeName): Theme => (name === "dark" ? da
 
 export type ThemeType = "light" | "dark" | "system"
 
-export const useThemeProvider = (initialTheme: ThemeContexts = undefined) => {
+export const ThemeProvider: FC<{children: React.ReactNode}> = ({children}) => {
   const colorScheme = useColorScheme()
-  const [overrideTheme, setTheme] = useState<ThemeContexts>(initialTheme)
+  const [overrideTheme, setTheme] = useState<ThemeContexts>(undefined)
   const [savedTheme] = useSetting(SETTINGS.theme_preference.key)
-  // const [originalNavBarColor, setOriginalNavBarColor] = useState<string | null>(null)
   const hasLoaded = useRef(false)
 
   const setThemeContextOverride = useCallback((newTheme: ThemeContexts) => {
@@ -98,38 +96,18 @@ export const useThemeProvider = (initialTheme: ThemeContexts = undefined) => {
     updateThemeType(themeType)
   }, [savedTheme])
 
-  const themeScheme: ColorSchemeName = overrideTheme || colorScheme || "light"
-  const navigationTheme = themeScheme === "dark" ? DarkTheme : DefaultTheme
+  const themeScheme: ThemeContexts = overrideTheme || (colorScheme === "dark" ? "dark" : "light")
 
-  return {
-    themeScheme,
-    navigationTheme,
-    setThemeContextOverride,
-    ThemeProvider: ThemeContext.Provider,
-  }
+  return <ThemeContext.Provider value={{themeScheme, setThemeContextOverride}}>{children}</ThemeContext.Provider>
 }
 
 interface UseAppThemeValue {
-  // The theme object from react-navigation
-  // navTheme: typeof DefaultTheme
-  // A function to set the theme context override (for switching modes)
   setThemeContextOverride: (newTheme: ThemeContexts) => void
-  // The current theme object
   theme: Theme
-  // The current theme context "light" | "dark"
   themeContext: ThemeContexts
-  // A function to apply the theme to a style object.
-  // See examples in the components directory or read the docs here:
-  // https://docs.infinite.red/ignite-cli/boilerplate/app/utils/
   themed: <T>(styleOrStyleFn: ThemedStyle<T> | StyleProp<T> | ThemedStyleArray<T>) => T
 }
 
-/**
- * Custom hook that provides the app theme and utility functions for theming.
- *
- * @returns {UseAppThemeReturn} An object containing various theming values and utilities.
- * @throws {Error} If used outside of a ThemeProvider.
- */
 export const useAppTheme = (): UseAppThemeValue => {
   const context = useContext(ThemeContext)
   if (!context) {
@@ -142,7 +120,7 @@ export const useAppTheme = (): UseAppThemeValue => {
   const themeVariant: Theme = useMemo(() => themeNameToTheme(themeContext), [themeContext])
 
   const themed = useCallback(
-    <T>(styleOrStyleFn: ThemedStyle<T> | StyleProp<T> | ThemedStyleArray<T>) => {
+    <T,>(styleOrStyleFn: ThemedStyle<T> | StyleProp<T> | ThemedStyleArray<T>) => {
       const flatStyles = [styleOrStyleFn].flat(3)
       const stylesArray = flatStyles.map((f) => {
         if (typeof f === "function") {
@@ -152,14 +130,12 @@ export const useAppTheme = (): UseAppThemeValue => {
         }
       })
 
-      // Flatten the array of styles into a single object
       return Object.assign({}, ...stylesArray) as T
     },
     [themeVariant],
   )
 
   return {
-    // navTheme,
     setThemeContextOverride,
     theme: themeVariant,
     themeContext,

@@ -500,7 +500,7 @@ export function AppsGrid({showAllApps = false, onOpenApp, onAddToHome, searchQue
             onDragChange={handleDragChange}
             overDrag="none"
             showDropIndicator={true}
-            sortEnabled={!showAllApps}
+            sortEnabled={true}
             swapMode={true}
             dropIndicatorStyle={{backgroundColor: theme.colors.primary_foreground, borderWidth: 0}}
           />
