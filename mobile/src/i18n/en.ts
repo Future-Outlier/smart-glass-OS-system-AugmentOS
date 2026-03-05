@@ -875,7 +875,7 @@ const en = {
     superModeDeactivated: "Super mode deactivated",
     versionInfo: "Version info",
     versionInfoCopied: "Version info copied to clipboard",
-  }
+  },
 }
 
 export default en

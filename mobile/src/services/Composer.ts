@@ -3,8 +3,7 @@ import {storage} from "@/utils/storage/storage"
 import {printDirectory} from "@/utils/storage/zip"
 import {Directory, Paths, File} from "expo-file-system"
 import {unzip} from "react-native-zip-archive"
-import {AsyncResult, Result} from "typesafe-ts"
-import {result as Res} from "typesafe-ts"
+import {AsyncResult, Result, result as Res} from "typesafe-ts"
 import semver from "semver"
 export interface LmaPermission {
   type: string

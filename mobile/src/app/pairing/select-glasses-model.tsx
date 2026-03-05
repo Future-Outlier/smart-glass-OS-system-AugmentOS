@@ -97,20 +97,22 @@ export default function SelectGlassesModelScreen() {
           {glassesOptions
             .filter((glasses) => !DEV_MODE_ONLY_MODELS.has(glasses.deviceModel) || devMode)
             .map((glasses) => (
-            <TouchableOpacity
-              key={glasses.key}
-              className="flex-col items-center justify-center h-[190px] bg-primary-foreground rounded-2xl overflow-hidden"
-              onPress={() => triggerGlassesPairingGuide(glasses.deviceModel)}>
-              <View className="flex-col items-center justify-center gap-3 w-full">
-                <View className="items-center justify-center min-h-6">{getManufacturerLogo(glasses.deviceModel)}</View>
-                <Image
-                  source={getGlassesImage(glasses.deviceModel)}
-                  className="w-[180px] max-h-[80px] object-contain"
-                />
-                <Text className="text-[16px] text-foreground" text={glasses.deviceModel} />
-              </View>
-            </TouchableOpacity>
-          ))}
+              <TouchableOpacity
+                key={glasses.key}
+                className="flex-col items-center justify-center h-[190px] bg-primary-foreground rounded-2xl overflow-hidden"
+                onPress={() => triggerGlassesPairingGuide(glasses.deviceModel)}>
+                <View className="flex-col items-center justify-center gap-3 w-full">
+                  <View className="items-center justify-center min-h-6">
+                    {getManufacturerLogo(glasses.deviceModel)}
+                  </View>
+                  <Image
+                    source={getGlassesImage(glasses.deviceModel)}
+                    className="w-[180px] max-h-[80px] object-contain"
+                  />
+                  <Text className="text-[16px] text-foreground" text={glasses.deviceModel} />
+                </View>
+              </TouchableOpacity>
+            ))}
           <Spacer height={theme.spacing.s4} />
         </View>
       </ScrollView>

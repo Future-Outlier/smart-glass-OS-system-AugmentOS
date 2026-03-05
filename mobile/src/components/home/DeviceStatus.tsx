@@ -2,6 +2,7 @@ import {DeviceTypes, getModelCapabilities} from "@/../../cloud/packages/types/sr
 import CoreModule, {GlassesNotReadyEvent} from "core"
 import {useState, useEffect} from "react"
 import {ActivityIndicator, Image, ImageStyle, Linking, TextStyle, TouchableOpacity, View, ViewStyle} from "react-native"
+import {GlassView} from "expo-glass-effect"
 
 import {BatteryStatus} from "@/components/glasses/info/BatteryStatus"
 import {Button, Icon, Text} from "@/components/ignite"
@@ -27,6 +28,7 @@ import {
 
 import MicIcon from "assets/icons/component/MicIcon"
 import {useCoreStore} from "@/stores/core"
+import {withUniwind} from "uniwind"
 
 const getBatteryIcon = (batteryLevel: number): string => {
   if (batteryLevel >= 75) return "battery-3"
@@ -43,7 +45,6 @@ export const DeviceStatus = ({style}: {style?: ViewStyle}) => {
   const [autoBrightness, setAutoBrightness] = useSetting(SETTINGS.auto_brightness.key)
   const [brightness, setBrightness] = useSetting(SETTINGS.brightness.key)
   const [showSimulatedGlasses, setShowSimulatedGlasses] = useState(false)
-  const [isExpanded, setIsExpanded] = useState(false)
   const glassesConnected = useGlassesStore((state) => state.connected)
   const glassesFullyBooted = useGlassesStore((state) => state.fullyBooted)
   const glassesStyle = useGlassesStore((state) => state.style)
@@ -148,7 +149,9 @@ export const DeviceStatus = ({style}: {style?: ViewStyle}) => {
 
   if (!glassesConnected || !glassesFullyBooted || isSearching) {
     return (
-      <TouchableOpacity style={[themed($disconnectedContainer), style]} onPress={() => push("/miniapps/settings/glasses")}>
+      <TouchableOpacity
+        style={[themed($disconnectedContainer), style]}
+        onPress={() => push("/miniapps/settings/glasses")}>
         <View className="justify-between items-center flex-row">
           <Text className="font-semibold text-secondary-foreground text-lg" text={defaultWearable} />
           <Icon name="bluetooth-off" size={18} color={theme.colors.foreground} />
@@ -217,11 +220,12 @@ export const DeviceStatus = ({style}: {style?: ViewStyle}) => {
     )
   }
 
+  // const GlassViewT = withUniwind(GlassView)
+  const GlassViewT = View
+
   return (
-    <TouchableOpacity
-      className="bg-primary-foreground px-6 py-0 justify-center flex rounded-2xl"
-      onPress={() => push("/miniapps/settings/glasses")}>
-      <View className="justify-center items-center flex-row max-h-20">
+    <TouchableOpacity onPress={() => push("/miniapps/settings/glasses")}>
+      <GlassViewT className="bg-primary-foreground px-6 py-0 justify-center flex rounded-2xl flex-row max-h-20">
         <View className="flex-1 self-start">
           <Image source={getCurrentGlassesImage()} className="w-full h-full max-w-32" style={{resizeMode: "contain"}} />
         </View>
@@ -230,7 +234,11 @@ export const DeviceStatus = ({style}: {style?: ViewStyle}) => {
           <View className="flex-row items-center gap-3">
             {batteryLevel !== -1 && (
               <View className="flex-row items-center gap-1">
-                <Icon name={charging ? "battery-charging" : getBatteryIcon(batteryLevel) as any} size={18} color={theme.colors.foreground} />
+                <Icon
+                  name={charging ? "battery-charging" : (getBatteryIcon(batteryLevel) as any)}
+                  size={18}
+                  color={theme.colors.foreground}
+                />
                 <Text className="text-secondary-foreground text-sm" text={`${batteryLevel}%`} />
               </View>
             )}
@@ -249,122 +257,15 @@ export const DeviceStatus = ({style}: {style?: ViewStyle}) => {
           </View>
           <Text className="font-semibold text-secondary-foreground text-end self-end" text={defaultWearable} />
         </View>
-      </View>
-
-      {/* Expanded Content */}
-      {false && (
-        <View className="flex-1 gap-3">
-          {/* Brightness Settings */}
-          {features?.display?.adjustBrightness && glassesConnected && (
-            <BrightnessSetting
-              icon={<Icon name="brightness-half" size={24} color={theme.colors.secondary_foreground} />}
-              label={translate("deviceSettings:autoBrightness")}
-              autoBrightnessValue={autoBrightness}
-              brightnessValue={brightness}
-              onAutoBrightnessChange={setAutoBrightness}
-              onBrightnessChange={() => {}}
-              onBrightnessSet={setBrightness}
-              style={{backgroundColor: theme.colors.background}}
-            />
-          )}
-
-          <BatteryStatus compact={true} />
-
-          <View style={{flexDirection: "row", justifyContent: "space-between", gap: theme.spacing.s2}}>
-            {/* Glasses Mirror - only show for devices with display */}
-            {features?.display && (
-              <Button
-                flex
-                tx="home:glassesMirror"
-                preset="alternate"
-                onPress={() => setShowSimulatedGlasses(!showSimulatedGlasses)}
-              />
-            )}
-            {/* WiFi Status - show for devices with WiFi but no display */}
-            {features?.hasWifi && !features?.display && (
-              <StatusCard
-                style={{
-                  flex: 1,
-                  backgroundColor: theme.colors.background,
-                  paddingHorizontal: theme.spacing.s4,
-                }}
-                label={translate("wifi:wifi")}
-                onPress={() => push("/wifi/scan")}
-                iconEnd={
-                  <View className="flex-row items-center gap-1">
-                    <Icon name={wifiConnected ? "wifi" : "wifi-off"} size={16} color={theme.colors.text} />
-                    <Text className="text-sm font-semibold text-secondary-foreground" numberOfLines={1}>
-                      {wifiConnected ? wifiSsid || "Connected" : "Disconnected"}
-                    </Text>
-                  </View>
-                }
-              />
-            )}
-            <Button compactIcon preset="alternate" onPress={() => push("/miniapps/settings/glasses")}>
-              <Icon name="settings" size={24} color={theme.colors.foreground} />
-            </Button>
-          </View>
-          <Spacer height={theme.spacing.s3} />
-        </View>
-      )}
+      </GlassViewT>
     </TouchableOpacity>
   )
 }
-
-const $container: ThemedStyle<ViewStyle> = ({spacing, colors}) => ({
-  backgroundColor: colors.primary_foreground,
-  padding: spacing.s6,
-})
-
-const $imageContainer: ThemedStyle<ViewStyle> = ({spacing}) => ({
-  flex: 2,
-  alignItems: "center",
-  justifyContent: "center",
-  alignSelf: "stretch",
-  paddingHorizontal: spacing.s4,
-})
 
 const $glassesImage: ThemedStyle<ImageStyle> = () => ({
   maxWidth: 180,
   height: 90,
   resizeMode: "contain",
-})
-
-const $glassesImageExpanded: ThemedStyle<ImageStyle> = () => ({
-  maxWidth: 200,
-  height: 100,
-  resizeMode: "contain",
-})
-
-const $headerText: ThemedStyle<TextStyle> = ({colors}) => ({
-  color: colors.secondary_foreground,
-  fontSize: 20,
-  fontWeight: 600,
-})
-
-const $iconRow: ThemedStyle<ViewStyle> = ({spacing}) => ({
-  flexDirection: "row",
-  alignItems: "center",
-  gap: spacing.s3,
-})
-
-const $iconText: ThemedStyle<TextStyle> = ({colors}) => ({
-  color: colors.secondary_foreground,
-  fontSize: 14,
-  fontWeight: 500,
-})
-
-const $sideBySideContainer: ThemedStyle<ViewStyle> = ({spacing}) => ({
-  flexDirection: "row",
-  justifyContent: "space-between",
-  paddingVertical: spacing.s6,
-  alignItems: "center",
-})
-
-const $expandButton: ThemedStyle<ViewStyle> = ({spacing}) => ({
-  alignItems: "center",
-  justifyContent: "center",
-  paddingTop: spacing.s4,
 })
 
 const $disconnectedContainer: ThemedStyle<ViewStyle> = ({spacing, colors}) => ({

@@ -1,4 +1,4 @@
-import {Button, Icon} from "@/components/ignite"
+import {Button, Icon, Text} from "@/components/ignite"
 import {focusEffectPreventBack, useNavigationHistory} from "@/contexts/NavigationHistoryContext"
 import {useAppTheme} from "@/contexts/ThemeContext"
 import {ClientAppletInterface, SYSTEM_APPS, uninstallAppUI, useAppletStatusStore} from "@/stores/applets"
@@ -7,9 +7,7 @@ import {BottomSheetBackdrop, BottomSheetModal} from "@gorhom/bottom-sheet"
 import {Share, View} from "react-native"
 import {Pressable} from "react-native-gesture-handler"
 import {captureRef} from "react-native-view-shot"
-import {Text} from "@/components/ignite"
-import {forwardRef, useCallback, useEffect, useImperativeHandle, useRef, useState} from "react"
-import {useMemo} from "react"
+import {forwardRef, useCallback, useEffect, useImperativeHandle, useRef, useState, useMemo} from "react"
 import {useSaferAreaInsets} from "@/contexts/SaferAreaContext"
 import AppIcon from "@/components/home/AppIcon"
 
@@ -83,7 +81,7 @@ export function MiniAppDualButtonHeader({
     handleExit()
   }, true)
   return (
-    <View className="z-2 absolute top-3 right-6 w-full items-center justify-end flex-row">
+    <View className="z-2 absolute top-3 right-6 items-center justify-end flex-row">
       <DualButton onMinusPress={handleMinusPress} onEllipsisPress={handleEllipsisPress} />
       <MiniAppMoreActionsSheet ref={bottomSheetRef} packageName={packageName} />
     </View>

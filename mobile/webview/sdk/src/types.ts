@@ -2,19 +2,19 @@
  * Message types sent from WebView to Native
  */
 export type OutgoingMessageType =
-  | 'page_ready'
-  | 'core_fn'
-  | 'sub_transcription'
-  | 'sub_audio'
-  | 'sub_movement'
-  | 'unsub_transcription'
-  | 'unsub_audio'
-  | 'unsub_movement'
+  | "page_ready"
+  | "core_fn"
+  | "sub_transcription"
+  | "sub_audio"
+  | "sub_movement"
+  | "unsub_transcription"
+  | "unsub_audio"
+  | "unsub_movement"
 
 /**
  * Message types received from Native
  */
-export type IncomingMessageType = 'transcription' | 'audio' | 'movement'
+export type IncomingMessageType = "transcription" | "audio" | "movement"
 
 /**
  * Base message structure
@@ -70,7 +70,7 @@ export interface MovementPayload {
 /**
  * Core function names
  */
-export type CoreFunctionName = 'displayText' | 'setMicState'
+export type CoreFunctionName = "displayText" | "setMicState"
 
 /**
  * Display text arguments
@@ -82,7 +82,7 @@ export interface DisplayTextArgs {
 /**
  * Microphone state
  */
-export type MicState = 'on' | 'off' | 'muted'
+export type MicState = "on" | "off" | "muted"
 
 /**
  * Set mic state arguments
@@ -95,7 +95,7 @@ export interface SetMicStateArgs {
  * Transcription subscription options
  */
 export interface TranscriptionOptions {
-  type: 'online' | 'local'
+  type: "online" | "local"
   fallback?: boolean
 }
 
@@ -122,4 +122,4 @@ export type SubscriptionHandler<T = any> = (data: T) => void
 /**
  * Subscription type
  */
-export type SubscriptionType = 'transcription' | 'audio' | 'movement'
+export type SubscriptionType = "transcription" | "audio" | "movement"

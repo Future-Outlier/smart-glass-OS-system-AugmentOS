@@ -24,15 +24,15 @@
  * ```
  */
 
-import { getBridge, Bridge } from './bridge'
-import { getCoreModule } from './core'
-import { getEvents } from './events'
+import {getBridge, Bridge} from "./bridge"
+import {getCoreModule} from "./core"
+import {getEvents} from "./events"
 
 // Export types
-export * from './types'
+export * from "./types"
 
 // Export Bridge class
-export { Bridge }
+export {Bridge}
 
 // Create global instances
 const bridge = getBridge()
@@ -54,15 +54,15 @@ export const Events = events
  * Should be called when the page loads
  */
 export function initialize(): void {
-  if (typeof window === 'undefined') {
-    console.warn('SDK can only be initialized in a browser environment')
+  if (typeof window === "undefined") {
+    console.warn("SDK can only be initialized in a browser environment")
     return
   }
 
   // Notify native that page is ready
-  window.addEventListener('load', () => {
+  window.addEventListener("load", () => {
     bridge.send({
-      type: 'page_ready',
+      type: "page_ready",
       timestamp: Date.now(),
     })
   })
@@ -79,6 +79,6 @@ export default {
 }
 
 // Auto-initialize on import
-if (typeof window !== 'undefined') {
+if (typeof window !== "undefined") {
   initialize()
 }

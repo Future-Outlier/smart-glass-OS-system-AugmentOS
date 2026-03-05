@@ -1,10 +1,10 @@
-import { useEffect, useState } from 'react'
-import { CoreModule, Events } from '@mentra/webview-sdk'
-import type { MicState } from '@mentra/webview-sdk'
+import {useEffect, useState} from "react"
+import {CoreModule, Events} from "@mentra/webview-sdk"
+import type {MicState} from "@mentra/webview-sdk"
 
 function App() {
-  const [transcription, setTranscription] = useState<string>('Waiting for speech...')
-  const [micState, setMicState] = useState<MicState>('off')
+  const [transcription, setTranscription] = useState<string>("Waiting for speech...")
+  const [micState, setMicState] = useState<MicState>("off")
   const [isTranscribing, setIsTranscribing] = useState(false)
 
   useEffect(() => {
@@ -16,15 +16,12 @@ function App() {
     if (isTranscribing) return
 
     setIsTranscribing(true)
-    Events.requestTranscriptions(
-      { type: 'online', fallback: true },
-      (text) => {
-        console.log('Transcription:', text)
-        setTranscription(text)
-        // Also display on glasses
-        CoreModule.displayText(text)
-      }
-    )
+    Events.requestTranscriptions({type: "online", fallback: true}, (text) => {
+      console.log("Transcription:", text)
+      setTranscription(text)
+      // Also display on glasses
+      CoreModule.displayText(text)
+    })
   }
 
   const stopTranscription = () => {
@@ -32,7 +29,7 @@ function App() {
 
     setIsTranscribing(false)
     Events.stopTranscriptions()
-    setTranscription('Waiting for speech...')
+    setTranscription("Waiting for speech...")
   }
 
   const handleDisplayText = (text: string) => {
@@ -40,7 +37,7 @@ function App() {
   }
 
   const toggleMic = () => {
-    const newState: MicState = micState === 'on' ? 'off' : 'on'
+    const newState: MicState = micState === "on" ? "off" : "on"
     setMicState(newState)
     CoreModule.setMicState(newState)
   }
@@ -57,21 +54,18 @@ function App() {
           <h2 className="text-xl font-semibold mb-4">Display Controls</h2>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <button
-              onClick={() => handleDisplayText('Hello from React!')}
-              className="px-6 py-4 bg-black text-white font-semibold rounded-lg shadow-md hover:bg-gray-800 active:scale-95 transition-all"
-            >
+              onClick={() => handleDisplayText("Hello from React!")}
+              className="px-6 py-4 bg-black text-white font-semibold rounded-lg shadow-md hover:bg-gray-800 active:scale-95 transition-all">
               Say Hello
             </button>
             <button
-              onClick={() => handleDisplayText('Welcome to MentraOS')}
-              className="px-6 py-4 bg-black text-white font-semibold rounded-lg shadow-md hover:bg-gray-800 active:scale-95 transition-all"
-            >
+              onClick={() => handleDisplayText("Welcome to MentraOS")}
+              className="px-6 py-4 bg-black text-white font-semibold rounded-lg shadow-md hover:bg-gray-800 active:scale-95 transition-all">
               Say Welcome
             </button>
             <button
               onClick={() => handleDisplayText(`Time: ${new Date().toLocaleTimeString()}`)}
-              className="px-6 py-4 bg-black text-white font-semibold rounded-lg shadow-md hover:bg-gray-800 active:scale-95 transition-all"
-            >
+              className="px-6 py-4 bg-black text-white font-semibold rounded-lg shadow-md hover:bg-gray-800 active:scale-95 transition-all">
               Show Time
             </button>
           </div>
@@ -83,11 +77,8 @@ function App() {
             <button
               onClick={toggleMic}
               className={`px-6 py-4 font-semibold rounded-lg shadow-md active:scale-95 transition-all ${
-                micState === 'on'
-                  ? 'bg-blue-600 text-white hover:bg-blue-700'
-                  : 'bg-black text-white hover:bg-gray-800'
-              }`}
-            >
+                micState === "on" ? "bg-blue-600 text-white hover:bg-blue-700" : "bg-black text-white hover:bg-gray-800"
+              }`}>
               Mic: {micState.toUpperCase()}
             </button>
           </div>
@@ -101,24 +92,20 @@ function App() {
               disabled={isTranscribing}
               className={`px-6 py-4 font-semibold rounded-lg shadow-md transition-all ${
                 isTranscribing
-                  ? 'bg-blue-600 text-white cursor-not-allowed'
-                  : 'bg-black text-white hover:bg-gray-800 active:scale-95'
-              }`}
-            >
+                  ? "bg-blue-600 text-white cursor-not-allowed"
+                  : "bg-black text-white hover:bg-gray-800 active:scale-95"
+              }`}>
               Start Transcription
             </button>
             <button
               onClick={stopTranscription}
               disabled={!isTranscribing}
-              className="px-6 py-4 bg-black text-white font-semibold rounded-lg shadow-md hover:bg-gray-800 active:scale-95 transition-all disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-black disabled:active:scale-100"
-            >
+              className="px-6 py-4 bg-black text-white font-semibold rounded-lg shadow-md hover:bg-gray-800 active:scale-95 transition-all disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-black disabled:active:scale-100">
               Stop Transcription
             </button>
           </div>
           <div className="bg-gray-50 rounded-lg p-4 border-l-4 border-black">
-            <div className="text-sm font-semibold text-gray-600 uppercase tracking-wide mb-2">
-              Last Transcription
-            </div>
+            <div className="text-sm font-semibold text-gray-600 uppercase tracking-wide mb-2">Last Transcription</div>
             <div className="text-base text-gray-900">{transcription}</div>
           </div>
         </section>

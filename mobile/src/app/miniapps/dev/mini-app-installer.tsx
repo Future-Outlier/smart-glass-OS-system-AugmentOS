@@ -1,9 +1,8 @@
 import {useRef, useState} from "react"
 import {Pressable, ScrollView, TextInput, TouchableOpacity, View} from "react-native"
 
-import {Button, Icon, Screen} from "@/components/ignite"
+import {Button, Icon, Screen, Text} from "@/components/ignite"
 import {MiniAppDualButtonHeader} from "@/components/miniapps/DualButton"
-import {Text} from "@/components/ignite"
 import AppIcon from "@/components/home/AppIcon"
 import composer from "@/services/Composer"
 import Toast from "react-native-toast-message"

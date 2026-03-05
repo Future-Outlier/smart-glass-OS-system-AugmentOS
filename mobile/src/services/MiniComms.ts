@@ -1,7 +1,14 @@
 import mantle from "./MantleManager"
 import CoreModule from "core"
 
-type MiniAppMessageType = "core_fn" | "request_mic" | "request_transcription" | "display_event" | "button_click" | "page_ready" | "custom_action"
+type MiniAppMessageType =
+  | "core_fn"
+  | "request_mic"
+  | "request_transcription"
+  | "display_event"
+  | "button_click"
+  | "page_ready"
+  | "custom_action"
 export interface MiniAppMessage {
   type: MiniAppMessageType
   payload?: any
@@ -12,8 +19,7 @@ class MiniComms {
   private static instance: MiniComms | null = null
   private messageHandlers: Record<string, (stringified: string) => void> = {}
 
-  private constructor() {
-  }
+  private constructor() {}
 
   public static getInstance(): MiniComms {
     if (!MiniComms.instance) {
@@ -134,7 +140,6 @@ class MiniComms {
         console.log(`SUPERCOMMS: Unknown message type: ${message.type}`)
     }
   }
-
 }
 
 const miniComms = MiniComms.getInstance()

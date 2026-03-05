@@ -236,4 +236,8 @@ class G2 : SGCManager() {
         Bridge.log("G2: requestVersionInfo")
         // TODO: Request version via EvenHub
     }
+
+    override fun sendIncidentId(incidentId: String) {
+        Bridge.log("G2: sendIncidentId $incidentId")
+    }
 }

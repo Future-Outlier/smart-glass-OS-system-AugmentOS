@@ -517,7 +517,6 @@ export const focusEffectPreventBack = (backFn?: () => void, iosDontPreventBack?:
   const {incPreventBack, decPreventBack, setAndroidBackFn} = useNavigationHistory()
   const navigation = useNavigation()
 
-
   // hook into the back button on ios:
   if (Platform.OS === "ios") {
     useFocusEffect(
