@@ -1522,8 +1522,11 @@ public class CameraNeo extends LifecycleService {
                 } catch (Exception e) {
                     Log.e(TAG, "Error handling image data", e);
                     notifyPhotoError("Error processing photo: " + e.getMessage());
+                    if (mImuRecorder != null) {
+                        mImuRecorder.cancel();
+                    }
                     shotState = ShotState.IDLE;
-                    
+
                     // Check if there are queued photo requests even after error
                     if (!photoRequestQueue.isEmpty()) {
                         processQueuedPhotoRequests();
@@ -3039,10 +3042,15 @@ public class CameraNeo extends LifecycleService {
                                           @NonNull CaptureFailure failure) {
                     Log.e(TAG, "Photo capture failed: " + failure.getReason());
                     notifyPhotoError("Photo capture failed: " + failure.getReason());
-                    
+
+                    // Cancel IMU recording since capture failed
+                    if (mImuRecorder != null) {
+                        mImuRecorder.cancel();
+                    }
+
                     // XyCamera2 pattern: Restore preview even on failure
                     restorePreview(session);
-                    
+
                     shotState = ShotState.IDLE;
                     mWaitingForAeConvergence = false;
                     mAeLockRequested = false;
@@ -3055,6 +3063,9 @@ public class CameraNeo extends LifecycleService {
         } catch (CameraAccessException e) {
             Log.e(TAG, "Error during photo capture", e);
             notifyPhotoError("Error capturing photo: " + e.getMessage());
+            if (mImuRecorder != null) {
+                mImuRecorder.cancel();
+            }
             shotState = ShotState.IDLE;
             cancelKeepAliveTimer();
             closeCamera();
