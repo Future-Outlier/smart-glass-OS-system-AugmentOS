@@ -188,33 +188,6 @@ export const DeviceStatus = ({style}: {style?: ViewStyle}) => {
 
   const features = getModelCapabilities(defaultWearable)
 
-  if (showSimulatedGlasses) {
-    return (
-      <View className="bg-primary-foreground p-6" style={style}>
-        <View className="just">
-          <View style={{flexDirection: "row", alignItems: "center", gap: theme.spacing.s2}}>
-            <Image source={getCurrentGlassesImage()} style={[themed($glassesImage), {width: 54, maxHeight: 24}]} />
-            <Text className="font-semibold text-secondary-foreground text-lg">{defaultWearable}</Text>
-          </View>
-        </View>
-        <View style={{marginHorizontal: -theme.spacing.s6}}>
-          <ConnectedSimulatedGlassesInfo showHeader={false} mirrorStyle={{backgroundColor: theme.colors.background}} />
-        </View>
-        <View style={{flexDirection: "row", justifyContent: "space-between", gap: theme.spacing.s2}}>
-          <Button
-            flexContainer={false}
-            preset="alternate"
-            onPress={() => setShowSimulatedGlasses(!showSimulatedGlasses)}>
-            <Icon name="arrow-left" size={18} color={theme.colors.foreground} />
-          </Button>
-          <Button flexContainer={false} preset="alternate" onPress={() => push("/miniapps/settings/glasses")}>
-            <Icon name="settings" size={18} color={theme.colors.foreground} />
-          </Button>
-        </View>
-      </View>
-    )
-  }
-
 
   return (
     <TouchableOpacity onPress={() => push("/miniapps/settings/glasses")}>

@@ -10,12 +10,12 @@ import {AsyncResult, result as Res} from "typesafe-ts"
 import {create} from "zustand"
 import * as Sentry from "@sentry/react-native"
 
-import {getCurrentRoute, push} from "@/contexts/NavigationRef"
+import {getCurrentRoute, push} from "@/contexts/NavigationHistoryContext"
 import {translate} from "@/i18n"
 import restComms from "@/services/RestComms"
 import STTModelManager from "@/services/STTModelManager"
 import {SETTINGS, useSetting, useSettingsStore} from "@/stores/settings"
-import showAlert from "@/utils/AlertUtils"
+import {showAlert} from "@/contexts/ModalContext"
 import {CompatibilityResult, HardwareCompatibility} from "@/utils/hardware"
 import {BackgroundTimer} from "@/utils/timers"
 import {storage} from "@/utils/storage"
@@ -82,50 +82,43 @@ export const simulatedPackageName = "com.mentra.simulated"
 export const mirrorPackageName = "com.mentra.mirror"
 export const lmaInstallerPackageName = "com.mentra.lma_installer"
 
-export const uninstallAppUI = (clientApp: ClientAppletInterface) => {
+export const uninstallAppUI = async (clientApp: ClientAppletInterface) => {
   console.log(`Uninstalling app: ${clientApp.packageName}`)
 
-  showAlert(
-    translate("appSettings:uninstallApp"),
-    translate("appSettings:uninstallConfirm", {appName: clientApp.name}),
-    [
-      {
-        text: translate("common:cancel"),
-        style: "cancel",
-      },
-      {
-        text: translate("appSettings:uninstall"),
-        style: "destructive",
-        onPress: async () => {
-          try {
-            // First stop the app if it's running
-            if (clientApp.running) {
-              useAppletStatusStore.getState().stopApplet(clientApp.packageName)
-            }
-
-            await useAppletStatusStore.getState().uninstallApplet(clientApp.packageName)
-            showAlert(
-              translate("common:success"),
-              translate("appSettings:uninstalledSuccess", {appName: clientApp.name}),
-              [{text: translate("common:ok"), onPress: () => {}}],
-            )
-          } catch (error: any) {
-            console.error("Error uninstalling app:", error)
-            useAppletStatusStore.getState().refreshApplets()
-            showAlert(
-              translate("common:error"),
-              translate("appSettings:uninstallError", {error: error.message || "Unknown error"}),
-              [{text: translate("common:ok")}],
-            )
-          }
-        },
-      },
+  let result = await showAlert({
+    title: translate("appSettings:uninstallApp"),
+    message: translate("appSettings:uninstallConfirm", {appName: clientApp.name}),
+    buttons: [
+      {text: translate("common:cancel"), style: "cancel"},
+      {text: translate("appSettings:uninstall"), style: "destructive"},
     ],
-    {
-      iconName: "trash",
-      iconSize: 48,
-    },
-  )
+  })
+
+  if (result === 1) {
+    try {
+      // First stop the app if it's running
+      if (clientApp.running) {
+        useAppletStatusStore.getState().stopApplet(clientApp.packageName)
+      }
+
+      await useAppletStatusStore.getState().uninstallApplet(clientApp.packageName)
+      await showAlert({
+        title: translate("common:success"),
+        message: translate("appSettings:uninstalledSuccess", {appName: clientApp.name}),
+        buttons: [{text: translate("common:ok")}],
+      })
+    } catch (error: any) {
+      console.error("Error uninstalling app:", error)
+      useAppletStatusStore.getState().refreshApplets()
+      await showAlert({
+        title: translate("common:error"),
+        message: translate("appSettings:uninstallError", {error: error.message || "Unknown error"}),
+        buttons: [{text: translate("common:ok")}],
+      })
+    }
+  }
+
+  console.log("result:", result)
 }
 
 const getHiddenStatus = (packageName: string): boolean => {
@@ -258,15 +251,18 @@ const getOfflineApplets = async (): Promise<ClientAppletInterface[]> => {
             return undefined
           }
 
-          showAlert(translate("transcription:noModelInstalled"), translate("transcription:noModelInstalledMessage"), [
-            {text: translate("common:cancel"), style: "cancel"},
-            {
-              text: translate("transcription:goToSettings"),
-              onPress: () => {
-                push("/miniapps/settings/transcription")
-              },
-            },
-          ])
+          let result = await showAlert({
+            title: translate("transcription:noModelInstalled"),
+            message: translate("transcription:noModelInstalledMessage"),
+            buttons: [
+              {text: translate("common:cancel"), style: "cancel"},
+              {text: translate("transcription:goToSettings"), style: "default"},
+            ],
+          })
+
+          if (result === 1) {
+            push("/miniapps/settings/transcription")
+          }
 
           throw new Error("No model available")
         })
@@ -602,14 +598,15 @@ export const useAppletStatusStore = create<AppStatusState>((set, get) => ({
       const missingHardware =
         applet.compatibility?.missingRequired?.map((req) => req.type.toLowerCase()).join(", ") || "required features"
 
-      showAlert(
-        translate("home:hardwareIncompatible"),
-        translate("home:hardwareIncompatibleMessage", {
+      await showAlertModal({
+        title: translate("home:hardwareIncompatible"),
+        buttons: [{text: translate("common:ok")}],
+        message: translate("home:hardwareIncompatibleMessage", {
           app: applet.name,
           missing: missingHardware,
         }),
-        [{text: translate("common:ok")}],
-      )
+      })
+
       return
     }
 

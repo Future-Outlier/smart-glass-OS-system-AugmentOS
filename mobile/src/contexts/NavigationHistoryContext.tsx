@@ -3,7 +3,6 @@ import {createContext, useContext, useEffect, useRef, useCallback, useState} fro
 import {BackHandler, Platform} from "react-native"
 import {CommonActions} from "@react-navigation/native"
 
-import {navigationRef} from "@/contexts/NavigationRef"
 import {StackAnimationTypes} from "react-native-screens"
 
 export type NavigationHistoryPush = (path: string, params?: any) => void
@@ -549,4 +548,28 @@ export const focusEffectPreventBack = (backFn?: () => void, iosDontPreventBack?:
       }
     }, [incPreventBack, decPreventBack, backFn]),
   )
+}
+
+// so we can use this from outside the context:
+import {createRef} from "react"
+export const navigationRef = createRef<NavObject>()
+
+export function push(path: string, params?: any) {
+  navigationRef.current?.push(path, params)
+}
+
+export function replace(path: string, params?: any) {
+  navigationRef.current?.replace(path, params)
+}
+
+export function goBack() {
+  navigationRef.current?.goBack()
+}
+
+export function getCurrentRoute() {
+  return navigationRef.current?.getCurrentRoute()
+}
+
+export function navigate(path: string, params?: any) {
+  navigationRef.current?.navigate(path, params)
 }
