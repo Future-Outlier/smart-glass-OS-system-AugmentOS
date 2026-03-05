@@ -117,8 +117,6 @@ export const uninstallAppUI = async (clientApp: ClientAppletInterface) => {
       })
     }
   }
-
-  console.log("result:", result)
 }
 
 const getHiddenStatus = (packageName: string): boolean => {
@@ -598,7 +596,7 @@ export const useAppletStatusStore = create<AppStatusState>((set, get) => ({
       const missingHardware =
         applet.compatibility?.missingRequired?.map((req) => req.type.toLowerCase()).join(", ") || "required features"
 
-      await showAlertModal({
+      await showAlert({
         title: translate("home:hardwareIncompatible"),
         buttons: [{text: translate("common:ok")}],
         message: translate("home:hardwareIncompatibleMessage", {
@@ -657,6 +655,16 @@ export const useAppletStatusStore = create<AppStatusState>((set, get) => ({
           }
         }
 
+        if (applet.local) {
+          console.log("APPLETS: Pushing local applet", applet.packageName, applet.version, applet.name)
+          push("/applet/local", {
+            packageName: applet.packageName,
+            version: applet.version,
+            appName: applet.name,
+            transition: "none",
+          })
+        }
+
         // Check if app has webviewURL and navigate directly to it
         if (applet.webviewUrl && applet.healthy) {
           push("/applet/webview", {
@@ -665,13 +673,10 @@ export const useAppletStatusStore = create<AppStatusState>((set, get) => ({
             packageName: applet.packageName,
             transition: "none",
           })
-        }
-
-        if (applet.local) {
-          console.log("APPLETS: Pushing local applet", applet.packageName, applet.version, applet.name)
-          push("/applet/local", {
+        } else {
+          // open settings page
+          push("/applet/settings", {
             packageName: applet.packageName,
-            version: applet.version,
             appName: applet.name,
             transition: "none",
           })

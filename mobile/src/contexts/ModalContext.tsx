@@ -200,7 +200,7 @@ export function ModalProvider({children}: {children: React.ReactNode}) {
                             ? "text-destructive font-medium"
                             : isCancel
                             ? "text-muted-foreground"
-                            : "text-primary font-semibold"
+                            : "text-foreground font-semibold"
                         }`}
                       >
                         {button.text}

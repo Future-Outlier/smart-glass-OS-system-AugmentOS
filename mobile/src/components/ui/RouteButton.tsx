@@ -24,16 +24,16 @@ export function StatusCard({label, style, iconStart, iconEnd, textStyle, subtitl
   const {flex, ...restStyle} = (style || {}) as ViewStyle & {flex?: number}
 
   const content = (
-    <View style={[themed($settingsGroup), themed($statusCardContainer), restStyle]}>
-      <View style={{flexDirection: "row", alignItems: "center", gap: theme.spacing.s4}}>
+    <GlassView className="bg-primary-foreground px-4 py-3 flex-row justify-between items-center rounded-2xl" style={[restStyle]}>
+      <View className="flex-row items-center gap-4">
         {iconStart && <View className="justify-center items-center">{iconStart}</View>}
         <View className="gap-1">
-          <Text className="text-sm text-secondary-foreground font-semibold" style={textStyle} text={label} />
+          <Text className="text-sm text-secondary-foreground" style={textStyle} text={label} />
           {subtitle && <Text className="text-muted-foreground text-xs" text={subtitle} />}
         </View>
       </View>
       {iconEnd && iconEnd}
-    </View>
+    </GlassView>
   )
 
   if (onPress) {
@@ -127,10 +127,3 @@ export function RouteButton({
     </GlassView>
   )
 }
-
-const $settingsGroup: ThemedStyle<ViewStyle> = ({colors, spacing}) => ({
-  backgroundColor: colors.primary_foreground,
-  paddingVertical: spacing.s3,
-  paddingHorizontal: spacing.s4,
-  borderRadius: spacing.s4,
-})
