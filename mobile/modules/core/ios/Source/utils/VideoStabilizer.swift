@@ -276,24 +276,36 @@ class VideoStabilizer {
         return elapsed
     }
 
-    // MARK: - Color Processing
+    // MARK: - Color Pipeline Tuning Parameters
 
-    // Color correction matrix (same as ImageProcessor)
+    // Tone curve anchor points (CIToneCurve: x = input, y = output)
+    private static let toneCurvePoint0 = CIVector(x: 0.00, y: 0.05)
+    private static let toneCurvePoint1 = CIVector(x: 0.25, y: 0.22)
+    private static let toneCurvePoint2 = CIVector(x: 0.50, y: 0.50)
+    private static let toneCurvePoint3 = CIVector(x: 0.75, y: 0.78)
+    private static let toneCurvePoint4 = CIVector(x: 1.00, y: 0.95)
+
+    // Vibrance: selective saturation boost (0.0 = off, 1.0 = max)
+    private static let vibranceAmount: Double = 0.3
+
+    // Color correction matrix (CIColorMatrix vectors)
     private static let rVector = CIVector(x: 1.06, y: 0.02, z: -0.01, w: 0)
     private static let gVector = CIVector(x: 0.01, y: 1.04, z: -0.01, w: 0)
     private static let bVector = CIVector(x: -0.02, y: 0.01, z: 1.02, w: 0)
     private static let aVector = CIVector(x: 0, y: 0, z: 0, w: 1)
     private static let biasVector = CIVector(x: 5.0 / 255.0, y: 3.0 / 255.0, z: 0, w: 0)
 
-    /// Apply S-curve tone mapping (same curve as ImageProcessor).
+    // MARK: - Color Processing
+
+    /// Apply S-curve tone mapping.
     private static func applyToneCurve(_ image: CIImage) -> CIImage {
         guard let filter = CIFilter(name: "CIToneCurve") else { return image }
         filter.setValue(image, forKey: kCIInputImageKey)
-        filter.setValue(CIVector(x: 0.00, y: 0.05), forKey: "inputPoint0") // lift blacks
-        filter.setValue(CIVector(x: 0.25, y: 0.22), forKey: "inputPoint1") // shadow region
-        filter.setValue(CIVector(x: 0.50, y: 0.50), forKey: "inputPoint2") // midtone anchor
-        filter.setValue(CIVector(x: 0.75, y: 0.78), forKey: "inputPoint3") // highlight region
-        filter.setValue(CIVector(x: 1.00, y: 0.95), forKey: "inputPoint4") // compress whites
+        filter.setValue(toneCurvePoint0, forKey: "inputPoint0")
+        filter.setValue(toneCurvePoint1, forKey: "inputPoint1")
+        filter.setValue(toneCurvePoint2, forKey: "inputPoint2")
+        filter.setValue(toneCurvePoint3, forKey: "inputPoint3")
+        filter.setValue(toneCurvePoint4, forKey: "inputPoint4")
         return filter.outputImage ?? image
     }
 
@@ -301,7 +313,7 @@ class VideoStabilizer {
     private static func applyVibrance(_ image: CIImage) -> CIImage {
         guard let filter = CIFilter(name: "CIVibrance") else { return image }
         filter.setValue(image, forKey: kCIInputImageKey)
-        filter.setValue(0.3, forKey: "inputAmount") // +30% selective boost
+        filter.setValue(vibranceAmount, forKey: "inputAmount")
         return filter.outputImage ?? image
     }
 

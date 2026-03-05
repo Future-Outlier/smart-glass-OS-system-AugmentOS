@@ -29,11 +29,11 @@ public class ImageProcessor {
 
   // Tone curve anchor points (X values fixed at 0.0, 0.25, 0.50, 0.75, 1.0)
   // Y values control the S-curve shape in linear space.
-  // Raise shadow point (index 0) to lift blacks, lower highlight point (index 4) to compress whites.
-  private static final double[] TONE_CURVE_Y = {0.05, 0.22, 0.50, 0.78, 0.95};
+  // Slight shadow lift (0.02) for low-light camera, full whites, punchy midtone contrast.
+  private static final double[] TONE_CURVE_Y = {0.02, 0.20, 0.52, 0.82, 1.0};
 
   // Vibrance: selective saturation boost for desaturated colors (0.0 = off, 1.0 = max)
-  private static final float VIBRANCE_AMOUNT = 0.3f;
+  private static final float VIBRANCE_AMOUNT = 0.45f;
 
   // Color correction matrix (3x4: RGB coefficients + bias per channel)
   // Adjusts warmth/white balance to compensate for the glasses camera's color cast.

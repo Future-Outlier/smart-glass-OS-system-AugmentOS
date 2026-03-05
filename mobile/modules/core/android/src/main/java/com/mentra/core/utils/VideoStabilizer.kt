@@ -43,6 +43,22 @@ object VideoStabilizer {
 
   private const val CODEC_TIMEOUT_US = 10_000L
 
+  // --- Color pipeline tuning parameters ---
+
+  // Tone curve anchor Y values (X fixed at 0.0, 0.25, 0.50, 0.75, 1.0)
+  // Slight shadow lift (0.02) for low-light camera, full whites, punchy midtone contrast.
+  private val TONE_CURVE_Y = doubleArrayOf(0.02, 0.20, 0.52, 0.82, 1.0)
+
+  // Vibrance: selective saturation boost for desaturated colors (0.0 = off, 1.0 = max)
+  private const val VIBRANCE_AMOUNT = 0.45f
+
+  // Color correction matrix (3x4: RGB coefficients + bias per channel)
+  private const val CM_RR = 1.06f; private const val CM_RG = 0.02f; private const val CM_RB = -0.01f; private const val CM_R_BIAS = 5f / 255f
+  private const val CM_GR = 0.01f; private const val CM_GG = 1.04f; private const val CM_GB = -0.01f; private const val CM_G_BIAS = 3f / 255f
+  private const val CM_BR = -0.02f; private const val CM_BG = 0.01f; private const val CM_BB = 1.02f; private const val CM_B_BIAS = 0f
+
+  // --- Precomputed LUTs (depend on tuning parameters above) ---
+
   // sRGB linearize LUT: sRGB byte (0-255) -> linear float (0.0-1.0)
   private val LINEARIZE_LUT = FloatArray(256) { i ->
     val v = i / 255.0
@@ -82,19 +98,6 @@ object VideoStabilizer {
     val idx = (linear * (DELIN_LUT_SIZE - 1) + 0.5f).toInt().coerceIn(0, DELIN_LUT_SIZE - 1)
     return DELINEARIZE_LUT[idx]
   }
-
-  // --- Color pipeline tuning parameters ---
-
-  // Tone curve anchor Y values (X fixed at 0.0, 0.25, 0.50, 0.75, 1.0)
-  private val TONE_CURVE_Y = doubleArrayOf(0.05, 0.22, 0.50, 0.78, 0.95)
-
-  // Vibrance: selective saturation boost for desaturated colors (0.0 = off, 1.0 = max)
-  private const val VIBRANCE_AMOUNT = 0.3f
-
-  // Color correction matrix (3x4: RGB coefficients + bias per channel)
-  private const val CM_RR = 1.06f; private const val CM_RG = 0.02f; private const val CM_RB = -0.01f; private const val CM_R_BIAS = 5f / 255f
-  private const val CM_GR = 0.01f; private const val CM_GG = 1.04f; private const val CM_GB = -0.01f; private const val CM_G_BIAS = 3f / 255f
-  private const val CM_BR = -0.02f; private const val CM_BG = 0.01f; private const val CM_BB = 1.02f; private const val CM_B_BIAS = 0f
 
   /**
    * Stabilize a video using gyroscope data from an IMU sidecar file.
