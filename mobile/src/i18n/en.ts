@@ -47,6 +47,8 @@ const en = {
     phone: "Phone",
     bluetooth: "Bluetooth",
     preferredMic: "Preferred microphone",
+    microphonePermissionRequired: "Microphone permission required",
+    microphonePermissionRequiredMessage: "Microphone permission is required to use the phone microphone feature. Please grant the microphone permission in settings.",
   },
   positionSettings: {
     title: "Display position",

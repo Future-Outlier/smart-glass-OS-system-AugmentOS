@@ -6,11 +6,13 @@ import {Icon, Text} from "@/components/ignite"
 import GlassView from "@/components/ui/GlassView"
 import {Group} from "@/components/ui/Group"
 import {useAppTheme} from "@/contexts/ThemeContext"
+import {Badge} from "@/components/ui"
 
 interface Option<T extends string> {
   key: T
   label: string
   subtitle?: string
+  badge?: string
 }
 
 interface OptionListProps<T extends string> {
@@ -21,7 +23,12 @@ interface OptionListProps<T extends string> {
   style?: ViewStyle
 }
 
-const OptionItem = <T extends string>({option, selected, onSelect, style}: {
+const OptionItem = <T extends string>({
+  option,
+  selected,
+  onSelect,
+  style,
+}: {
   option: Option<T>
   selected: T
   onSelect: (key: T) => void
@@ -33,7 +40,10 @@ const OptionItem = <T extends string>({option, selected, onSelect, style}: {
     <TouchableOpacity onPress={() => onSelect(option.key)}>
       <GlassView className="flex-row justify-between items-center py-5 px-6 bg-primary-foreground" style={style}>
         <View className="gap-1 flex-col">
-          <Text text={option.label} className="text-text" />
+          <View className="flex-row items-center gap-2">
+            <Text text={option.label} className="text-text" />
+            {option.badge && <Badge text={option.badge} />}
+          </View>
           {option.subtitle && <Text text={option.subtitle} className="text-muted-foreground text-sm" />}
         </View>
         <Icon
