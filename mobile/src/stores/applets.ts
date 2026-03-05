@@ -653,9 +653,7 @@ export const useAppletStatusStore = create<AppStatusState>((set, get) => ({
           if (offlineRoute) {
             push(offlineRoute, {transition: "none"})
           }
-        }
-
-        if (applet.local) {
+        } else if (applet.local) {
           console.log("APPLETS: Pushing local applet", applet.packageName, applet.version, applet.name)
           push("/applet/local", {
             packageName: applet.packageName,
@@ -663,10 +661,8 @@ export const useAppletStatusStore = create<AppStatusState>((set, get) => ({
             appName: applet.name,
             transition: "none",
           })
-        }
-
-        // Check if app has webviewURL and navigate directly to it
-        if (applet.webviewUrl && applet.healthy) {
+        } else if (applet.webviewUrl && applet.healthy) {
+          // Check if app has webviewURL and navigate directly to it
           push("/applet/webview", {
             webviewURL: applet.webviewUrl,
             appName: applet.name,
