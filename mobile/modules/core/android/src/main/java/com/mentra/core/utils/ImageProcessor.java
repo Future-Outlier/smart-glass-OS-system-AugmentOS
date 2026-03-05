@@ -2,11 +2,6 @@ package com.mentra.core.utils;
 
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
-import android.graphics.Canvas;
-import android.graphics.Color;
-import android.graphics.ColorMatrix;
-import android.graphics.ColorMatrixColorFilter;
-import android.graphics.Paint;
 import android.util.Log;
 
 import java.io.File;
@@ -24,24 +19,75 @@ public class ImageProcessor {
   // Brown-Conrady distortion coefficients for the Mentra Live camera
   // (Sony sensor, 118-degree FOV fisheye lens)
   // Calibrated from chessboard photos at 3264x2448 native sensor resolution.
+  // Brown-Conrady lens distortion coefficients
   private static final double K1 = -0.10;   // Radial distortion (barrel)
   private static final double K2 = 0.02;    // Radial distortion (higher order)
   private static final double P1 = 0.0;     // Tangential distortion
   private static final double P2 = 0.0;     // Tangential distortion
 
-  // Precomputed tone-curve LUT matching iOS CIToneCurve anchor points:
-  //   (0.00, 0.05), (0.25, 0.22), (0.50, 0.50), (0.75, 0.78), (1.00, 0.95)
-  // Uses piecewise-linear interpolation between anchors.
-  private static final int[] TONE_LUT = buildToneLut();
+  // --- Color pipeline tuning parameters ---
 
-  private static int[] buildToneLut() {
-    int[] lut = new int[256];
-    // Anchor points matching iOS CIToneCurve
-    double[] ax = {0.0, 0.25, 0.50, 0.75, 1.0};
-    double[] ay = {0.05, 0.22, 0.50, 0.78, 0.95};
+  // Tone curve anchor points (X values fixed at 0.0, 0.25, 0.50, 0.75, 1.0)
+  // Y values control the S-curve shape in linear space.
+  // Raise shadow point (index 0) to lift blacks, lower highlight point (index 4) to compress whites.
+  private static final double[] TONE_CURVE_Y = {0.05, 0.22, 0.50, 0.78, 0.95};
+
+  // Vibrance: selective saturation boost for desaturated colors (0.0 = off, 1.0 = max)
+  private static final float VIBRANCE_AMOUNT = 0.3f;
+
+  // Color correction matrix (3x4: RGB coefficients + bias per channel)
+  // Adjusts warmth/white balance to compensate for the glasses camera's color cast.
+  private static final float CM_RR = 1.06f, CM_RG = 0.02f, CM_RB = -0.01f, CM_R_BIAS = 5.0f / 255.0f;
+  private static final float CM_GR = 0.01f, CM_GG = 1.04f, CM_GB = -0.01f, CM_G_BIAS = 3.0f / 255.0f;
+  private static final float CM_BR = -0.02f, CM_BG = 0.01f, CM_BB = 1.02f, CM_B_BIAS = 0.0f;
+
+  // sRGB gamma decode LUT: sRGB byte (0-255) -> linear float (0.0-1.0)
+  // iOS CIFilters operate in linear space internally; this matches that behavior.
+  private static final float[] LINEARIZE_LUT = buildLinearizeLut();
+
+  // sRGB gamma encode LUT: linear value (0-4095, Q12 fixed-point) -> sRGB byte (0-255)
+  private static final int[] DELINEARIZE_LUT = buildDelinearizeLut();
+  private static final int DELIN_LUT_SIZE = 4096;
+
+  private static float[] buildLinearizeLut() {
+    float[] lut = new float[256];
     for (int i = 0; i < 256; i++) {
-      double x = i / 255.0;
-      // Find which segment x falls in
+      double v = i / 255.0;
+      if (v <= 0.04045) {
+        lut[i] = (float) (v / 12.92);
+      } else {
+        lut[i] = (float) Math.pow((v + 0.055) / 1.055, 2.4);
+      }
+    }
+    return lut;
+  }
+
+  private static int[] buildDelinearizeLut() {
+    int[] lut = new int[DELIN_LUT_SIZE];
+    for (int i = 0; i < DELIN_LUT_SIZE; i++) {
+      double v = (double) i / (DELIN_LUT_SIZE - 1);
+      double s;
+      if (v <= 0.0031308) {
+        s = v * 12.92;
+      } else {
+        s = 1.055 * Math.pow(v, 1.0 / 2.4) - 0.055;
+      }
+      lut[i] = Math.max(0, Math.min(255, (int) (s * 255 + 0.5)));
+    }
+    return lut;
+  }
+
+  // Tone-curve LUT operating in linear space [0.0-1.0] -> [0.0-1.0]
+  // Piecewise-linear matching iOS CIToneCurve anchor points.
+  // Input/output are linear-light values, not gamma-encoded.
+  private static final float[] TONE_LUT_LINEAR = buildToneLutLinear();
+
+  private static float[] buildToneLutLinear() {
+    float[] lut = new float[DELIN_LUT_SIZE];
+    double[] ax = {0.0, 0.25, 0.50, 0.75, 1.0};
+    double[] ay = TONE_CURVE_Y;
+    for (int i = 0; i < DELIN_LUT_SIZE; i++) {
+      double x = (double) i / (DELIN_LUT_SIZE - 1);
       double y;
       if (x <= ax[1]) {
         y = ay[0] + (ay[1] - ay[0]) * (x - ax[0]) / (ax[1] - ax[0]);
@@ -52,21 +98,22 @@ public class ImageProcessor {
       } else {
         y = ay[3] + (ay[4] - ay[3]) * (x - ax[3]) / (ax[4] - ax[3]);
       }
-      lut[i] = Math.max(0, Math.min(255, (int) (y * 255 + 0.5)));
+      lut[i] = (float) Math.max(0.0, Math.min(1.0, y));
     }
     return lut;
   }
 
-  // Color correction matrix: slight warmth, saturation boost
-  // Applied as a 4x5 ColorMatrix (RGBA + offset in 0-255 scale)
-  // Bias values match iOS: 5.0/255.0 * 255 ≈ 5, 3.0/255.0 * 255 ≈ 3
-  // Note: Android ColorMatrix offsets are in 0-255 space (correct as-is)
-  private static final float[] COLOR_MATRIX = {
-    1.06f, 0.02f, -0.01f, 0, 5,     // R: slight warmth
-    0.01f, 1.04f, -0.01f, 0, 3,     // G: subtle boost
-    -0.02f, 0.01f, 1.02f, 0, 0,     // B: slightly cooler
-    0,      0,      0,     1, 0      // A: unchanged
-  };
+  /** Look up a tone-curve value for a linear float input. */
+  private static float toneCurveLookup(float linearVal) {
+    int idx = Math.max(0, Math.min(DELIN_LUT_SIZE - 1, (int) (linearVal * (DELIN_LUT_SIZE - 1) + 0.5f)));
+    return TONE_LUT_LINEAR[idx];
+  }
+
+  /** Convert a linear [0,1] float back to sRGB byte via LUT. */
+  private static int toSrgbByte(float linear) {
+    int idx = Math.max(0, Math.min(DELIN_LUT_SIZE - 1, (int) (linear * (DELIN_LUT_SIZE - 1) + 0.5f)));
+    return DELINEARIZE_LUT[idx];
+  }
 
   // Precomputed LUT for lens correction (lazily initialized).
   // Stored as fixed-point Q8 (multiply by 256) for sub-pixel bilinear interpolation.
@@ -115,18 +162,9 @@ public class ImageProcessor {
         }
       }
 
-      // Step 2: Tone mapping — S-curve + vibrance
+      // Step 2: Tone mapping + vibrance + color correction in linear space
       if (colorCorrection) {
-        Bitmap toneMapped = applyToneMapping(result);
-        if (toneMapped != result) {
-          result.recycle();
-          result = toneMapped;
-        }
-      }
-
-      // Step 3: Color correction — linear warmth/tint
-      if (colorCorrection) {
-        Bitmap colorCorrected = applyColorCorrection(result);
+        Bitmap colorCorrected = applyColorPipeline(result);
         if (colorCorrected != result) {
           result.recycle();
           result = colorCorrected;
@@ -256,48 +294,63 @@ public class ImageProcessor {
   }
 
   /**
-   * Apply tone mapping: S-curve LUT + vibrance in a single pass.
-   * Lifts shadows, compresses highlights, and selectively boosts
-   * undersaturated colors for a more natural, phone-like look.
+   * Apply tone mapping + vibrance + color correction in a single pass,
+   * all in linear light space to match iOS CIFilter behavior.
+   *
+   * Pipeline per pixel:
+   *   1. sRGB gamma decode (byte → linear float via LUT)
+   *   2. Tone curve (piecewise-linear S-curve in linear space)
+   *   3. Vibrance (luminance-based selective saturation boost)
+   *   4. Color correction matrix (warmth/white balance)
+   *   5. sRGB gamma encode (linear float → byte via LUT)
    */
-  private static Bitmap applyToneMapping(Bitmap src) {
+  private static Bitmap applyColorPipeline(Bitmap src) {
     int w = src.getWidth(), h = src.getHeight();
     int[] pixels = new int[w * h];
     src.getPixels(pixels, 0, w, 0, 0, w, h);
 
-    float[] hsv = new float[3];
     for (int i = 0; i < pixels.length; i++) {
-      int r = TONE_LUT[(pixels[i] >> 16) & 0xFF];
-      int g = TONE_LUT[(pixels[i] >> 8) & 0xFF];
-      int b = TONE_LUT[pixels[i] & 0xFF];
+      // 1. Linearize sRGB → linear
+      float lr = LINEARIZE_LUT[(pixels[i] >> 16) & 0xFF];
+      float lg = LINEARIZE_LUT[(pixels[i] >> 8) & 0xFF];
+      float lb = LINEARIZE_LUT[pixels[i] & 0xFF];
 
-      // Vibrance: boost undersaturated colors more
-      Color.RGBToHSV(r, g, b, hsv);
-      float boost = 0.3f * (1.0f - hsv[1]); // 30% max for grays, ~0% for vivid
-      hsv[1] = Math.min(1.0f, hsv[1] + boost);
-      int rgb = Color.HSVToColor(hsv);
+      // 2a. Tone curve in linear space
+      lr = toneCurveLookup(lr);
+      lg = toneCurveLookup(lg);
+      lb = toneCurveLookup(lb);
 
-      pixels[i] = 0xFF000000 | (rgb & 0x00FFFFFF);
+      // 2b. Vibrance — luminance-based, stays in linear space (no HSV round-trip)
+      // Matches CIVibrance behavior: selectively boosts desaturated colors
+      float lum = 0.2126f * lr + 0.7152f * lg + 0.0722f * lb;
+      float maxC = Math.max(lr, Math.max(lg, lb));
+      float minC = Math.min(lr, Math.min(lg, lb));
+      float sat = (maxC > 0.0001f) ? (maxC - minC) / maxC : 0f;
+      float amount = VIBRANCE_AMOUNT * (1.0f - sat); // boost desaturated more
+      lr = lr + (lr - lum) * amount;
+      lg = lg + (lg - lum) * amount;
+      lb = lb + (lb - lum) * amount;
+
+      // 2c. Color correction matrix in linear space
+      float cr = CM_RR * lr + CM_RG * lg + CM_RB * lb + CM_R_BIAS;
+      float cg = CM_GR * lr + CM_GG * lg + CM_GB * lb + CM_G_BIAS;
+      float cb = CM_BR * lr + CM_BG * lg + CM_BB * lb + CM_B_BIAS;
+
+      // Clamp to [0, 1]
+      cr = Math.max(0f, Math.min(1f, cr));
+      cg = Math.max(0f, Math.min(1f, cg));
+      cb = Math.max(0f, Math.min(1f, cb));
+
+      // 5. Encode linear → sRGB
+      int outR = toSrgbByte(cr);
+      int outG = toSrgbByte(cg);
+      int outB = toSrgbByte(cb);
+
+      pixels[i] = 0xFF000000 | (outR << 16) | (outG << 8) | outB;
     }
 
     Bitmap dst = Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888);
     dst.setPixels(pixels, 0, w, 0, 0, w, h);
-    return dst;
-  }
-
-  /**
-   * Apply color correction using a ColorMatrix on a Canvas draw.
-   * Adjusts white balance (slight warmth), saturation, and contrast.
-   */
-  private static Bitmap applyColorCorrection(Bitmap src) {
-    Bitmap dst = Bitmap.createBitmap(src.getWidth(), src.getHeight(), Bitmap.Config.ARGB_8888);
-    Canvas canvas = new Canvas(dst);
-
-    Paint paint = new Paint(Paint.ANTI_ALIAS_FLAG);
-    ColorMatrix cm = new ColorMatrix(COLOR_MATRIX);
-    paint.setColorFilter(new ColorMatrixColorFilter(cm));
-
-    canvas.drawBitmap(src, 0, 0, paint);
     return dst;
   }
 

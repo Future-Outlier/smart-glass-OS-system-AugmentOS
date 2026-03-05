@@ -2,7 +2,6 @@ package com.mentra.core.utils
 
 import android.graphics.Bitmap
 import android.graphics.Canvas
-import android.graphics.Color
 import android.graphics.Matrix
 import android.graphics.Paint
 import android.media.Image
@@ -44,27 +43,58 @@ object VideoStabilizer {
 
   private const val CODEC_TIMEOUT_US = 10_000L
 
-  // Precomputed tone LUT matching iOS CIToneCurve anchor points
-  private val TONE_LUT = IntArray(256).also { lut ->
-    val ax = doubleArrayOf(0.0, 0.25, 0.50, 0.75, 1.0)
-    val ay = doubleArrayOf(0.05, 0.22, 0.50, 0.78, 0.95)
-    for (i in 0 until 256) {
-      val x = i / 255.0
-      val y = when {
-        x <= ax[1] -> ay[0] + (ay[1] - ay[0]) * (x - ax[0]) / (ax[1] - ax[0])
-        x <= ax[2] -> ay[1] + (ay[2] - ay[1]) * (x - ax[1]) / (ax[2] - ax[1])
-        x <= ax[3] -> ay[2] + (ay[3] - ay[2]) * (x - ax[2]) / (ax[3] - ax[2])
-        else       -> ay[3] + (ay[4] - ay[3]) * (x - ax[3]) / (ax[4] - ax[3])
-      }
-      lut[i] = (y * 255 + 0.5).toInt().coerceIn(0, 255)
-    }
+  // sRGB linearize LUT: sRGB byte (0-255) -> linear float (0.0-1.0)
+  private val LINEARIZE_LUT = FloatArray(256) { i ->
+    val v = i / 255.0
+    if (v <= 0.04045) (v / 12.92).toFloat()
+    else Math.pow((v + 0.055) / 1.055, 2.4).toFloat()
   }
 
-  // Color correction matrix coefficients (same as ImageProcessor)
-  // R' = 1.06*R + 0.02*G - 0.01*B + 5
-  // G' = 0.01*R + 1.04*G - 0.01*B + 3
-  // B' = -0.02*R + 0.01*G + 1.02*B + 0
+  // sRGB delinearize LUT: linear Q12 (0-4095) -> sRGB byte (0-255)
+  private const val DELIN_LUT_SIZE = 4096
+  private val DELINEARIZE_LUT = IntArray(DELIN_LUT_SIZE) { i ->
+    val v = i.toDouble() / (DELIN_LUT_SIZE - 1)
+    val s = if (v <= 0.0031308) v * 12.92
+            else 1.055 * Math.pow(v, 1.0 / 2.4) - 0.055
+    (s * 255 + 0.5).toInt().coerceIn(0, 255)
+  }
+
+  // Tone curve LUT in linear space: linear Q12 (0-4095) -> linear float (0.0-1.0)
+  private val TONE_LUT_LINEAR = FloatArray(DELIN_LUT_SIZE) { i ->
+    val x = i.toDouble() / (DELIN_LUT_SIZE - 1)
+    val ax = doubleArrayOf(0.0, 0.25, 0.50, 0.75, 1.0)
+    val ay = TONE_CURVE_Y
+    val y = when {
+      x <= ax[1] -> ay[0] + (ay[1] - ay[0]) * (x - ax[0]) / (ax[1] - ax[0])
+      x <= ax[2] -> ay[1] + (ay[2] - ay[1]) * (x - ax[1]) / (ax[2] - ax[1])
+      x <= ax[3] -> ay[2] + (ay[3] - ay[2]) * (x - ax[2]) / (ax[3] - ax[2])
+      else       -> ay[3] + (ay[4] - ay[3]) * (x - ax[3]) / (ax[4] - ax[3])
+    }
+    y.coerceIn(0.0, 1.0).toFloat()
+  }
+
+  private fun toneCurve(linear: Float): Float {
+    val idx = (linear * (DELIN_LUT_SIZE - 1) + 0.5f).toInt().coerceIn(0, DELIN_LUT_SIZE - 1)
+    return TONE_LUT_LINEAR[idx]
+  }
+
+  private fun toSrgbByte(linear: Float): Int {
+    val idx = (linear * (DELIN_LUT_SIZE - 1) + 0.5f).toInt().coerceIn(0, DELIN_LUT_SIZE - 1)
+    return DELINEARIZE_LUT[idx]
+  }
+
+  // --- Color pipeline tuning parameters ---
+
+  // Tone curve anchor Y values (X fixed at 0.0, 0.25, 0.50, 0.75, 1.0)
+  private val TONE_CURVE_Y = doubleArrayOf(0.05, 0.22, 0.50, 0.78, 0.95)
+
+  // Vibrance: selective saturation boost for desaturated colors (0.0 = off, 1.0 = max)
   private const val VIBRANCE_AMOUNT = 0.3f
+
+  // Color correction matrix (3x4: RGB coefficients + bias per channel)
+  private const val CM_RR = 1.06f; private const val CM_RG = 0.02f; private const val CM_RB = -0.01f; private const val CM_R_BIAS = 5f / 255f
+  private const val CM_GR = 0.01f; private const val CM_GG = 1.04f; private const val CM_GB = -0.01f; private const val CM_G_BIAS = 3f / 255f
+  private const val CM_BR = -0.02f; private const val CM_BG = 0.01f; private const val CM_BB = 1.02f; private const val CM_B_BIAS = 0f
 
   /**
    * Stabilize a video using gyroscope data from an IMU sidecar file.
@@ -377,29 +407,39 @@ object VideoStabilizer {
     val uvRowStride = uPlane.rowStride
     val uvPixelStride = uPlane.pixelStride
 
-    val hsv = FloatArray(3)
-
     for (y in 0 until h) {
       for (x in 0 until w) {
         val argb = pixels[y * w + x]
-        // 1. S-curve tone mapping via LUT
-        var r = TONE_LUT[(argb shr 16) and 0xFF]
-        var g = TONE_LUT[(argb shr 8) and 0xFF]
-        var b = TONE_LUT[argb and 0xFF]
 
-        // 2. Vibrance: selectively boost undersaturated colors
-        Color.RGBToHSV(r, g, b, hsv)
-        val boost = VIBRANCE_AMOUNT * (1.0f - hsv[1])
-        hsv[1] = (hsv[1] + boost).coerceAtMost(1.0f)
-        val vibrant = Color.HSVToColor(hsv)
-        r = (vibrant shr 16) and 0xFF
-        g = (vibrant shr 8) and 0xFF
-        b = vibrant and 0xFF
+        // 1. Linearize sRGB → linear
+        var lr = LINEARIZE_LUT[(argb shr 16) and 0xFF]
+        var lg = LINEARIZE_LUT[(argb shr 8) and 0xFF]
+        var lb = LINEARIZE_LUT[argb and 0xFF]
 
-        // 3. Color correction matrix (warmth/white balance)
-        val cr = (1.06f * r + 0.02f * g - 0.01f * b + 5).toInt().coerceIn(0, 255)
-        val cg = (0.01f * r + 1.04f * g - 0.01f * b + 3).toInt().coerceIn(0, 255)
-        val cb = (-0.02f * r + 0.01f * g + 1.02f * b).toInt().coerceIn(0, 255)
+        // 2. Tone curve in linear space
+        lr = toneCurve(lr)
+        lg = toneCurve(lg)
+        lb = toneCurve(lb)
+
+        // 3. Vibrance — luminance-based, stays in linear space (no HSV round-trip)
+        val lum = 0.2126f * lr + 0.7152f * lg + 0.0722f * lb
+        val maxC = maxOf(lr, lg, lb)
+        val minC = minOf(lr, lg, lb)
+        val sat = if (maxC > 0.0001f) (maxC - minC) / maxC else 0f
+        val boost = VIBRANCE_AMOUNT * (1.0f - sat)
+        lr += (lr - lum) * boost
+        lg += (lg - lum) * boost
+        lb += (lb - lum) * boost
+
+        // 4. Color correction matrix in linear space
+        val clr = (CM_RR * lr + CM_RG * lg + CM_RB * lb + CM_R_BIAS).coerceIn(0f, 1f)
+        val clg = (CM_GR * lr + CM_GG * lg + CM_GB * lb + CM_G_BIAS).coerceIn(0f, 1f)
+        val clb = (CM_BR * lr + CM_BG * lg + CM_BB * lb + CM_B_BIAS).coerceIn(0f, 1f)
+
+        // 5. Encode linear → sRGB
+        val cr = toSrgbByte(clr)
+        val cg = toSrgbByte(clg)
+        val cb = toSrgbByte(clb)
 
         // BT.601 RGB → YUV
         val yVal = ((66 * cr + 129 * cg + 25 * cb + 128) shr 8) + 16
