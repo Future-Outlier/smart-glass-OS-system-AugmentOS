@@ -45,6 +45,13 @@ export const SETTINGS: Record<string, Setting> = {
     saveOnServer: true,
     persist: true,
   },
+  ios_glass_effect: {
+    key: "ios_glass_effect",
+    defaultValue: () => true,
+    writable: true,
+    saveOnServer: true,
+    persist: true,
+  },
   debug_console: {
     key: "debug_console",
     defaultValue: () => false,
