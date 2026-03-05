@@ -155,7 +155,35 @@ Soniox returns HTTP 408 ("Audio data decode timeout" / "Request timeout") when i
 
 The existing retry mechanism works: streams reconnect in 140ms–2.8s via `TranscriptionManager.handleStreamError()`. But during the retry window, no transcription flows to apps. With multiple retries per hour per user, the cumulative gap is noticeable.
 
-**Important:** The spike confirmed that Soniox 408s are **independent of WebSocket disconnects**. They happen on the debug server (which has stable connections) too. This is a Soniox capacity / audio quality issue, not a cascading failure from disconnects.
+**Important:** The spike confirmed that Soniox 408s are **independent of WebSocket disconnects**. They happen on the debug server (which has stable connections) too. This is not a cascading failure from disconnects.
+
+#### Likely root cause: no keepalive during VAD silence (hypothesis)
+
+The old WebSocket-based `SonioxTranscriptionStream` sends a `{"type":"keepalive"}` every 15 seconds (Soniox requires at least one every 20 seconds — see `SonioxTranscriptionProvider.ts` L1092–1139). The new SDK-based `SonioxSdkStream` has **no keepalive mechanism at all** — it relies entirely on audio data flowing to keep the connection alive.
+
+This wasn't a problem with G1/display glasses because there was no on-glasses VAD — audio always flowed continuously from glasses → phone → cloud → Soniox. With **Mentra Live glasses**, the glasses have a hardware VAD that suppresses audio during silence. When the glasses VAD fires:
+
+```
+Glasses VAD → silence detected
+  → Phone stops sending audio to cloud
+  → Cloud's handleVad() in glasses-message-handler.ts:
+    → transcriptionManager.finalizePendingTokens()
+    → transcriptionManager.cleanupIdleStreams()  ← TEARS DOWN the Soniox stream entirely
+```
+
+So today, the Soniox stream is destroyed on every VAD silence event and recreated on every VAD speech event. This is heavyweight (full SDK session connect + config) and is likely the source of many 408s — Soniox gets a brand new connection, receives a burst of audio, and if it can't decode fast enough on the fresh stream, it returns 408.
+
+But there's a second scenario even without full stream teardown: if the VAD behavior changes or if `cleanupIdleStreams` is not called (e.g., VAD events aren't arriving from the glasses — which the spike notes is the case), then the Soniox SDK stream stays open but receives **no audio for extended periods**. Without audio data and without a keepalive, Soniox's server-side idle timeout fires → 408.
+
+**Key difference between the two Soniox integrations:**
+
+| | Old WebSocket stream | New SDK stream |
+|---|---|---|
+| Keepalive | `{"type":"keepalive"}` every 15s | None |
+| On VAD silence | Stream stays open, keepalive continues | Stream torn down entirely |
+| Idle tolerance | Indefinite (keepalive keeps it alive) | ~20s before Soniox times out |
+
+**Note:** We're not currently receiving VAD events from Mentra Live glasses reliably. This means the cloud may not know when the glasses go silent, and the Soniox SDK stream just sits idle with no audio and no keepalive until Soniox kills it.
 
 #### Current behavior
 
@@ -173,18 +201,25 @@ The retry recreates the entire stream, including Soniox SDK initialization, WebS
 
 #### Specified behavior
 
-**A. Classify 408 as a transient error with fast retry.** The current retry path treats 408 the same as other retryable errors. Add a specific fast-path: if the error is a 408 timeout and the stream was previously healthy (had produced transcriptions), retry immediately (no backoff delay on first attempt) and skip provider failover.
+**A. Add keepalive to `SonioxSdkStream`.** Port the keepalive mechanism from the old `SonioxTranscriptionStream` into the SDK-based stream. Send a keepalive every 15 seconds while the stream is connected but not receiving audio. The Soniox Node SDK's `RealtimeSttSession` may not expose a raw `sendKeepalive()` — investigate whether `session.sendAudio(silence)` (a buffer of zeros) or the SDK's own idle handling is sufficient. If not, this may need to be raised with Soniox as a feature request for `@soniox/node`.
 
-**B. Buffer audio during retry.** When a Soniox stream enters the retry path due to 408, buffer incoming PCM audio (up to 5 seconds / ~160KB at 16kHz 16-bit mono) instead of dropping it. On successful retry, flush the buffer to the new stream. This eliminates the transcription gap for short retries.
+**B. Don't tear down streams on VAD silence — keep them warm.** Instead of calling `cleanupIdleStreams()` on VAD silence (which destroys the Soniox session entirely), keep the stream open and rely on the keepalive to maintain it. On VAD speech, audio can flow immediately to the existing stream without the overhead of a full reconnect. The `forceFinalizePendingTokens()` call should remain (it tells Soniox to flush pending transcription), but the stream itself should stay connected.
 
-**C. Cap the buffer.** If the retry takes longer than 5 seconds, start dropping the oldest audio from the buffer (ring buffer behavior). This prevents memory growth during extended outages.
+**C. Classify 408 as a transient error with fast retry.** The current retry path treats 408 the same as other retryable errors. Add a specific fast-path: if the error is a 408 timeout and the stream was previously healthy (had produced transcriptions), retry immediately (no backoff delay on first attempt) and skip provider failover.
 
-**D. Track 408 rate per user.** Add a per-session counter for 408 errors. If a user exceeds 10 in 5 minutes, log an error-level event with audio format details (sample rate, codec, frame size). This helps correlate 408s with specific audio configurations or device types.
+**D. Buffer audio during retry.** When a Soniox stream enters the retry path due to 408, buffer incoming PCM audio (up to 5 seconds / ~160KB at 16kHz 16-bit mono) instead of dropping it. On successful retry, flush the buffer to the new stream. This eliminates the transcription gap for short retries.
 
-**E. Do NOT switch providers on first 408.** The current code in `handleStreamError()` L1306–1315 checks `isSonioxRateLimit()` and immediately fails over to Azure. A 408 timeout is not a rate limit — it's a transient processing delay. Only fail over to Azure after 3 consecutive 408s for the same stream.
+**E. Cap the buffer.** If the retry takes longer than 5 seconds, start dropping the oldest audio from the buffer (ring buffer behavior). This prevents memory growth during extended outages.
+
+**F. Track 408 rate per user.** Add a per-session counter for 408 errors. If a user exceeds 10 in 5 minutes, log an error-level event with audio format details (sample rate, codec, frame size). This helps correlate 408s with specific audio configurations or device types.
+
+**G. Do NOT switch providers on first 408.** The current code in `handleStreamError()` L1306–1315 checks `isSonioxRateLimit()` and immediately fails over to Azure. A 408 timeout is not a rate limit — it's a transient processing delay. Only fail over to Azure after 3 consecutive 408s for the same stream.
 
 #### Acceptance criteria
 
+- `SonioxSdkStream` sends keepalive messages every 15 seconds when no audio is flowing
+- Soniox streams survive VAD silence periods without being torn down
+- On VAD speech resume, audio flows to the existing stream (no reconnect overhead)
 - First 408 retries immediately (no backoff), retaining Soniox as provider
 - Audio is buffered during retry and flushed on success, eliminating the transcription gap for retries under 5 seconds
 - Provider failover to Azure happens only after 3 consecutive 408s
@@ -211,7 +246,22 @@ With 224 users experiencing disconnects, this produced **237K error-level log en
 
 **Note:** The `DisplayManager6.1.ts` code already has a `ConnectionValidator` guard in `sendToWebSocket()` that logs at **debug** level. The spam is coming from the upstream callers that catch the exception and log it at error level before the guard is even reached, or from the SDK-side `AppSession.send()` which throws when `readyState !== 1`.
 
-#### Specified behavior
+#### The real fix: kill the dashboard mini app
+
+The dashboard is currently a separate mini app that connects to the cloud like any third-party app. This architecture is the root cause of the log spam (it goes through the full SDK `AppSession.send()` path), but it's also a broader maintainability and reliability problem:
+
+- It's hard to test dashboard changes because you have to think about `SYSTEM_DASHBOARD_PACKAGE_NAME` and special-case routing
+- If the dashboard mini app server goes down, users have no dashboard
+- The webhook round-trip to the dashboard app adds latency and a failure point
+- The cloud already has all the data the dashboard needs (time, battery, location, notifications, calendar)
+
+This is documented in [040-cloud-v3-cleanup/maintainability.md §5](../040-cloud-v3-cleanup/maintainability.md) ("Dashboard mini app needs to die — cloud takes over") and [040-cloud-v3-cleanup/reliability.md §6](../040-cloud-v3-cleanup/reliability.md) ("Dashboard reliability").
+
+**The proper fix is to deprecate the dashboard mini app and refactor `DashboardManager` to do what the mini app does directly** — weather, notification summarization, calendar formatting, etc. All this logic already exists in the mini app; it just needs to be relocated into the `DashboardManager` rewrite. The rewritten manager composes the dashboard layout directly and sends it to `ViewType.DASHBOARD` via the `DisplayManager`, bypassing the SDK `AppSession` path entirely. This eliminates the CLOSED spam by design — no WebSocket send, no error.
+
+**This is a larger refactor that will be specced separately.** The dashboard mini app code will be provided as input for that spec. For now, a short-term mitigation stops the bleeding.
+
+#### Specified behavior (short-term mitigation)
 
 **A. Check connection state before attempting dashboard update.** In `DashboardManager.updateDashboard()`, check `this.userSession.websocket?.readyState === 1` (or use `ConnectionValidator`) before generating the layout and calling `sendDisplayRequest()`. If disconnected, return silently — don't generate layout, don't attempt send, don't log.
 
@@ -223,7 +273,11 @@ Implementation: `DashboardManager` already has access to `this.userSession`. Lis
 
 **D. Do NOT suppress errors for non-dashboard apps.** The `AppSession.send()` error logging in the SDK (`packages/sdk/src/app/session/index.ts` L1955) already distinguishes disconnect errors from real errors (the `isDisconnectError` check). This fix only changes the dashboard-specific callers.
 
-#### Acceptance criteria
+#### Specified behavior (long-term — separate spec)
+
+**E. Kill the dashboard mini app.** Rewrite `DashboardManager` to be a self-contained OS service. Move weather (OpenWeatherMap), notification summarization (LLM agent), calendar formatting, etc. from the mini app into the manager. Kill `SYSTEM_DASHBOARD_PACKAGE_NAME` and all its special-case routing. This will be specced separately once the mini app code is reviewed.
+
+#### Acceptance criteria (short-term)
 
 - Zero error-level log lines from the dashboard system when users are disconnected
 - Dashboard updates resume within one interval tick (60s) after reconnect
@@ -299,12 +353,13 @@ This is an atomic MongoDB operation that doesn't require reading the document ve
 
 | Decision                                                 | Alternatives considered                                                                                                           | Why we chose this                                                                                                                                                                                               |
 | -------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Cache app permissions in SubscriptionManager per session | (a) Query MongoDB every time, (b) global permission cache with TTL, (c) pre-load all permissions on session start                 | Per-session cache is simple, has no staleness issues within a session, and doesn't require a cache invalidation strategy. Global cache adds complexity for marginal benefit since permission changes are rare.  |
-| Keep previous UDP key for 2s grace window                | (a) Mobile sends key-version header in UDP packets, (b) server keeps last N keys, (c) ignore — silence is acceptable              | 2s grace window is server-only (no mobile change needed), covers the typical transition period, and has bounded memory cost. Key-version header requires mobile app update and UDP protocol change.             |
-| Buffer audio during Soniox retry                         | (a) Accept the 5s gap, (b) send audio to Azure during Soniox retry, (c) buffer and replay                                         | Buffering is simplest — no dual-provider complexity, no audio loss for short retries, and the 160KB memory cost is trivial. Dual-provider streaming adds significant complexity.                                |
-| Pause dashboard interval on disconnect                   | (a) Check connection in interval callback, (b) downgrade log level only, (c) pause interval                                       | Pausing eliminates CPU cost of layout generation for disconnected users. Checking in callback still does work every 60s per disconnected user. Log-level-only still generates unnecessary work.                 |
-| Use `$addToSet`/`$pull` for installedApps                | (a) Retry-on-VersionError only, (b) atomic ops only, (c) both                                                                     | Atomic ops eliminate the race condition entirely for simple add/remove operations. Retry is still needed for complex mutations (settings path) where atomic ops aren't practical. Belt and suspenders.          |
-| 408 retries immediately without provider failover        | (a) Treat 408 like rate limit (immediate Azure failover), (b) standard exponential backoff, (c) immediate retry, failover after 3 | 408 is transient — Soniox recovers quickly. Immediate failover to Azure wastes Azure credits and may have worse latency. Standard backoff adds unnecessary delay. 3-strike threshold catches persistent issues. |
+| Cache app permissions in SubscriptionManager per session | (a) Query MongoDB every time, (b) global permission cache with TTL, (c) pre-load all permissions on session start | Per-session cache is simple, has no staleness issues within a session, and doesn't require a cache invalidation strategy. Global cache adds complexity for marginal benefit since permission changes are rare. |
+| Keep previous UDP key for 2s grace window | (a) Mobile sends key-version header in UDP packets, (b) server keeps last N keys, (c) ignore — silence is acceptable | 2s grace window is server-only (no mobile change needed), covers the typical transition period, and has bounded memory cost. Key-version header requires mobile app update and UDP protocol change. |
+| Add keepalive to SonioxSdkStream + keep streams warm during VAD silence | (a) Tear down stream on VAD silence and recreate on speech (current behavior), (b) add keepalive only, (c) keepalive + keep stream warm | The old WS stream had keepalive every 15s; the SDK stream has none. Mentra Live glasses VAD creates long silence gaps that the old always-streaming G1 glasses never had. Keeping streams warm avoids the heavyweight reconnect on every VAD cycle. |
+| Buffer audio during Soniox retry | (a) Accept the 5s gap, (b) send audio to Azure during Soniox retry, (c) buffer and replay | Buffering is simplest — no dual-provider complexity, no audio loss for short retries, and the 160KB memory cost is trivial. Dual-provider streaming adds significant complexity. |
+| Short-term dashboard mitigation + long-term kill the mini app | (a) Only pause interval, (b) only downgrade logs, (c) pause interval now, kill mini app later (040 §5) | Pausing the interval stops the bleeding immediately. The real fix is killing the dashboard mini app entirely (040-cloud-v3-cleanup §5, §6) — the dashboard should be an OS service inside the cloud, not a separate app going through the SDK AppSession path. Separate spec once mini app code is reviewed. |
+| Use `$addToSet`/`$pull` for installedApps | (a) Retry-on-VersionError only, (b) atomic ops only, (c) both | Atomic ops eliminate the race condition entirely for simple add/remove operations. Retry is still needed for complex mutations (settings path) where atomic ops aren't practical. Belt and suspenders. |
+| 408 retries immediately without provider failover | (a) Treat 408 like rate limit (immediate Azure failover), (b) standard exponential backoff, (c) immediate retry, failover after 3 | 408 is transient — Soniox recovers quickly. Immediate failover to Azure wastes Azure credits and may have worse latency. Standard backoff adds unnecessary delay. 3-strike threshold catches persistent issues. |
 
 ## Priority Order
 
@@ -316,4 +371,6 @@ Implement in this order based on user impact:
 4. **Fix 5 (MongoDB VersionError)** — silent data corruption, 45K errors/4hr
 5. **Fix 3 (Soniox 408)** — lower priority because retry already works, but buffer improves UX
 
-Fixes 1, 4, and 5 are independent and can be developed in parallel. Fix 2 is also independent. Fix 3 depends on understanding the Soniox 408 root cause better (is it load? audio quality? both?) — the spec here covers mitigation, not root cause resolution.
+Fixes 1, 4, and 5 are independent and can be developed in parallel. Fix 2 is also independent. Fix 3's keepalive + warm-stream changes (A, B) should be done first as they likely address the root cause; the retry/buffer improvements (C–G) are defense-in-depth.
+
+**Note:** Fix 4's long-term solution (kill the dashboard mini app, rewrite `DashboardManager` as an OS service) is a larger refactor tracked under [040-cloud-v3-cleanup §5](../040-cloud-v3-cleanup/maintainability.md). It will be specced separately once the dashboard mini app code is reviewed. The short-term mitigation (A–D) stops the log spam immediately.
