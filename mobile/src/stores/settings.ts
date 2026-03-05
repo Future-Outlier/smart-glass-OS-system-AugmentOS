@@ -366,7 +366,7 @@ export const SETTINGS: Record<string, Setting> = {
   },
   media_post_processing: {
     key: "media_post_processing",
-    defaultValue: () => true,
+    defaultValue: () => false,
     writable: true,
     saveOnServer: true,
     persist: true,
