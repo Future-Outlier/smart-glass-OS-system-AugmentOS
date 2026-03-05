@@ -157,33 +157,43 @@ The existing retry mechanism works: streams reconnect in 140ms–2.8s via `Trans
 
 **Important:** The spike confirmed that Soniox 408s are **independent of WebSocket disconnects**. They happen on the debug server (which has stable connections) too. This is not a cascading failure from disconnects.
 
-#### Likely root cause: no keepalive during VAD silence (hypothesis)
+#### Likely root cause: no keepalive in the SDK stream during audio gaps (hypothesis)
 
-The old WebSocket-based `SonioxTranscriptionStream` sends a `{"type":"keepalive"}` every 15 seconds (Soniox requires at least one every 20 seconds — see `SonioxTranscriptionProvider.ts` L1092–1139). The new SDK-based `SonioxSdkStream` has **no keepalive mechanism at all** — it relies entirely on audio data flowing to keep the connection alive.
+The old WebSocket-based `SonioxTranscriptionStream` sends a `{"type":"keepalive"}` every 15 seconds (Soniox requires at least one every 20 seconds — see `SonioxTranscriptionProvider.ts` L1092–1139). The new SDK-based `SonioxSdkStream` (migrated in issue 041) has **no keepalive mechanism at all** — it relies entirely on audio data flowing to keep the connection alive.
 
-This wasn't a problem with G1/display glasses because there was no on-glasses VAD — audio always flowed continuously from glasses → phone → cloud → Soniox. With **Mentra Live glasses**, the glasses have a hardware VAD that suppresses audio during silence. When the glasses VAD fires:
+This wasn't a problem with G1/display glasses because there was no on-glasses VAD — audio always flowed continuously from glasses → phone → cloud → Soniox. With **Mentra Live glasses**, the glasses have a **hardware VAD** that suppresses audio during silence. Crucially:
+
+- **The cloud does NOT receive glasses VAD events.** The `handleVad()` code in `glasses-message-handler.ts` only fires for the phone-side VAD (phone mic / G1 audio source). The Mentra Live glasses VAD operates silently at the phone level — the mobile client simply stops sending audio chunks to the cloud. The cloud has no signal that audio stopped or why.
+- **The Soniox SDK stream stays open but starved.** Since the cloud doesn't know about the silence, it doesn't tear down the stream. The `SonioxSdkStream` just sits there connected, receiving no audio and sending no keepalive, until Soniox's server-side idle timeout fires → 408.
+- **In the future**, the mobile client will forward glasses VAD events to the cloud. But today it doesn't, so the cloud can't distinguish "user is in a quiet room" from "glasses VAD suppressed audio."
 
 ```
-Glasses VAD → silence detected
-  → Phone stops sending audio to cloud
-  → Cloud's handleVad() in glasses-message-handler.ts:
-    → transcriptionManager.finalizePendingTokens()
-    → transcriptionManager.cleanupIdleStreams()  ← TEARS DOWN the Soniox stream entirely
+Mentra Live glasses VAD → silence detected
+  → Phone stops sending audio chunks to cloud
+  → Cloud doesn't know (no VAD event received)
+  → SonioxSdkStream sits idle — no audio, no keepalive
+  → ~20s later: Soniox server times out → 408
+
+  ...time passes...
+
+  → Glasses VAD → speech detected
+  → Phone resumes sending audio chunks
+  → Cloud pushes audio to the (now dead) SonioxSdkStream → error
+  → handleStreamError() → full stream teardown + recreation
+  → ~140ms–2.8s gap with no transcription
 ```
-
-So today, the Soniox stream is destroyed on every VAD silence event and recreated on every VAD speech event. This is heavyweight (full SDK session connect + config) and is likely the source of many 408s — Soniox gets a brand new connection, receives a burst of audio, and if it can't decode fast enough on the fresh stream, it returns 408.
-
-But there's a second scenario even without full stream teardown: if the VAD behavior changes or if `cleanupIdleStreams` is not called (e.g., VAD events aren't arriving from the glasses — which the spike notes is the case), then the Soniox SDK stream stays open but receives **no audio for extended periods**. Without audio data and without a keepalive, Soniox's server-side idle timeout fires → 408.
 
 **Key difference between the two Soniox integrations:**
 
 | | Old WebSocket stream | New SDK stream |
 |---|---|---|
-| Keepalive | `{"type":"keepalive"}` every 15s | None |
-| On VAD silence | Stream stays open, keepalive continues | Stream torn down entirely |
-| Idle tolerance | Indefinite (keepalive keeps it alive) | ~20s before Soniox times out |
+| Keepalive | `{"type":"keepalive"}` every 15s | **None** |
+| During audio gaps | Stream stays alive (keepalive sustains it) | Stream idles → Soniox times out after ~20s |
+| After timeout | N/A (doesn't time out) | Full teardown + recreation on next audio |
 
-**Note:** We're not currently receiving VAD events from Mentra Live glasses reliably. This means the cloud may not know when the glasses go silent, and the Soniox SDK stream just sits idle with no audio and no keepalive until Soniox kills it.
+**Open question: stream continuity after silence.** If we add keepalive and the stream survives a long silence, when audio resumes will Soniox try to stitch the new speech onto the old context? Or does it treat the gap as an implicit endpoint? The old WebSocket protocol let us send `session.finalize()` explicitly. The SDK exposes `session.finalize()` too (used by `forceFinalizePendingTokens()`), but it's unclear whether we should call it when we detect an audio gap — since the cloud doesn't know about the gap in the first place. This needs investigation with Soniox docs or testing. Worst case, we may need to detect audio gaps ourselves (e.g., "no audio received for N seconds → call `session.finalize()`") to prevent Soniox from producing garbled transcription when audio resumes.
+
+**Also unclear: does the Soniox Node SDK (`@soniox/node`) handle keepalive internally?** The old raw WebSocket integration required manual keepalive. The SDK might handle it under the hood — or it might not. The SDK source isn't available locally to verify. This is the first thing to check before implementing a manual keepalive.
 
 #### Current behavior
 
@@ -201,25 +211,30 @@ The retry recreates the entire stream, including Soniox SDK initialization, WebS
 
 #### Specified behavior
 
-**A. Add keepalive to `SonioxSdkStream`.** Port the keepalive mechanism from the old `SonioxTranscriptionStream` into the SDK-based stream. Send a keepalive every 15 seconds while the stream is connected but not receiving audio. The Soniox Node SDK's `RealtimeSttSession` may not expose a raw `sendKeepalive()` — investigate whether `session.sendAudio(silence)` (a buffer of zeros) or the SDK's own idle handling is sufficient. If not, this may need to be raised with Soniox as a feature request for `@soniox/node`.
+**A. Investigate whether `@soniox/node` SDK handles keepalive internally.** Before implementing anything, check the SDK source/docs to determine if `RealtimeSttSession` sends its own WebSocket keepalive. If it does and the timeout is still happening, the problem is elsewhere (e.g., Soniox server-side audio processing timeout, not connection idle timeout). If it doesn't, proceed with B.
 
-**B. Don't tear down streams on VAD silence — keep them warm.** Instead of calling `cleanupIdleStreams()` on VAD silence (which destroys the Soniox session entirely), keep the stream open and rely on the keepalive to maintain it. On VAD speech, audio can flow immediately to the existing stream without the overhead of a full reconnect. The `forceFinalizePendingTokens()` call should remain (it tells Soniox to flush pending transcription), but the stream itself should stay connected.
+**B. Add keepalive to `SonioxSdkStream`.** If the SDK does not handle keepalive internally, add a keepalive mechanism to `SonioxSdkStream`. Send a keepalive every 15 seconds while the stream is connected but not receiving audio. Options in priority order:
+1. Check if the SDK's `RealtimeSttSession` exposes a `keepalive()` or `ping()` method
+2. Try sending a zero-length or silence audio buffer via `session.sendAudio(new Uint8Array(0))` — may work as an implicit keepalive
+3. If neither works, raise with Soniox as a feature request for `@soniox/node` — the old WebSocket protocol supported `{"type":"keepalive"}` and the SDK should too
 
-**C. Classify 408 as a transient error with fast retry.** The current retry path treats 408 the same as other retryable errors. Add a specific fast-path: if the error is a 408 timeout and the stream was previously healthy (had produced transcriptions), retry immediately (no backoff delay on first attempt) and skip provider failover.
+**C. Add cloud-side audio gap detection.** Since the cloud doesn't receive glasses VAD events today, detect audio gaps by tracking the last `writeAudio()` timestamp in `SonioxSdkStream`. If no audio arrives for N seconds (e.g., 5s), call `session.finalize()` to flush any pending transcription. This prevents Soniox from trying to stitch old context onto new speech when audio eventually resumes after a long silence. The finalization resets the utterance state cleanly — when audio returns, Soniox treats it as a fresh utterance.
 
-**D. Buffer audio during retry.** When a Soniox stream enters the retry path due to 408, buffer incoming PCM audio (up to 5 seconds / ~160KB at 16kHz 16-bit mono) instead of dropping it. On successful retry, flush the buffer to the new stream. This eliminates the transcription gap for short retries.
+**D. Classify 408 as a transient error with fast retry.** The current retry path treats 408 the same as other retryable errors. Add a specific fast-path: if the error is a 408 timeout and the stream was previously healthy (had produced transcriptions), retry immediately (no backoff delay on first attempt) and skip provider failover.
 
-**E. Cap the buffer.** If the retry takes longer than 5 seconds, start dropping the oldest audio from the buffer (ring buffer behavior). This prevents memory growth during extended outages.
+**E. Buffer audio during retry.** When a Soniox stream enters the retry path due to 408, buffer incoming PCM audio (up to 5 seconds / ~160KB at 16kHz 16-bit mono) instead of dropping it. On successful retry, flush the buffer to the new stream. This eliminates the transcription gap for short retries.
 
-**F. Track 408 rate per user.** Add a per-session counter for 408 errors. If a user exceeds 10 in 5 minutes, log an error-level event with audio format details (sample rate, codec, frame size). This helps correlate 408s with specific audio configurations or device types.
+**F. Cap the buffer.** If the retry takes longer than 5 seconds, start dropping the oldest audio from the buffer (ring buffer behavior). This prevents memory growth during extended outages.
 
-**G. Do NOT switch providers on first 408.** The current code in `handleStreamError()` L1306–1315 checks `isSonioxRateLimit()` and immediately fails over to Azure. A 408 timeout is not a rate limit — it's a transient processing delay. Only fail over to Azure after 3 consecutive 408s for the same stream.
+**G. Track 408 rate per user.** Add a per-session counter for 408 errors. If a user exceeds 10 in 5 minutes, log an error-level event with audio format details (sample rate, codec, frame size). This helps correlate 408s with specific audio configurations or device types.
+
+**H. Do NOT switch providers on first 408.** The current code in `handleStreamError()` L1306–1315 checks `isSonioxRateLimit()` and immediately fails over to Azure. A 408 timeout is not a rate limit — it's a transient processing delay. Only fail over to Azure after 3 consecutive 408s for the same stream.
 
 #### Acceptance criteria
 
-- `SonioxSdkStream` sends keepalive messages every 15 seconds when no audio is flowing
-- Soniox streams survive VAD silence periods without being torn down
-- On VAD speech resume, audio flows to the existing stream (no reconnect overhead)
+- Soniox SDK stream stays alive during audio gaps (keepalive prevents idle timeout)
+- After a silence gap >5s, pending tokens are finalized so new speech starts a fresh utterance
+- When audio resumes after a gap, it flows to the existing stream without reconnect overhead
 - First 408 retries immediately (no backoff), retaining Soniox as provider
 - Audio is buffered during retry and flushed on success, eliminating the transcription gap for retries under 5 seconds
 - Provider failover to Azure happens only after 3 consecutive 408s
@@ -355,7 +370,7 @@ This is an atomic MongoDB operation that doesn't require reading the document ve
 | -------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Cache app permissions in SubscriptionManager per session | (a) Query MongoDB every time, (b) global permission cache with TTL, (c) pre-load all permissions on session start | Per-session cache is simple, has no staleness issues within a session, and doesn't require a cache invalidation strategy. Global cache adds complexity for marginal benefit since permission changes are rare. |
 | Keep previous UDP key for 2s grace window | (a) Mobile sends key-version header in UDP packets, (b) server keeps last N keys, (c) ignore — silence is acceptable | 2s grace window is server-only (no mobile change needed), covers the typical transition period, and has bounded memory cost. Key-version header requires mobile app update and UDP protocol change. |
-| Add keepalive to SonioxSdkStream + keep streams warm during VAD silence | (a) Tear down stream on VAD silence and recreate on speech (current behavior), (b) add keepalive only, (c) keepalive + keep stream warm | The old WS stream had keepalive every 15s; the SDK stream has none. Mentra Live glasses VAD creates long silence gaps that the old always-streaming G1 glasses never had. Keeping streams warm avoids the heavyweight reconnect on every VAD cycle. |
+| Add keepalive to SonioxSdkStream + auto-finalize on audio gap | (a) Do nothing (current — stream idles out), (b) add keepalive only, (c) keepalive + auto-finalize after silence gap | The old WS stream had keepalive every 15s; the SDK stream has none. Mentra Live glasses have on-device VAD that stops audio at the phone — cloud has no signal. Stream stays open but starved → Soniox times out. Keepalive prevents timeout; auto-finalize prevents garbled context when audio resumes after a gap. |
 | Buffer audio during Soniox retry | (a) Accept the 5s gap, (b) send audio to Azure during Soniox retry, (c) buffer and replay | Buffering is simplest — no dual-provider complexity, no audio loss for short retries, and the 160KB memory cost is trivial. Dual-provider streaming adds significant complexity. |
 | Short-term dashboard mitigation + long-term kill the mini app | (a) Only pause interval, (b) only downgrade logs, (c) pause interval now, kill mini app later (040 §5) | Pausing the interval stops the bleeding immediately. The real fix is killing the dashboard mini app entirely (040-cloud-v3-cleanup §5, §6) — the dashboard should be an OS service inside the cloud, not a separate app going through the SDK AppSession path. Separate spec once mini app code is reviewed. |
 | Use `$addToSet`/`$pull` for installedApps | (a) Retry-on-VersionError only, (b) atomic ops only, (c) both | Atomic ops eliminate the race condition entirely for simple add/remove operations. Retry is still needed for complex mutations (settings path) where atomic ops aren't practical. Belt and suspenders. |
@@ -371,6 +386,6 @@ Implement in this order based on user impact:
 4. **Fix 5 (MongoDB VersionError)** — silent data corruption, 45K errors/4hr
 5. **Fix 3 (Soniox 408)** — lower priority because retry already works, but buffer improves UX
 
-Fixes 1, 4, and 5 are independent and can be developed in parallel. Fix 2 is also independent. Fix 3's keepalive + warm-stream changes (A, B) should be done first as they likely address the root cause; the retry/buffer improvements (C–G) are defense-in-depth.
+Fixes 1, 4, and 5 are independent and can be developed in parallel. Fix 2 is also independent. Fix 3's keepalive investigation (A, B) and audio gap detection (C) should be done first as they likely address the root cause; the retry/buffer improvements (D–H) are defense-in-depth.
 
 **Note:** Fix 4's long-term solution (kill the dashboard mini app, rewrite `DashboardManager` as an OS service) is a larger refactor tracked under [040-cloud-v3-cleanup §5](../040-cloud-v3-cleanup/maintainability.md). It will be specced separately once the dashboard mini app code is reviewed. The short-term mitigation (A–D) stops the log spam immediately.
