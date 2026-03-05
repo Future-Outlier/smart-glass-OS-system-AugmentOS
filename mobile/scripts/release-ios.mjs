@@ -68,9 +68,15 @@ await $({ stdio: 'inherit' })`cp .env ios/.xcode.env.local`;
 
 console.log('\n━━━ Step 3: Archiving ━━━');
 
+const teamId = process.env.APPLE_TEAM_ID;
+if (!teamId) {
+  console.error('APPLE_TEAM_ID not found in .env — add it to your .env file');
+  process.exit(1);
+}
+
 const archivePath = path.resolve('build/MentraOS.xcarchive');
 
-await $({ stdio: 'inherit' })`xcodebuild archive -workspace ios/MentraOS.xcworkspace -scheme MentraOS -configuration Release -destination generic/platform=iOS -archivePath ${archivePath}`;
+await $({ stdio: 'inherit' })`xcodebuild archive -workspace ios/MentraOS.xcworkspace -scheme MentraOS -configuration Release -destination generic/platform=iOS -archivePath ${archivePath} DEVELOPMENT_TEAM=${teamId} SWIFT_STRICT_CONCURRENCY=minimal`;
 
 if (!existsSync(archivePath)) {
   console.error('Archive not found at:', archivePath);
