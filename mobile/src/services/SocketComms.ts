@@ -1,6 +1,6 @@
 import CoreModule from "core"
 
-import {push} from "@/contexts/NavigationRef"
+import {push} from "@/contexts/NavigationHistoryContext"
 import audioPlaybackService from "@/services/AudioPlaybackService"
 import displayProcessor from "@/services/DisplayProcessor"
 import mantle from "@/services/MantleManager"

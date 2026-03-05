@@ -27,6 +27,7 @@ import {useNavigationHistory} from "@/contexts/NavigationHistoryContext"
 import {useSaferAreaInsets} from "@/contexts/SaferAreaContext"
 import {SETTINGS, useSetting} from "@/stores/settings"
 import {BlurView} from "expo-blur"
+import GlassView from "@/components/ui/GlassView"
 
 const {width: SCREEN_WIDTH, height: SCREEN_HEIGHT} = Dimensions.get("window")
 const CARD_WIDTH = SCREEN_WIDTH * 0.67
@@ -701,11 +702,11 @@ export default function AppSwitcher({swipeProgress}: AppSwitcherProps) {
           <GestureDetector gesture={dotsPanGesture}>
             <Animated.View>
               {/* <Pressable onPress={handleClose}> */}
-              <View className="mb-5 px-4 py-2 rounded-full mx-auto bg-black/30 items-center justify-center gap-1.5 flex-row">
+              <GlassView className="mb-5 px-4 py-2 rounded-full mx-auto bg-black/30 items-center justify-center gap-1.5 flex-row">
                 {apps.map((_, index) => (
                   <PageDot key={index} index={index} activeIndex={activeIndex} />
                 ))}
-              </View>
+              </GlassView>
               {/* </Pressable> */}
             </Animated.View>
           </GestureDetector>
