@@ -198,8 +198,8 @@ module.exports = ({config}: ConfigContext): Partial<ExpoConfig> => {
               },
             ],
           },
-          buildReactNativeFromSource: true,
-          useHermesV1: true
+          // buildReactNativeFromSource: true,
+          // useHermesV1: true
         },
       ],
       [
