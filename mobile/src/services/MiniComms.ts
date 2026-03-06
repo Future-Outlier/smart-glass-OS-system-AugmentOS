@@ -1,7 +1,7 @@
 import {Linking, Platform} from "react-native"
 import Share from "react-native-share"
 import * as Clipboard from "expo-clipboard"
-import RNFS from "@dr.pogodin/react-native-fs"
+import {File, Paths} from "expo-file-system"
 import mantle from "./MantleManager"
 import CoreModule from "core"
 
@@ -122,10 +122,10 @@ class MiniComms {
     try {
       if (base64) {
         // File share via base64 — write to temp file then share
-        const tempPath = `${RNFS.CachesDirectoryPath}/${filename || "shared_file"}`
-        await RNFS.writeFile(tempPath, base64, "base64")
+        const tempFile = new File(Paths.cache, filename || "shared_file")
+        tempFile.write(base64, {encoding: "base64"})
         await Share.open({
-          url: Platform.OS === "android" ? `file://${tempPath}` : tempPath,
+          url: tempFile.uri,
           type: mimeType || "application/octet-stream",
           filename: filename,
           title: title,
@@ -184,27 +184,23 @@ class MiniComms {
     const {base64, url, mimeType, filename} = message.payload || {}
     const name = filename || "download"
     try {
-      let filePath: string
+      let file: File
       if (base64) {
-        filePath = `${RNFS.DocumentDirectoryPath}/${name}`
-        await RNFS.writeFile(filePath, base64, "base64")
+        file = new File(Paths.cache, name)
+        file.write(base64, {encoding: "base64"})
       } else if (url) {
-        filePath = `${RNFS.DocumentDirectoryPath}/${name}`
-        const result = await RNFS.downloadFile({fromUrl: url, toFile: filePath}).promise
-        if (result.statusCode !== 200) {
-          throw new Error(`Download failed with status ${result.statusCode}`)
-        }
+        file = await File.downloadFileAsync(url, new File(Paths.cache, name), {idempotent: true})
       } else {
         console.warn("SUPERCOMMS: download missing base64 or url")
         return
       }
       // Open share sheet so user can choose where to save
       await Share.open({
-        url: Platform.OS === "android" ? `file://${filePath}` : filePath,
+        url: file.uri,
         type: mimeType || "application/octet-stream",
         filename: name,
       })
-      this.sendResponse(packageName, message.requestId, {success: true, filePath})
+      this.sendResponse(packageName, message.requestId, {success: true, filePath: file.uri})
     } catch (error: any) {
       if (error?.message?.includes("User did not share")) {
         this.sendResponse(packageName, message.requestId, {success: true, cancelled: true})
