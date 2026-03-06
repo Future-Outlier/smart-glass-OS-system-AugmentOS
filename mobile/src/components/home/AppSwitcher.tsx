@@ -28,6 +28,7 @@ import {useSaferAreaInsets} from "@/contexts/SaferAreaContext"
 import {SETTINGS, useSetting} from "@/stores/settings"
 import {BlurView} from "expo-blur"
 import GlassView from "@/components/ui/GlassView"
+import {hapticBuzz} from "@/utils/utils"
 
 const {width: SCREEN_WIDTH, height: SCREEN_HEIGHT} = Dimensions.get("window")
 const CARD_WIDTH = SCREEN_WIDTH * 0.67
@@ -482,6 +483,7 @@ export default function AppSwitcher({swipeProgress}: AppSwitcherProps) {
     .activeOffsetX([-5, 5])
     .onStart(() => {
       offsetX.value = translateX.value
+      scheduleOnRN(hapticBuzz)
     })
     .onUpdate((event) => {
       const cardWidth = CARD_WIDTH + CARD_SPACING
@@ -489,6 +491,11 @@ export default function AppSwitcher({swipeProgress}: AppSwitcherProps) {
       const raw = offsetX.value - event.translationX * sensitivity
       const snappedIndex = Math.round(-raw / cardWidth)
       const clamped = Math.max(-1, Math.min(snappedIndex, apps.length - 2))
+      // check if we're moving to a new index:
+      if (clamped !== targetIndex.value) {
+        targetIndex.value = clamped
+        scheduleOnRN(hapticBuzz)
+      }
       translateX.value = withSpring(-clamped * cardWidth, {
         damping: 200,
         stiffness: 800,
@@ -659,7 +666,7 @@ export default function AppSwitcher({swipeProgress}: AppSwitcherProps) {
   const renderBackground = () => {
     if (Platform.OS === "android" && !androidBlur) {
       return (
-        <Animated.View className="absolute inset-0 bg-black/70" style={backdropStyle}>
+        <Animated.View className="absolute inset-0 bg-black/30" style={backdropStyle}>
           <Pressable className="flex-1" onPress={handleClose} />
         </Animated.View>
       )
@@ -724,15 +731,13 @@ export default function AppSwitcher({swipeProgress}: AppSwitcherProps) {
 
         {apps.length > 0 && (
           <GestureDetector gesture={dotsPanGesture}>
-            <Animated.View>
-              {/* <Pressable onPress={handleClose}> */}
-              <GlassView className="mb-5 px-4 py-2 rounded-full mx-auto bg-black/30 items-center justify-center gap-1.5 flex-row">
-                {apps.map((_, index) => (
-                  <PageDot key={index} index={index} activeIndex={activeIndex} />
-                ))}
-              </GlassView>
-              {/* </Pressable> */}
-            </Animated.View>
+            <GlassView
+              transparent={false}
+              className="mb-5 px-4 py-2 rounded-full mx-auto bg-black/30 items-center justify-center gap-1.5 flex-row">
+              {apps.map((_, index) => (
+                <PageDot key={index} index={index} activeIndex={activeIndex} />
+              ))}
+            </GlassView>
           </GestureDetector>
         )}
 
