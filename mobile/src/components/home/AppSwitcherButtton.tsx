@@ -16,6 +16,7 @@ import {LinearGradient} from "expo-linear-gradient"
 import MaskedView from "@react-native-masked-view/masked-view"
 import {useSaferAreaInsets} from "@/contexts/SaferAreaContext"
 import GlassView from "@/components/ui/GlassView"
+import { SETTINGS, useSetting } from "@/stores/settings"
 
 interface AppSwitcherButtonProps {
   swipeProgress: SharedValue<number>
@@ -36,9 +37,9 @@ export default function AppSwitcherButton({swipeProgress, onGridButtonPress}: Ap
   const hasBuzzedRef = useRef(false)
   const [appsList, setAppsList] = useState<ClientAppletInterface[]>([])
   const insets = useSaferAreaInsets()
-
   const translateY = useSharedValue(0)
-
+  const [iosGlassEffect] = useSetting(SETTINGS.ios_glass_effect.key)
+  
   useEffect(() => {
     let list = [...backgroundApps]
     if (foregroundApp) {
@@ -171,7 +172,10 @@ export default function AppSwitcherButton({swipeProgress, onGridButtonPress}: Ap
   }
 
   let paddingTop = Platform.OS === "android" ? theme.spacing.s10 : theme.spacing.s16
-  const bgClass = Platform.OS === "android" ? "bg-primary-foreground" : "bg-transparent"
+  let bgClass = "bg-primary-foreground"
+  if (Platform.OS === "ios" && iosGlassEffect) {
+    bgClass = "bg-transparent"
+  }
 
   const renderGridButton = () => {
     return (

@@ -655,7 +655,7 @@ export default function AppSwitcher({swipeProgress}: AppSwitcherProps) {
 
   return (
     <Animated.View
-      className="absolute -mx-6 inset-0"
+      className="absolute inset-0"
       pointerEvents="box-none"
       style={[{paddingBottom: insets.bottom}, parentContainerStyle]}>
       {/* Blurred Backdrop */}
