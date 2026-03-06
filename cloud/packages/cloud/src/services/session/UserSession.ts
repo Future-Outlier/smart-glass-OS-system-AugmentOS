@@ -186,7 +186,25 @@ export class UserSession {
     this.userSettingsManager = new UserSettingsManager(this);
     this.deviceManager = new DeviceManager(this);
     this.udpAudioManager = new UdpAudioManager(this);
-    this.appAudioStreamManager = new AppAudioStreamManager(userId, this.logger);
+    this.appAudioStreamManager = new AppAudioStreamManager(userId, this.logger, (streamId, streamUrl, packageName) => {
+      if (!this.websocket || this.websocket.readyState !== WebSocketReadyState.OPEN) {
+        return false;
+      }
+      try {
+        const playRequest = {
+          type: CloudToGlassesMessageType.AUDIO_PLAY_REQUEST,
+          sessionId: this.sessionId,
+          requestId: streamId,
+          packageName,
+          audioUrl: streamUrl,
+          timestamp: new Date(),
+        };
+        this.websocket.send(JSON.stringify(playRequest));
+        return true;
+      } catch {
+        return false;
+      }
+    });
 
     // Set up heartbeat for glasses connection
     this.setupGlassesHeartbeat();

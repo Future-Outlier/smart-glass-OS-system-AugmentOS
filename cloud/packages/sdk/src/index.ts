@@ -128,13 +128,15 @@ export type {
   GlassesToCloudMessage,
   PhotoResponse,
   RgbLedControlResponse,
-  PhotoErrorCode,
-  PhotoStage,
   ConnectionState,
   PhotoErrorDetails,
-  RtmpStreamStatus,
-  KeepAliveAck,
 } from "./types/messages/glasses-to-cloud";
+
+// These are enums (runtime values) — must NOT be re-exported as `export type`
+// or they become unusable as values (TS1362). The `export *` at the top of
+// this file already exports them correctly; these explicit exports are kept
+// here as documentation but as value exports.
+export { PhotoErrorCode, PhotoStage, RtmpStreamStatus, KeepAliveAck } from "./types/messages/glasses-to-cloud";
 
 // From messages/cloud-to-glasses.ts
 export type {
