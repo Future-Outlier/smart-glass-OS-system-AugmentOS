@@ -16,7 +16,7 @@ import {LinearGradient} from "expo-linear-gradient"
 import MaskedView from "@react-native-masked-view/masked-view"
 import {useSaferAreaInsets} from "@/contexts/SaferAreaContext"
 import GlassView from "@/components/ui/GlassView"
-import { SETTINGS, useSetting } from "@/stores/settings"
+import {SETTINGS, useSetting} from "@/stores/settings"
 
 interface AppSwitcherButtonProps {
   swipeProgress: SharedValue<number>
@@ -39,7 +39,7 @@ export default function AppSwitcherButton({swipeProgress, onGridButtonPress}: Ap
   const insets = useSaferAreaInsets()
   const translateY = useSharedValue(0)
   const [iosGlassEffect] = useSetting(SETTINGS.ios_glass_effect.key)
-  
+
   useEffect(() => {
     let list = [...backgroundApps]
     if (foregroundApp) {
@@ -231,16 +231,21 @@ export default function AppSwitcherButton({swipeProgress, onGridButtonPress}: Ap
                 </View>
 
                 <View className="flex-row items-center">
-                  {appsList.slice(0, 9).map((app, index) => (
-                    <View
-                      key={app.packageName}
-                      style={{
-                        zIndex: index,
-                        marginLeft: index > 0 ? -theme.spacing.s8 : 0,
-                      }}>
-                      <AppIcon app={app} className="w-12 h-12" />
-                    </View>
-                  ))}
+                  {appsList.slice(0, 9).map((app, index) => {
+                    let marginLeft = 0
+                    let trueIndex = appsList.length - index
+                    if (index > 0) {
+                      marginLeft = -(theme.spacing.s12 - theme.spacing.s5)
+                    }
+                    if (trueIndex > 6) {
+                      marginLeft = -(theme.spacing.s12 - theme.spacing.s1)
+                    }
+                    return (
+                      <View key={app.packageName} style={{zIndex: index, marginLeft: marginLeft}}>
+                        <AppIcon app={app} className="w-12 h-12" />
+                      </View>
+                    )
+                  })}
                 </View>
               </View>
             </Pressable>
