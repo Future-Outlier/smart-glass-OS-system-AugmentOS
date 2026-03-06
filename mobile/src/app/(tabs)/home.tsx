@@ -4,6 +4,7 @@ import {ScrollView, View} from "react-native"
 import {useSharedValue} from "react-native-reanimated"
 
 import {MentraLogoStandalone} from "@/components/brands/MentraLogoStandalone"
+import {CustomBackground} from "@/components/home/CustomBackground"
 import {ActiveForegroundApp} from "@/components/home/ActiveForegroundApp"
 import {BackgroundAppsLink} from "@/components/home/BackgroundAppsLink"
 import {CompactDeviceStatus} from "@/components/home/CompactDeviceStatus"
@@ -96,6 +97,7 @@ export default function Homepage() {
   return (
     <>
       <Screen preset="fixed">
+        {appSwitcherUi && <CustomBackground />}
         {appSwitcherUi && <View style={{paddingTop: insets.top}} />}
         {!appSwitcherUi && (
           <Header

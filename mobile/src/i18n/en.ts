@@ -497,6 +497,9 @@ const en = {
     darkTheme: "Dark theme",
     systemDefault: "System default",
     liquidGlassEffect: "Liquid glass effect",
+    homeBackground: "Home Background",
+    noBackground: "None",
+    chooseFromLibrary: "Choose from Library",
   },
   devSettings: {
     debugConsole: "Debug Console",
