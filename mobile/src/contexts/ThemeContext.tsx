@@ -37,6 +37,7 @@ export const ThemeProvider: FC<{children: React.ReactNode}> = ({children}) => {
   }, [])
 
   const updateThemeType = (lightOrDark: "light" | "dark", updateUniwind = true) => {
+    console.log("updateThemeType()", lightOrDark, updateUniwind)
     // somehow this helps with getting the status bar style to update:
     BackgroundTimer.setTimeout(() => {
       setStatusBarStyle(lightOrDark === "dark" ? "light" : "dark", true)

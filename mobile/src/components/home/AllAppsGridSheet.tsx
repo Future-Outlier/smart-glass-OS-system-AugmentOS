@@ -7,6 +7,7 @@ import {useAppTheme} from "@/contexts/ThemeContext"
 import BottomSheet, {BottomSheetBackdrop, BottomSheetModal, BottomSheetScrollView} from "@gorhom/bottom-sheet"
 import {AppsGrid} from "@/components/home/AppsGrid"
 import {translate} from "@/i18n"
+import GlassView from "@/components/ui/GlassView"
 
 const GRID_COLUMNS = 4
 
@@ -32,6 +33,7 @@ export default function AllAppsGridSheet({bottomSheetRef}: {bottomSheetRef: Reac
         ref={bottomSheetRef}
         snapPoints={snapPoints}
         backdropComponent={renderBackdrop}
+        backgroundComponent={(props: any) => <GlassView className="rounded-2xl -mx-px" {...props} />}
         enablePanDownToClose
         enableDynamicSizing={false}
         backgroundStyle={{backgroundColor: theme.colors.background}}

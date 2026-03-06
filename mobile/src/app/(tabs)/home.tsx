@@ -96,7 +96,7 @@ export default function Homepage() {
 
   return (
     <>
-      <Screen preset="fixed">
+      <Screen preset="fixed" className={`${appSwitcherUi ? "px-0" : ""}`}>
         {appSwitcherUi && <CustomBackground />}
         {appSwitcherUi && <View style={{paddingTop: insets.top}} />}
         {!appSwitcherUi && (
@@ -123,7 +123,7 @@ export default function Homepage() {
         <ScrollView
           contentInsetAdjustmentBehavior="automatic"
           showsVerticalScrollIndicator={false}
-          style={{flex: 1}}
+          contentContainerClassName={`${appSwitcherUi ? "px-6" : ""}`}
           contentContainerStyle={{flexGrow: 1}}
           scrollEventThrottle={16}>
           <View className="h-4" />
@@ -134,7 +134,13 @@ export default function Homepage() {
           {/* {appSwitcherUi && <View className="h-25" />} */}
         </ScrollView>
         {/* <View className="h-3 absolute bottom-0 w-screen bg-red-500 z-10" /> */}
-        {appSwitcherUi && <AppSwitcherButton swipeProgress={swipeProgress} onGridButtonPress={handleGridButtonPress} />}
+        {appSwitcherUi && (
+          <View className="px-6">
+            <View className="">
+              <AppSwitcherButton swipeProgress={swipeProgress} onGridButtonPress={handleGridButtonPress} />
+            </View>
+          </View>
+        )}
         {appSwitcherUi && <AppSwitcher swipeProgress={swipeProgress} />}
       </Screen>
       {appSwitcherUi && <AllAppsGridSheet bottomSheetRef={bottomSheetRef} />}

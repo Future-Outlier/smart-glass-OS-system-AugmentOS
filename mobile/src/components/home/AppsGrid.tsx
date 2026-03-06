@@ -58,33 +58,41 @@ const AppPopover: React.FC<{
 
   // const popoverHeight = actions.length * 44 + 16
   let left = position.x - POPOVER_WIDTH / 4
-  let top = position.y + 110
+  let top = position.y + 120
+  let xOffset = 0
   // let left = position.x - POPOVER_WIDTH / 2
   // let top = position.y
   // if (left < SCREEN_PADDING) left = SCREEN_PADDING
   if (left + POPOVER_WIDTH > screenWidth - SCREEN_PADDING) {
-    left = screenWidth - SCREEN_PADDING - POPOVER_WIDTH
+    let target = screenWidth - SCREEN_PADDING - POPOVER_WIDTH
+    xOffset = target - left
   }
+  left += xOffset
+
   if (left < 0) {
+    xOffset = -left
     left = 0
   }
 
-  // todo: find out the actual height of the popover via a ref:
-  let popoverHeight = 10 + actions.length * 54
+  let showAbove = false
+
   if (position.screenY > screenHeight / 2) {
-    top = position.y - popoverHeight
+    showAbove = true
   }
-  // const showAbove = top + popoverHeight > screenHeight - 40
-  // if (showAbove) {
-  //   top = position.y - popoverHeight - 8
-  // }
+
+  // todo: find out the actual height of the popover via a ref:
+  let popoverHeight = 8 + actions.length * 12 * 4
+  popoverHeight += 0
+  if (showAbove) {
+    top = position.y - popoverHeight - 20
+  }
 
   const popoverContent = (
     <View className="py-1">
       {actions.map((action, index) => (
         <View key={action.label}>
           <Pressable
-            className="flex-row items-center gap-3 px-4 py-3 active:bg-foreground/10"
+            className="flex-row items-center gap-3 px-4 py-3 h-12 active:bg-foreground/10"
             onPress={() => {
               onClose()
               action.onPress()
@@ -105,18 +113,41 @@ const AppPopover: React.FC<{
     </View>
   )
 
+  let arrowLeft = 0
+  let arrowTop = 0
+
+  if (showAbove) {
+    arrowTop = top + popoverHeight - 20
+  } else {
+    arrowTop = top - 10
+  }
+  arrowLeft = left + POPOVER_WIDTH / 2 - 20
+  arrowLeft -= xOffset
+
   return (
     <View style={StyleSheet.absoluteFill} pointerEvents="box-none">
       <Pressable style={StyleSheet.absoluteFill} onPress={onClose}>
         <View
+          className="absolute"
           style={{
-            position: "absolute",
             left: left,
             top: top,
             width: POPOVER_WIDTH,
           }}>
           <GlassView className="rounded-2xl overflow-hidden bg-primary-foreground/95">{popoverContent}</GlassView>
         </View>
+        <GlassView
+          className="absolute"
+          style={{
+            left: arrowLeft,
+            top: arrowTop,
+            width: 32,
+            height: 32,
+            backgroundColor: "transparent",
+            transform: [{rotate: "45deg"}],
+            zIndex: -1,
+          }}
+        />
       </Pressable>
     </View>
   )

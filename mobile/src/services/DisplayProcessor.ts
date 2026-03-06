@@ -288,7 +288,7 @@ export class DisplayProcessor {
     const defaultWearable = useSettingsStore.getState().getSetting(SETTINGS.default_wearable.key)
     if (defaultWearable) {
       this.setDeviceModel(defaultWearable)
-      console.log(`[MantleBridge] Initialized DisplayProcessor with default wearable: ${defaultWearable}`)
+      console.log(`DISPLAY_PROCESSOR: Initialized DisplayProcessor with default wearable: ${defaultWearable}`)
     }
 
     // subscribe to core status changes:
