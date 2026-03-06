@@ -53,13 +53,13 @@ class ImageProcessor {
         guard let inputData = FileManager.default.contents(atPath: inputPath),
               let ciImage = CIImage(data: inputData)
         else {
-            Bridge.log("\(TAG): Failed to load image: \(inputPath)")
+            NSLog("\(TAG): Failed to load image: \(inputPath)")
             return -1
         }
 
         let w = ciImage.extent.width
         let h = ciImage.extent.height
-        Bridge.log("\(TAG): Processing \(Int(w))x\(Int(h)) lens=\(lensCorrection) color=\(colorCorrection)")
+        NSLog("\(TAG): Processing \(Int(w))x\(Int(h)) lens=\(lensCorrection) color=\(colorCorrection)")
 
         var image = ciImage
 
@@ -90,19 +90,19 @@ class ImageProcessor {
                 options: [kCGImageDestinationLossyCompressionQuality as CIImageRepresentationOption: 0.95]
             )
         else {
-            Bridge.log("\(TAG): Failed to render JPEG")
+            NSLog("\(TAG): Failed to render JPEG")
             return -1
         }
 
         do {
             try jpegData.write(to: URL(fileURLWithPath: outputPath))
         } catch {
-            Bridge.log("\(TAG): Failed to write output: \(error.localizedDescription)")
+            NSLog("\(TAG): Failed to write output: \(error.localizedDescription)")
             return -1
         }
 
         let elapsed = Int64((CFAbsoluteTimeGetCurrent() - startTime) * 1000)
-        Bridge.log("\(TAG): Processing complete in \(elapsed)ms -> \(outputPath)")
+        NSLog("\(TAG): Processing complete in \(elapsed)ms -> \(outputPath)")
         return elapsed
     }
 
@@ -120,7 +120,7 @@ class ImageProcessor {
         // For performance, we use the CGImage path with a bitmap context
         let context = CIContext(options: [.useSoftwareRenderer: false])
         guard let cgImage = context.createCGImage(image, from: image.extent) else {
-            Bridge.log("\(TAG): Failed to create CGImage for lens correction")
+            NSLog("\(TAG): Failed to create CGImage for lens correction")
             return image
         }
 
@@ -143,7 +143,7 @@ class ImageProcessor {
                 bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue
             )
         else {
-            Bridge.log("\(TAG): Failed to create bitmap context")
+            NSLog("\(TAG): Failed to create bitmap context")
             return image
         }
 
@@ -251,7 +251,7 @@ class ImageProcessor {
     /// Apply color correction using CIColorMatrix filter.
     private static func applyColorCorrection(_ image: CIImage) -> CIImage {
         guard let filter = CIFilter(name: "CIColorMatrix") else {
-            Bridge.log("\(TAG): CIColorMatrix filter not available")
+            NSLog("\(TAG): CIColorMatrix filter not available")
             return image
         }
 
@@ -285,7 +285,7 @@ class ImageProcessor {
               let normalImage = CIImage(data: normalData),
               let overImage = CIImage(data: overData)
         else {
-            Bridge.log("\(TAG): Failed to load HDR bracket images")
+            NSLog("\(TAG): Failed to load HDR bracket images")
             return -1
         }
 
@@ -298,7 +298,7 @@ class ImageProcessor {
               let normalCG = context.createCGImage(normalImage, from: normalImage.extent),
               let overCG = context.createCGImage(overImage, from: overImage.extent)
         else {
-            Bridge.log("\(TAG): Failed to create CGImages for HDR merge")
+            NSLog("\(TAG): Failed to create CGImages for HDR merge")
             return -1
         }
 
@@ -381,12 +381,12 @@ class ImageProcessor {
         do {
             try jpegData.write(to: URL(fileURLWithPath: outputPath))
         } catch {
-            Bridge.log("\(TAG): Failed to write HDR result: \(error)")
+            NSLog("\(TAG): Failed to write HDR result: \(error)")
             return -1
         }
 
         let elapsed = Int64((CFAbsoluteTimeGetCurrent() - startTime) * 1000)
-        Bridge.log("\(TAG): HDR merge complete in \(elapsed)ms")
+        NSLog("\(TAG): HDR merge complete in \(elapsed)ms")
         return elapsed
     }
 }
