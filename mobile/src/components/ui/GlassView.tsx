@@ -1,13 +1,24 @@
 import {SETTINGS, useSetting} from "@/stores/settings"
-import {GlassView as GlassViewComponent, GlassViewProps} from "expo-glass-effect"
+import {GlassView as GlassViewComponent, GlassViewProps, isLiquidGlassAvailable} from "expo-glass-effect"
 import {Platform, View, ViewProps} from "react-native"
 import {withUniwind} from "uniwind"
 
-const GlassView = ({children, style, ...props}: GlassViewProps & ViewProps) => {
+interface NewGlassViewProps extends ViewProps {
+  transparent?: boolean
+}
+
+const GlassView = ({children, style, transparent = true, ...props}: GlassViewProps & NewGlassViewProps) => {
   const [iosGlassEffect] = useSetting(SETTINGS.ios_glass_effect.key)
-  if (iosGlassEffect && Platform.OS === "ios") {
+  if (iosGlassEffect && isLiquidGlassAvailable()) {
+    if (transparent) {
+      return (
+        <GlassViewComponent style={[style, {backgroundColor: "transparent"}]} {...props}>
+          {children}
+        </GlassViewComponent>
+      )
+    }
     return (
-      <GlassViewComponent style={[style, {backgroundColor: "transparent"}]} {...props}>
+      <GlassViewComponent style={style} {...props}>
         {children}
       </GlassViewComponent>
     )

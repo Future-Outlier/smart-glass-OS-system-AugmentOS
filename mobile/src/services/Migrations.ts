@@ -1,6 +1,7 @@
 import {AsyncResult, result as Res} from "typesafe-ts"
 
 import {storage} from "@/utils/storage"
+import {useSettingsStore} from "@/stores/settings"
 
 interface Migration {
   version: number // the version this migration brings you TO
@@ -10,12 +11,13 @@ interface Migration {
 // this entire list will be run on a fresh install
 // migrations must be idempotent and safe to run multiple times!!!
 const migrations: Migration[] = [
-  // {
-  //   version: 1,
-  //   run: async () => {
-  //     // migrates from 0 → 1
-  //   }
-  // },
+  {
+    version: 1,
+    run: async () => {
+      // migrates from 0 → 1 turns on the new app switcher ui!
+      useSettingsStore.getState().setSetting("app_switcher_ui", true)
+    },
+  },
   // {
   //   version: 2,
   //   run: async () => {

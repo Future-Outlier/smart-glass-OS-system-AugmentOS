@@ -7,16 +7,15 @@ import AppIcon from "@/components/home/AppIcon"
 import {useAppTheme} from "@/contexts/ThemeContext"
 import {translate} from "@/i18n"
 import {ClientAppletInterface, useActiveApps, useActiveBackgroundApps, useActiveForegroundApp} from "@/stores/applets"
-import * as Haptics from "expo-haptics"
 import {useEffect, useRef, useState} from "react"
 import {scheduleOnRN} from "react-native-worklets"
-import AllAppsGridButton from "@/components/home/AllAppsGridButton"
 import {BlurView} from "expo-blur"
 import {LinearGradient} from "expo-linear-gradient"
 import MaskedView from "@react-native-masked-view/masked-view"
 import {useSaferAreaInsets} from "@/contexts/SaferAreaContext"
 import GlassView from "@/components/ui/GlassView"
 import {SETTINGS, useSetting} from "@/stores/settings"
+import {hapticBuzz} from "@/utils/utils"
 
 interface AppSwitcherButtonProps {
   swipeProgress: SharedValue<number>
@@ -38,7 +37,6 @@ export default function AppSwitcherButton({swipeProgress, onGridButtonPress}: Ap
   const [appsList, setAppsList] = useState<ClientAppletInterface[]>([])
   const insets = useSaferAreaInsets()
   const translateY = useSharedValue(0)
-  const [iosGlassEffect] = useSetting(SETTINGS.ios_glass_effect.key)
 
   useEffect(() => {
     let list = [...backgroundApps]
@@ -47,14 +45,6 @@ export default function AppSwitcherButton({swipeProgress, onGridButtonPress}: Ap
     }
     setAppsList(list)
   }, [backgroundApps, foregroundApp])
-
-  const buzz = () => {
-    if (Platform.OS === "ios") {
-      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light)
-    } else {
-      Haptics.performAndroidHapticsAsync(Haptics.AndroidHaptics.Keyboard_Tap)
-    }
-  }
 
   const panGesture = Gesture.Pan()
     .activeOffsetY([-10, 10])
@@ -80,8 +70,7 @@ export default function AppSwitcherButton({swipeProgress, onGridButtonPress}: Ap
 
         if (shouldOpen && !hasBuzzedRef.current) {
           hasBuzzedRef.current = true
-          scheduleOnRN(buzz)
-          // runOnJS(buzz)()
+          scheduleOnRN(hapticBuzz)
         }
       }
     })

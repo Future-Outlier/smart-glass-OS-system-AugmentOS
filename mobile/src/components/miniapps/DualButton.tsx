@@ -10,6 +10,7 @@ import {captureRef} from "react-native-view-shot"
 import {forwardRef, useCallback, useEffect, useImperativeHandle, useRef, useState, useMemo} from "react"
 import {useSaferAreaInsets} from "@/contexts/SaferAreaContext"
 import AppIcon from "@/components/home/AppIcon"
+import GlassView from "@/components/ui/GlassView"
 
 interface DualButtonProps {
   onMinusPress?: () => void
@@ -21,7 +22,7 @@ export function DualButton({onMinusPress, onEllipsisPress}: DualButtonProps) {
   const {theme} = useAppTheme()
 
   return (
-    <View className="flex-row gap-2 rounded-full bg-primary-foreground px-2 py-1 items-center">
+    <GlassView className="flex-row gap-2 rounded-full bg-primary-foreground px-2 py-1 items-center">
       <Pressable hitSlop={10} onPress={onEllipsisPress}>
         <Icon name="ellipsis" color={theme.colors.foreground} />
       </Pressable>
@@ -29,7 +30,7 @@ export function DualButton({onMinusPress, onEllipsisPress}: DualButtonProps) {
       <Pressable hitSlop={10} onPress={onMinusPress}>
         <Icon name={isChina ? "x" : "minus"} color={theme.colors.foreground} />
       </Pressable>
-    </View>
+    </GlassView>
   )
 }
 
