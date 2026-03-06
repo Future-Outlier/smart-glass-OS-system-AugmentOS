@@ -1,11 +1,11 @@
-import {TextStyle, ScrollView} from "react-native"
+import {ScrollView} from "react-native"
 
 import {Screen, Header} from "@/components/ignite"
 import {Group} from "@/components/ui/Group"
+import BackgroundPicker from "@/components/settings/BackgroundPicker"
 import {useNavigationHistory} from "@/contexts/NavigationHistoryContext"
 import {type ThemeType} from "@/contexts/ThemeContext"
 import {SETTINGS, useSetting} from "@/stores/settings"
-import {ThemedStyle} from "@/theme"
 import {translate} from "@/i18n"
 import ToggleSetting from "@/components/settings/ToggleSetting"
 import {OptionList} from "@/components/ui/Options"
@@ -35,6 +35,8 @@ export default function AppearanceSettingsPage() {
           ]}
         />
 
+        <BackgroundPicker />
+
         <Group>
           <ToggleSetting
             label={translate("appearanceSettings:liquidGlassEffect")}
@@ -46,8 +48,3 @@ export default function AppearanceSettingsPage() {
     </Screen>
   )
 }
-
-const $subtitle: ThemedStyle<TextStyle> = ({colors, spacing}) => ({
-  color: colors.textDim,
-  fontSize: spacing.s3,
-})

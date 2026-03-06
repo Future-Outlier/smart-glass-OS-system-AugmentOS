@@ -171,6 +171,13 @@ export const SETTINGS: Record<string, Setting> = {
     persist: true,
   },
   // ui state:
+  home_background: {
+    key: "home_background",
+    defaultValue: () => "",
+    writable: true,
+    saveOnServer: false,
+    persist: true,
+  },
   theme_preference: {
     key: "theme_preference",
     defaultValue: () => (__DEV__ ? "system" : "light"),

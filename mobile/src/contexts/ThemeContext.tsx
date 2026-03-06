@@ -36,7 +36,7 @@ export const ThemeProvider: FC<{children: React.ReactNode}> = ({children}) => {
     setTheme(newTheme)
   }, [])
 
-  const updateThemeType = (lightOrDark: "light" | "dark") => {
+  const updateThemeType = (lightOrDark: "light" | "dark", updateUniwind = true) => {
     // somehow this helps with getting the status bar style to update:
     BackgroundTimer.setTimeout(() => {
       setStatusBarStyle(lightOrDark === "dark" ? "light" : "dark", true)
@@ -46,7 +46,10 @@ export const ThemeProvider: FC<{children: React.ReactNode}> = ({children}) => {
       NavigationBar.setStyle(lightOrDark == "dark" ? "light" : "dark")
     }, 1000)
     setTheme(lightOrDark)
-    Uniwind.setTheme(lightOrDark)
+    // until the uniwind bug is fixed we can't set the uniwind theme without breaking the useColorScheme hook:
+    if (updateUniwind) {
+      Uniwind.setTheme(lightOrDark)
+    }
   }
 
   // Load saved theme preference on mount
@@ -54,10 +57,10 @@ export const ThemeProvider: FC<{children: React.ReactNode}> = ({children}) => {
     console.log("loadThemePreference", savedTheme, colorScheme)
 
     if (savedTheme !== "system") {
-      updateThemeType(savedTheme)
+      updateThemeType(savedTheme, true)
     } else {
       let themeType: "light" | "dark" = colorScheme === "dark" ? "dark" : "light"
-      updateThemeType(themeType)
+      updateThemeType(themeType, false)
     }
 
     BackgroundTimer.setTimeout(() => {
@@ -72,12 +75,12 @@ export const ThemeProvider: FC<{children: React.ReactNode}> = ({children}) => {
     }
 
     if (savedTheme !== "system") {
-      updateThemeType(savedTheme)
+    //   updateThemeType(savedTheme, true)
       return
     }
 
     let themeType: "light" | "dark" = colorScheme === "dark" ? "dark" : "light"
-    updateThemeType(themeType)
+    updateThemeType(themeType, false)
   }, [colorScheme])
 
   // react to the setting being changed:
@@ -87,13 +90,13 @@ export const ThemeProvider: FC<{children: React.ReactNode}> = ({children}) => {
     }
 
     if (savedTheme !== "system") {
-      updateThemeType(savedTheme)
+      updateThemeType(savedTheme, true)
       return
     }
 
     let scheme = Appearance.getColorScheme()
     let themeType: "light" | "dark" = scheme === "dark" ? "dark" : "light"
-    updateThemeType(themeType)
+    updateThemeType(themeType, false)
   }, [savedTheme])
 
   const themeScheme: ThemeContexts = overrideTheme || (colorScheme === "dark" ? "dark" : "light")
