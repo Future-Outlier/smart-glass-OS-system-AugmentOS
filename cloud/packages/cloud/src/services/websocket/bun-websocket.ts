@@ -278,8 +278,13 @@ async function handleGlassesOpen(ws: GlassesServerWebSocket): Promise<void> {
     // Create or reconnect user session
     const { userSession, reconnection } = await UserSession.createOrReconnect(ws as any, userId);
 
-    // Initialize UDP encryption if requested
-    if (udpEncryptionRequested) {
+    // Initialize UDP encryption if requested.
+    // On reconnect, skip key generation if encryption is already set up — reuse
+    // the existing key. The mobile gets the same key back in CONNECTION_ACK and
+    // calls setEncryption() idempotently. This eliminates the silence gap caused
+    // by in-flight UDP packets encrypted with the old key failing decryption
+    // during a key transition window. (Fix 044-2)
+    if (udpEncryptionRequested && !userSession.udpAudioManager.encryptionEnabled) {
       userSession.udpAudioManager.initializeEncryption();
     }
 
