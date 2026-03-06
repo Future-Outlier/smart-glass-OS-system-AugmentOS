@@ -172,14 +172,10 @@ export default function AppSwitcherButton({swipeProgress, onGridButtonPress}: Ap
   }
 
   let paddingTop = Platform.OS === "android" ? theme.spacing.s10 : theme.spacing.s16
-  let bgClass = "bg-primary-foreground"
-  if (Platform.OS === "ios" && iosGlassEffect) {
-    bgClass = "bg-transparent"
-  }
 
   const renderGridButton = () => {
     return (
-      <GlassView className={`${bgClass} h-15 rounded-2xl`} style={{marginBottom: bottomPadding}}>
+      <GlassView className={`bg-primary-foreground h-15 rounded-2xl`} style={{marginBottom: bottomPadding}}>
         <TouchableOpacity onPress={onGridButtonPress} className="items-center justify-center w-15 h-15">
           <Icon name="grid-3x3" color={theme.colors.foreground} size={32} />
         </TouchableOpacity>
@@ -196,7 +192,7 @@ export default function AppSwitcherButton({swipeProgress, onGridButtonPress}: Ap
         <GestureDetector gesture={composedGesture}>
           <View className="flex-1" style={{paddingBottom: bottomPadding}}>
             <GlassView
-              className={`${bgClass} flex-1 py-1.5 pl-3 min-h-15 rounded-2xl flex-row justify-between items-center`}>
+              className={`bg-primary-foreground flex-1 py-1.5 pl-3 min-h-15 rounded-2xl flex-row justify-between items-center`}>
               <View className="flex-row items-center justify-center flex-1">
                 <Text className="text-muted-foreground text-md" tx="home:appletPlaceholder2" />
               </View>
@@ -217,7 +213,7 @@ export default function AppSwitcherButton({swipeProgress, onGridButtonPress}: Ap
       <GestureDetector gesture={composedGesture}>
         <View className="flex-1" style={{paddingBottom: bottomPadding}}>
           <GlassView
-            className={`${bgClass} flex-1 py-1.5 pl-3 pr-2 rounded-2xl flex-row justify-between items-center min-h-15`}>
+            className={`bg-primary-foreground flex-1 py-1.5 pl-3 pr-2 rounded-2xl flex-row justify-between items-center min-h-15`}>
             <Pressable style={({pressed}) => [{opacity: pressed ? 0.7 : 1}]} className="flex-1 flex-row">
               <View className="flex-row flex-1">
                 <View className="flex-col gap-1 flex-1">

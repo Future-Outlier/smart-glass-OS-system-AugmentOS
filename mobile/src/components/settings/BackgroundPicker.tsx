@@ -1,7 +1,7 @@
 import {Image} from "expo-image"
 import * as ImagePicker from "expo-image-picker"
 import {Directory, Paths, File} from "expo-file-system"
-import {TouchableOpacity, View} from "react-native"
+import {Dimensions, TouchableOpacity, View} from "react-native"
 
 import {Icon} from "@/components/ignite"
 import {Text} from "@/components/ignite"
@@ -9,6 +9,7 @@ import {Group} from "@/components/ui/Group"
 import {useAppTheme} from "@/contexts/ThemeContext"
 import {SETTINGS, useSetting} from "@/stores/settings"
 import {translate} from "@/i18n"
+import {SCREEN_HEIGHT, SCREEN_WIDTH} from "@gorhom/bottom-sheet"
 
 const PRESET_BACKGROUNDS = [
   "https://images.unsplash.com/photo-1506744038136-46273834b3fb?w=800&q=80",
@@ -34,11 +35,20 @@ export default function BackgroundPicker() {
   const {theme} = useAppTheme()
   const [background, setBackground] = useSetting<string>(SETTINGS.home_background.key)
 
+  const {width, height} = Dimensions.get("window")
+
+  const gcd = (a: number, b: number): number => (b === 0 ? a : gcd(b, a % b))
+  const divisor = gcd(Math.round(width), Math.round(height))
+
   const pickImage = async () => {
     const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ["images"],
-      allowsEditing: true,
-      quality: 0.8,
+      allowsEditing: false,
+    //   allowsEditing: true,
+      //   quality: 0.8,
+      allowsMultipleSelection: false,
+    //   aspect: [Math.round(width) / divisor, Math.round(height) / divisor],
+    //   aspect: [16, 9],
     })
 
     if (!result.canceled && result.assets[0]) {
@@ -64,7 +74,9 @@ export default function BackgroundPicker() {
         {/* None option */}
         <TouchableOpacity onPress={clearBackground} className="items-center w-[72px]">
           <View
-            className={`w-[72px] h-[72px] rounded-lg overflow-hidden items-center justify-center bg-muted ${!background ? "border-[3px]" : ""}`}
+            className={`w-[72px] h-[72px] rounded-lg overflow-hidden items-center justify-center bg-muted ${
+              !background ? "border-[3px]" : ""
+            }`}
             style={!background ? {borderColor: theme.colors.tint} : undefined}>
             <Icon name="x" size={24} color={theme.colors.text} />
           </View>
@@ -85,7 +97,9 @@ export default function BackgroundPicker() {
         {/* Pick from library */}
         <TouchableOpacity onPress={pickImage} className="items-center w-[72px]">
           <View
-            className={`w-[72px] h-[72px] rounded-lg overflow-hidden items-center justify-center bg-muted ${isCustom ? "border-[3px]" : ""}`}
+            className={`w-[72px] h-[72px] rounded-lg overflow-hidden items-center justify-center bg-muted ${
+              isCustom ? "border-[3px]" : ""
+            }`}
             style={isCustom ? {borderColor: theme.colors.tint} : undefined}>
             {isCustom ? (
               <Image source={{uri: background}} style={{width: "100%", height: "100%"}} contentFit="cover" />
