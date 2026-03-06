@@ -35,10 +35,10 @@ class VideoStabilizer {
 
         // Parse IMU data
         guard let imuSamples = parseImuData(imuPath), !imuSamples.isEmpty else {
-            Bridge.log("\(TAG): No IMU data available")
+            NSLog("\(TAG): No IMU data available")
             return -1
         }
-        Bridge.log("\(TAG): Loaded \(imuSamples.count) IMU samples")
+        NSLog("\(TAG): Loaded \(imuSamples.count) IMU samples")
 
         // Integrate gyro data to get cumulative rotation (3 axes)
         var cumulativeRoll = [Double](repeating: 0, count: imuSamples.count)
@@ -79,7 +79,7 @@ class VideoStabilizer {
         let asset = AVAsset(url: inputURL)
 
         guard let videoTrack = asset.tracks(withMediaType: .video).first else {
-            Bridge.log("\(TAG): No video track found")
+            NSLog("\(TAG): No video track found")
             return -1
         }
 
@@ -88,13 +88,13 @@ class VideoStabilizer {
         let videoDuration = CMTimeGetSeconds(asset.duration)
         let imuDurationMs = imuSamples.last?.timeMs ?? 1.0
 
-        Bridge.log(
+        NSLog(
             "\(TAG): Video \(Int(videoSize.width))x\(Int(videoSize.height)) fps=\(frameRate) duration=\(videoDuration)s"
         )
 
         // Setup reader
         guard let reader = try? AVAssetReader(asset: asset) else {
-            Bridge.log("\(TAG): Failed to create AVAssetReader")
+            NSLog("\(TAG): Failed to create AVAssetReader")
             return -1
         }
 
@@ -106,7 +106,7 @@ class VideoStabilizer {
 
         // Setup writer
         guard let writer = try? AVAssetWriter(outputURL: outputURL, fileType: .mp4) else {
-            Bridge.log("\(TAG): Failed to create AVAssetWriter")
+            NSLog("\(TAG): Failed to create AVAssetWriter")
             return -1
         }
 
@@ -272,7 +272,7 @@ class VideoStabilizer {
         semaphore.wait()
 
         let elapsed = Int64((CFAbsoluteTimeGetCurrent() - startTime) * 1000)
-        Bridge.log("\(TAG): Stabilization complete: \(frameCount) frames in \(elapsed)ms")
+        NSLog("\(TAG): Stabilization complete: \(frameCount) frames in \(elapsed)ms")
         return elapsed
     }
 

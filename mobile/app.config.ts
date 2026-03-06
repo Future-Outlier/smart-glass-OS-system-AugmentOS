@@ -26,7 +26,7 @@ module.exports = ({config}: ConfigContext): Partial<ExpoConfig> => {
       // icon: "./assets/app-icons/ic_launcher.png",
       package: "com.mentra.mentra",
       googleServicesFile: "./google-services.json",
-      versionCode: 92,
+      versionCode: 95,
       adaptiveIcon: {
         foregroundImage: "./assets/app-icons/ic_launcher_foreground.png",
         // backgroundImage: "./assets/app-icons/ic_launcher.png",
@@ -198,8 +198,8 @@ module.exports = ({config}: ConfigContext): Partial<ExpoConfig> => {
               },
             ],
           },
-          buildReactNativeFromSource: true,
-          useHermesV1: true
+          // buildReactNativeFromSource: true,
+          // useHermesV1: true
         },
       ],
       [

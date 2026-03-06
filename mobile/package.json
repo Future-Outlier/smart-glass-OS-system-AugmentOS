@@ -31,9 +31,6 @@
     "dev:logs-dashboard": "bunx zx ./scripts/start.mjs 2>&1 | ./scripts/log-dashboard.sh",
     "dev:logs-filter": "bunx zx ./scripts/start.mjs 2>&1 | ./scripts/log-viewer.sh | grep -i"
   },
-  "overrides": {
-    "hermes-compiler": "250829098.0.4"
-  },
   "dependencies": {
     "@config-plugins/react-native-webrtc": "^13.0.0",
     "@douglowder/expo-av-route-picker-view": "^0.0.5",

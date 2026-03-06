@@ -1,4 +1,4 @@
-package com.mentra.core.utils;
+package com.mentra.crust.utils;
 
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;

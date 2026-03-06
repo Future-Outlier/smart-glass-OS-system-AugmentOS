@@ -213,6 +213,28 @@ function withAndroidManifestModifications(config: any) {
       )
     }
 
+    // Remove AD_ID permission via tools:node="remove" so the manifest merger strips it
+    // even when Firebase Analytics adds it via transitive dependencies
+    if (!manifest.$["xmlns:tools"]) {
+      manifest.$["xmlns:tools"] = "http://schemas.android.com/tools"
+    }
+    if (!manifest["uses-permission"]) {
+      manifest["uses-permission"] = []
+    }
+    const adIdPerm = manifest["uses-permission"].find(
+      (p: any) => p.$["android:name"] === "com.google.android.gms.permission.AD_ID",
+    )
+    if (adIdPerm) {
+      adIdPerm.$["tools:node"] = "remove"
+    } else {
+      manifest["uses-permission"].push({
+        $: {
+          "android:name": "com.google.android.gms.permission.AD_ID",
+          "tools:node": "remove",
+        },
+      })
+    }
+
     // Add permissions that need to be added
     const permissionsToAdd = [
       {name: "android.permission.BIND_NOTIFICATION_LISTENER_SERVICE"},
@@ -425,20 +447,23 @@ function withGradlePropertiesModifications(config: any) {
       const jvmArgsIndex = props.findIndex((p) => p.type === "property" && p.key === "org.gradle.jvmargs")
 
       if (jvmArgsIndex !== -1) {
-        // Append nodePath to existing jvmargs if not already present
         const jvmArgsProp = props[jvmArgsIndex]
         if (jvmArgsProp.type === "property" && "value" in jvmArgsProp) {
-          const currentValue = jvmArgsProp.value
+          let currentValue = jvmArgsProp.value
+          // Increase heap and metaspace to avoid OOM during release builds
+          currentValue = currentValue.replace(/-Xmx\d+m/, "-Xmx8192m")
+          currentValue = currentValue.replace(/-XX:MaxMetaspaceSize=\d+m/, "-XX:MaxMetaspaceSize=2048m")
           if (!currentValue.includes("-Dorg.gradle.project.nodePath=")) {
-            jvmArgsProp.value = `${currentValue} -Dorg.gradle.project.nodePath=${nodePath}`
+            currentValue = `${currentValue} -Dorg.gradle.project.nodePath=${nodePath}`
           }
+          jvmArgsProp.value = currentValue
         }
       } else {
         // Create new jvmargs property with nodePath
         props.push({
           type: "property",
           key: "org.gradle.jvmargs",
-          value: `-Dorg.gradle.project.nodePath=${nodePath}`,
+          value: `-Xmx8192m -XX:MaxMetaspaceSize=2048m -Dorg.gradle.project.nodePath=${nodePath}`,
         })
       }
     } catch (error) {

@@ -5,7 +5,7 @@
  * from the download pipeline. Downloads push items here; processing runs independently.
  */
 
-import CoreModule from "core"
+import CrustModule from "crust"
 
 import {asgCameraApi} from "@/services/asg/asgCameraApi"
 import {localStorageService} from "@/services/asg/localStorageService"
@@ -133,7 +133,7 @@ class MediaProcessingQueue {
         const overPath = item.bracketPaths.find((p) => p.includes("ev2") && !p.includes("ev-2")) || item.bracketPaths[2]
 
         const hdrPath = item.primaryPath + ".hdr.jpg"
-        const hdrResult = await CoreModule.mergeHdrBrackets(underPath, normalPath, overPath, hdrPath)
+        const hdrResult = await CrustModule.mergeHdrBrackets(underPath, normalPath, overPath, hdrPath)
         if (hdrResult.success && hdrResult.outputPath) {
           filePathToSave = hdrResult.outputPath
           console.log(`${TAG} HDR merged ${item.id} in ${hdrResult.processingTimeMs}ms`)
@@ -147,7 +147,7 @@ class MediaProcessingQueue {
     if (item.shouldProcess && item.type === "photo") {
       try {
         const processedPath = filePathToSave + ".processed.jpg"
-        const result = await CoreModule.processGalleryImage(filePathToSave, processedPath, {
+        const result = await CrustModule.processGalleryImage(filePathToSave, processedPath, {
           lensCorrection: true,
           colorCorrection: true,
         })
@@ -164,7 +164,7 @@ class MediaProcessingQueue {
     if (item.shouldProcess && item.type === "video" && item.sidecarPath) {
       try {
         const stabilizedPath = item.primaryPath + ".stabilized.mp4"
-        const result = await CoreModule.stabilizeVideo(item.primaryPath, item.sidecarPath, stabilizedPath)
+        const result = await CrustModule.stabilizeVideo(item.primaryPath, item.sidecarPath, stabilizedPath)
         if (result.success && result.outputPath) {
           filePathToSave = result.outputPath
           console.log(`${TAG} 📹 Stabilized ${item.id} in ${result.processingTimeMs}ms`)
