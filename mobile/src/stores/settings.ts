@@ -26,7 +26,7 @@ export const SETTINGS: Record<string, Setting> = {
   super_mode: {key: "super_mode", defaultValue: () => false, writable: true, saveOnServer: true, persist: true},
   app_switcher_ui: {
     key: "app_switcher_ui",
-    defaultValue: () => false,
+    defaultValue: () => true,
     writable: true,
     saveOnServer: true,
     persist: true,

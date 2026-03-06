@@ -110,21 +110,24 @@ function AppCardItem({app, index, count, translateX, onDismiss, onSelect}: AppCa
 
   const composedGesture = Gesture.Exclusive(panGesture, tapGesture)
 
+  let cardWidth = CARD_WIDTH + CARD_SPACING
+
   const cardAnimatedStyle = useAnimatedStyle(() => {
     let animIndex = animatedIndex.value
 
-    let cardWidth = CARD_WIDTH + CARD_SPACING
     // let stat = -animIndex * cardWidth
     // let stat = -index * cardWidth // use real index for stat!!
     let stat = 0
 
     // let howFar = SCREEN_WIDTH / 4
-    let howFar = SCREEN_WIDTH / 2 - cardWidth / 2
     let lin = translateX.value / cardWidth + animIndex
     if (lin < 0) {
       lin = 0
     }
+    let howFar = SCREEN_WIDTH / 2 - cardWidth / 2
     let power = Math.pow(lin, 2) * howFar
+    // let howFar = 50
+    // let power = (Math.pow(lin+0.3, 4.3) / 60) * howFar
     let res = stat + power
 
     let howFarPercent = (1 / (howFar / SCREEN_WIDTH)) * howFar
@@ -133,11 +136,31 @@ function AppCardItem({app, index, count, translateX, onDismiss, onSelect}: AppCa
     // account for scaling of the card:
     let offset = (1 - scale) * cardWidth
     // res = res - offset * animIndex
+    res = res - offset
     // scale = 1
 
     return {
       transform: [{translateY: translateY.value}, {scale: scale}, {translateX: res}],
       opacity: cardOpacity.value,
+    }
+  })
+
+  const titleAnimatedStyle = useAnimatedStyle(() => {
+    let animIndex = animatedIndex.value
+    let lin = translateX.value / cardWidth + animIndex
+    if (lin < 0) {
+      lin = 0
+    }
+    // let howFar = 50
+    // let power = (Math.pow(lin, 4.3) / 60) * howFar
+    let howFar = SCREEN_WIDTH / 2 - cardWidth / 2
+    let power = Math.pow(lin, 2) * howFar
+    let howFarPercent = (1 / (howFar / SCREEN_WIDTH)) * howFar
+    let linearProgress = power / howFarPercent
+    // linear transform linearProgress so that if (linearProgress < 0.5) we start fading out:
+    linearProgress = interpolate(linearProgress, [0, 0.1], [0, 1], Extrapolation.CLAMP)
+    return {
+      opacity: linearProgress,
     }
   })
 
@@ -159,17 +182,18 @@ function AppCardItem({app, index, count, translateX, onDismiss, onSelect}: AppCa
           },
           cardAnimatedStyle,
         ]}>
-        <View className="flex-1 rounded-3xl overflow-hidden w-full shadow-2xl bg-primary-foreground">
-          <View className="pl-6 h-12 gap-2 justify-start w-full flex-row items-center bg-primary-foreground">
-            <AppIcon app={app} style={{width: 32, height: 32, borderRadius: 8}} />
+        <View className="pl-6 h-12 gap-3 justify-start w-full flex-row items-center">
+          <AppIcon app={app} className="w-8 h-8 rounded-lg" />
+          <Animated.View style={titleAnimatedStyle}>
             <Text className="text-foreground text-md font-medium text-center" numberOfLines={1}>
               {app.name}
             </Text>
-          </View>
-
+          </Animated.View>
+        </View>
+        <View className="flex-1 rounded-3xl overflow-hidden w-full shadow-2xl bg-primary-foreground">
           {!app.screenshot && (
             <View className="flex-1 items-center justify-center">
-              <AppIcon app={app} style={{width: 48, height: 48}} />
+              <AppIcon app={app} className="w-12 h-12" />
             </View>
           )}
 
@@ -179,7 +203,7 @@ function AppCardItem({app, index, count, translateX, onDismiss, onSelect}: AppCa
                 source={{uri: app.screenshot}}
                 className="w-full h-full"
                 style={{resizeMode: "cover"}}
-                blurRadius={3}
+                // blurRadius={3}
               />
             </View>
           )}
