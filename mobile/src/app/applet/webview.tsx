@@ -1,6 +1,6 @@
 import {useLocalSearchParams} from "expo-router"
 import {useRef, useState, useEffect} from "react"
-import {View} from "react-native"
+import {Platform, View} from "react-native"
 import {WebView} from "react-native-webview"
 import Animated, {useSharedValue, useAnimatedStyle, withTiming} from "react-native-reanimated"
 
@@ -9,6 +9,7 @@ import InternetConnectionFallbackComponent from "@/components/ui/InternetConnect
 import LoadingOverlay from "@/components/ui/LoadingOverlay"
 import {useNavigationHistory} from "@/contexts/NavigationHistoryContext"
 import restComms from "@/services/RestComms"
+import miniComms from "@/services/MiniComms"
 import {SETTINGS, useSetting, useSettingsStore} from "@/stores/settings"
 import showAlert from "@/utils/AlertUtils"
 import {useAppletStatusStore} from "@/stores/applets"
@@ -109,6 +110,26 @@ export default function AppWebView() {
 
     generateTokenAndSetUrl()
   }, [packageName, webviewURL, appName, retryTrigger])
+
+  // Register with MiniComms for bridge messaging
+  useEffect(() => {
+    const sendToWebView = (message: string) => {
+      if (webViewRef.current) {
+        webViewRef.current.injectJavaScript(`
+          window.receiveNativeMessage(${message});
+        `)
+      }
+    }
+    miniComms.setWebViewMessageHandler(packageName, sendToWebView)
+    return () => {
+      miniComms.setWebViewMessageHandler(packageName, undefined)
+    }
+  }, [packageName])
+
+  const handleWebViewMessage = (event: any) => {
+    const data = event.nativeEvent.data
+    miniComms.handleRawMessageFromMiniApp(packageName, data)
+  }
 
   const handleLoadStart = () => {
     // android tries to load the webview twice for some reason, and this does nothning so it's safe to disable:
@@ -280,6 +301,7 @@ export default function AppWebView() {
               onLoadStart={handleLoadStart}
               onLoadEnd={handleLoadEnd}
               onError={handleError}
+              onMessage={handleWebViewMessage}
               javaScriptEnabled={true}
               domStorageEnabled={true}
               startInLoadingState={false}
@@ -290,6 +312,14 @@ export default function AppWebView() {
               bounces={false}
               automaticallyAdjustContentInsets={false}
               contentInsetAdjustmentBehavior="never"
+              injectedJavaScriptBeforeContentLoaded={`
+                  window.MentraOS = {
+                    platform: '${Platform.OS}',
+                    capabilities: ['share', 'open_url', 'copy_clipboard', 'download'],
+                  };
+                  window.receiveNativeMessage = window.receiveNativeMessage || function() {};
+                  true;
+                `}
               injectedJavaScript={`
                   const meta = document.createElement('meta');
                   meta.setAttribute('name', 'viewport');
