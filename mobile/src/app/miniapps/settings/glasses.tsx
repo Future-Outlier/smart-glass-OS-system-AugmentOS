@@ -41,9 +41,6 @@ function DeviceSettings() {
   const applets = useApplets()
   const features: Capabilities = getModelCapabilities(defaultWearable)
 
-  // Check if we have any advanced settings to show
-  const hasMicrophoneSelector = glassesConnected && defaultWearable && features?.hasMicrophone
-
   const wifiLocalIp = useGlassesStore((state) => state.wifiSsid)
   const bluetoothName = useGlassesStore((state) => state.bluetoothName)
   const buildNumber = useGlassesStore((state) => state.buildNumber)
@@ -204,13 +201,6 @@ function DeviceSettings() {
       )} */}
 
       <Group title={translate("deviceSettings:advancedSettings")}>
-        {hasMicrophoneSelector && (
-          <RouteButton
-            icon={<Icon name="microphone" size={24} color={theme.colors.secondary_foreground} />}
-            label={translate("deviceSettings:microphone")}
-            onPress={() => push("/miniapps/settings/microphone")}
-          />
-        )}
         {hasDeviceInfo && (
           <RouteButton
             icon={<Icon name="device-ipad" size={24} color={theme.colors.secondary_foreground} />}
