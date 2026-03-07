@@ -59,7 +59,8 @@ export default function AppWebView() {
   // the real state from the server which sets loading=false.
   // If running=false after server confirms, the app failed to start.
   useEffect(() => {
-    const unsub = useAppletStatusStore.subscribe((state) => {
+    // Check the current state immediately (covers re-opening an already-running app)
+    const checkApplet = (state: {apps: Array<{packageName: string; loading: boolean; running: boolean}>}) => {
       const applet = state.apps.find((a) => a.packageName === packageName)
       if (!applet) return
 
@@ -70,7 +71,12 @@ export default function AppWebView() {
           setAppStartFailed(true)
         }
       }
-    })
+    }
+
+    checkApplet(useAppletStatusStore.getState())
+
+    // Also subscribe to future changes
+    const unsub = useAppletStatusStore.subscribe(checkApplet)
     return unsub
   }, [packageName])
 
