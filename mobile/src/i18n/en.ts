@@ -77,6 +77,8 @@ const en = {
     connecting: "Connecting",
     reconnecting: "Reconnecting",
     disconnected: "Disconnected",
+    disconnect: "Disconnect",
+    unpair: "Unpair",
   },
   pairing: {
     selectModel: "Select Model",
@@ -456,7 +458,7 @@ const en = {
     wifiUnavailable: "Connect a pair of glasses that support WiFi to access WiFi settings.",
     developerSettings: "Developer settings",
     disconnectGlasses: "Disconnect Glasses",
-    forgetGlasses: "Unpair Glasses",
+    forgetGlasses: "Unpair glasses",
     forgetGlassesConfirm:
       "To finish the process, make sure to remove your glasses from your phone's Bluetooth settings.",
     disconnectGlassesTitle: "Disconnect the glasses?",

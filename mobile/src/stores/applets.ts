@@ -274,27 +274,27 @@ const getOfflineApplets = async (): Promise<ClientAppletInterface[]> => {
         })
       },
     },
-    {
-      packageName: galleryPackageName,
-      name: translate("miniApps:gallery"),
-      type: "background", // Foreground app (only one at a time)
-      offline: true, // Works without internet connection
-      logoUrl: require("@assets/applet-icons/gallery.png"),
-      local: false,
-      running: false,
-      loading: false,
-      healthy: true,
-      hidden: false,
-      permissions: [],
-      offlineRoute: "/asg/gallery",
-      webviewUrl: "",
-      hardwareRequirements: [
-        {type: HardwareType.CAMERA, level: HardwareRequirementLevel.REQUIRED},
-        {type: HardwareType.EXIST, level: HardwareRequirementLevel.REQUIRED},
-      ],
-      onStart: () => saveLocalAppRunningState(galleryPackageName, true),
-      onStop: () => saveLocalAppRunningState(galleryPackageName, false),
-    },
+    // {
+    //   packageName: galleryPackageName,
+    //   name: translate("miniApps:gallery"),
+    //   type: "background", // Foreground app (only one at a time)
+    //   offline: true, // Works without internet connection
+    //   logoUrl: require("@assets/applet-icons/gallery.png"),
+    //   local: false,
+    //   running: false,
+    //   loading: false,
+    //   healthy: true,
+    //   hidden: false,
+    //   permissions: [],
+    //   offlineRoute: "/asg/gallery",
+    //   webviewUrl: "",
+    //   hardwareRequirements: [
+    //     {type: HardwareType.CAMERA, level: HardwareRequirementLevel.REQUIRED},
+    //     {type: HardwareType.EXIST, level: HardwareRequirementLevel.REQUIRED},
+    //   ],
+    //   onStart: () => saveLocalAppRunningState(galleryPackageName, true),
+    //   onStop: () => saveLocalAppRunningState(galleryPackageName, false),
+    // },
     {
       packageName: settingsPackageName,
       name: translate("miniApps:settings"),
@@ -632,15 +632,6 @@ export const useAppletStatusStore = create<AppStatusState>((set, get) => ({
       apps: state.apps.map((a) => (a.packageName === packageName ? {...a, running: true, loading: shouldLoad} : a)),
     }))
 
-    const result = await startStopApplet(applet, true)
-    if (result.is_error()) {
-      console.error(`Failed to start applet ${applet.packageName}: ${result.error}`)
-      set((state) => ({
-        apps: state.apps.map((a) => (a.packageName === packageName ? {...a, running: false, loading: false} : a)),
-      }))
-      return
-    }
-
     // open the app webview if it has one:
     let appSwitcherUi = useSettingsStore.getState().getSetting(SETTINGS.app_switcher_ui.key)
     if (appSwitcherUi) {
@@ -678,6 +669,15 @@ export const useAppletStatusStore = create<AppStatusState>((set, get) => ({
           })
         }
       }
+    }
+
+    const result = await startStopApplet(applet, true)
+    if (result.is_error()) {
+      console.error(`Failed to start applet ${applet.packageName}: ${result.error}`)
+      set((state) => ({
+        apps: state.apps.map((a) => (a.packageName === packageName ? {...a, running: false, loading: false} : a)),
+      }))
+      return
     }
 
     await useSettingsStore.getState().setSetting(SETTINGS.has_ever_activated_app.key, true)

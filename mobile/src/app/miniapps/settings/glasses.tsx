@@ -22,7 +22,8 @@ import {EmptyState} from "@/components/glasses/info/EmptyState"
 import {ButtonSettings} from "@/components/glasses/settings/ButtonSettings"
 import BrightnessSetting from "@/components/settings/BrightnessSetting"
 import {useApplets, useAppletStatusStore} from "@/stores/applets"
-import showAlert from "@/utils/AlertUtils"
+// import showAlert from "@/utils/AlertUtils"
+import {showAlert} from "@/contexts/ModalContext"
 
 function DeviceSettings() {
   const {theme} = useAppTheme()
@@ -50,44 +51,36 @@ function DeviceSettings() {
 
   const hasDeviceInfo = Boolean(bluetoothName || buildNumber || wifiLocalIp)
 
-  const confirmForgetGlasses = () => {
-    showAlert(
-      translate("settings:forgetGlasses"),
-      translate("settings:forgetGlassesConfirm"),
-      [
-        {text: translate("common:cancel"), style: "cancel"},
-        {
-          text: "Unpair",
-          onPress: () => {
-            useAppletStatusStore.getState().stopAllApplets()
-            CoreModule.forget()
-            goBack()
-          },
-        },
-      ],
-      {
-        cancelable: false,
-      },
-    )
+  const confirmForgetGlasses = async () => {
+    let result = await showAlert({
+      title: translate("settings:forgetGlasses"),
+      message: translate("settings:forgetGlassesConfirm"),
+      buttons: [{text: translate("common:cancel"), style: "cancel"}, {text: translate("connection:unpair")}],
+      options: {allowDismiss: false},
+    })
+    if (result === 1) {
+      CoreModule.forget()
+      useAppletStatusStore.getState().stopAllApplets()
+      useAppletStatusStore.getState().refreshApplets()
+      // give us a second to forget the glasses before going back
+      setTimeout(() => {
+        goBack()
+      }, 500)
+    }
   }
 
-  const confirmDisconnectGlasses = () => {
-    showAlert(
-      translate("settings:disconnectGlassesTitle"),
-      translate("settings:disconnectGlassesConfirm"),
-      [
-        {text: translate("common:cancel"), style: "cancel"},
-        {
-          text: "Disconnect",
-          onPress: () => {
-            CoreModule.disconnect()
-          },
-        },
-      ],
-      {
-        cancelable: false,
-      },
-    )
+  const confirmDisconnectGlasses = async () => {
+
+    let result = await showAlert({
+      title: translate("settings:disconnectGlassesTitle"),
+      message: translate("settings:disconnectGlassesConfirm"),
+      buttons: [{text: translate("common:cancel"), style: "cancel"}, {text: translate("connection:disconnect")}],
+      options: {allowDismiss: false},
+    })
+
+    if (result === 1) {
+      CoreModule.disconnect()
+    }
   }
 
   // Check if no glasses are paired at all

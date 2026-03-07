@@ -1106,6 +1106,7 @@ export function GalleryScreen() {
         title={isSelectionMode ? "" : "Glasses Gallery"}
         leftIcon={isSelectionMode ? undefined : "chevron-left"}
         onLeftPress={isSelectionMode ? undefined : () => goBack()}
+        safeAreaEdges={[]}
         LeftActionComponent={
           isSelectionMode ? (
             <TouchableOpacity onPress={() => exitSelectionMode()}>

@@ -221,9 +221,10 @@ export function NavigationHistoryProvider({children}: {children: React.ReactNode
 
     // reset the animation to simple_push after a short delay:
     if (params?.transition) {
+      // TODO: change this back to 100 once we have native animations again:
       setTimeout(() => {
         setAnimation("simple_push")
-      }, 100)
+      }, 800)
     }
   }
 

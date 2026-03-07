@@ -330,7 +330,7 @@ export function AppsGrid({showAllApps = false, onOpenApp, onAddToHome, searchQue
             }
           },
         },
-        {
+        !SYSTEM_APPS.includes(selectedApp?.packageName || "") && {
           label: translate("appInfo:settings"),
           icon: "cog",
           onPress: () => {

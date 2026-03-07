@@ -96,7 +96,7 @@ export default function Homepage() {
 
   return (
     <>
-      <Screen preset="fixed" className={`${appSwitcherUi ? "px-0" : ""}`}>
+      <Screen preset="fixed" className={`${appSwitcherUi ? "px-0" : ""}`} KeyboardAvoidingViewProps={{enabled: true}}>
         {appSwitcherUi && <CustomBackground />}
         {appSwitcherUi && <View style={{paddingTop: insets.top}} />}
         {!appSwitcherUi && (
