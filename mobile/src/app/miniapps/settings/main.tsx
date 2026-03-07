@@ -64,6 +64,11 @@ export default function AccountPage() {
               />
             )}
             <RouteButton
+              icon={<Icon name="microphone" size={24} color={theme.colors.secondary_foreground} />}
+              label={translate("deviceSettings:microphone")}
+              onPress={() => push("/miniapps/settings/microphone")}
+            />
+            <RouteButton
               icon={<Icon name="file-type-2" size={24} color={theme.colors.secondary_foreground} />}
               label={translate("settings:transcriptionSettings")}
               onPress={() => push("/miniapps/settings/transcription")}

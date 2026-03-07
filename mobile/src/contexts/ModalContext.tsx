@@ -158,36 +158,34 @@ export function ModalProvider({children}: {children: React.ReactNode}) {
           />
 
           <Animated.View style={wrapperStyle}>
-            <Animated.View className="rounded-2xl overflow-hidden bg-primary-foreground rounded-2xl">
+            <Animated.View className="rounded-2xl overflow-hidden bg-primary-foreground">
               {/* Icon */}
               {state.options.icon && <View className="items-center pt-6 pb-2">{state.options.icon}</View>}
 
               {/* Title + Message */}
-              <View className="px-6 pt-6 pb-4 gap-2">
-                <Text className="text-text text-lg font-semibold text-start">{state.title}</Text>
-                {state.message && <Text className="text-muted-foreground text-sm text-start">{state.message}</Text>}
+              <View className="px-6 pt-6 gap-4 self-stretch">
+                <Text style={{color: theme.colors.secondary_foreground, fontSize: 20, alignSelf: "stretch", textAlign: "left"}} weight="semibold">{state.title}</Text>
+                {state.message && <Text style={{color: theme.colors.secondary_foreground, fontSize: 14, fontWeight: "500", alignSelf: "stretch", textAlign: "left"}}>{state.message}</Text>}
               </View>
 
               {/* Custom content */}
               {state.options.content && <View className="px-6 pb-4">{state.options.content}</View>}
 
-              <View className="bg-border h-px" />
-              
+              <View className="h-px mx-6 mt-4" style={{backgroundColor: theme.colors.border}} />
+
               <View className="flex-row gap-4 pl-2 pr-6 py-5 justify-end">
                 {state.buttons.map((button, index) => {
-                  const isDestructive = button.style === "destructive"
                   const isCancel = button.style === "cancel"
-                  const isLast = index === state.buttons.length - 1
 
                   return (
                     <Button
                       key={button.text}
-                      style={{minWidth: theme.spacing.s24}}
+                      style={{minWidth: 96}}
                       compact
                       flexContainer={false}
                       onPress={() => dismiss(index)}
                       flex={false}
-                      preset={isDestructive ? "destructive" : isCancel ? "alternate" : "primary"}
+                      preset={isCancel ? "alternate" : "primary"}
                       text={button.text}
                     />
                   )

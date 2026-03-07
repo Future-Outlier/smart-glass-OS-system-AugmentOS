@@ -285,6 +285,26 @@ export function AppsGrid({showAllApps = false, onOpenApp, onAddToHome, searchQue
     }
 
     if (appSwitcherUi) {
+      // Assign unpositioned real apps to the first available empty slots
+      const unpositioned = filteredApps.filter(
+        (app) => !app.packageName.startsWith("@empty") && orderMap[app.packageName] === undefined,
+      )
+      if (unpositioned.length > 0) {
+        const dummySlots = filteredApps
+          .filter((app) => app.packageName.startsWith("@empty") && orderMap[app.packageName] !== undefined)
+          .sort((a, b) => orderMap[a.packageName] - orderMap[b.packageName])
+
+        for (const app of unpositioned) {
+          const dummy = dummySlots.shift()
+          if (dummy) {
+            orderMap[app.packageName] = orderMap[dummy.packageName]
+            delete orderMap[dummy.packageName]
+            const idx = filteredApps.indexOf(dummy)
+            if (idx !== -1) filteredApps.splice(idx, 1)
+          }
+        }
+      }
+
       filteredApps.sort((a, b) => {
         const aIndex = orderMap[a.packageName]
         const bIndex = orderMap[b.packageName]
