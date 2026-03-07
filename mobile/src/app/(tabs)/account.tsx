@@ -11,8 +11,10 @@ import {Spacer} from "@/components/ui/Spacer"
 import {useNavigationHistory} from "@/contexts/NavigationHistoryContext"
 import {useAppTheme} from "@/contexts/ThemeContext"
 import {translate} from "@/i18n"
+import {useGlassesStore} from "@/stores/glasses"
 import {SETTINGS, useSetting} from "@/stores/settings"
 import {$styles} from "@/theme"
+import {getModelCapabilities} from "@/../../cloud/packages/types/src"
 
 export default function AccountPage() {
   const {theme, themed} = useAppTheme()
@@ -67,6 +69,11 @@ export default function AccountPage() {
                 onPress={() => push("/miniapps/settings/notifications")}
               />
             )}
+            <RouteButton
+              icon={<Icon name="microphone" size={24} color={theme.colors.secondary_foreground} />}
+              label={translate("deviceSettings:microphone")}
+              onPress={() => push("/miniapps/settings/microphone")}
+            />
             <RouteButton
               icon={<Icon name="file-type-2" size={24} color={theme.colors.secondary_foreground} />}
               label={translate("settings:transcriptionSettings")}
