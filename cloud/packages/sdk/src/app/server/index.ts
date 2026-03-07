@@ -25,6 +25,7 @@ import {
   WebhookRequestType,
   AuthVariables,
 } from "../../types";
+import type { TelemetryLogEntry } from "../../types/messages/app-to-cloud";
 import { AppSession } from "../session/index";
 import { createAuthMiddleware } from "../webview";
 
@@ -90,6 +91,16 @@ export interface AppServerConfig {
   cookieSecret?: string;
   /** App instructions string shown to the user */
   appInstructions?: string;
+  /**
+   * 📋 Enable telemetry log buffering for incident debugging (default: true)
+   * When enabled, the server keeps a rolling ring buffer of recent log entries
+   * that can be uploaded to MentraOS Cloud when a user files a bug report.
+   */
+  enableTelemetry?: boolean;
+  /**
+   * 📦 Maximum number of telemetry log entries to keep in the ring buffer (default: 1000)
+   */
+  telemetryBufferSize?: number;
 }
 
 // Type for Hono app with auth variables
@@ -153,6 +164,10 @@ export class AppServer extends Hono<{ Variables: AuthVariables }> {
   private cleanupHandlers: Array<() => void> = [];
   /** App instructions string shown to the user */
   private appInstructions: string | null = null;
+  /** Rolling ring buffer of recent telemetry log entries for incident debugging */
+  private telemetryBuffer: TelemetryLogEntry[] = [];
+  /** Maximum number of entries to keep in the telemetry buffer */
+  private telemetryBufferSize: number = 1000;
 
   public readonly logger: Logger;
 
@@ -188,6 +203,14 @@ export class AppServer extends Hono<{ Variables: AuthVariables }> {
     );
 
     this.appInstructions = (config as any).appInstructions || null;
+
+    // Initialize telemetry buffer config
+    const enableTelemetry = config.enableTelemetry !== false; // default true
+    if (enableTelemetry) {
+      this.telemetryBufferSize = config.telemetryBufferSize ?? 1000;
+    } else {
+      this.telemetryBufferSize = 0; // 0 means disabled — logTelemetry becomes a no-op
+    }
 
     // Setup server features
     this.setupWebhook();
@@ -443,6 +466,42 @@ export class AppServer extends Hono<{ Variables: AuthVariables }> {
   }
 
   /**
+   * Append a log entry to the telemetry ring buffer.
+   * Oldest entries are dropped when the buffer is full.
+   * This is a no-op when telemetry is disabled (bufferSize === 0).
+   *
+   * @param entry - The log entry to buffer
+   */
+  logTelemetry(entry: TelemetryLogEntry): void {
+    if (this.telemetryBufferSize === 0) return;
+    this.telemetryBuffer.push(entry);
+    // Trim to keep only the most recent entries
+    if (this.telemetryBuffer.length > this.telemetryBufferSize) {
+      this.telemetryBuffer.splice(0, this.telemetryBuffer.length - this.telemetryBufferSize);
+    }
+  }
+
+  /**
+   * Return a copy of the telemetry buffer, optionally filtered to a recent time window.
+   *
+   * @param windowMs - If provided, only return entries from the last N milliseconds
+   * @returns Array of telemetry log entries (oldest first)
+   */
+  getTelemetryLogs(windowMs?: number): TelemetryLogEntry[] {
+    if (windowMs === undefined) return [...this.telemetryBuffer];
+    const cutoff = Date.now() - windowMs;
+    return this.telemetryBuffer.filter((e) => e.timestamp >= cutoff);
+  }
+
+  /**
+   * Clear all buffered telemetry entries.
+   * Called on permanent session disconnect to free memory.
+   */
+  clearTelemetryBuffer(): void {
+    this.telemetryBuffer = [];
+  }
+
+  /**
    * Clean up all pending photo requests for a session.
    * Called when a session permanently disconnects.
    *
@@ -679,6 +738,9 @@ export class AppServer extends Hono<{ Variables: AuthVariables }> {
 
         // Clean up any pending photo requests for this session
         this.cleanupPhotoRequestsForSession(sessionId);
+
+        // Clear the telemetry buffer to free memory
+        this.clearTelemetryBuffer();
       } else {
         // Temporary disconnect - session stays in maps for reconnection
         // Photo requests remain pending and can still be fulfilled
