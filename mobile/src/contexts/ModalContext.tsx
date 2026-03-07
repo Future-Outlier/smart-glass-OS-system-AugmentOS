@@ -5,6 +5,7 @@ import {BackHandler, Platform, StyleSheet, TouchableOpacity, View} from "react-n
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
+  useAnimatedProps,
   withTiming,
   withSpring,
 } from "react-native-reanimated"
@@ -13,6 +14,8 @@ import {Button, Text} from "@/components/ignite"
 import {useAppTheme} from "@/contexts/ThemeContext"
 import {translate} from "@/i18n/translate"
 import {scheduleOnRN} from "react-native-worklets"
+
+const AnimatedGlassView = Animated.createAnimatedComponent(GlassView)
 
 // Types
 export type ButtonStyle = "default" | "cancel" | "destructive"
@@ -128,6 +131,14 @@ export function ModalProvider({children}: {children: React.ReactNode}) {
     opacity: fadeAnim.value,
   }))
 
+  // const glassProps = useAnimatedProps(() => ({
+  //   glassEffectStyle: {
+  //     style: fadeAnim.value > 0.01 ? "regular" : "none",
+  //     animate: true,
+  //     animationDuration: 0.2,
+  //   } as any,
+  // }))
+
   return (
     <>
       {children}
@@ -147,10 +158,7 @@ export function ModalProvider({children}: {children: React.ReactNode}) {
           />
 
           <Animated.View style={wrapperStyle}>
-            <GlassView
-              glassEffectStyle={{style: "regular", animate: true, animationDuration: 0.2}}
-              className="rounded-2xl overflow-hidden bg-background"
-              style={{borderRadius: 32}}>
+            <Animated.View className="rounded-2xl overflow-hidden bg-primary-foreground rounded-2xl">
               {/* Icon */}
               {state.options.icon && <View className="items-center pt-6 pb-2">{state.options.icon}</View>}
 
@@ -163,11 +171,8 @@ export function ModalProvider({children}: {children: React.ReactNode}) {
               {/* Custom content */}
               {state.options.content && <View className="px-6 pb-4">{state.options.content}</View>}
 
-              <View className="px-6 pb-4"></View>
-
-              <View className="bg-border h-1" />
-
-              {/* Buttons */}
+              <View className="bg-border h-px" />
+              
               <View className="flex-row gap-4 pl-2 pr-6 py-5 justify-end">
                 {state.buttons.map((button, index) => {
                   const isDestructive = button.style === "destructive"
@@ -186,30 +191,9 @@ export function ModalProvider({children}: {children: React.ReactNode}) {
                       text={button.text}
                     />
                   )
-                  //   return (
-                  //     <TouchableOpacity
-                  //       key={button.text}
-                  //       onPress={() => dismiss(index)}
-                  //       className={`flex-1 py-4 items-center justify-center ${
-                  //         !isLast ? "border-r border-separator" : ""
-                  //       }`}
-                  //     >
-                  //       <Text
-                  //         className={`text-base ${
-                  //           isDestructive
-                  //             ? "text-destructive font-medium"
-                  //             : isCancel
-                  //             ? "text-muted-foreground"
-                  //             : "text-foreground font-semibold"
-                  //         }`}
-                  //       >
-                  //         {button.text}
-                  //       </Text>
-                  //     </TouchableOpacity>
-                  //   )
                 })}
               </View>
-            </GlassView>
+            </Animated.View>
           </Animated.View>
         </Animated.View>
       )}
