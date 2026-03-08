@@ -2772,10 +2772,9 @@ public class MediaCaptureService {
             @Override
             public void run() {
                 if (isRecordingVideo) {
-                    // Null check for StateManager (might not be initialized yet or cleared)
-                    if (mStateManager == null) {
-                        Log.w(TAG, "⚠️ StateManager not available during battery monitoring - skipping check");
-                        // Reschedule to try again later in case StateManager gets initialized
+                    // Use hardwareManager for active BES battery query (not stale StateManager cache)
+                    if (hardwareManager == null) {
+                        Log.w(TAG, "⚠️ HardwareManager not available during battery monitoring - skipping check");
                         if (isRecordingVideo && mBatteryMonitorHandler != null) {
                             mBatteryMonitorHandler.postDelayed(this,
                                 BatteryConstants.BATTERY_CHECK_INTERVAL_MS);
@@ -2783,7 +2782,7 @@ public class MediaCaptureService {
                         return;
                     }
 
-                    int batteryLevel = mStateManager.getBatteryLevel();
+                    int batteryLevel = hardwareManager.getBatteryLevel();
 
                     if (batteryLevel >= 0 && batteryLevel < BatteryConstants.MIN_BATTERY_LEVEL) {
                         Log.w(TAG, "🔋⚠️ Battery dropped to " + batteryLevel +
