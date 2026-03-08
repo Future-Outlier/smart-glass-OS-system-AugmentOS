@@ -1,7 +1,7 @@
 import {Image} from "expo-image"
 import * as ImagePicker from "expo-image-picker"
 import {Directory, Paths, File} from "expo-file-system"
-import {Dimensions, TouchableOpacity, View} from "react-native"
+import {TouchableOpacity, View} from "react-native"
 
 import {Icon} from "@/components/ignite"
 import {Text} from "@/components/ignite"
@@ -9,15 +9,14 @@ import {Group} from "@/components/ui/Group"
 import {useAppTheme} from "@/contexts/ThemeContext"
 import {SETTINGS, useSetting} from "@/stores/settings"
 import {translate} from "@/i18n"
-import {SCREEN_HEIGHT, SCREEN_WIDTH} from "@gorhom/bottom-sheet"
 
 const PRESET_BACKGROUNDS = [
-  "https://images.unsplash.com/photo-1506744038136-46273834b3fb?w=800&q=80",
-  "https://images.unsplash.com/photo-1519681393784-d120267933ba?w=800&q=80",
-  "https://images.unsplash.com/photo-1507400492013-162706c8c05e?w=800&q=80",
-  "https://images.unsplash.com/photo-1470071459604-3b5ec3a7fe05?w=800&q=80",
-  "https://images.unsplash.com/photo-1534088568595-a066f410bcda?w=800&q=80",
-  "https://images.unsplash.com/photo-1475274047050-1d0c55b7b10c?w=800&q=80",
+  "https://mentra-wallpapers.mentraglass.com/landscape1.jpeg",
+  "https://mentra-wallpapers.mentraglass.com/landscape2.jpeg",
+  "https://mentra-wallpapers.mentraglass.com/landscape3.jpeg",
+  "https://mentra-wallpapers.mentraglass.com/trees.jpg",
+  "https://mentra-wallpapers.mentraglass.com/clouds.jpeg",
+  "https://mentra-wallpapers.mentraglass.com/firewatch.jpg",
 ]
 
 async function saveBackgroundImage(uri: string): Promise<string> {
@@ -35,20 +34,11 @@ export default function BackgroundPicker() {
   const {theme} = useAppTheme()
   const [background, setBackground] = useSetting<string>(SETTINGS.home_background.key)
 
-  const {width, height} = Dimensions.get("window")
-
-  const gcd = (a: number, b: number): number => (b === 0 ? a : gcd(b, a % b))
-  const divisor = gcd(Math.round(width), Math.round(height))
-
   const pickImage = async () => {
     const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ["images"],
       allowsEditing: false,
-    //   allowsEditing: true,
-      //   quality: 0.8,
       allowsMultipleSelection: false,
-    //   aspect: [Math.round(width) / divisor, Math.round(height) / divisor],
-    //   aspect: [16, 9],
     })
 
     if (!result.canceled && result.assets[0]) {
@@ -70,12 +60,12 @@ export default function BackgroundPicker() {
 
   return (
     <Group title={translate("appearanceSettings:homeBackground")}>
-      <View className="flex-row flex-wrap gap-3 p-4 bg-card rounded-xl">
+      <View className="flex-row flex-wrap gap-3">
         {/* None option */}
         <TouchableOpacity onPress={clearBackground} className="items-center w-[72px]">
           <View
-            className={`w-[72px] h-[72px] rounded-lg overflow-hidden items-center justify-center bg-muted ${
-              !background ? "border-[3px]" : ""
+            className={`w-[72px] h-[72px] rounded-lg overflow-hidden items-center justify-center border-2 border-dashed border-border ${
+              !background ? "border-solid border-[3px]" : ""
             }`}
             style={!background ? {borderColor: theme.colors.tint} : undefined}>
             <Icon name="x" size={24} color={theme.colors.text} />
@@ -97,8 +87,8 @@ export default function BackgroundPicker() {
         {/* Pick from library */}
         <TouchableOpacity onPress={pickImage} className="items-center w-[72px]">
           <View
-            className={`w-[72px] h-[72px] rounded-lg overflow-hidden items-center justify-center bg-muted ${
-              isCustom ? "border-[3px]" : ""
+            className={`w-[72px] h-[72px] rounded-lg overflow-hidden items-center justify-center ${
+              isCustom ? "border-solid border-[3px]" : "border-2 border-dashed border-border"
             }`}
             style={isCustom ? {borderColor: theme.colors.tint} : undefined}>
             {isCustom ? (

@@ -1,4 +1,5 @@
-import {ScrollView} from "react-native"
+import {Platform, ScrollView} from "react-native"
+import {isLiquidGlassAvailable} from "expo-glass-effect"
 
 import {Screen, Header} from "@/components/ignite"
 import {Group} from "@/components/ui/Group"
@@ -15,6 +16,9 @@ export default function AppearanceSettingsPage() {
 
   const [themePreference, setThemePreference] = useSetting(SETTINGS.theme_preference.key)
   const [iosGlassEffect, setIosGlassEffect] = useSetting(SETTINGS.ios_glass_effect.key)
+  const [appSwitcherUi] = useSetting(SETTINGS.app_switcher_ui.key)
+
+  const showGlassToggle = appSwitcherUi && Platform.OS === "ios" && isLiquidGlassAvailable()
 
   const handleThemeChange = async (newTheme: ThemeType) => {
     await setThemePreference(newTheme)
@@ -35,15 +39,17 @@ export default function AppearanceSettingsPage() {
           ]}
         />
 
-        <BackgroundPicker />
+        {appSwitcherUi && <BackgroundPicker />}
 
-        <Group>
-          <ToggleSetting
-            label={translate("appearanceSettings:liquidGlassEffect")}
-            onValueChange={(value) => setIosGlassEffect(value)}
-            value={iosGlassEffect}
-          />
-        </Group>
+        {showGlassToggle && (
+          <Group>
+            <ToggleSetting
+              label={translate("appearanceSettings:liquidGlassEffect")}
+              onValueChange={(value) => setIosGlassEffect(value)}
+              value={iosGlassEffect}
+            />
+          </Group>
+        )}
       </ScrollView>
     </Screen>
   )

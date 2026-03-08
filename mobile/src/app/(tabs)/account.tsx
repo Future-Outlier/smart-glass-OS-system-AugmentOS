@@ -59,7 +59,7 @@ export default function AccountPage() {
               <RouteButton
                 icon={<Icon name="sun" size={24} color={theme.colors.secondary_foreground} />}
                 label={translate("settings:appAppearance")}
-                onPress={() => push("/miniapps/settings/theme")}
+                onPress={() => push("/miniapps/settings/appearance")}
               />
             )}
             {(Platform.OS === "android" || superMode) && (
