@@ -593,17 +593,32 @@ export const useAppletStatusStore = create<AppStatusState>((set, get) => ({
 
     // show incompatible alert if the applet is incompatible:
     if (!applet.compatibility?.isCompatible) {
-      const missingHardware =
-        applet.compatibility?.missingRequired?.map((req) => req.type.toLowerCase()).join(", ") || "required features"
+      const missingTypes = applet.compatibility?.missingRequired?.map((req) => req.type) || []
+      const onlyNeedsGlasses =
+        missingTypes.length === 1 && missingTypes[0] === HardwareType.EXIST
 
-      await showAlert({
-        title: translate("home:hardwareIncompatible"),
-        buttons: [{text: translate("common:ok")}],
-        message: translate("home:hardwareIncompatibleMessage", {
-          app: applet.name,
-          missing: missingHardware,
-        }),
-      })
+      if (onlyNeedsGlasses) {
+        await showAlert({
+          title: translate("home:glassesRequired"),
+          buttons: [{text: translate("common:ok")}],
+          message: translate("home:glassesRequiredMessage", {app: applet.name}),
+        })
+      } else {
+        const missingHardware =
+          missingTypes
+            .filter((t) => t !== HardwareType.EXIST)
+            .map((t) => t.toLowerCase())
+            .join(", ") || "required features"
+
+        await showAlert({
+          title: translate("home:hardwareIncompatible"),
+          buttons: [{text: translate("common:ok")}],
+          message: translate("home:hardwareIncompatibleMessage", {
+            app: applet.name,
+            missing: missingHardware,
+          }),
+        })
+      }
 
       return
     }
@@ -744,6 +759,30 @@ export const useAppletStatusStore = create<AppStatusState>((set, get) => ({
     // set({localMiniApps: installedLmas})
   },
 }))
+
+// Re-evaluate app compatibility when default_wearable changes
+// This fixes the bug where switching devices leaves apps greyed out with stale compatibility
+useSettingsStore.subscribe(
+  (state) => state.getSetting(SETTINGS.default_wearable.key),
+  (defaultWearable) => {
+    const apps = useAppletStatusStore.getState().apps
+    if (apps.length === 0) return
+
+    const capabilities = getModelCapabilities(defaultWearable || DeviceTypes.NONE)
+    let changed = false
+    const updatedApps = apps.map((applet) => {
+      const result = HardwareCompatibility.checkCompatibility(applet.hardwareRequirements, capabilities)
+      if (result.isCompatible !== applet.compatibility?.isCompatible) {
+        changed = true
+      }
+      return {...applet, compatibility: result}
+    })
+
+    if (changed) {
+      useAppletStatusStore.setState({apps: updatedApps})
+    }
+  },
+)
 
 export const useApplets = () => useAppletStatusStore((state) => state.apps)
 export const useStartApplet = () => useAppletStatusStore((state) => state.startApplet)

@@ -55,13 +55,16 @@ const init = async () => {
 }
 
 export const migrate = async () => {
-  const storedVersionRes = await storage.load<number>("migrationVersion")
-  if (storedVersionRes.is_error()) {
-    await init()
-    return
-  }
+  const storedVersionRes = await storage.load<number>(migration_version_key)
+  let storedVersion: number
 
-  const storedVersion = storedVersionRes.value
+  if (storedVersionRes.is_error()) {
+    // fresh install — initialize at version 0 and run all migrations
+    await init()
+    storedVersion = 0
+  } else {
+    storedVersion = storedVersionRes.value
+  }
 
   if (storedVersion === current_version) {
     // we are up to date, no migrations needed
