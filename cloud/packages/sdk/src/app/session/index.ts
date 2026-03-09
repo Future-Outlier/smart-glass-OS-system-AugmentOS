@@ -833,6 +833,11 @@ export class AppSession {
 
           this.logger.debug(`WebSocket closed (code: ${code}${reasonStr})`);
 
+          // Stop ping interval immediately — the socket is closed so pings are pointless.
+          // connect() will restart it on reconnect; disconnect() would also clear it,
+          // but stopping here prevents an orphaned interval if neither is called.
+          this.stopPingInterval();
+
           // If user session ended, mark as terminated to prevent any future reconnection
           if (isUserSessionEnded) {
             this.terminated = true;
