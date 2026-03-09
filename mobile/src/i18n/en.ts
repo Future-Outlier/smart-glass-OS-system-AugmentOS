@@ -48,7 +48,8 @@ const en = {
     bluetooth: "Bluetooth",
     preferredMic: "Preferred microphone",
     microphonePermissionRequired: "Microphone permission required",
-    microphonePermissionRequiredMessage: "Microphone permission is required to use the phone microphone feature. Please grant the microphone permission in settings.",
+    microphonePermissionRequiredMessage:
+      "Microphone permission is required to use the phone microphone feature. Please grant the microphone permission in settings.",
   },
   positionSettings: {
     title: "Display position",
@@ -874,7 +875,7 @@ const en = {
     remove: "Remove",
     settings: "Settings",
     feedback: "Feedback",
-
+    shareMessage: "Share {{appName}}",
   },
   lmaInstaller: {
     installedVersions: "Installed versions",
