@@ -202,6 +202,13 @@ export function NavigationHistoryProvider({children}: {children: React.ReactNode
     }
   }
 
+  const resetAnimationDelayed = () => {
+    // TODO: change this back to 100 once we have native animations again:
+    setTimeout(() => {
+      setAnimation("simple_push")
+    }, 800)
+  }
+
   const push = (path: string, params?: any): void => {
     console.info("NAV: push()", path)
     // if the path is the same as the last path, don't add it to the history
@@ -221,10 +228,7 @@ export function NavigationHistoryProvider({children}: {children: React.ReactNode
 
     // reset the animation to simple_push after a short delay:
     if (params?.transition) {
-      // TODO: change this back to 100 once we have native animations again:
-      setTimeout(() => {
-        setAnimation("simple_push")
-      }, 800)
+      resetAnimationDelayed()
     }
   }
 
@@ -240,10 +244,7 @@ export function NavigationHistoryProvider({children}: {children: React.ReactNode
     }
     router.replace({pathname: path as any, params: params as any})
     if (params?.transition) {
-      // TODO: change this back to 100 once we have native animations again:
-      setTimeout(() => {
-        setAnimation("simple_push")
-      }, 800)
+      resetAnimationDelayed()
     }
   }
 
@@ -266,7 +267,7 @@ export function NavigationHistoryProvider({children}: {children: React.ReactNode
     return historyRef.current[historyRef.current.length - (2 + index)]
   }
 
-  const clearHistory = () => {
+  const clearHistory = (params?: any) => {
     console.info("NAV: clearHistory()")
     historyRef.current = []
     historyParamsRef.current = []
@@ -300,17 +301,23 @@ export function NavigationHistoryProvider({children}: {children: React.ReactNode
     router.navigate({pathname: path as any, params: params as any})
   }
 
-  const clearHistoryAndGoHome = () => {
+  const clearHistoryAndGoHome = (params?: any) => {
     console.info("NAV: clearHistoryAndGoHome()")
     clearHistory()
     try {
       // router.dismissAll()
       // router.dismissTo("/")
       // router.navigate("/")
-      router.replace("/home")
+      if (params?.transition) {
+        setAnimation(params.transition)
+      }
+      router.replace({pathname: "/home" as any, params: params as any})
       historyRef.current = ["/home"]
       historyParamsRef.current = [undefined]
       setDebugHistory([...historyRef.current])
+      if (params?.transition) {
+        resetAnimationDelayed()
+      }
     } catch (error) {
       console.error("NAV: clearHistoryAndGoHome() error", error)
     }

@@ -102,7 +102,7 @@ export default function InitScreen() {
 
     await new Promise((resolve) => setTimeout(resolve, NAVIGATION_DELAY))
     setAnimationDelayed()
-    clearHistoryAndGoHome()
+    clearHistoryAndGoHome({transition: "fade"})
   }
 
   const checkLoggedIn = async (): Promise<void> => {
