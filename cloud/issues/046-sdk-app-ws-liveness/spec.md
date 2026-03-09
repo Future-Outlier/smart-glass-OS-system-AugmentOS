@@ -11,15 +11,16 @@ by implementing an app-level ping/pong on the `glasses-ws` connection:
 - This is tested on debug and appears to be working
 
 The **same WebSocket dying problem exists on the `app-ws` connection** — between the SDK
-(mini app server) and the cloud. Long-idle SDK connections drop when nginx/the load balancer
-times out the TCP connection because no data has flowed.
+(mini app server) and the cloud. Long-idle SDK connections drop because the load balancer /
+nginx requires **bidirectional traffic** to keep a WebSocket connection alive. If either
+direction goes quiet long enough, the infra kills the connection.
 
-The existing fix on `glasses-ws` cannot simply be mirrored on `app-ws` (cloud sends ping to SDK)
+The existing `glasses-ws` fix cannot simply be mirrored on `app-ws` (cloud sends ping to SDK)
 because of backwards compatibility:
 
 > **Old SDK versions (`2.x`) have no `{type:"ping"}` handling.** They route every unrecognized
 > message type through the `default` case in `handleMessage()` which emits an error event and
-> logs a warning. A ping every 2–5 seconds would generate **thousands of error log entries per
+> logs a warning. A ping every few seconds would generate **thousands of error log entries per
 > user per hour** across every deployed mini app in the ecosystem.
 
 ---
@@ -32,131 +33,141 @@ because of backwards compatibility:
 - **Problem:** Old SDK apps (`2.x`) receive unrecognized message → `MentraError("UNKNOWN_TYPE")`
   emitted, `this.logger.warn(...)` fires → at 1 ping/5s that's ~720 warnings/hour/user/app
 - No way to gate this without knowing the SDK version of connected apps at runtime
-- Even if we add a version check, cloud doesn't know the SDK version of a connected app
+- Cloud has no way to know which SDK version a connected app is running
 
 ### Option B: SDK sends ping → Cloud responds with pong ✅
 
-- New SDK (`3.x hono`) sends `{type:"ping"}` to cloud every N seconds
-- Cloud responds `{type:"pong"}` on the `app-ws` handler
-- SDK consumes pong silently (no warning, no error event)
+- New SDK (`3.x hono`) sends `{type:"ping"}` to cloud every N seconds → **ingress traffic**
+- Cloud responds `{type:"pong"}` → **egress traffic**
+- Both directions have periodic traffic → load balancer stays happy → connection lives
+- SDK consumes the pong silently — no warning, no error event, no liveness logic
 - **Backwards compatible by design:** old SDK apps never send pings → cloud never responds →
   no noise on old deployments
-- Only apps that upgrade to the new SDK get liveness detection
-- Exactly mirrors how the mobile app handles it (client-initiated)
+- Only apps that upgrade to the new SDK get the keep-alive behaviour
 
 ### Option C: Rely on protocol-level WebSocket ping from cloud ❌
 
-- Cloud already does `ws.ping()` (protocol-level) in `AppSession.ts` (cloud-side app session)
-- Protocol-level pings are handled by the OS TCP stack — they keep the connection alive at
-  the kernel level but are **not visible to the SDK's `ws.on("message")` handler**
-- The SDK has no way to verify the connection is alive from its side
-- If the cloud-side `AppSession` goes away and respawns, the SDK has no signal
+- Cloud already does `ws.ping()` (protocol-level) in `AppSession.ts`
+- Protocol-level pings are handled at the TCP/kernel level but are **not visible to application
+  message handlers** — they don't produce egress traffic visible to the load balancer in the
+  way app-level messages do
+- Does not reliably satisfy infra-level bidirectional traffic requirements
 
-### Why Option B also improves SDK-side reconnection detection
+---
 
-Currently the SDK only discovers a dead connection when it tries to send and gets an error,
-or when the WebSocket `close` event fires (which may be delayed by TCP keepalive timeouts
-of 30–75 seconds on some load balancers). With SDK-initiated ping/pong:
+## Why Both Directions Matter
 
-- If the cloud doesn't respond within N seconds → SDK knows the connection is dead → triggers
-  its own reconnection immediately, without waiting for TCP to time out
-- This is the same pattern the mobile app uses for liveness detection (issues 034/035)
+The infrastructure requirement is **bidirectional traffic**, not just one-way:
+
+```
+SDK → Cloud:  {type:"ping"}   ← satisfies ingress (SDK → cloud)
+Cloud → SDK:  {type:"pong"}   ← satisfies egress  (cloud → SDK)
+```
+
+Sending pings without receiving pongs (e.g. connected to an old cloud that doesn't respond)
+means only ingress is active. On some infra this is sufficient; on others the egress silence
+still triggers a timeout. The cloud-side change is therefore required for full reliability.
+
+However, the SDK should **not** do anything special if pongs don't arrive. The SDK has no
+way to know whether it's connected to a new cloud (which responds) or an old cloud (which
+doesn't). Adding a pong timeout would actively harm apps on old cloud deployments by
+disconnecting healthy connections just because the cloud doesn't echo back.
+
+The pong is consumed silently. That's all.
 
 ---
 
 ## Design
 
-### Message Types
+### Message format
 
-Both types already exist in `CloudToAppMessageType` and are already in the SDK's enum. No
-new enum values needed.
+`"ping"` / `"pong"` are raw string types that bypass the typed message system — infrastructure,
+not application protocol. Same pattern as `glasses-ws`.
 
 ```
-SDK → Cloud:   { type: "ping", timestamp: <epoch ms> }
-Cloud → SDK:   { type: "pong", timestamp: <epoch ms> }
+SDK → Cloud:   { type: "ping" }
+Cloud → SDK:   { type: "pong" }
 ```
 
-`"ping"` is not a registered `AppToCloudMessageType` enum value — it's a raw string that
-bypasses the typed message system, same as on `glasses-ws`. This is intentional: it's
-infrastructure, not application protocol.
-
-### Cloud Changes (small — `bun-websocket.ts`)
+### Cloud change — `bun-websocket.ts` (3 lines)
 
 In `handleAppMessage()`, before delegating to `userSession.handleAppMessage()`, add early
-returns for ping/pong — mirroring the existing `handleGlassesMessage()` pattern:
+returns for ping/pong, mirroring the existing `handleGlassesMessage()` pattern:
 
 ```typescript
-// App-level ping from SDK — respond immediately, don't touch session state
-if (parsed.type === "ping") {
-  ws.send(JSON.stringify({type: "pong", timestamp: Date.now()}))
+// App-level ping from SDK — respond immediately to satisfy egress requirement.
+// Only new SDK versions (3.x hono+) send these. Old 2.x apps never send pings
+// so this branch is never hit for legacy apps — fully backwards compatible.
+// See: cloud/issues/046-sdk-app-ws-liveness
+if ((parsed as any).type === "ping") {
+  ws.send(JSON.stringify({type: "pong"}))
   return
 }
 
-// App-level pong (future: SDK responding to cloud-initiated ping) — consume silently
-if (parsed.type === "pong") {
+// App-level pong — consume silently (future-proofing).
+if ((parsed as any).type === "pong") {
   return
 }
 ```
 
-This is a **3-line cloud change**. No new types, no new handlers, no session state.
-
-### SDK Changes (`AppSession`)
+### SDK change — `AppSession`
 
 #### 1. Ping interval
 
-After successful connection (`CONNECTION_ACK` received), start a ping interval:
+Start after `CONNECTION_ACK` is received. Stop and clear on disconnect.
 
 ```typescript
 private pingInterval?: NodeJS.Timeout
-private lastPongTime?: number
-private readonly PING_INTERVAL_MS = 15_000   // send ping every 15s
-private readonly PONG_TIMEOUT_MS  = 30_000   // consider dead if no pong for 30s
+private readonly PING_INTERVAL_MS = 15_000
 ```
 
-Why 15 seconds? The nginx `proxy-read-timeout` on debug/dev is already set to 3600s (issue 035).
-The real threat is intermediate load balancers / Cloudflare with shorter idle timeouts (~60–90s).
-15s keeps us well under any common threshold without spamming the connection.
+Every 15 seconds, if the WebSocket is open, send `{type:"ping"}`. Guard against sending
+when `readyState !== OPEN` — same pattern as `UserSession.appLevelPingInterval`.
+
+Why 15 seconds? Well under Cloudflare's ~100s idle timeout and common LB 60s defaults.
+At 100 concurrent apps: ~400 tiny messages/minute server-wide — negligible.
 
 #### 2. Pong handling in `handleMessage()`
 
-Add a branch before the unrecognized-message `else` to consume pong silently:
+Add a silent branch before the unrecognized-message `else`:
 
 ```typescript
 } else if ((message as any).type === "pong") {
-  // Cloud acknowledged our ping — connection is alive
-  this.lastPongTime = Date.now()
-  // no log, no error, no event
+  // Cloud acknowledged our ping — bidirectional traffic maintained.
+  // No timeout, no liveness detection, no reconnect logic.
+  // If the cloud doesn't respond (old deployment), the SDK keeps sending
+  // pings regardless — the sending itself produces ingress traffic.
 }
 ```
 
-#### 3. Dead connection detection (optional for v1)
+That's it. No `lastPongTime`. No forced reconnect on missing pong. No error if pong never
+comes. The interval runs unconditionally for as long as the session is connected.
 
-On each ping, check if `lastPongTime` is older than `PONG_TIMEOUT_MS`. If so, the connection
-is silently dead — force-close the WebSocket to trigger the existing reconnection logic:
+#### 3. Cleanup
 
-```typescript
-if (this.lastPongTime && Date.now() - this.lastPongTime > this.PONG_TIMEOUT_MS) {
-  this.logger.warn("App-WS liveness timeout — no pong received, forcing reconnect")
-  this.ws?.close(1001, "Liveness timeout")
-  return
-}
-```
-
-#### 4. Cleanup
-
-Clear the ping interval on disconnect (both permanent and temporary). The interval should
-also guard against `this.ws?.readyState !== 1` before sending (same pattern as `UserSession`).
+Clear `pingInterval` on both temporary and permanent disconnect. Also clear on `dispose()`.
 
 ---
 
-## Backwards Compatibility Matrix
+## What the SDK does NOT do
 
-| SDK Version             | Sends ping?  | Receives cloud pong?     | Effect                 |
-| ----------------------- | ------------ | ------------------------ | ---------------------- |
-| `2.x` (old Express SDK) | ❌ No        | ❌ No pong sent by cloud | No change, no noise    |
-| `3.0.0-hono.7+` (new)   | ✅ Every 15s | ✅ Cloud responds        | Connection stays alive |
+- ❌ Track `lastPongTime`
+- ❌ Disconnect/reconnect if pong doesn't arrive
+- ❌ Log warnings if pong is missing
+- ❌ Expose ping interval as a developer config option
+- ❌ Emit any event on ping/pong
 
-Old apps: zero impact. New apps: automatic liveness without any developer code.
+The SDK simply sends traffic. The cloud sends traffic back. The connection stays alive.
+
+---
+
+## Backwards Compatibility
+
+| SDK Version             | Sends ping?  | Cloud responds?    | Effect                          |
+| ----------------------- | ------------ | ------------------ | ------------------------------- |
+| `2.x` (old Express SDK) | ❌ No        | ❌ Never triggered | No change, zero noise           |
+| `3.0.0-hono.7+` (new)   | ✅ Every 15s | ✅ Yes (new cloud) | Bidirectional traffic, stays up |
+| `3.0.0-hono.7+` (new)   | ✅ Every 15s | ❌ No (old cloud)  | Ingress-only, may still help    |
 
 ---
 
@@ -166,50 +177,33 @@ Old apps: zero impact. New apps: automatic liveness without any developer code.
 
 | File                                      | Change                                                        |
 | ----------------------------------------- | ------------------------------------------------------------- |
-| `src/services/websocket/bun-websocket.ts` | Add ping/pong early-return in `handleAppMessage()` (~3 lines) |
+| `src/services/websocket/bun-websocket.ts` | Add ping/pong early-return in `handleAppMessage()` (~6 lines) |
 
 ### SDK (`cloud/packages/sdk/`)
 
-| File                       | Change                                                                                                                                                                                  |
-| -------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `src/app/session/index.ts` | Add `pingInterval`, `lastPongTime`, `PING_INTERVAL_MS`, `PONG_TIMEOUT_MS`; start interval on `CONNECTION_ACK`; consume pong silently in `handleMessage()`; clear interval on disconnect |
-
-### React SDK (`cloud/packages/react-sdk/`)
-
-No changes needed.
-
----
-
-## Interval Timing Rationale
-
-| Timeout                       | Value | Reason                                                                  |
-| ----------------------------- | ----- | ----------------------------------------------------------------------- |
-| Ping interval                 | 15s   | Well under Cloudflare's 100s idle timeout, under common LB 60s defaults |
-| Pong timeout                  | 30s   | Two missed pings before declaring dead — tolerates one transient loss   |
-| Connection timeout (existing) | 5s    | Already in SDK for initial handshake                                    |
-
-The 15s interval also means the SDK sends ~4 pings/minute per connected app. At 100 concurrent
-apps that's 400 tiny JSON messages/minute server-wide — negligible load.
+| File                       | Change                                                                                                                              |
+| -------------------------- | ----------------------------------------------------------------------------------------------------------------------------------- |
+| `src/app/session/index.ts` | Add `pingInterval` + `PING_INTERVAL_MS`; start on `CONNECTION_ACK`; consume pong silently in `handleMessage()`; clear on disconnect |
 
 ---
 
 ## Implementation Order
 
-1. **Cloud change first** (`bun-websocket.ts`) — deploy to debug. This is safe to deploy before
-   SDK change because no current SDK sends `{type:"ping"}` on `app-ws`, so the new handler is
-   never triggered.
+1. **Cloud change first** — safe to deploy before SDK change because no current SDK sends
+   `{type:"ping"}` on `app-ws`, so the new handler is never triggered.
 
-2. **SDK change** (`AppSession`) — implement ping interval + pong consumption.
+2. **SDK change** — ping interval + silent pong consumption.
 
-3. **Publish** `@mentra/sdk@3.0.0-hono.7` with tag `hono`.
+3. **Publish** `@mentra/sdk@3.0.0-hono.7 --tag hono`.
 
-4. **Update live-captions** to `3.0.0-hono.7` as part of the Hono SDK refactor (issue 046b).
+4. **Update live-captions** to `3.0.0-hono.7` as part of the Hono SDK refactor.
 
 ---
 
 ## Out of Scope
 
-- Cloud-initiated ping to SDK apps (backwards-incompatible, not needed given SDK-initiated approach)
-- Ping-pong on the `glasses-ws` connection (already handled in 034/035)
-- Changing the `latest` npm tag (Hono SDK is still pre-release on the `hono` tag)
-- Exposing ping interval as a developer-configurable option (internal infrastructure detail)
+- Cloud-initiated ping to SDK apps (backwards-incompatible)
+- Ping-pong on `glasses-ws` (already handled in 034/035)
+- Promoting Hono SDK to the `latest` npm tag
+- Pong-based liveness/reconnection logic (explicitly not doing this)
+- Developer-configurable ping interval
