@@ -173,9 +173,9 @@ export function AppsGrid({showAllApps = false, onOpenApp, onAddToHome, searchQue
   useEffect(() => {
     const result = getAppsOrder()
     if (result.is_ok()) {
-      for (const [packageName, index] of Object.entries(result.value)) {
-        console.log("index", index, "packageName", packageName)
-      }
+      // for (const [packageName, index] of Object.entries(result.value)) {
+      //   console.log("index", index, "packageName", packageName)
+      // }
       setOrderMap(result.value)
     }
   }, [])

@@ -69,9 +69,9 @@ export function MiniAppDualButtonHeader({
     try {
       const uri = await captureRef(viewShotRef, {
         format: "jpg",
-        quality: 0.5,
+        quality: 0.1,
       })
-      // save uri to zustand stoare
+      // save uri to zustand store
       await useAppletStatusStore.getState().saveScreenshot(packageName, uri)
     } catch (e) {
       console.warn("screenshot failed:", e)

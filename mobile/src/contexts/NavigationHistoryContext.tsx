@@ -168,13 +168,13 @@ export function NavigationHistoryProvider({children}: {children: React.ReactNode
   // }, [pathname])
 
   const goBack = () => {
-    console.info("NAV: goBack()")
+    console.log("NAV: goBack()")
     const currentPath = historyRef.current[historyRef.current.length - 1]
     // const currentParams = historyParamsRef.current[historyParamsRef.current.length - 1]
 
     if (currentPath === "/home" || currentPath === "/") {
       // can't go back from home or root, do nothing
-      console.info("NAV: can't go back from home or root, doing nothing")
+      // console.log("NAV: can't go back from home or root, doing nothing")
       return
     }
 
@@ -539,7 +539,7 @@ export const focusEffectPreventBack = (backFn?: () => void, iosDontPreventBack?:
       useCallback(() => {
         const unsubscribe = navigation.addListener("beforeRemove", (e) => {
           // Fires when back gesture starts or back button is pressed
-          console.log("navigating back")
+          // console.log("navigating back")
           backFn?.()
         })
         return () => {
