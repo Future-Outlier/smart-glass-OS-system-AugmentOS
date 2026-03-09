@@ -138,16 +138,8 @@ const AppPopover: React.FC<{
           <GlassView className="rounded-2xl overflow-hidden bg-primary-foreground/95">{popoverContent}</GlassView>
         </View>
         <GlassView
-          className="absolute"
-          style={{
-            left: arrowLeft,
-            top: arrowTop,
-            width: 32,
-            height: 32,
-            backgroundColor: "transparent",
-            transform: [{rotate: "45deg"}],
-            zIndex: -1,
-          }}
+          className="absolute bg-primary-foreground/95 w-8 h-8 transform rotate-45 -z-1"
+          style={{left: arrowLeft, top: arrowTop}}
         />
       </Pressable>
     </View>
@@ -549,13 +541,15 @@ export function AppsGrid({showAllApps = false, onOpenApp, onAddToHome, searchQue
           <DraggableMasonryList
             data={gridData}
             renderItem={renderItem}
+            rowGap={0}
+            columnGap={0}
             columns={GRID_COLUMNS}
             onDragStart={handleDragStart}
             onDragEnd={handleDragEnd}
             onDragChange={handleDragChange}
             overDrag="none"
             showDropIndicator={true}
-            sortEnabled={true}
+            sortEnabled={!showAllApps}
             swapMode={true}
             dropIndicatorStyle={{backgroundColor: theme.colors.primary_foreground, borderWidth: 0}}
           />
