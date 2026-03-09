@@ -217,7 +217,7 @@ class Composer {
     try {
       const lmasDir = new Directory(Paths.document, "lmas")
       if (!lmasDir.exists) {
-        console.log("COMPOSER: No lmas directory found, returning empty array")
+        // console.log("COMPOSER: No lmas directory found, returning empty array")
         return []
       }
       let lmas = lmasDir.list()

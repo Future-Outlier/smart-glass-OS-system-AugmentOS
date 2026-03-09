@@ -16,6 +16,7 @@ import {useSaferAreaInsets} from "@/contexts/SaferAreaContext"
 import GlassView from "@/components/ui/GlassView"
 import {SETTINGS, useSetting} from "@/stores/settings"
 import {hapticBuzz} from "@/utils/utils"
+import showAlert from "@/contexts/ModalContext"
 
 interface AppSwitcherButtonProps {
   swipeProgress: SharedValue<number>
@@ -160,6 +161,14 @@ export default function AppSwitcherButton({swipeProgress, onGridButtonPress}: Ap
     )
   }
 
+  const handleNoAppsPress = () => {
+    showAlert({
+      title: translate("appSwitcher:noAppsOpen"),
+      message: translate("appSwitcher:yourRecentlyUsedAppsWillAppearHere"),
+      buttons: [{text: translate("common:ok")}],
+    })
+  }
+
   let paddingTop = Platform.OS === "android" ? theme.spacing.s10 : theme.spacing.s16
 
   const renderGridButton = () => {
@@ -169,6 +178,27 @@ export default function AppSwitcherButton({swipeProgress, onGridButtonPress}: Ap
           <Icon name="grid-3x3" color={theme.colors.foreground} size={32} />
         </TouchableOpacity>
       </GlassView>
+    )
+  }
+
+  if (Platform.OS === "android" && appsCount === 0) {
+    return (
+      <View
+        className="w-screen flex-row justify-between items-center gap-4 bottom-0 -ml-6 px-6 absolute"
+        style={{paddingTop: paddingTop}}>
+        {renderBackground()}
+        <TouchableOpacity onPress={handleNoAppsPress} className="flex-1">
+          <View className="flex-1" style={{paddingBottom: bottomPadding}}>
+            <GlassView
+              className={`bg-primary-foreground flex-1 py-1.5 pl-3 min-h-15 rounded-2xl flex-row justify-between items-center`}>
+              <View className="flex-row items-center justify-center flex-1">
+                <Text className="text-muted-foreground text-md" tx="home:appletPlaceholder2" />
+              </View>
+            </GlassView>
+          </View>
+        </TouchableOpacity>
+        {renderGridButton()}
+      </View>
     )
   }
 

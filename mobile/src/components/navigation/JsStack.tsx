@@ -205,6 +205,8 @@ export const woltScreenOptions: StackNavigationOptions = {
   cardOverlayEnabled: true,
   headerShown: false,
   gestureDirection: "horizontal",
+  animation: "default",
+  detachPreviousScreen: false,
   // cardStyleInterpolator: customCardStyleInterpolator,
   // cardStyleInterpolator: simplePush,
   transitionSpec: {
