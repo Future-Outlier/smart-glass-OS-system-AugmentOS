@@ -10,6 +10,7 @@
 // v2: Add 'terminated' flag to prevent reconnection after "User session ended"
 // This helps verify the correct SDK version is running in production
 const SDK_SUBSCRIPTION_PATCH = "bug007-fix-v2";
+import pino from "pino";
 import { WebSocket } from "ws";
 import { EventManager, EventData } from "./events";
 import { LayoutManager } from "./layouts";
@@ -20,6 +21,8 @@ import { LedModule } from "./modules/led";
 import { AudioManager } from "./modules/audio";
 import { ResourceTracker } from "../../utils/resource-tracker";
 import { MentraAuthError, MentraConnectionError, MentraTimeoutError, MentraError } from "../../logging/errors";
+import { createTelemetryStream } from "../../logging/telemetry-transport";
+import type { TelemetryLogEntry } from "../../types/messages/app-to-cloud";
 import type { RequestWifiSetup, OwnershipReleaseMessage } from "../../types/messages/app-to-cloud";
 import {
   // Message types
@@ -242,6 +245,9 @@ export class AppSession {
    */
   public _audioStreamReadyHandlers = new Map<string, (msg: any) => void>();
 
+  /** Per-session ring buffer of recent log entries for incident telemetry uploads */
+  private telemetryBuffer: TelemetryLogEntry[] = [];
+
   constructor(private config: AppSessionConfig) {
     // Set defaults and merge with provided config
     this.config = {
@@ -253,11 +259,30 @@ export class AppSession {
     };
 
     this.appServer = this.config.appServer;
-    this.logger = this.appServer.logger.child({
+    this.userId = this.config.userId;
+
+    // Build session logger: child of appServer.logger (for BetterStack + console)
+    // PLUS a telemetry stream that captures info+ entries into this session's
+    // ring buffer. Because pino child loggers share the parent transport, we
+    // instead create a fresh pino instance that:
+    //   1. Forwards all writes to the parent (preserving BetterStack + console)
+    //   2. Also tees into the per-session telemetry buffer
+    // This means every session.logger.info/warn/error call — including all
+    // module child loggers — is automatically captured for incident debugging.
+    const parentLogger = this.appServer.logger.child({
       userId: this.config.userId,
       service: "app-session",
     });
-    this.userId = this.config.userId;
+    const telemetryStream = createTelemetryStream(this.telemetryBuffer, 500);
+    // pino multistream: parent at debug (so BetterStack/console still control their own levels)
+    // + telemetry stream at info (debug is too noisy for incident bundles)
+    this.logger = pino(
+      { level: "debug", base: null },
+      pino.multistream([
+        { stream: (parentLogger as any)[pino.symbols.streamSym] ?? process.stderr, level: "debug" },
+        { stream: telemetryStream, level: "info" },
+      ]),
+    );
 
     // Make sure the URL is correctly formatted to prevent double protocol issues
     if (this.config.mentraOSWebsocketUrl) {
@@ -1635,12 +1660,10 @@ export class AppSession {
   private async handleTelemetryRequest(request: RequestTelemetry): Promise<void> {
     const { incidentId, uploadToken, windowMs } = request;
 
-    if (!this.appServer) {
-      this.logger.warn({ incidentId }, "REQUEST_TELEMETRY received but no appServer — cannot collect telemetry");
-      return;
-    }
+    // Read from this session's own buffer — already scoped to this user
+    const cutoff = windowMs ? Date.now() - windowMs : 0;
+    const logs = cutoff > 0 ? this.telemetryBuffer.filter((e) => e.timestamp >= cutoff) : [...this.telemetryBuffer];
 
-    const logs = this.appServer.getTelemetryLogs(windowMs);
     this.logger.debug({ incidentId, logCount: logs.length, windowMs }, "Collecting telemetry for incident upload");
 
     const payload: TelemetryResponse = {
