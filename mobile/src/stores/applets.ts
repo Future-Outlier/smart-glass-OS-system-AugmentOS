@@ -180,6 +180,8 @@ export const SYSTEM_APPS = [
   storePackageName,
   simulatedPackageName,
   mirrorPackageName,
+  "com.mentra.ai",
+  "com.mentra.notify",
 ]
 
 // get offline applets:
