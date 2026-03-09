@@ -1,5 +1,5 @@
 import {Button, Icon, Text} from "@/components/ignite"
-import {focusEffectPreventBack, useNavigationHistory} from "@/contexts/NavigationHistoryContext"
+import {focusEffectPreventBack, push, useNavigationHistory} from "@/contexts/NavigationHistoryContext"
 import {useAppTheme} from "@/contexts/ThemeContext"
 import {ClientAppletInterface, SYSTEM_APPS, uninstallAppUI, useAppletStatusStore} from "@/stores/applets"
 import {SETTINGS, useSetting} from "@/stores/settings"
@@ -22,7 +22,7 @@ export function DualButton({onMinusPress, onEllipsisPress}: DualButtonProps) {
   const {theme} = useAppTheme()
 
   return (
-    <GlassView className="flex-row gap-2 rounded-full bg-primary-foreground px-2 py-1 items-center">
+    <GlassView transparent={false} className="flex-row gap-2 rounded-full bg-primary-foreground px-2 py-1 items-center">
       <Pressable hitSlop={10} onPress={onEllipsisPress}>
         <Icon name="ellipsis" color={theme.colors.foreground} />
       </Pressable>
@@ -125,8 +125,14 @@ export const MiniAppMoreActionsSheet = forwardRef<BottomSheetModal, MiniAppMoreA
       }
     }, [packageName])
 
-    const handleAddToHome = useCallback(() => {
-      useAppletStatusStore.getState().setHiddenStatus(packageName, false)
+    const handleAddRemoveFromHome = useCallback(() => {
+      if (app && app.hidden) {
+        useAppletStatusStore.getState().setHiddenStatus(packageName, false)
+      } else {
+        useAppletStatusStore.getState().setHiddenStatus(packageName, true)
+      }
+      internalRef.current?.dismiss()
+      // useAppletStatusStore.getState().refreshApplets()
     }, [packageName])
 
     const handleShare = useCallback(() => {
@@ -134,6 +140,18 @@ export const MiniAppMoreActionsSheet = forwardRef<BottomSheetModal, MiniAppMoreA
       Share.share({
         message: `Share ${app?.name}`,
         url: `https://apps.mentraglass.com/package/${packageName}`,
+      })
+    }, [packageName])
+
+    const handleFeedback = useCallback(() => {
+      internalRef.current?.dismiss()
+      push("/miniapps/settings/feedback")
+    }, [packageName])
+
+    const handleSettings = useCallback(() => {
+      push("/applet/settings", {
+        packageName: packageName,
+        appName: app?.name,
       })
     }, [packageName])
 
@@ -166,7 +184,7 @@ export const MiniAppMoreActionsSheet = forwardRef<BottomSheetModal, MiniAppMoreA
             </View>
           </View>
 
-          <View className="flex-1 flex-row justify-between px-6">
+          <View className="flex-1 flex-row justify-between px-6 flex-wrap">
             {/* <View className="flex-col gap-2 items-center w-16">
               <Button compactIcon onPress={() => {}} preset="alternate" className="rounded-2xl w-16 h-16">
                 <Icon name="share" color={theme.colors.foreground} size={size} />
@@ -181,12 +199,42 @@ export const MiniAppMoreActionsSheet = forwardRef<BottomSheetModal, MiniAppMoreA
             </View>
             {app && app.hidden && (
               <View className="flex-col gap-2 items-center w-16">
-                <Button compactIcon onPress={handleAddToHome} preset="alternate" className="rounded-2xl w-16 h-16">
+                <Button
+                  compactIcon
+                  onPress={handleAddRemoveFromHome}
+                  preset="alternate"
+                  className="rounded-2xl w-16 h-16">
                   <Icon name="plus" color={theme.colors.foreground} size={size} />
                 </Button>
                 <Text className="text-sm text-muted-foreground w-full text-center" tx="appInfo:addToHome" />
               </View>
             )}
+            {app && !app.hidden && (
+              <View className="flex-col gap-2 items-center w-16">
+                <Button
+                  compactIcon
+                  onPress={handleAddRemoveFromHome}
+                  preset="alternate"
+                  className="rounded-2xl w-16 h-16">
+                  <Icon name="minus" color={theme.colors.foreground} size={size} />
+                </Button>
+                <Text className="text-sm text-muted-foreground w-full text-center" tx="appInfo:removeFromHome" />
+              </View>
+            )}
+
+            <View className="flex-col gap-2 items-center w-16">
+              <Button compactIcon onPress={handleFeedback} preset="alternate" className="rounded-2xl w-16 h-16">
+                <Icon name="message-2-star" color={theme.colors.foreground} size={size} />
+              </Button>
+              <Text className="text-sm text-muted-foreground w-full text-center" tx="appInfo:feedback" />
+            </View>
+
+            <View className="flex-col gap-2 items-center w-16">
+              <Button compactIcon onPress={handleSettings} preset="alternate" className="rounded-2xl w-16 h-16">
+                <Icon name="cog" color={theme.colors.foreground} size={size} />
+              </Button>
+              <Text className="text-sm text-muted-foreground w-full text-center" tx="appInfo:settings" />
+            </View>
 
             {isUninstallable && (
               <View className="flex-col gap-2 items-center w-16">

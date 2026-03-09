@@ -144,10 +144,7 @@ export const AllProviders = withWrappers(
   },
   ConnectionOverlayProvider,
   (props) => {
-    // const {preventBack, animation} = useNavigationHistory()
-    const preventBack = false
-    const animation = "simple_push"
-    console.log("NAV: animation", animation)
+    const {preventBack, animation} = useNavigationHistory()
 
     return (
       <>
@@ -157,8 +154,7 @@ export const AllProviders = withWrappers(
             headerShown: false,
             gestureEnabled: !preventBack,
             gestureDirection: "horizontal",
-            // animation: get,
-            // cardStyleInterpolator: getAnimation(animation),
+            cardStyleInterpolator: getAnimation(animation),
           }}
         />
       </>

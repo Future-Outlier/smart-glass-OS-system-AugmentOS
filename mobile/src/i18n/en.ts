@@ -868,10 +868,13 @@ const en = {
   appInfo: {
     share: "Share",
     addToHome: "Add to home",
+    removeFromHome: "Remove from home",
     open: "Open",
     uninstall: "Uninstall",
     remove: "Remove",
     settings: "Settings",
+    feedback: "Feedback",
+
   },
   lmaInstaller: {
     installedVersions: "Installed versions",

@@ -18,7 +18,7 @@ import {runOnJS, scheduleOnRN} from "react-native-worklets"
 import {
   ClientAppletInterface,
   getLastOpenTime,
-  setLastOpenTime,
+  saveLastOpenTime,
   useActiveApps,
   useAppletStatusStore,
 } from "@/stores/applets"
@@ -593,10 +593,10 @@ export default function AppSwitcher({swipeProgress}: AppSwitcherProps) {
 
     // Handle offline apps - navigate directly to React Native route
     if (applet.offline && applet.offlineRoute) {
-      setLastOpenTime(applet.packageName)
+      saveLastOpenTime(applet.packageName)
       push(applet.offlineRoute, {transition: "fade"})
     } else if (applet.webviewUrl && applet.healthy) {
-      setLastOpenTime(applet.packageName)
+      saveLastOpenTime(applet.packageName)
       push("/applet/webview", {
         webviewURL: applet.webviewUrl,
         appName: applet.name,
@@ -604,14 +604,14 @@ export default function AppSwitcher({swipeProgress}: AppSwitcherProps) {
         transition: "fade",
       })
     } else if (applet.local) {
-      setLastOpenTime(applet.packageName)
+      saveLastOpenTime(applet.packageName)
       push("/applet/local", {
         packageName: applet.packageName,
         appName: applet.name,
         transition: "fade",
       })
     } else {
-      setLastOpenTime(applet.packageName)
+      saveLastOpenTime(applet.packageName)
       push("/applet/settings", {
         packageName: applet.packageName,
         appName: applet.name,

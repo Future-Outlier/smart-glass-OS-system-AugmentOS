@@ -49,7 +49,9 @@ const OptionItem = <T extends string>({
         <Icon
           name="check"
           size={24}
-          color={selected === option.key ? theme.colors.primary : theme.colors.palette.transparent}
+          // color={selected === option.key ? theme.colors.primary : theme.colors.palette.transparent}
+          // because android treats transparency as black for some reason:
+          color={selected === option.key ? theme.colors.primary : theme.colors.primary_foreground}
         />
       </GlassView>
     </TouchableOpacity>
