@@ -671,6 +671,12 @@ export class AppSession {
 
     return new Promise((resolve, reject) => {
       try {
+        // Stop ping interval before replacing the WebSocket.
+        // This prevents a stale interval from a previous connection running
+        // during the reconnect window. startPingInterval() also calls this,
+        // but clearing here means no pings fire on a dead socket at all.
+        this.stopPingInterval();
+
         // Clear previous resources if reconnecting
         if (this.ws) {
           // Don't call full dispose() as that would clear subscriptions
