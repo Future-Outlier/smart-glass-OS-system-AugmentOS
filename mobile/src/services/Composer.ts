@@ -162,9 +162,6 @@ async function downloadAndInstallMiniApp(url: string) {
 }
 
 class Composer {
-  private onlineTranscriptions: boolean = false
-  private offlineTranscriptions: boolean = false
-  private pcmData: boolean = false
   private installedLmas: ClientAppletInterface[] = []
   private refreshNeeded: boolean = false
 
@@ -349,6 +346,10 @@ class Composer {
   // public startStop(applet: ClientAppletInterface, status: boolean): AsyncResult<void, Error> {
   //   return Res.try_async(async () => {})
   // }
+
+
+  // manage global state for apps and mic data / transcriptions:
+  
 }
 
 const composer = Composer.getInstance()
