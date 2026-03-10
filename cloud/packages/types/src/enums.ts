@@ -36,5 +36,4 @@ export enum DeviceTypes {
   Z100 = "Vuzix Z100",
   NEX = "Mentra Display",
   FRAME = "Brilliant Frame",
-  G2 = "Even Realities G2",
 }
