@@ -37,7 +37,7 @@ interface NavigationHistoryContextType {
   setPendingRoute: (route: string | null) => void
   getPendingRoute: () => string | null
   navigate: (path: string, params?: any) => void
-  clearHistoryAndGoHome: () => void
+  clearHistoryAndGoHome: (params?: any | PushParams) => void
   replaceAll: (path: string, params?: any) => void
   goHomeAndPush: (path: string, params?: any) => void
   preventBack: boolean
@@ -267,7 +267,7 @@ export function NavigationHistoryProvider({children}: {children: React.ReactNode
     return historyRef.current[historyRef.current.length - (2 + index)]
   }
 
-  const clearHistory = (params?: any) => {
+  const clearHistory = (params?: any | PushParams) => {
     console.info("NAV: clearHistory()")
     historyRef.current = []
     historyParamsRef.current = []
