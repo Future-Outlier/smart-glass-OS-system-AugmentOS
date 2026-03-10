@@ -11,7 +11,7 @@ import {forwardRef, useCallback, useEffect, useImperativeHandle, useRef, useStat
 import {useSaferAreaInsets} from "@/contexts/SaferAreaContext"
 import AppIcon from "@/components/home/AppIcon"
 import GlassView from "@/components/ui/GlassView"
-import { translate } from "@/i18n"
+import {translate} from "@/i18n"
 
 interface DualButtonProps {
   onMinusPress?: () => void
@@ -101,6 +101,7 @@ export const MiniAppMoreActionsSheet = forwardRef<BottomSheetModal, MiniAppMoreA
     const insets = useSaferAreaInsets()
     const [app, setApp] = useState<ClientAppletInterface | null>(null)
     const {clearHistoryAndGoHome} = useNavigationHistory()
+    const [superMode] = useSetting(SETTINGS.super_mode.key)
 
     useEffect(() => {
       const app = useAppletStatusStore.getState().apps.find((app) => app.packageName === packageName)
@@ -184,7 +185,7 @@ export const MiniAppMoreActionsSheet = forwardRef<BottomSheetModal, MiniAppMoreA
             {app && <AppIcon app={app as ClientAppletInterface} disableLoader={true} className="w-12 h-12" />}
             <View className="gap-1 flex-col">
               <Text className="text-lg font-bold text-foreground text-center" text={app?.name} />
-              <Text className="text-sm text-muted-foreground font-medium" text={app?.packageName} />
+              {superMode && <Text className="text-sm text-chart-4 font-medium" text={app?.packageName} />}
             </View>
           </View>
 

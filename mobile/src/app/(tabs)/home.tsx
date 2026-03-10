@@ -101,7 +101,6 @@ export default function Homepage() {
       <Screen preset="fixed" className={`${appSwitcherUi ? "px-0" : ""}`} KeyboardAvoidingViewProps={{enabled: true}}>
         <BlurTargetView ref={blurTargetRef} style={{flex: 1}}>
           {appSwitcherUi && <CustomBackground />}
-          {appSwitcherUi && <View style={{paddingTop: insets.top}} />}
           {!appSwitcherUi && (
             <Header
               leftTx="home:title"
@@ -129,6 +128,7 @@ export default function Homepage() {
             contentContainerClassName={`${appSwitcherUi ? "px-6" : ""}`}
             contentContainerStyle={{flexGrow: 1}}
             scrollEventThrottle={16}>
+            {appSwitcherUi && <View style={{paddingTop: insets.top}} />}
             <View className="h-4" />
             {renderContent()}
             <View className="h-4" />

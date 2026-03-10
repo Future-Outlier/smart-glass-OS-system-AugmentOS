@@ -40,7 +40,7 @@ export default function AppSwitcherButton({swipeProgress, onGridButtonPress, blu
   const insets = useSaferAreaInsets()
   const translateY = useSharedValue(0)
   const [androidBlur] = useSetting(SETTINGS.android_blur.key)
-  
+
   useEffect(() => {
     let list = [...backgroundApps]
     if (foregroundApp) {
@@ -108,7 +108,13 @@ export default function AppSwitcherButton({swipeProgress, onGridButtonPress, blu
     swipeProgress.value = withSpring(1, {damping: 20, stiffness: 1000, overshootClamping: true})
   })
 
-  const composedGesture = Gesture.Exclusive(panGesture, tapGesture)
+  let composedGesture
+  if (Platform.OS === "android") {
+    composedGesture = Gesture.Exclusive(tapGesture)
+  } else {
+    composedGesture = Gesture.Exclusive(panGesture, tapGesture)
+  }
+
   // const bottomPadding = insets.bottom + theme.spacing.s4
   const bottomPadding = insets.bottom
 
@@ -160,9 +166,7 @@ export default function AppSwitcherButton({swipeProgress, onGridButtonPress, blu
           />
         )}
 
-        {Platform.OS === "android" && !androidBlur && (
-          <View className="flex-1 h-full bg-background" />
-        )}
+        {Platform.OS === "android" && !androidBlur && <View className="flex-1 h-full bg-background" />}
 
         {Platform.OS === "ios" && (
           <BlurView intensity={70} className="absolute inset-0" blurMethod="dimezisBlurViewSdk31Plus" />
@@ -183,7 +187,10 @@ export default function AppSwitcherButton({swipeProgress, onGridButtonPress, blu
     })
   }
 
-  let paddingTop = Platform.OS === "android" ? theme.spacing.s14 : theme.spacing.s16
+  let paddingTop: number = Platform.OS === "android" ? theme.spacing.s14 : theme.spacing.s16
+  if (Platform.OS === "android" && !androidBlur) {
+    paddingTop = theme.spacing.s10
+  }
 
   const renderGridButton = () => {
     return (
