@@ -146,19 +146,42 @@ export const AllProviders = withWrappers(
   (props) => {
     const {preventBack, animation} = useNavigationHistory()
 
+    const convertToNativeAnimation = (animation: string) => {
+      if (animation === "zoom") {
+        return "fade"
+      }
+      return animation
+    }
+
     return (
       <>
         {props.children}
-        <JsStack
+        <Stack
           screenOptions={{
             headerShown: false,
             gestureEnabled: !preventBack,
             gestureDirection: "horizontal",
-            cardStyleInterpolator: getAnimation(animation),
+            animation: convertToNativeAnimation(animation) as any,
+            // animation: "default",
+            // cardStyleInterpolator: getAnimation(animation),
           }}
         />
       </>
     )
+
+    // return (
+    //   <>
+    //     {props.children}
+    //     <JsStack
+    //       screenOptions={{
+    //         headerShown: false,
+    //         gestureEnabled: !preventBack,
+    //         gestureDirection: "horizontal",
+    //         cardStyleInterpolator: getAnimation(animation),
+    //       }}
+    //     />
+    //   </>
+    // )
 
     // return (
     //   <>

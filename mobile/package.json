@@ -167,11 +167,6 @@
   "patchedDependencies": {
     "react-native-draggable-masonry@1.2.0": "patches/react-native-draggable-masonry@1.2.0.patch"
   },
-  "resolutions": {
-    "@react-navigation/core": "7.12.4",
-    "@react-navigation/native": "7.1.18",
-    "@react-navigation/elements": "2.6.5"
-  },
   "trustedDependencies": [
     "@sentry/cli",
     "esbuild",
