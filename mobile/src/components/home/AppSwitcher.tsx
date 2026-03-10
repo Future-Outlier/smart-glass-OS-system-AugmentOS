@@ -665,7 +665,8 @@ export default function AppSwitcher({swipeProgress, blurTargetRef}: AppSwitcherP
   )
 
   const renderBackground = () => {
-    if (Platform.OS === "android" && !androidBlur) {
+    // doesn't work yet on android for some reason :(
+    if (Platform.OS === "android" /*&& !androidBlur*/) {
       return (
         <Animated.View className="absolute inset-0 bg-black/75" style={backdropStyle}>
           <Pressable className="flex-1" onPress={handleClose} />
@@ -681,7 +682,8 @@ export default function AppSwitcher({swipeProgress, blurTargetRef}: AppSwitcherP
         style={blurStyle}
         blurMethod="dimezisBlurViewSdk31Plus"
         blurReductionFactor={7}
-        blurTarget={blurTargetRef}>
+        // blurTarget={blurTargetRef}// doesn't work yet on android for some reason :(
+      >
         <Pressable className="flex-1" onPress={handleClose} />
       </AnimatedBlurView>
     )
