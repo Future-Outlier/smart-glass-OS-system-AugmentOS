@@ -149,7 +149,7 @@ export default function Homepage() {
             </View>
           </View>
         )}
-        {appSwitcherUi && <AppSwitcher swipeProgress={swipeProgress} />}
+        {appSwitcherUi && <AppSwitcher swipeProgress={swipeProgress} blurTargetRef={blurTargetRef} />}
       </Screen>
       {appSwitcherUi && <AllAppsGridSheet bottomSheetRef={bottomSheetRef} />}
     </>

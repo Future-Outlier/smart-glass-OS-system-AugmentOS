@@ -1,4 +1,4 @@
-import React, {useCallback, useEffect, useRef, useState} from "react"
+import React, {RefObject, useCallback, useEffect, useRef, useState} from "react"
 import {View, Dimensions, Pressable, Image, Platform} from "react-native"
 import {Text} from "@/components/ignite/"
 import Animated, {
@@ -221,6 +221,7 @@ function AppCardItem({app, index, count, translateX, onDismiss, onSelect}: AppCa
 
 interface AppSwitcherProps {
   swipeProgress: SharedValue<number>
+  blurTargetRef: RefObject<View | null>
 }
 
 // for testing:
@@ -246,7 +247,7 @@ interface AppSwitcherProps {
 
 const AnimatedBlurView = Animated.createAnimatedComponent(BlurView)
 
-export default function AppSwitcher({swipeProgress}: AppSwitcherProps) {
+export default function AppSwitcher({swipeProgress, blurTargetRef}: AppSwitcherProps) {
   const translateX = useSharedValue(0)
   const offsetX = useSharedValue(0)
   const targetIndex = useSharedValue(0)
@@ -678,7 +679,9 @@ export default function AppSwitcher({swipeProgress}: AppSwitcherProps) {
         pointerEvents={blurPointerEvents}
         className="absolute inset-0"
         style={blurStyle}
-        blurMethod="dimezisBlurView">
+        blurMethod="dimezisBlurViewSdk31Plus"
+        blurReductionFactor={7}
+        blurTarget={blurTargetRef}>
         <Pressable className="flex-1" onPress={handleClose} />
       </AnimatedBlurView>
     )
