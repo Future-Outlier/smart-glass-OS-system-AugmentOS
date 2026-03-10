@@ -7,7 +7,7 @@ import AppIcon from "@/components/home/AppIcon"
 import {useAppTheme} from "@/contexts/ThemeContext"
 import {translate} from "@/i18n"
 import {ClientAppletInterface, useActiveApps, useActiveBackgroundApps, useActiveForegroundApp} from "@/stores/applets"
-import {useEffect, useRef, useState} from "react"
+import {RefObject, useEffect, useRef, useState} from "react"
 import {scheduleOnRN} from "react-native-worklets"
 import {BlurView} from "expo-blur"
 import {LinearGradient} from "expo-linear-gradient"
@@ -21,6 +21,7 @@ import showAlert from "@/contexts/ModalContext"
 interface AppSwitcherButtonProps {
   swipeProgress: SharedValue<number>
   onGridButtonPress: () => void
+  blurTargetRef: RefObject<View | null>
 }
 
 const SWIPE_DISTANCE_THRESHOLD = 300 // Distance needed to trigger open
@@ -28,7 +29,7 @@ const SWIPE_DISTANCE_MULTIPLIER = 1
 const SWIPE_PERCENT_THRESHOLD = 0.2
 // const SWIPE_VELOCITY_THRESHOLD = 800 // Velocity threshold for quick swipes
 
-export default function AppSwitcherButton({swipeProgress, onGridButtonPress}: AppSwitcherButtonProps) {
+export default function AppSwitcherButton({swipeProgress, onGridButtonPress, blurTargetRef}: AppSwitcherButtonProps) {
   const {theme} = useAppTheme()
   const backgroundApps = useActiveBackgroundApps()
   const foregroundApp = useActiveForegroundApp()
@@ -38,7 +39,8 @@ export default function AppSwitcherButton({swipeProgress, onGridButtonPress}: Ap
   const [appsList, setAppsList] = useState<ClientAppletInterface[]>([])
   const insets = useSaferAreaInsets()
   const translateY = useSharedValue(0)
-
+  const [androidBlur] = useSetting(SETTINGS.android_blur.key)
+  
   useEffect(() => {
     let list = [...backgroundApps]
     if (foregroundApp) {
@@ -112,7 +114,7 @@ export default function AppSwitcherButton({swipeProgress, onGridButtonPress}: Ap
 
   const renderBackground = () => {
     // return (
-    //   <BlurView intensity={100} className="absolute inset-0" />
+    //   <BlurView intensity={50} className="absolute inset-0" blurTarget={blurTargetRef} blurMethod="dimezisBlurViewSdk31Plus" />
     // )
 
     return (
@@ -136,7 +138,7 @@ export default function AppSwitcherButton({swipeProgress, onGridButtonPress}: Ap
         maskElement={
           <LinearGradient
             colors={["black", "transparent"]}
-            locations={[Platform.OS === "android" ? 0.8 : 0.4, 1]}
+            locations={[0.4, 1]}
             start={{x: 0, y: 1}}
             end={{x: 0, y: 0}}
             style={{
@@ -148,11 +150,23 @@ export default function AppSwitcherButton({swipeProgress, onGridButtonPress}: Ap
             }}
             pointerEvents="none"
           />
-          // <View className="flex-1 h-full bg-[#324376]" />
         }>
-        {Platform.OS === "android" && <View className="flex-1 h-full bg-background" />}
-        {Platform.OS === "ios" && <BlurView intensity={70} className="absolute inset-0" blurMethod="dimezisBlurView" />}
-        {/* <BlurView intensity={30} className="absolute inset-0" blurMethod="dimezisBlurView" /> */}
+        {Platform.OS === "android" && androidBlur && (
+          <BlurView
+            intensity={20}
+            className="absolute inset-0"
+            blurTarget={blurTargetRef}
+            blurMethod="dimezisBlurViewSdk31Plus"
+          />
+        )}
+
+        {Platform.OS === "android" && !androidBlur && (
+          <View className="flex-1 h-full bg-background" />
+        )}
+
+        {Platform.OS === "ios" && (
+          <BlurView intensity={70} className="absolute inset-0" blurMethod="dimezisBlurViewSdk31Plus" />
+        )}
         {/* <View className="flex-1 h-full bg-[#324376]" />
         <View className="flex-1 h-full bg-[#F5DD90]" />
         <View className="flex-1 h-full bg-[#F76C5E]" />
@@ -169,7 +183,7 @@ export default function AppSwitcherButton({swipeProgress, onGridButtonPress}: Ap
     })
   }
 
-  let paddingTop = Platform.OS === "android" ? theme.spacing.s10 : theme.spacing.s16
+  let paddingTop = Platform.OS === "android" ? theme.spacing.s14 : theme.spacing.s16
 
   const renderGridButton = () => {
     return (
