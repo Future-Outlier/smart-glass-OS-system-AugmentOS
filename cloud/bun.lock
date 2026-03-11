@@ -320,7 +320,7 @@
     },
     "packages/sdk": {
       "name": "@mentra/sdk",
-      "version": "3.0.0-hono.7",
+      "version": "3.0.0-hono.8",
       "dependencies": {
         "@logtail/pino": "^0.5.4",
         "@mentra/types": "^1.0.0-beta.1",
