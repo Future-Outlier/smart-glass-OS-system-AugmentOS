@@ -145,7 +145,7 @@ export const DeviceStatus = ({style}: {style?: ViewStyle}) => {
   if (!glassesConnected || !glassesFullyBooted || isSearching) {
     return (
       <TouchableOpacity onPress={() => push("/miniapps/settings/glasses")}>
-        <GlassView className="bg-primary-foreground px-6 justify-center flex-1 rounded-2xl flex-row">
+        <GlassView className="bg-primary-foreground px-6 justify-center flex-1 rounded-2xl flex-row min-h-26">
           <View className="flex-1 flex-row">
             <View className="flex-1 self-start">
               <Image
