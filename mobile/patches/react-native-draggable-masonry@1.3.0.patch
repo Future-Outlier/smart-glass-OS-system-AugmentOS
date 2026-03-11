@@ -11,7 +11,6 @@ index cacb84dbd769c001852547c720696ff2772cbdca..7e45308f31101ce6094165283fcde999
      const handleDragStart = useCallback((id: string) => {
 -        if (!sortEnabled) return;
 +        if (!sortEnabled) {
-+            console.log("handleDragStart: sortEnabled is false");
 +            if (onDragStart) {
 +                onDragStart({ key: id, fromIndex: -1 });
 +            }
