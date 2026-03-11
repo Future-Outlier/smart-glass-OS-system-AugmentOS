@@ -5,8 +5,6 @@ import {ActivityIndicator, Image, ImageStyle, Linking, TouchableOpacity, View, V
 import GlassView from "@/components/ui/GlassView"
 import {Button, Icon, Text} from "@/components/ignite"
 import ConnectedSimulatedGlassesInfo from "@/components/mirror/ConnectedSimulatedGlassesInfo"
-import {Divider} from "@/components/ui/Divider"
-import {Spacer} from "@/components/ui/Spacer"
 import {useNavigationHistory} from "@/contexts/NavigationHistoryContext"
 import {useAppTheme} from "@/contexts/ThemeContext"
 import {translate} from "@/i18n"
@@ -142,51 +140,45 @@ export const DeviceStatus = ({style}: {style?: ViewStyle}) => {
     ])
   }
 
+  const features = getModelCapabilities(defaultWearable)
+
   if (!glassesConnected || !glassesFullyBooted || isSearching) {
     return (
-      <TouchableOpacity style={[style]} onPress={() => push("/miniapps/settings/glasses")}>
-        <GlassView className="bg-primary-foreground p-6 rounded-2xl">
-          <View className="justify-between items-center flex-row">
-            <Text className="font-semibold text-secondary-foreground text-lg" text={defaultWearable} />
-            <Icon name="bluetooth-off" size={18} color={theme.colors.foreground} />
-          </View>
+      <TouchableOpacity onPress={() => push("/miniapps/settings/glasses")}>
+        <GlassView className="bg-primary-foreground px-6 justify-center flex-1 rounded-2xl flex-row min-h-26">
+          <View className="flex-1 flex-row">
+            <View className="flex-1 self-start">
+              <Image
+                source={getCurrentGlassesImage()}
+                className="w-full h-full max-w-32"
+                style={{resizeMode: "contain"}}
+              />
+            </View>
 
-          <View className="flex-row items-center justify-between">
-            <Image source={getCurrentGlassesImage()} style={[themed($glassesImage)]} />
-          </View>
-
-          <Divider />
-          <Spacer height={theme.spacing.s6} />
-
-          <View className="flex-row gap-2">
-            {!isSearching ? (
-              <>
-                <Button compact tx="home:getSupport" preset="alternate" onPress={handleGetSupport} />
+            <View className="justify-between items-end flex-col gap-3 py-5">
+              <View className="flex-row items-center gap-3">
+                <Icon name="bluetooth-off" size={18} color={theme.colors.foreground} />
+                <Text className="font-semibold text-secondary-foreground text-end self-end" text={defaultWearable} />
+              </View>
+              {isSearching && (
                 <Button compact flex tx="home:connectGlasses" preset="primary" onPress={connectGlasses} />
-              </>
-            ) : (
-              <>
-                <Button compactIcon flexContainer={false} preset="alternate" onPress={handleConnectOrDisconnect}>
-                  <Icon name="x" size={20} color={theme.colors.foreground} />
-                </Button>
-                <Button
-                  flex
-                  compact
-                  LeftAccessory={() => (
-                    <ActivityIndicator size="small" color={theme.colors.primary_foreground} style={{marginRight: 8}} />
-                  )}
-                  text={connectingText}
-                  // tx="home:connectingGlasses"
-                />
-              </>
-            )}
+              )}
+              {!isSearching && (
+                <View className="flex-row items-center gap-2">
+                  <Button flex compact>
+                    <ActivityIndicator size="small" color={theme.colors.primary_foreground} />
+                  </Button>
+                  <Button compactIcon flexContainer={false} preset="alternate" onPress={handleConnectOrDisconnect}>
+                    <Icon name="x" size={20} color={theme.colors.foreground} />
+                  </Button>
+                </View>
+              )}
+            </View>
           </View>
         </GlassView>
       </TouchableOpacity>
     )
   }
-
-  const features = getModelCapabilities(defaultWearable)
 
   return (
     <TouchableOpacity onPress={() => push("/miniapps/settings/glasses")}>

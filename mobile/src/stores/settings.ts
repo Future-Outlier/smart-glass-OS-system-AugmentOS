@@ -40,7 +40,7 @@ export const SETTINGS: Record<string, Setting> = {
   },
   android_blur: {
     key: "android_blur",
-    defaultValue: () => false,
+    defaultValue: () => true,
     writable: true,
     saveOnServer: true,
     persist: true,
