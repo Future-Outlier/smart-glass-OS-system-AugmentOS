@@ -1,8 +1,8 @@
 diff --git a/src/DraggableMasonryList.tsx b/src/DraggableMasonryList.tsx
-index cacb84dbd769c001852547c720696ff2772cbdca..202bbbae2562a14fb92e8a9e8d889c10fd7912f5 100644
+index cacb84dbd769c001852547c720696ff2772cbdca..b185d417ebeb3ca1270b6ed3aee320d9e8c8de6b 100644
 --- a/src/DraggableMasonryList.tsx
 +++ b/src/DraggableMasonryList.tsx
-@@ -606,7 +606,12 @@ function DraggableMasonryList<T extends MasonryItemType>({
+@@ -606,7 +606,18 @@ function DraggableMasonryList<T extends MasonryItemType>({
  
      // --- Drag Handlers ---
      const handleDragStart = useCallback((id: string) => {
@@ -13,36 +13,21 @@ index cacb84dbd769c001852547c720696ff2772cbdca..202bbbae2562a14fb92e8a9e8d889c10
 +            }
 +            return;
 +        }
++
++        const current = orderedDataRef.current.find(item => keyExtractor(item) === id);
++        const packageName = current?.["packageName"] ?? "";
++        if (packageName?.includes("@empty")) {
++            return;
++        }
  
          setActiveDragId(id);
          isDraggingShared.value = true;
-diff --git a/src/MasonryItem.tsx b/src/MasonryItem.tsx
-index e4bbf4c488c5406be4222d7b76fae950bc2ce162..9ebd091884cda7cc38f335578c185771c98e23cb 100644
---- a/src/MasonryItem.tsx
-+++ b/src/MasonryItem.tsx
-@@ -238,6 +238,13 @@ const MasonryItemComponent = ({
-             runOnJS(onDragEnd)(id);
-         });
+@@ -616,7 +627,7 @@ function DraggableMasonryList<T extends MasonryItemType>({
+             layoutWithoutDraggedRef.current = calculateLayout(
+                 withoutDragged, numColumns, containerWidth, rowGap, columnGap, keyExtractor
+             );
+-        }
++        } 
  
-+        const longPressGesture = Gesture.Pan()
-+        .enabled(!sortEnabled)
-+        .activateAfterLongPress(dragActivationDelay)
-+        .onStart(() => {
-+            runOnJS(onDragStart)(id);
-+        });
-+
- 
-     // レイアウトアニメーション用のスタイル（外側のラッパー）
-     const wrapperStyle = useAnimatedStyle(() => {
-@@ -295,8 +302,10 @@ const MasonryItemComponent = ({
-     const enteringAnimation = itemEntering;
-     const exitingAnimation = itemExiting;
- 
-+    const composedGesture = Gesture.Simultaneous(panGesture, longPressGesture);
-+
-     return (
--        <GestureDetector gesture={panGesture}>
-+        <GestureDetector gesture={composedGesture}>
-             {/* 外側: 位置とentering/exitingアニメーション */}
-             <Animated.View
-                 style={wrapperStyle}
+         const currentIndex = orderedDataRef.current.findIndex(item => keyExtractor(item) === id);
+         dragStartIndexRef.current = currentIndex;
