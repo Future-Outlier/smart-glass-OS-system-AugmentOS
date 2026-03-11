@@ -162,76 +162,20 @@ export const DeviceStatus = ({style}: {style?: ViewStyle}) => {
                 <Icon name="bluetooth-off" size={18} color={theme.colors.foreground} />
                 <Text className="font-semibold text-secondary-foreground text-end self-end" text={defaultWearable} />
               </View>
-              <Button compact flex tx="home:connectGlasses" preset="primary" onPress={connectGlasses} />
-            </View>
-          </View>
-        </GlassView>
-      </TouchableOpacity>
-    )
-    return (
-      <TouchableOpacity style={[style]} onPress={() => push("/miniapps/settings/glasses")}>
-        <GlassView className="bg-primary-foreground p-6 rounded-2xl">
-          <View className="flex-1 self-start">
-            <Image
-              source={getCurrentGlassesImage()}
-              className="w-full h-full max-w-32"
-              style={{resizeMode: "contain"}}
-            />
-          </View>
-
-          <View className="justify-between items-end flex-col gap-2 py-5">
-            <Text className="font-semibold text-secondary-foreground text-end self-end" text={defaultWearable} />
-            <View className="flex-row items-center gap-3">
-              {batteryLevel !== -1 && (
-                <View className="flex-row items-center gap-1">
-                  <Icon
-                    name={charging ? "battery-charging" : (getBatteryIcon(batteryLevel) as any)}
-                    size={18}
-                    color={theme.colors.foreground}
-                  />
-                  <Text className="text-secondary-foreground text-sm" text={`${batteryLevel}%`} />
+              {isSearching && (
+                <Button compact flex tx="home:connectGlasses" preset="primary" onPress={connectGlasses} />
+              )}
+              {!isSearching && (
+                <View className="flex-row items-center gap-2">
+                  <Button flex compact>
+                    <ActivityIndicator size="small" color={theme.colors.primary_foreground} />
+                  </Button>
+                  <Button compactIcon flexContainer={false} preset="alternate" onPress={handleConnectOrDisconnect}>
+                    <Icon name="x" size={20} color={theme.colors.foreground} />
+                  </Button>
                 </View>
               )}
-              <MicIcon width={18} height={18} />
-              <Icon name="bluetooth-connected" size={18} color={theme.colors.foreground} />
-              {features?.hasWifi &&
-                (wifiConnected ? (
-                  <Button compactIcon className="bg-transparent -m-2" onPress={() => push("/wifi/scan")}>
-                    <Icon name="wifi" size={18} color={theme.colors.foreground} />
-                  </Button>
-                ) : (
-                  <Button compactIcon className="bg-transparent -m-2" onPress={() => push("/wifi/scan")}>
-                    <Icon name="wifi-off" size={18} color={theme.colors.foreground} />
-                  </Button>
-                ))}
             </View>
-          </View>
-
-          <Divider />
-          <Spacer height={theme.spacing.s6} />
-
-          <View className="flex-row gap-2">
-            {!isSearching ? (
-              <>
-                <Button compact tx="home:getSupport" preset="alternate" onPress={handleGetSupport} />
-                <Button compact flex tx="home:connectGlasses" preset="primary" onPress={connectGlasses} />
-              </>
-            ) : (
-              <>
-                <Button compactIcon flexContainer={false} preset="alternate" onPress={handleConnectOrDisconnect}>
-                  <Icon name="x" size={20} color={theme.colors.foreground} />
-                </Button>
-                <Button
-                  flex
-                  compact
-                  LeftAccessory={() => (
-                    <ActivityIndicator size="small" color={theme.colors.primary_foreground} style={{marginRight: 8}} />
-                  )}
-                  text={connectingText}
-                  // tx="home:connectingGlasses"
-                />
-              </>
-            )}
           </View>
         </GlassView>
       </TouchableOpacity>
