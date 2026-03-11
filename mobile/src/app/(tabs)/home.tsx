@@ -103,10 +103,10 @@ export default function Homepage() {
     }
     return (
       <BlurView
-        className="absolute top-0 left-0 right-0 z-10 w-full"
+        className="absolute inset-0 z-10 w-full"
         style={{height: insets.top}}
-        intensity={30}
-        blurReductionFactor={20}
+        intensity={20}
+        blurReductionFactor={7}
         blurTarget={blurTargetRef}
         blurMethod="dimezisBlurViewSdk31Plus"
       />
@@ -148,7 +148,7 @@ export default function Homepage() {
             contentContainerClassName={`${appSwitcherUi ? "px-6" : ""}`}
             contentContainerStyle={{flexGrow: 1}}
             scrollEventThrottle={16}>
-            {/* {appSwitcherUi && <View style={{paddingTop: insets.top}} />} */}
+            {appSwitcherUi && Platform.OS === "android" && androidBlur && <View style={{paddingTop: insets.top}} />}
             <View className="h-4" />
             {renderContent()}
             <View className="h-4" />

@@ -145,33 +145,43 @@ export const DeviceStatus = ({style}: {style?: ViewStyle}) => {
   if (!glassesConnected || !glassesFullyBooted || isSearching) {
     return (
       <TouchableOpacity onPress={() => push("/miniapps/settings/glasses")}>
-        <GlassView className="bg-primary-foreground px-6 justify-center flex-1 rounded-2xl flex-row min-h-26">
+        <GlassView className="bg-primary-foreground px-6 justify-center flex-1 rounded-2xl flex-row">
           <View className="flex-1 flex-row">
-            <View className="flex-1 self-start">
+            <View className="flex-1 self-start justify-center h-full">
               <Image
                 source={getCurrentGlassesImage()}
-                className="w-full h-full max-w-32"
+                className="w-full max-w-32 h-20 self-start"
                 style={{resizeMode: "contain"}}
               />
             </View>
 
-            <View className="justify-between items-end flex-col gap-3 py-5">
+            <View className="justify-between items-end flex-col gap-3 py-2">
               <View className="flex-row items-center gap-3">
                 <Icon name="bluetooth-off" size={18} color={theme.colors.foreground} />
                 <Text className="font-semibold text-secondary-foreground text-end self-end" text={defaultWearable} />
               </View>
-              {isSearching && (
-                <Button compact flex tx="home:connectGlasses" preset="primary" onPress={connectGlasses} />
-              )}
               {!isSearching && (
-                <View className="flex-row items-center gap-2">
-                  <Button flex compact>
-                    <ActivityIndicator size="small" color={theme.colors.primary_foreground} />
-                  </Button>
-                  <Button compactIcon flexContainer={false} preset="alternate" onPress={handleConnectOrDisconnect}>
-                    <Icon name="x" size={20} color={theme.colors.foreground} />
-                  </Button>
-                </View>
+                <Button
+                  flex
+                  compact
+                  // className="w-[80%]"
+                  tx="home:connectGlasses"
+                  preset="primary"
+                  onPress={connectGlasses}
+                />
+              )}
+              {isSearching && (
+                <Button
+                  flex
+                  compact
+                  className="w-[80%] items-center justify-center"
+                  preset="alternate"
+                  onPress={handleConnectOrDisconnect}>
+                  <View className="flex-row items-center gap-2 flex-1">
+                    <ActivityIndicator size="small" color={theme.colors.foreground} />
+                    <Text className="text-secondary-foreground text-sm" text={translate("common:cancel")} />
+                  </View>
+                </Button>
               )}
             </View>
           </View>
@@ -183,8 +193,12 @@ export const DeviceStatus = ({style}: {style?: ViewStyle}) => {
   return (
     <TouchableOpacity onPress={() => push("/miniapps/settings/glasses")}>
       <GlassView className="bg-primary-foreground px-6 py-0 justify-center flex rounded-2xl flex-row max-h-20">
-        <View className="flex-1 self-start">
-          <Image source={getCurrentGlassesImage()} className="w-full h-full max-w-32" style={{resizeMode: "contain"}} />
+        <View className="flex-1 self-start justify-center h-full">
+          <Image
+            source={getCurrentGlassesImage()}
+            className="w-full max-w-32 h-20 self-start"
+            style={{resizeMode: "contain"}}
+          />
         </View>
 
         <View className="justify-between items-end flex-col gap-2 py-5">
