@@ -239,6 +239,13 @@ module.exports = ({config}: ConfigContext): Partial<ExpoConfig> => {
         },
       ],
       "expo-web-browser",
+      [
+        "expo-speech-transcriber",
+        {
+          speechRecognitionPermission: "We need speech recognition to transcribe your recordings",
+          microphonePermission: "We need microphone access to record audio for transcription",
+        },
+      ],
     ],
     experiments: {
       tsconfigPaths: true,
