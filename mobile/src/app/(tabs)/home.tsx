@@ -103,8 +103,10 @@ export default function Homepage() {
     }
     return (
       <BlurView
-        intensity={90}
+        className="absolute top-0 left-0 right-0 z-10 w-full"
         style={{height: insets.top}}
+        intensity={30}
+        blurReductionFactor={7}
         blurTarget={blurTargetRef}
         blurMethod="dimezisBlurViewSdk31Plus"
       />
@@ -114,6 +116,7 @@ export default function Homepage() {
   return (
     <>
       <Screen preset="fixed" className={`${appSwitcherUi ? "px-0" : ""}`} KeyboardAvoidingViewProps={{enabled: true}}>
+        {appSwitcherUi && renderTopPadding()}
         <BlurTargetView ref={blurTargetRef} style={{flex: 1}}>
           {appSwitcherUi && <CustomBackground />}
           {!appSwitcherUi && (
