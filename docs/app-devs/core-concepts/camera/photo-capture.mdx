@@ -48,6 +48,21 @@ const medium = await session.camera.requestPhoto() // or { size: 'medium' }
 const large = await session.camera.requestPhoto({size: "large"})
 ```
 
+### Photo Resolutions
+
+The resolution of the photo your app receives depends on the requested size and whether the user's Mentra Live is connected to WiFi.
+
+When on WiFi, photos are uploaded at full quality via webhook. When not on WiFi, photos are transferred over BLE with aggressive compression to fit Bluetooth bandwidth constraints.
+
+| Size | WiFi Resolution | No WiFi (BLE) Resolution |
+|------|----------------|--------------------------|
+| `small` | 640×480 | 400×300 |
+| `medium` | 1280×960 | 640×480 |
+| `large` | 1920×1440 | 800×600 |
+| `full` | 3264×2448 | 1024×768 |
+
+All photos maintain a 4:3 aspect ratio. BLE photos are encoded as AVIF (with JPEG fallback) and are significantly smaller in file size to accommodate Bluetooth transfer limits.
+
 ### Working with Photo Data
 
 The photo is returned as a `Buffer` object. Here are common ways to use it:
