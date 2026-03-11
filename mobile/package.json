@@ -118,7 +118,7 @@
     "react-native-localize": "^3.7.0",
     "react-native-mmkv": "4.0.0",
     "react-native-nitro-bg-timer": "^0.1.0",
-    "react-native-nitro-modules": "^0.35.0",
+    "react-native-nitro-modules": "^0.31.10",
     "react-native-permissions": "^5.5.1",
     "react-native-popover-view": "^6.1.0",
     "react-native-reanimated": "4.2.1",

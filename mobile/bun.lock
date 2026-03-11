@@ -57,6 +57,7 @@
         "expo-navigation-bar": "~55.0.8",
         "expo-notifications": "~55.0.11",
         "expo-router": "~55.0.4",
+        "expo-speech-transcriber": "^0.1.9",
         "expo-splash-screen": "~55.0.10",
         "expo-squircle-view": "^1.1.0",
         "expo-status-bar": "~55.0.4",
@@ -90,7 +91,7 @@
         "react-native-localize": "^3.7.0",
         "react-native-mmkv": "4.0.0",
         "react-native-nitro-bg-timer": "^0.1.0",
-        "react-native-nitro-modules": "^0.35.0",
+        "react-native-nitro-modules": "^0.31.10",
         "react-native-permissions": "^5.5.1",
         "react-native-popover-view": "^6.1.0",
         "react-native-reanimated": "4.2.1",
@@ -1505,6 +1506,8 @@
 
     "expo-server": ["expo-server@55.0.6", "", {}, "sha512-xI72FTm469FfuuBL2R5aNtthgH+GR7ygOpsx/KcPS0K8AZaZd7VjtEExbzn9/qyyYkWW3T+3dAmCDKOMX8gdmQ=="],
 
+    "expo-speech-transcriber": ["expo-speech-transcriber@0.1.9", "", { "peerDependencies": { "expo": "*", "react": "*", "react-native": "*" } }, "sha512-fHqOAktsbjms6gVtSYkFRQvuG/xdLau9OdEJlVlaD/eBwjbM88l/FnEhPhhDJpw4ULrEB4e4OAoXszP81gNmSQ=="],
+
     "expo-splash-screen": ["expo-splash-screen@55.0.10", "", { "dependencies": { "@expo/prebuild-config": "^55.0.8" }, "peerDependencies": { "expo": "*" } }, "sha512-RN5qqrxudxFlRIjLFr/Ifmt+mUCLRc0gs66PekP6flzNS/JYEuoCbwJ+NmUwwJtPA+vyy60DYiky0QmS98ydmQ=="],
 
     "expo-squircle-view": ["expo-squircle-view@1.1.0", "", { "peerDependencies": { "expo": "*", "react": "*", "react-native": "*" } }, "sha512-paLpUKfAlFHbgrkfcTxmzTEbF0wbiLF0arTE4kLq2VWRWWmZxqLTzNDZM9JRmdEIrDeF3natRaxWJyYvwzx3Lg=="],
@@ -2245,7 +2248,7 @@
 
     "react-native-nitro-bg-timer": ["react-native-nitro-bg-timer@0.1.0", "", { "dependencies": { "eventemitter3": "^5.0.1" }, "peerDependencies": { "react": "*", "react-native": "*", "react-native-nitro-modules": "*" } }, "sha512-ovaPAKIZhdrT0PwNxK9cKoYREuee6+UPvhU3d9TY9P4F9JKlJto6pKZMuaGNlQc08CTKD+cCwjvfQ+jJPvEVqw=="],
 
-    "react-native-nitro-modules": ["react-native-nitro-modules@0.35.0", "", { "peerDependencies": { "react": "*", "react-native": "*" } }, "sha512-Eho1yEcLbsteGpBFn2XZOp5FIptnEciWzuYBW49S0jo41Un2LeyesIO/MqYLY/c5o7D9Fw9th4pxGtV7OAb0+g=="],
+    "react-native-nitro-modules": ["react-native-nitro-modules@0.31.10", "", { "peerDependencies": { "react": "*", "react-native": "*" } }, "sha512-hcvjTu9YJE9fMmnAUvhG8CxvYLpOuMQ/2eyi/S6GyrecezF6Rmk/uRQEL6v09BRFWA/xRVZNQVulQPS+2HS3mQ=="],
 
     "react-native-permissions": ["react-native-permissions@5.5.1", "", { "peerDependencies": { "react": "*", "react-native": "*", "react-native-windows": "*" }, "optionalPeers": ["react-native-windows"] }, "sha512-nTKFoj47b6EXNqbbg+8VFwBWMpxF1/UTbrNBLpXkWpt005pH4BeFv/NwpcC1iNhToKBrxQD+5kI0z6+kTYoYWA=="],
 

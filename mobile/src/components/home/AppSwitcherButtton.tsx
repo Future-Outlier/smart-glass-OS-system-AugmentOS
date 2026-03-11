@@ -108,12 +108,14 @@ export default function AppSwitcherButton({swipeProgress, onGridButtonPress, blu
     swipeProgress.value = withSpring(1, {damping: 20, stiffness: 1000, overshootClamping: true})
   })
 
-  let composedGesture
-  if (Platform.OS === "android") {
-    composedGesture = Gesture.Exclusive(tapGesture)
-  } else {
-    composedGesture = Gesture.Exclusive(panGesture, tapGesture)
-  }
+  // let composedGesture
+  // if (Platform.OS === "android") {
+  //   composedGesture = Gesture.Exclusive(tapGesture)
+  // } else {
+  //   composedGesture = Gesture.Exclusive(panGesture, tapGesture)
+  // }
+  
+  let composedGesture = Gesture.Exclusive(panGesture, tapGesture)
 
   // const bottomPadding = insets.bottom + theme.spacing.s4
   const bottomPadding = insets.bottom
