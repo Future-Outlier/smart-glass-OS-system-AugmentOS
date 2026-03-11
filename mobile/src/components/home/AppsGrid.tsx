@@ -506,7 +506,12 @@ export function AppsGrid({showAllApps = false, onOpenApp, onAddToHome, searchQue
           <AppIcon app={item} className="w-16 h-16" />
           <View className="w-full h-9 my-1 items-center justify-start">
             <Text
-              className="text-secondary-foreground text-center mt-1 text-[12px] shrink"
+              className="text-foreground text-center mt-1 text-[12px] shrink"
+              style={{
+                textShadowColor: "rgba(0,0,0,0.3)",
+                textShadowOffset: {width: 0, height: 1},
+                textShadowRadius: 2,
+              }}
               numberOfLines={2}
               ellipsizeMode="tail"
               text={item.name}

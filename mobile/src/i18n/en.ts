@@ -505,7 +505,7 @@ const en = {
     homeBackground: "Home Background",
     noBackground: "None",
     chooseFromLibrary: "Choose from Library",
-    androidBlur: "Android blur",
+    androidBlur: "Blur effects",
   },
   devSettings: {
     debugConsole: "Debug Console",
