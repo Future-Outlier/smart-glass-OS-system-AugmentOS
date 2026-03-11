@@ -106,7 +106,7 @@ export default function Homepage() {
         className="absolute top-0 left-0 right-0 z-10 w-full"
         style={{height: insets.top}}
         intensity={30}
-        blurReductionFactor={7}
+        blurReductionFactor={20}
         blurTarget={blurTargetRef}
         blurMethod="dimezisBlurViewSdk31Plus"
       />

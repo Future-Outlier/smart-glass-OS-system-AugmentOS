@@ -166,14 +166,14 @@
     }
   },
   "patchedDependencies": {
-    "react-native-draggable-masonry@1.3.0": "patches/react-native-draggable-masonry@1.3.0.patch"
-  },
-  "trustedDependencies": [
-    "@sentry/cli",
-    "esbuild",
-    "react-native-inappbrowser-reborn",
-    "react-native-mmkv",
-    "react-native-nitro-modules",
-    "unrs-resolver"
-  ]
+  "react-native-draggable-masonry@1.3.0": "patches/react-native-draggable-masonry@1.3.0.patch"
+},
+"trustedDependencies": [
+  "@sentry/cli",
+  "esbuild",
+  "react-native-inappbrowser-reborn",
+  "react-native-mmkv",
+  "react-native-nitro-modules",
+  "unrs-resolver"
+]
 }

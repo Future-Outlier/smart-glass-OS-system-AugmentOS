@@ -1,11 +1,8 @@
-diff --git a/node_modules/react-native-draggable-masonry/.bun-tag-9334ed9625a21b7f b/.bun-tag-9334ed9625a21b7f
-new file mode 100644
-index 0000000000000000000000000000000000000000..e69de29bb2d1d6434b8b29ae775ad8c2e48c5391
 diff --git a/src/DraggableMasonryList.tsx b/src/DraggableMasonryList.tsx
-index cacb84dbd769c001852547c720696ff2772cbdca..7e45308f31101ce6094165283fcde9995484e7b3 100644
+index cacb84dbd769c001852547c720696ff2772cbdca..86a91158ceb7772df7eaa34f806148f44e8f8517 100644
 --- a/src/DraggableMasonryList.tsx
 +++ b/src/DraggableMasonryList.tsx
-@@ -606,7 +606,19 @@ function DraggableMasonryList<T extends MasonryItemType>({
+@@ -606,7 +606,18 @@ function DraggableMasonryList<T extends MasonryItemType>({
  
      // --- Drag Handlers ---
      const handleDragStart = useCallback((id: string) => {
@@ -25,25 +22,14 @@ index cacb84dbd769c001852547c720696ff2772cbdca..7e45308f31101ce6094165283fcde999
  
          setActiveDragId(id);
          isDraggingShared.value = true;
-@@ -616,7 +628,7 @@ function DraggableMasonryList<T extends MasonryItemType>({
-             layoutWithoutDraggedRef.current = calculateLayout(
-                 withoutDragged, numColumns, containerWidth, rowGap, columnGap, keyExtractor
-             );
--        }
-+        } 
- 
-         const currentIndex = orderedDataRef.current.findIndex(item => keyExtractor(item) === id);
-         dragStartIndexRef.current = currentIndex;
 diff --git a/src/MasonryItem.tsx b/src/MasonryItem.tsx
-index e4bbf4c488c5406be4222d7b76fae950bc2ce162..052d499f4c3f6284bef95d4f846d8ba94a94debc 100644
+index e4bbf4c488c5406be4222d7b76fae950bc2ce162..755f657aa98603281a7eb8b6bb7a579e01f67a48 100644
 --- a/src/MasonryItem.tsx
 +++ b/src/MasonryItem.tsx
-@@ -237,7 +237,14 @@ const MasonryItemComponent = ({
- 
+@@ -238,6 +238,13 @@ const MasonryItemComponent = ({
              runOnJS(onDragEnd)(id);
          });
--
-+        
+ 
 +    const longPressGesture = Gesture.Pan()
 +        .enabled(!sortEnabled)
 +        .activateAfterLongPress(dragActivationDelay)
