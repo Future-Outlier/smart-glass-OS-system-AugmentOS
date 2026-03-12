@@ -115,7 +115,7 @@ export default function Homepage() {
 
   return (
     <>
-      <Screen preset="fixed" className={`${appSwitcherUi ? "px-0" : ""}`} KeyboardAvoidingViewProps={{enabled: true}}>
+      <Screen preset="fixed" className={`${appSwitcherUi ? "px-0" : ""}`} KeyboardAvoidingViewProps={{enabled: false}}>
         {appSwitcherUi && renderTopPadding()}
         <BlurTargetView ref={blurTargetRef} style={{flex: 1}}>
           {appSwitcherUi && <CustomBackground />}
