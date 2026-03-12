@@ -165,6 +165,7 @@ function OriginalButton(props: ButtonProps) {
       !!flex && {flex: 1},
       (!!compact || !!compactIcon) && themed($compactViewStyle),
       !!compactIcon && themed($compactIconStyle),
+      !!disabled && $disabledViewStyle,
       !!disabled && themed($disabledViewStyleOverride),
       themed($viewStyleOverride),
     ]
@@ -346,7 +347,7 @@ const $textPresets: Record<Presets, ThemedStyleArray<TextStyle>> = {
   alternate: [$baseTextStyle, ({colors}) => ({color: colors.secondary_foreground})],
   accent: [$baseTextStyle],
   warning: [$baseTextStyle, ({colors}) => ({color: colors.secondary_foreground})],
-  destructive: [$baseTextStyle, ({colors}) => ({color: colors.palette.angry600})],
+  destructive: [$baseTextStyle],
   outlined: [$baseTextStyle, ({colors}) => ({color: colors.text})],
 }
 
@@ -359,6 +360,10 @@ const $pressedViewPresets: Record<Presets, ThemedStyle<ViewStyle>> = {
   warning: ({colors}) => ({backgroundColor: colors.palette.transparent, borderColor: colors.border}),
   destructive: ({colors}) => ({backgroundColor: colors.palette.transparent, borderColor: colors.border}),
   outlined: ({colors}) => ({backgroundColor: colors.palette.transparent, borderColor: colors.border}),
+}
+
+const $disabledViewStyle: ViewStyle = {
+  opacity: 0.4,
 }
 
 const $pressedTextPresets: Record<Presets, ThemedStyle<TextStyle>> = {

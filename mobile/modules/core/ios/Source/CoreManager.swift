@@ -174,11 +174,6 @@ struct ViewState {
         set { GlassesStore.shared.apply("core", "enforce_local_transcription", newValue) }
     }
 
-    private var offlineMode: Bool {
-        get { GlassesStore.shared.get("core", "offline_mode") as? Bool ?? false }
-        set { GlassesStore.shared.apply("core", "offline_mode", newValue) }
-    }
-
     private var metricSystem: Bool {
         get { GlassesStore.shared.get("core", "metric_system") as? Bool ?? false }
         set { GlassesStore.shared.apply("core", "metric_system", newValue) }
@@ -659,11 +654,12 @@ struct ViewState {
             Bridge.log("MAN: SGC already initialized")
             return
         }
-
         if wearable.contains(DeviceTypes.SIMULATED) {
             sgc = Simulated()
         } else if wearable.contains(DeviceTypes.G1) {
             sgc = G1()
+        } else if wearable.contains(DeviceTypes.G2) {
+            sgc = G2()
         } else if wearable.contains(DeviceTypes.LIVE) {
             sgc = MentraLive()
         } else if wearable.contains(DeviceTypes.MACH1) {
@@ -890,6 +886,8 @@ struct ViewState {
         // Call device-specific setup handlers
         if defaultWearable.contains(DeviceTypes.G1) {
             handleG1Ready()
+        } else if defaultWearable.contains(DeviceTypes.G2) {
+            // handleG2Ready()
         } else if defaultWearable.contains(DeviceTypes.MACH1) {
             handleMach1Ready()
         } else if defaultWearable.contains(DeviceTypes.Z100) {
@@ -1049,6 +1047,11 @@ struct ViewState {
         sgc?.requestWifiScan()
     }
 
+    func sendIncidentId(_ incidentId: String) {
+        Bridge.log("MAN: Sending incidentId to glasses for log upload: \(incidentId)")
+        sgc?.sendIncidentId(incidentId)
+    }
+
     func sendWifiCredentials(_ ssid: String, _ password: String) {
         Bridge.log("MAN: Sending wifi credentials: \(ssid) \(password)")
         sgc?.sendWifiCredentials(ssid, password)
@@ -1114,10 +1117,10 @@ struct ViewState {
         sgc?.saveBufferVideo(requestId: requestId, durationSeconds: durationSeconds)
     }
 
-    func startVideoRecording(_ requestId: String, _ save: Bool, _ silent: Bool) {
+    func startVideoRecording(_ requestId: String, _ save: Bool, _ flash: Bool, _ sound: Bool) {
         Bridge.log(
-            "MAN: onStartVideoRecording: requestId=\(requestId), save=\(save), silent=\(silent)")
-        sgc?.startVideoRecording(requestId: requestId, save: save, silent: silent)
+            "MAN: onStartVideoRecording: requestId=\(requestId), save=\(save), flash=\(flash), sound=\(sound)")
+        sgc?.startVideoRecording(requestId: requestId, save: save, flash: flash, sound: sound)
     }
 
     func stopVideoRecording(_ requestId: String) {
@@ -1163,14 +1166,15 @@ struct ViewState {
         _ webhookUrl: String?,
         _ authToken: String?,
         _ compress: String?,
-        _ silent: Bool
+        _ flash: Bool,
+        _ sound: Bool
     ) {
         Bridge.log(
-            "MAN: onPhotoRequest: \(requestId), \(appId), \(webhookUrl), size=\(size), compress=\(compress ?? "none"), silent=\(silent)"
+            "MAN: onPhotoRequest: \(requestId), \(appId), \(webhookUrl), size=\(size), compress=\(compress ?? "none"), flash=\(flash), sound=\(sound)"
         )
         sgc?.requestPhoto(
             requestId, appId: appId, size: size, webhookUrl: webhookUrl, authToken: authToken,
-            compress: compress, silent: silent
+            compress: compress, flash: flash, sound: sound
         )
     }
 

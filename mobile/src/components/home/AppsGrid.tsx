@@ -9,7 +9,10 @@ import {useAppTheme} from "@/contexts/ThemeContext"
 import {
   ClientAppletInterface,
   DUMMY_APPLET,
-  getPackageNamePriority,
+  getAppsOrder,
+  OrderMap,
+  saveAppsOrder,
+  sortAppsByPackageNamePriority,
   SYSTEM_APPS,
   uninstallAppUI,
   useAppletStatusStore,
@@ -21,14 +24,13 @@ import {SETTINGS, useSetting} from "@/stores/settings"
 import {storage} from "@/utils/storage"
 import {useNavigationHistory} from "@/contexts/NavigationHistoryContext"
 import {translate} from "@/i18n"
+import GlassView from "@/components/ui/GlassView"
 
 const GRID_COLUMNS = 4
-const APP_ORDER_KEY = "foreground_apps_order"
 const POPOVER_WIDTH = 180
 const SCREEN_PADDING = 4 * 12
 
 type MasonryAppItem = ClientAppletInterface & {id: string; height: number}
-type OrderMap = Record<string, number>
 
 interface PopoverAction {
   label: string
@@ -57,33 +59,41 @@ const AppPopover: React.FC<{
 
   // const popoverHeight = actions.length * 44 + 16
   let left = position.x - POPOVER_WIDTH / 4
-  let top = position.y + 110
+  let top = position.y + 120
+  let xOffset = 0
   // let left = position.x - POPOVER_WIDTH / 2
   // let top = position.y
   // if (left < SCREEN_PADDING) left = SCREEN_PADDING
   if (left + POPOVER_WIDTH > screenWidth - SCREEN_PADDING) {
-    left = screenWidth - SCREEN_PADDING - POPOVER_WIDTH
+    let target = screenWidth - SCREEN_PADDING - POPOVER_WIDTH
+    xOffset = target - left
   }
+  left += xOffset
+
   if (left < 0) {
+    xOffset = -left
     left = 0
   }
 
-  // todo: find out the actual height of the popover via a ref:
-  let popoverHeight = 10 + actions.length * 54
+  let showAbove = false
+
   if (position.screenY > screenHeight / 2) {
-    top = position.y - popoverHeight
+    showAbove = true
   }
-  // const showAbove = top + popoverHeight > screenHeight - 40
-  // if (showAbove) {
-  //   top = position.y - popoverHeight - 8
-  // }
+
+  // todo: find out the actual height of the popover via a ref:
+  let popoverHeight = 8 + actions.length * 12 * 4
+  popoverHeight += 0
+  if (showAbove) {
+    top = position.y - popoverHeight - 20
+  }
 
   const popoverContent = (
     <View className="py-1">
       {actions.map((action, index) => (
         <View key={action.label}>
           <Pressable
-            className="flex-row items-center gap-3 px-4 py-3 active:bg-foreground/10"
+            className="flex-row items-center gap-3 px-4 py-3 h-12 active:bg-foreground/10"
             onPress={() => {
               onClose()
               action.onPress()
@@ -104,24 +114,33 @@ const AppPopover: React.FC<{
     </View>
   )
 
+  let arrowLeft = 0
+  let arrowTop = 0
+
+  if (showAbove) {
+    arrowTop = top + popoverHeight - 20
+  } else {
+    arrowTop = top - 10
+  }
+  arrowLeft = left + POPOVER_WIDTH / 2 - 20
+  arrowLeft -= xOffset
+
   return (
     <View style={StyleSheet.absoluteFill} pointerEvents="box-none">
       <Pressable style={StyleSheet.absoluteFill} onPress={onClose}>
         <View
+          className="absolute"
           style={{
-            position: "absolute",
             left: left,
             top: top,
             width: POPOVER_WIDTH,
           }}>
-          {Platform.OS === "ios" ? (
-            <BlurView intensity={80} tint="default" className="rounded-2xl overflow-hidden">
-              {popoverContent}
-            </BlurView>
-          ) : (
-            <View className="rounded-2xl overflow-hidden bg-primary-foreground/95">{popoverContent}</View>
-          )}
+          <GlassView className="rounded-2xl overflow-hidden bg-primary-foreground/95">{popoverContent}</GlassView>
         </View>
+        <GlassView
+          className="absolute bg-primary-foreground/95 w-8 h-8 transform rotate-45 -z-1"
+          style={{left: arrowLeft, top: arrowTop}}
+        />
       </Pressable>
     </View>
   )
@@ -141,7 +160,7 @@ export function AppsGrid({showAllApps = false, onOpenApp, onAddToHome, searchQue
   const [appSwitcherUi] = useSetting(SETTINGS.app_switcher_ui.key)
   const apps = useForegroundApps()
 
-  const [orderMap, setOrderMap] = useState<OrderMap | null>(null)
+  const [orderMap, setOrderMap] = useState<OrderMap>({})
   const [popoverVisible, setPopoverVisible] = useState(false)
   const [popoverPosition, setPopoverPosition] = useState<PopoverPosition>({x: 0, y: 0, screenX: 0, screenY: 0})
   const [selectedApp, setSelectedApp] = useState<ClientAppletInterface | null>(null)
@@ -152,18 +171,32 @@ export function AppsGrid({showAllApps = false, onOpenApp, onAddToHome, searchQue
   const draggingIndexRef = useRef(0)
 
   useEffect(() => {
-    const result = storage.load<OrderMap>(APP_ORDER_KEY)
+    const result = getAppsOrder()
     if (result.is_ok()) {
+      // for (const [packageName, index] of Object.entries(result.value)) {
+      //   console.log("index", index, "packageName", packageName)
+      // }
       setOrderMap(result.value)
     }
   }, [])
 
   const gridData: MasonryAppItem[] = useMemo(() => {
     let filteredApps = apps.filter((app) => {
-      if (showAllApps) return true
-      if (app.hidden) return false
-      if (app.running && !appSwitcherUi) return false
-      if (!app.compatibility?.isCompatible) return false
+      if (showAllApps) {
+        // if (!app.compatibility?.isCompatible) {
+        // return false
+        // }
+        return true
+      }
+      if (app.hidden && appSwitcherUi) {
+        return false
+      }
+      if (app.running && !appSwitcherUi) {
+        return false
+      }
+      // if (!app.compatibility?.isCompatible) {
+      //   return false
+      // }
       return true
     })
 
@@ -194,27 +227,96 @@ export function AppsGrid({showAllApps = false, onOpenApp, onAddToHome, searchQue
         emptySlots += GRID_COLUMNS
       }
     }
-    if (showAllApps) {
-      emptySlots = 0
-    }
-    
-    for (let i = 0; i < emptySlots; i++) {
-      filteredApps.push({...DUMMY_APPLET, packageName: `__empty_${i}`})
+    // if (showAllApps) {
+    //   emptySlots = 0
+    // }
+
+    if (!appSwitcherUi) {
+      for (let i = 0; i < emptySlots; i++) {
+        filteredApps.push({...DUMMY_APPLET, packageName: `@empty${totalItems + i}`})
+      }
     }
 
-    if (orderMap && !showAllApps && appSwitcherUi) {
+    // Fill gaps in orderMap with dummy apps
+    if (!showAllApps && appSwitcherUi) {
+      const orderedPackages = new Set(
+        filteredApps.filter((app) => orderMap[app.packageName] !== undefined).map((app) => app.packageName),
+      )
+      const usedIndices = new Set<number>()
+      orderedPackages.forEach((pkg) => usedIndices.add(orderMap[pkg]))
+
+      if (usedIndices.size > 0) {
+        const highestRealIndex = Math.max(...usedIndices)
+        let maxIndex = filteredApps.length + emptySlots
+        // console.log("maxIndex", maxIndex)
+        for (let i = 0; i <= highestRealIndex; i++) {
+          if (!usedIndices.has(i)) {
+            // console.log(`adding dummy app @empty${i}`)
+            filteredApps.push({...DUMMY_APPLET, packageName: `@empty${i}`})
+            orderMap[`@empty${i}`] = i
+            emptySlots -= 1
+            maxIndex = filteredApps.length + emptySlots
+          }
+        }
+
+        // add the remaining dummy apps:
+        for (let i = highestRealIndex + 1; i <= maxIndex - 1; i++) {
+          // console.log(`adding dummy app @empty${i}`)
+          filteredApps.push({...DUMMY_APPLET, packageName: `@empty${i}`})
+          // Add the gap dummy to the orderMap so it sorts correctly
+          orderMap[`@empty${i}`] = i
+          emptySlots -= 1
+        }
+      }
+    }
+
+    if (showAllApps) {
+      // console.log("adding empty slots", emptySlots)
+      emptySlots = Math.min(emptySlots, GRID_COLUMNS * 2)
+      for (let i = 0; i < emptySlots; i++) {
+        let index = filteredApps.length + i + 100
+        filteredApps.push({...DUMMY_APPLET, packageName: `@empty${index}`})
+        orderMap[`@empty${index}`] = index
+      }
+    }
+
+    if (appSwitcherUi) {
+      // Assign unpositioned real apps to the first available empty slots
+      const unpositioned = filteredApps.filter(
+        (app) => !app.packageName.startsWith("@empty") && orderMap[app.packageName] === undefined,
+      )
+      if (unpositioned.length > 0) {
+        const dummySlots = filteredApps
+          .filter((app) => app.packageName.startsWith("@empty") && orderMap[app.packageName] !== undefined)
+          .sort((a, b) => orderMap[a.packageName] - orderMap[b.packageName])
+
+        for (const app of unpositioned) {
+          const dummy = dummySlots.shift()
+          if (dummy) {
+            orderMap[app.packageName] = orderMap[dummy.packageName]
+            delete orderMap[dummy.packageName]
+            const idx = filteredApps.indexOf(dummy)
+            if (idx !== -1) filteredApps.splice(idx, 1)
+          }
+        }
+      }
+
       filteredApps.sort((a, b) => {
         const aIndex = orderMap[a.packageName]
         const bIndex = orderMap[b.packageName]
         if (aIndex === undefined && bIndex === undefined) {
-          return getPackageNamePriority(a, b)
+          return sortAppsByPackageNamePriority(a, b)
         }
         if (aIndex === undefined) return 1
         if (bIndex === undefined) return -1
         return aIndex - bIndex
       })
     } else {
-      filteredApps.sort(getPackageNamePriority)
+      filteredApps.sort(sortAppsByPackageNamePriority)
+    }
+
+    if (showAllApps) {
+      filteredApps.sort(sortAppsByPackageNamePriority)
     }
 
     return filteredApps.map((app) => ({
@@ -229,6 +331,11 @@ export function AppsGrid({showAllApps = false, onOpenApp, onAddToHome, searchQue
     setSelectedApp(null)
   }, [])
 
+  const liveSelectedApp = useMemo(
+    () => apps.find((a) => a.packageName === selectedApp?.packageName) ?? selectedApp,
+    [apps, selectedApp],
+  )
+
   const popoverActions: PopoverAction[] = useMemo(
     () =>
       [
@@ -236,21 +343,21 @@ export function AppsGrid({showAllApps = false, onOpenApp, onAddToHome, searchQue
           label: translate("appInfo:open"),
           icon: "external-link",
           onPress: () => {
-            if (selectedApp) {
-              startApplet(selectedApp.packageName)
+            if (liveSelectedApp) {
+              startApplet(liveSelectedApp)
               if (onOpenApp) {
-                onOpenApp?.(selectedApp)
+                onOpenApp?.(liveSelectedApp)
               }
             }
           },
         },
-        {
+        !SYSTEM_APPS.includes(liveSelectedApp?.packageName || "") && {
           label: translate("appInfo:settings"),
           icon: "cog",
           onPress: () => {
             push("/applet/settings", {
-              packageName: selectedApp?.packageName,
-              appName: selectedApp?.name,
+              packageName: liveSelectedApp?.packageName,
+              appName: liveSelectedApp?.name,
             })
           },
         },
@@ -258,42 +365,42 @@ export function AppsGrid({showAllApps = false, onOpenApp, onAddToHome, searchQue
           label: translate("appInfo:remove"),
           icon: "minus",
           onPress: () => {
-            if (selectedApp) {
-              useAppletStatusStore.getState().setHiddenStatus(selectedApp.packageName, true)
+            if (liveSelectedApp) {
+              useAppletStatusStore.getState().setHiddenStatus(liveSelectedApp.packageName, true)
               // useAppletStatusStore.getState().refreshApplets()
             }
           },
         },
         showAllApps &&
-          selectedApp?.hidden && {
+          liveSelectedApp?.hidden && {
             label: translate("appInfo:addToHome"),
             icon: "home",
             onPress: () => {
-              useAppletStatusStore.getState().setHiddenStatus(selectedApp.packageName, false)
+              useAppletStatusStore.getState().setHiddenStatus(liveSelectedApp?.packageName, false)
               if (onAddToHome) {
-                onAddToHome(selectedApp)
+                onAddToHome(liveSelectedApp)
               }
             },
           },
-        !SYSTEM_APPS.includes(selectedApp?.packageName || "") && {
+        !SYSTEM_APPS.includes(liveSelectedApp?.packageName || "") && {
           label: translate("appInfo:uninstall"),
           icon: "trash",
           destructive: true,
           onPress: () => {
-            if (selectedApp) {
-              uninstallAppUI(selectedApp)
+            if (liveSelectedApp) {
+              uninstallAppUI(liveSelectedApp)
             }
           },
         },
       ].filter(Boolean) as PopoverAction[],
-    [selectedApp, startApplet, showAllApps],
+    [liveSelectedApp, startApplet, showAllApps],
   )
 
   const handlePress = async (app: ClientAppletInterface) => {
-    if (app.packageName.includes("__empty")) return // ignore dummy apps
+    if (app.packageName.includes("@empty")) return // ignore dummy apps
     const result = await askPermissionsUI(app, theme)
     if (result !== 1) return
-    startApplet(app.packageName)
+    startApplet(app)
     if (onOpenApp) {
       onOpenApp?.(app)
     }
@@ -371,7 +478,7 @@ export function AppsGrid({showAllApps = false, onOpenApp, onAddToHome, searchQue
       newOrderMap[item.packageName] = index
     })
     setOrderMap(newOrderMap)
-    storage.save(APP_ORDER_KEY, newOrderMap)
+    saveAppsOrder(newOrderMap)
   }
 
   const itemRefs = useRef<Record<string, View | null>>({})
@@ -404,7 +511,12 @@ export function AppsGrid({showAllApps = false, onOpenApp, onAddToHome, searchQue
           <AppIcon app={item} className="w-16 h-16" />
           <View className="w-full h-9 my-1 items-center justify-start">
             <Text
-              className="text-secondary-foreground text-center mt-1 text-[12px] shrink"
+              className="text-foreground text-center mt-1 text-[12px] shrink"
+              style={{
+                textShadowColor: "rgba(0,0,0,0.3)",
+                textShadowOffset: {width: 0, height: 1},
+                textShadowRadius: 2,
+              }}
               numberOfLines={2}
               ellipsizeMode="tail"
               text={item.name}
@@ -439,12 +551,14 @@ export function AppsGrid({showAllApps = false, onOpenApp, onAddToHome, searchQue
           <DraggableMasonryList
             data={gridData}
             renderItem={renderItem}
+            rowGap={0}
+            columnGap={0}
             columns={GRID_COLUMNS}
             onDragStart={handleDragStart}
             onDragEnd={handleDragEnd}
             onDragChange={handleDragChange}
             overDrag="none"
-            showDropIndicator={true}
+            showDropIndicator={false}
             sortEnabled={!showAllApps}
             swapMode={true}
             dropIndicatorStyle={{backgroundColor: theme.colors.primary_foreground, borderWidth: 0}}

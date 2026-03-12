@@ -20,13 +20,13 @@ module.exports = ({config}: ConfigContext): Partial<ExpoConfig> => {
     updates: {
       fallbackToCacheTimeout: 0,
     },
-    newArchEnabled: true,
     jsEngine: "hermes",
     assetBundlePatterns: ["**/*"],
     android: {
       // icon: "./assets/app-icons/ic_launcher.png",
       package: "com.mentra.mentra",
-      versionCode: 91,
+      googleServicesFile: "./google-services.json",
+      versionCode: 121,
       adaptiveIcon: {
         foregroundImage: "./assets/app-icons/ic_launcher_foreground.png",
         // backgroundImage: "./assets/app-icons/ic_launcher.png",
@@ -59,7 +59,9 @@ module.exports = ({config}: ConfigContext): Partial<ExpoConfig> => {
       icon: "./assets/app-icons/ic_launcher.png",
       supportsTablet: false,
       requireFullScreen: true,
+      buildNumber: "121",
       bundleIdentifier: "com.mentra.mentra",
+      googleServicesFile: "./GoogleService-Info.plist",
       associatedDomains: ["applinks:apps.mentra.glass"],
       infoPlist: {
         NSCameraUsageDescription: "This app needs access to your camera to capture images.",
@@ -144,9 +146,9 @@ module.exports = ({config}: ConfigContext): Partial<ExpoConfig> => {
           imageWidth: 100,
           backgroundColor: "#fff",
           dark: {
-            backgroundColor: "#fff",
-            // backgroundColor: "#171717",
-            // image: "./assets/logo/logo_dark.png",
+            // backgroundColor: "#fff",
+            backgroundColor: "#171717",
+            image: "./assets/logo/logo_dark.png",
           },
         },
       ],
@@ -197,6 +199,8 @@ module.exports = ({config}: ConfigContext): Partial<ExpoConfig> => {
               },
             ],
           },
+          // buildReactNativeFromSource: true,
+          // useHermesV1: true
         },
       ],
       [
@@ -225,12 +229,21 @@ module.exports = ({config}: ConfigContext): Partial<ExpoConfig> => {
           locationAlwaysAndWhenInUsePermission: "Allow MentraOS to use your location.",
         },
       ],
+      "@react-native-firebase/app",
       "expo-audio",
       [
         "expo-video",
         {
           supportsBackgroundPlayback: true,
           supportsPictureInPicture: true,
+        },
+      ],
+      "expo-web-browser",
+      [
+        "expo-speech-transcriber",
+        {
+          speechRecognitionPermission: "We need speech recognition to transcribe your recordings",
+          microphonePermission: "We need microphone access to record audio for transcription",
         },
       ],
     ],

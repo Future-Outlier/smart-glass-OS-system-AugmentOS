@@ -1,5 +1,4 @@
 import ExpoModulesCore
-import Photos
 
 public class CoreModule: Module {
     public func definition() -> ModuleDefinition {
@@ -152,6 +151,14 @@ public class CoreModule: Module {
             }
         }
 
+        // MARK: - Incident Reporting
+
+        AsyncFunction("sendIncidentId") { (incidentId: String) in
+            await MainActor.run {
+                CoreManager.shared.sendIncidentId(incidentId)
+            }
+        }
+
         // MARK: - WiFi Commands
 
         AsyncFunction("requestWifiScan") {
@@ -189,11 +196,11 @@ public class CoreModule: Module {
         AsyncFunction("photoRequest") {
             (
                 requestId: String, appId: String, size: String, webhookUrl: String?,
-                authToken: String?, compress: String?, silent: Bool
+                authToken: String?, compress: String?, flash: Bool, sound: Bool
             ) in
             await MainActor.run {
                 CoreManager.shared.photoRequest(
-                    requestId, appId, size, webhookUrl, authToken, compress, silent
+                    requestId, appId, size, webhookUrl, authToken, compress, flash, sound
                 )
             }
         }
@@ -248,9 +255,9 @@ public class CoreModule: Module {
             }
         }
 
-        AsyncFunction("startVideoRecording") { (requestId: String, save: Bool, silent: Bool) in
+        AsyncFunction("startVideoRecording") { (requestId: String, save: Bool, flash: Bool, sound: Bool) in
             await MainActor.run {
-                CoreManager.shared.startVideoRecording(requestId, save, silent)
+                CoreManager.shared.startVideoRecording(requestId, save, flash, sound)
             }
         }
 
@@ -375,57 +382,5 @@ public class CoreModule: Module {
             return []
         }
 
-        // MARK: - Media Library Commands
-
-        AsyncFunction("saveToGalleryWithDate") {
-            (filePath: String, captureTimeMillis: Int64?) -> [String: Any] in
-            let fileURL = URL(fileURLWithPath: filePath)
-
-            guard FileManager.default.fileExists(atPath: filePath) else {
-                return ["success": false, "error": "File does not exist"]
-            }
-
-            var assetIdentifier: String?
-            let semaphore = DispatchSemaphore(value: 0)
-            var resultError: Error?
-
-            PHPhotoLibrary.shared().performChanges {
-                let creationRequest: PHAssetChangeRequest
-                let pathExtension = fileURL.pathExtension.lowercased()
-
-                if ["mp4", "mov", "avi", "m4v"].contains(pathExtension) {
-                    // Video
-                    creationRequest = PHAssetChangeRequest.creationRequestForAssetFromVideo(
-                        atFileURL: fileURL)!
-                } else {
-                    // Photo
-                    creationRequest = PHAssetChangeRequest.creationRequestForAssetFromImage(
-                        atFileURL: fileURL)!
-                }
-
-                // Set the creation date if provided
-                if let captureMillis = captureTimeMillis {
-                    let captureDate = Date(
-                        timeIntervalSince1970: TimeInterval(captureMillis) / 1000.0)
-                    creationRequest.creationDate = captureDate
-                    Bridge.log("CoreModule: Setting creation date to: \(captureDate)")
-                }
-
-                assetIdentifier = creationRequest.placeholderForCreatedAsset?.localIdentifier
-            } completionHandler: { _, error in
-                resultError = error
-                semaphore.signal()
-            }
-
-            semaphore.wait()
-
-            if let error = resultError {
-                Bridge.log("CoreModule: Error saving to gallery: \(error.localizedDescription)")
-                return ["success": false, "error": error.localizedDescription]
-            }
-
-            Bridge.log("CoreModule: Successfully saved to gallery with proper creation date")
-            return ["success": true, "identifier": assetIdentifier ?? ""]
-        }
     }
 }
