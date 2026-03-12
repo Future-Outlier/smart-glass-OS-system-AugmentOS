@@ -51,8 +51,18 @@ app.get("/:packageName", optionalClientAuth, getAppDetails);
 
 /**
  * Resolve device capabilities and model name for a user.
- * Uses persisted default_wearable from UserSettings as the source of truth,
- * and supplements with live connection state from UserSession if available.
+ *
+ * Priority 1: Live UserSession on this backend instance.
+ *   The session model can be set via WS glasses_connection_state or the
+ *   device-state REST endpoint — neither of which persists to the DB. So the
+ *   session may know the device even when default_wearable is absent from DB.
+ *
+ * Priority 2: Persisted default_wearable from UserSettings DB.
+ *   Works cross-backend (e.g. user connected to dev backend, store hitting
+ *   prod backend — prod has no UserSession for that user, so falls through here).
+ *
+ * isConnected always reflects live WS state regardless of which path resolved
+ * the capabilities.
  */
 async function resolveDeviceInfo(email: string): Promise<{
   capabilities: Capabilities | null;
@@ -62,7 +72,16 @@ async function resolveDeviceInfo(email: string): Promise<{
   const userSession = UserSession.getById(email);
   const isConnected = userSession?.deviceManager.isGlassesConnected ?? false;
 
-  // Use persisted default_wearable as the source of truth for capabilities
+  // Priority 1: live session (same backend instance)
+  if (userSession) {
+    const model = userSession.deviceManager.getModel();
+    const capabilities = userSession.getCapabilities();
+    if (model && capabilities) {
+      return { capabilities, deviceName: model, isConnected };
+    }
+  }
+
+  // Priority 2: persisted default_wearable — reliable cross-backend fallback
   try {
     const defaultWearable = await UserSettingsService.getUserSetting(email, "default_wearable");
     if (defaultWearable && typeof defaultWearable === "string") {
