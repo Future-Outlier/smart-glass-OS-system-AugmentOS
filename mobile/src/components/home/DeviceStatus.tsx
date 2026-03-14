@@ -100,6 +100,7 @@ export const DeviceStatus = ({style}: {style?: ViewStyle}) => {
     if (searching) {
       await CoreModule.disconnect()
       setIsCheckingConnectivity(false)
+      setWasSearching(false)
     } else {
       await connectGlasses()
     }
@@ -123,7 +124,19 @@ export const DeviceStatus = ({style}: {style?: ViewStyle}) => {
     return image
   }
 
-  let isSearching = searching || isCheckingConnectivity
+  // Delay clearing search state to prevent a flash of "Connect" button
+  // when searching ends but connected/fullyBooted haven't updated yet
+  const [wasSearching, setWasSearching] = useState(false)
+  useEffect(() => {
+    if (searching) {
+      setWasSearching(true)
+    } else if (wasSearching) {
+      const timer = setTimeout(() => setWasSearching(false), 500)
+      return () => clearTimeout(timer)
+    }
+  }, [searching])
+
+  let isSearching = searching || isCheckingConnectivity || wasSearching
   let connectingText = translate("home:connectingGlasses")
   // Only show booting message when we've received a glasses_not_ready event
   if (showGlassesBooting) {
