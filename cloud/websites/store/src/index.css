@@ -181,13 +181,6 @@
   }
 }
 
-/* Base styles for shared UI components */
-@layer base {
-  * {
-    @apply border-border outline-ring/50;
-  }
-}
-
 /* Safe area utilities for mobile devices with notches */
 @layer utilities {
   .pb-safe {
