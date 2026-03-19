@@ -47,6 +47,9 @@ const en = {
     phone: "Phone",
     bluetooth: "Bluetooth",
     preferredMic: "Preferred microphone",
+    microphonePermissionRequired: "Microphone permission required",
+    microphonePermissionRequiredMessage:
+      "Microphone permission is required to use the phone microphone feature. Please grant the microphone permission in settings.",
   },
   positionSettings: {
     title: "Display position",
@@ -75,6 +78,8 @@ const en = {
     connecting: "Connecting",
     reconnecting: "Reconnecting",
     disconnected: "Disconnected",
+    disconnect: "Disconnect",
+    unpair: "Unpair",
   },
   pairing: {
     selectModel: "Select Model",
@@ -124,6 +129,10 @@ const en = {
     G1: {
       step1: "Disconnect your G1 from within the Even Realities app, or uninstall the Even Realities app",
       step2: "Place your G1 in the charging case with the lid open.",
+    },
+    G2: {
+      step1: "Disconnect your G2 from within the Even Realities app, or uninstall the Even Realities app",
+      step2: "Place your G2 in the charging case with the lid open.",
     },
     LIVE: {
       step1: "Make sure your Mentra Live is fully charged and turned on.",
@@ -329,6 +338,8 @@ const en = {
     hardwareIncompatible: "Hardware Incompatible",
     hardwareIncompatibleMessage:
       "{{app}} requires hardware that is not available on your connected glasses: {{missing}}",
+    glassesRequired: "Glasses Required",
+    glassesRequiredMessage: "Connect your glasses to use {{app}}.",
     incompatibleApps: "Incompatible Apps",
     incompatibleAppsCount: "{{count}} Incompatible Apps",
     activeAppsCount: "{{count}} Apps active",
@@ -407,7 +418,7 @@ const en = {
     // Gallery sync WiFi explanation
     connectToGlassesTitle: "Connect to Glasses",
     wifiJoinExplanationIos: 'When prompted, tap "Join" to connect to "{{ssid}}".',
-    wifiJoinExplanationAndroid: 'When prompted, tap "Join" to connect to "{{ssid}}".',
+    wifiJoinExplanationAndroid: 'When prompted, tap "Connect" to connect to "{{ssid}}".',
   },
   store: {
     title: "Store",
@@ -416,6 +427,7 @@ const en = {
     title: "Account",
     phoneHeadset: "Phone / Headset",
     glasses: "Glasses",
+    appearance: "Appearance",
     bypassVAD: "Bypass VAD for Debugging",
     bypassVADSubtitle: "Bypass the VAD (Voice Activity Detection).",
     enforceLocalTranscription: "Enforce Local Transcription",
@@ -440,6 +452,8 @@ const en = {
     dashboardDescription: "Configure the contextual dashboard and HeadUp settings",
     cameraSettings: "Camera Settings",
     cameraSettingsDescription: "Configure photo and video resolution for button capture",
+    postProcessing: "Post Processing",
+    postProcessingSubtitle: "Improves photo and video quality. Sync may take longer.",
     positionSettings: "Display position",
     screenDescription: "Adjust depth and height of the display content.",
     glassesWifiSettings: "Wi-Fi Networks",
@@ -447,7 +461,7 @@ const en = {
     wifiUnavailable: "Connect a pair of glasses that support WiFi to access WiFi settings.",
     developerSettings: "Developer settings",
     disconnectGlasses: "Disconnect Glasses",
-    forgetGlasses: "Unpair Glasses",
+    forgetGlasses: "Unpair glasses",
     forgetGlassesConfirm:
       "To finish the process, make sure to remove your glasses from your phone's Bluetooth settings.",
     disconnectGlassesTitle: "Disconnect the glasses?",
@@ -475,10 +489,23 @@ const en = {
     newUiSubtitle: "Enable the new home screen UI. (Requires restarting the app)",
     loggingOutMessage: "We're logging you out...",
     themeSettings: "Theme Settings",
+    theme: "Theme",
     feedback: "Feedback",
     offlineSTT: "Offline Transcriptions",
     offlineSTTSubtitle: "Transcribe audio and display on connected glasses completely offline.",
     appAppearance: "App appearance",
+    layoutSettings: "Layout settings",
+  },
+  appearanceSettings: {
+    theme: "Theme",
+    lightTheme: "Light theme",
+    darkTheme: "Dark theme",
+    systemDefault: "System default",
+    liquidGlassEffect: "Liquid glass effect",
+    homeBackground: "Home Background",
+    noBackground: "None",
+    chooseFromLibrary: "Choose from Library",
+    androidBlur: "Blur effects",
   },
   devSettings: {
     debugConsole: "Debug Console",
@@ -747,9 +774,9 @@ const en = {
     account: "Account",
   },
   appSwitcher: {
-    swipeUpToClose: "Swipe up to close apps",
-    noAppsOpen: "No Apps Open",
-    yourRecentlyUsedAppsWillAppearHere: "Your recently used apps will appear here",
+    swipeUpToClose: "Swipe up to close miniapps",
+    noAppsOpen: "No miniapps open",
+    yourRecentlyUsedAppsWillAppearHere: "Your recently used miniapps will appear here",
   },
   feedback: {
     thankYou: "Thank You!",
@@ -838,23 +865,31 @@ const en = {
     simulated: "Simulated Glasses",
     store: "Get more apps",
     lmaInstaller: "Local Store",
+    lmaLoader: "Side Loader",
   },
   appInfo: {
     share: "Share",
     addToHome: "Add to home",
+    removeFromHome: "Remove from home",
     open: "Open",
     uninstall: "Uninstall",
     remove: "Remove",
     settings: "Settings",
+    feedback: "Feedback",
+    shareMessage: "Share {{appName}}",
   },
   lmaInstaller: {
     installedVersions: "Installed versions",
-    miniAppInstaller: "Mini App Installer",
-    installMiniApp: "Install Mini App",
-    uninstallMiniApp: "Uninstall Mini App",
+    miniAppInstaller: "Miniapp installer",
+    installMiniApp: "Install miniapp",
+    uninstallMiniApp: "Uninstall miniapp",
     uninstallMiniAppConfirm: "Are you sure you want to uninstall {{appName}}?",
-    uninstallMiniAppError: "Error uninstalling mini app: {{error}}",
+    uninstallMiniAppError: "Error uninstalling miniapp: {{error}}",
     uninstallMiniAppSuccess: "{{appName}} has been uninstalled successfully",
+  },
+  lmaLoader: {
+    miniAppLoader: "Miniapp Loader",
+    loadMiniApp: "Load miniapp",
   },
   dev: {
     developerMode: "Developer mode",
@@ -865,7 +900,7 @@ const en = {
     superModeDeactivated: "Super mode deactivated",
     versionInfo: "Version info",
     versionInfoCopied: "Version info copied to clipboard",
-  }
+  },
 }
 
 export default en

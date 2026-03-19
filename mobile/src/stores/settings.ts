@@ -1,7 +1,9 @@
+import {Platform} from "react-native"
 import {getTimeZone} from "react-native-localize"
 import {AsyncResult, result as Res, Result} from "typesafe-ts"
 import {create} from "zustand"
 import {subscribeWithSelector} from "zustand/middleware"
+import * as Device from "expo-device"
 
 import restComms from "@/services/RestComms"
 import {storage} from "@/utils/storage"
@@ -26,7 +28,7 @@ export const SETTINGS: Record<string, Setting> = {
   super_mode: {key: "super_mode", defaultValue: () => false, writable: true, saveOnServer: true, persist: true},
   app_switcher_ui: {
     key: "app_switcher_ui",
-    defaultValue: () => false,
+    defaultValue: () => true,
     writable: true,
     saveOnServer: true,
     persist: true,
@@ -40,7 +42,18 @@ export const SETTINGS: Record<string, Setting> = {
   },
   android_blur: {
     key: "android_blur",
-    defaultValue: () => false,
+    defaultValue: () => {
+      if (Platform.OS !== "android") return true
+      const ram = Device.totalMemory
+      return ram ? ram >= 4 * 1024 * 1024 * 1024 : true
+    },
+    writable: true,
+    saveOnServer: true,
+    persist: true,
+  },
+  ios_glass_effect: {
+    key: "ios_glass_effect",
+    defaultValue: () => true,
     writable: true,
     saveOnServer: true,
     persist: true,
@@ -164,6 +177,13 @@ export const SETTINGS: Record<string, Setting> = {
     persist: true,
   },
   // ui state:
+  home_background: {
+    key: "home_background",
+    defaultValue: () => "",
+    writable: true,
+    saveOnServer: false,
+    persist: true,
+  },
   theme_preference: {
     key: "theme_preference",
     defaultValue: () => (__DEV__ ? "system" : "light"),
@@ -364,6 +384,13 @@ export const SETTINGS: Record<string, Setting> = {
     saveOnServer: true,
     persist: true,
   },
+  media_post_processing: {
+    key: "media_post_processing",
+    defaultValue: () => false,
+    writable: true,
+    saveOnServer: true,
+    persist: true,
+  },
 
   // time zone settings
   time_zone: {
@@ -517,10 +544,13 @@ interface SettingsState {
 }
 
 const getDefaultSettings = () =>
-  Object.keys(SETTINGS).reduce((acc, key) => {
-    acc[key] = SETTINGS[key].defaultValue()
-    return acc
-  }, {} as Record<string, any>)
+  Object.keys(SETTINGS).reduce(
+    (acc, key) => {
+      acc[key] = SETTINGS[key].defaultValue()
+      return acc
+    },
+    {} as Record<string, any>,
+  )
 
 export const useSettingsStore = create<SettingsState>()(
   subscribeWithSelector((set, get) => ({

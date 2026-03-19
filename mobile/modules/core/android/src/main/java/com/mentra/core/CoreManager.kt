@@ -13,6 +13,7 @@ import androidx.core.content.ContextCompat
 import com.mentra.core.services.ForegroundService
 import com.mentra.core.services.PhoneMic
 import com.mentra.core.sgcs.G1
+import com.mentra.core.sgcs.G2
 import com.mentra.core.sgcs.Mach1
 import com.mentra.core.sgcs.MentraLive
 import com.mentra.core.sgcs.MentraNex
@@ -120,10 +121,6 @@ class CoreManager {
     private var enforceLocalTranscription: Boolean
         get() = GlassesStore.store.get("core", "enforce_local_transcription") as? Boolean ?: false
         set(value) = GlassesStore.apply("core", "enforce_local_transcription", value)
-
-    private var offlineMode: Boolean
-        get() = GlassesStore.store.get("core", "offline_mode") as? Boolean ?: false
-        set(value) = GlassesStore.apply("core", "offline_mode", value)
 
     private var metricSystem: Boolean
         get() = GlassesStore.store.get("core", "metric_system") as? Boolean ?: false
@@ -927,6 +924,8 @@ class CoreManager {
             sgc = Simulated()
         } else if (wearable.contains(DeviceTypes.G1)) {
             sgc = G1()
+        } else if (wearable.contains(DeviceTypes.G2)) {
+            sgc = G2()
         } else if (wearable.contains(DeviceTypes.LIVE)) {
             sgc = MentraLive()
         } else if (wearable.contains(DeviceTypes.NEX)) {
@@ -1086,6 +1085,11 @@ class CoreManager {
         sgc?.requestWifiScan()
     }
 
+    fun sendIncidentId(incidentId: String) {
+        Bridge.log("MAN: Sending incidentId to glasses for log upload: $incidentId")
+        sgc?.sendIncidentId(incidentId)
+    }
+
     fun sendWifiCredentials(ssid: String, password: String) {
         Bridge.log("MAN: Sending wifi credentials: $ssid")
         sgc?.sendWifiCredentials(ssid, password)
@@ -1151,9 +1155,9 @@ class CoreManager {
         sgc?.saveBufferVideo(requestId, durationSeconds)
     }
 
-    fun startVideoRecording(requestId: String, save: Boolean, silent: Boolean) {
-        Bridge.log("MAN: onStartVideoRecording: requestId=$requestId, save=$save, silent=$silent")
-        sgc?.startVideoRecording(requestId, save, silent)
+    fun startVideoRecording(requestId: String, save: Boolean, flash: Boolean, sound: Boolean) {
+        Bridge.log("MAN: onStartVideoRecording: requestId=$requestId, save=$save, flash=$flash, sound=$sound")
+        sgc?.startVideoRecording(requestId, save, flash, sound)
     }
 
     fun stopVideoRecording(requestId: String) {
@@ -1162,10 +1166,15 @@ class CoreManager {
     }
 
     fun setMicState(sendPcm: Boolean, sendTranscript: Boolean, bypassVadForPCM: Boolean) {
-        Bridge.log("MAN: MIC: setMicState($sendPcm, $sendTranscript, $bypassVad)")
+        // If offline captions are running locally, always keep transcript on
+        val offlineCaptionsRunning = GlassesStore.store.get("core", "offline_captions_running") as? Boolean ?: false
+        val effectiveSendTranscript = sendTranscript || offlineCaptionsRunning
+
+        Bridge.log("MAN: MIC: setMicState($sendPcm, $effectiveSendTranscript, $bypassVadForPCM)" +
+            if (offlineCaptionsRunning && !sendTranscript) " (offline captions forced transcript on)" else "")
 
         shouldSendPcmData = sendPcm
-        shouldSendTranscript = sendTranscript
+        shouldSendTranscript = effectiveSendTranscript
         bypassVad = bypassVadForPCM
 
         vadBuffer.clear()
@@ -1180,12 +1189,13 @@ class CoreManager {
             webhookUrl: String,
             authToken: String,
             compress: String,
-            silent: Boolean
+            flash: Boolean,
+            sound: Boolean
     ) {
         Bridge.log(
-                "MAN: onPhotoRequest: $requestId, $appId, $size, compress=$compress, silent=$silent"
+                "MAN: onPhotoRequest: $requestId, $appId, $size, compress=$compress, flash=$flash, sound=$sound"
         )
-        sgc?.requestPhoto(requestId, appId, size, webhookUrl, authToken, compress, silent)
+        sgc?.requestPhoto(requestId, appId, size, webhookUrl, authToken, compress, flash, sound)
     }
 
     fun rgbLedControl(

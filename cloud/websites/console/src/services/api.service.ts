@@ -36,6 +36,14 @@ async function retryWithBackoff<T>(fn: () => Promise<T>, retries = 3, initialDel
 }
 
 // Extended App interface for API responses
+// Locally defined until PreviewImage is published to @mentra/sdk@latest
+interface PreviewImageLocal {
+  url: string;
+  imageId: string;
+  orientation: "landscape" | "portrait";
+  order: number;
+}
+
 export interface AppResponse extends AppI {
   id: string; // Add id property to match App interface
   createdAt: string;
@@ -47,6 +55,7 @@ export interface AppResponse extends AppI {
   reviewedAt?: string;
   sharedWithEmails?: string[];
   onboardingInstructions?: string;
+  previewImages?: PreviewImageLocal[];
 }
 
 // API key response
@@ -912,7 +921,10 @@ const api = {
     // Incident management for bug reports
     incidents: {
       // List all incidents
-      list: async (limit = 100, offset = 0): Promise<{
+      list: async (
+        limit = 100,
+        offset = 0,
+      ): Promise<{
         data: Incident[];
         pagination: { total: number; limit: number; offset: number; hasMore: boolean };
       }> => {
@@ -974,6 +986,8 @@ export interface IncidentLogs {
   phoneLogs: IncidentLogEntry[];
   cloudLogs: IncidentLogEntry[];
   glassesLogs: IncidentLogEntry[];
+  /** BES chip logs (source glasses_firmware) */
+  glassesFirmwareLogs: IncidentLogEntry[];
   /** App telemetry logs organized by package name */
   appTelemetryLogs: Record<string, IncidentLogEntry[]>;
   attachments?: IncidentAttachment[];

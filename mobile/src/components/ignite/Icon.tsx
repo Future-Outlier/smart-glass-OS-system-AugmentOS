@@ -133,6 +133,7 @@ const lucideIcons = {
 
 const tablerIcons = {
   "settings": 1,
+  "bluetooth": 1,
   "bluetooth-connected": 1,
   "bluetooth-off": 1,
   "battery-3": 1,
@@ -206,7 +207,7 @@ export function Icon(props: IconProps) {
     const IconComponent = lucideIcons[name] as any
 
     return (
-      <View {...viewProps} style={$containerStyleOverride}>
+      <View {...viewProps} style={[$containerStyleOverride, $iconCenterStyle]}>
         <IconComponent style={$imageStyle} size={size} color={color} fill={backgroundColor ?? "transparent"} />
       </View>
     )
@@ -214,14 +215,14 @@ export function Icon(props: IconProps) {
 
   if (TablerIcon.glyphMap[name]) {
     return (
-      <View {...viewProps} style={$containerStyleOverride}>
+      <View {...viewProps} style={[$containerStyleOverride, $iconCenterStyle]}>
         <TablerIcon style={$textStyle} name={name} size={size} color={color} />
       </View>
     )
   }
 
   return (
-    <View {...viewProps} style={$containerStyleOverride}>
+    <View {...viewProps} style={[$containerStyleOverride, $iconCenterStyle]}>
       <Image style={$imageStyle} source={iconRegistry[name] as any} />
     </View>
   )
@@ -234,6 +235,11 @@ export const iconRegistry = {
   ...tablerIcons,
   // lucide-react-native icons:
   ...lucideIcons,
+}
+
+const $iconCenterStyle: ViewStyle = {
+  // justifyContent: "center",
+  // alignItems: "center",
 }
 
 const $imageStyleBase: ImageStyle = {
