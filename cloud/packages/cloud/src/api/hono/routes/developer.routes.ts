@@ -429,8 +429,8 @@ async function getShareableLink(c: AppContext) {
       return c.json({ error: "App not found" }, 404);
     }
 
-    const baseUrl = process.env.STORE_PUBLIC_URL || "https://store.mentra.glass";
-    const installUrl = `${baseUrl}/app/${packageName}`;
+    const baseUrl = process.env.STORE_PUBLIC_URL || "https://apps.mentraglass.com";
+    const installUrl = `${baseUrl}/package/${packageName}`;
 
     return c.json({ installUrl });
   } catch (error) {
