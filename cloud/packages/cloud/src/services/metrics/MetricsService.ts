@@ -107,6 +107,10 @@ export class MetricsService {
     return this._eventLoopLagCurrent;
   }
 
+  getCurrentLag(): number {
+    return this._eventLoopLagCurrent;
+  }
+
   get eventLoopLagAvgMs(): number {
     if (this._eventLoopLagSamples.length === 0) return 0;
     const sum = this._eventLoopLagSamples.reduce((a, b) => a + b, 0);
@@ -129,6 +133,20 @@ export class MetricsService {
     setTimeout(() => {
       const lag = performance.now() - start;
       this._eventLoopLagCurrent = Math.round(lag * 100) / 100; // 2 decimal places
+
+      // Log to BetterStack when event loop is degraded
+      if (this._eventLoopLagCurrent > 100) {
+        const memUsage = process.memoryUsage();
+        logger.warn(
+          {
+            lagMs: this._eventLoopLagCurrent,
+            heapUsedMB: Math.round(memUsage.heapUsed / 1048576),
+            rssMB: Math.round(memUsage.rss / 1048576),
+            feature: "event-loop-lag",
+          },
+          `Event loop lag: ${Math.round(this._eventLoopLagCurrent)}ms`,
+        );
+      }
 
       this._eventLoopLagSamples.push(this._eventLoopLagCurrent);
       if (this._eventLoopLagSamples.length > EVENT_LOOP_LAG_WINDOW_SIZE) {

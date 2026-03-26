@@ -42,6 +42,8 @@ export class ManagedStreamingExtension {
   // Track last sent status per stream+app to prevent duplicates
   private lastSentStatus: Map<string, ManagedStreamStatus> = new Map(); // key: `${streamId}:${packageName}`
 
+  private cleanupInterval?: NodeJS.Timeout;
+
   constructor(logger: Logger, streamRegistry: StreamRegistry) {
     this.logger = logger.child({ service: "ManagedStreamingExtension" });
     this.cloudflareService = new CloudflareStreamService(logger);
@@ -50,7 +52,7 @@ export class ManagedStreamingExtension {
     this.logger.info("ManagedStreamingExtension initialized");
 
     // Schedule periodic cleanup
-    setInterval(
+    this.cleanupInterval = setInterval(
       () => {
         this.performCleanup();
       },
@@ -1311,6 +1313,11 @@ export class ManagedStreamingExtension {
    * Dispose of all resources
    */
   dispose(): void {
+    if (this.cleanupInterval) {
+      clearInterval(this.cleanupInterval);
+      this.cleanupInterval = undefined;
+    }
+
     for (const lifecycle of this.lifecycleControllers.values()) {
       lifecycle.dispose();
     }

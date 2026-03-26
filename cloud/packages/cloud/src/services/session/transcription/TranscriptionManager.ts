@@ -68,6 +68,9 @@ export class TranscriptionManager {
   private DEPLOYMENT_REGION: string = process.env.DEPLOYMENT_REGION || "global";
   private IS_CHINA: boolean = this.DEPLOYMENT_REGION === "china";
 
+  // Disposal State
+  private disposed = false;
+
   // Health Monitoring
   private healthCheckInterval?: NodeJS.Timeout;
 
@@ -845,6 +848,7 @@ export class TranscriptionManager {
    * Dispose of the manager and cleanup resources
    */
   async dispose(): Promise<void> {
+    this.disposed = true;
     this.logger.info("Disposing TranscriptionManager");
 
     // Stop health monitoring
@@ -1470,6 +1474,8 @@ export class TranscriptionManager {
     this.logger.info({ subscription, delayMs }, "Scheduling stream reconnect after provider disconnect");
 
     setTimeout(async () => {
+      if (this.disposed) return;
+
       // Double-check subscription is still active
       if (!this.activeSubscriptions.has(subscription)) {
         this.logger.debug({ subscription }, "Subscription no longer active - skipping reconnect");
@@ -1549,6 +1555,8 @@ export class TranscriptionManager {
     );
 
     setTimeout(async () => {
+      if (this.disposed) return;
+
       try {
         await this.startStream(subscription);
         this.streamRetryAttempts.delete(subscription); // Success

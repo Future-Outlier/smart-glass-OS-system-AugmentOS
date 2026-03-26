@@ -197,6 +197,14 @@ app.use(async (c, next) => {
 });
 
 // ============================================================================
+// Liveness Probe
+// ============================================================================
+
+// Lightweight liveness probe — zero computation.
+// If the event loop can return 2 bytes, the process is alive.
+app.get("/livez", (c) => c.text("ok"));
+
+// ============================================================================
 // Health Check
 // ============================================================================
 
@@ -212,9 +220,17 @@ app.get("/health", (c) => {
     metricsService.setUserSessions(activeSessions.length);
     metricsService.setMiniappSessions(miniappCount);
 
+    const memUsage = process.memoryUsage();
     return c.json({
       status: "ok",
       timestamp: new Date().toISOString(),
+      heapUsedMB: Math.round(memUsage.heapUsed / 1048576),
+      heapTotalMB: Math.round(memUsage.heapTotal / 1048576),
+      rssMB: Math.round(memUsage.rss / 1048576),
+      externalMB: Math.round(memUsage.external / 1048576),
+      eventLoopLagMs: metricsService.getCurrentLag?.() ?? 0,
+      activeSessions: activeSessions.length,
+      uptimeSeconds: Math.round(process.uptime()),
       ...metricsService.toJSON(),
     });
   } catch (error) {
@@ -227,6 +243,23 @@ app.get("/health", (c) => {
       },
       500,
     );
+  }
+});
+
+// ============================================================================
+// Heap Snapshot (admin diagnostics)
+// ============================================================================
+
+// On-demand heap snapshot for memory analysis.
+// Returns JSON analyzable in Chrome DevTools (Memory tab → Load).
+// Admin auth required. Rate limit: expensive operation that briefly pauses the runtime.
+app.get("/api/admin/heap-snapshot", (c) => {
+  try {
+    const snapshot = Bun.generateHeapSnapshot();
+    return c.json(snapshot);
+  } catch (error) {
+    logger.error(error, "Failed to generate heap snapshot");
+    return c.json({ error: "Failed to generate heap snapshot" }, 500);
   }
 });
 

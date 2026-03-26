@@ -767,6 +767,14 @@ export class UserSession {
     if (this.managedStreamingExtension) this.managedStreamingExtension.dispose();
     if (this.appAudioStreamManager) this.appAudioStreamManager.dispose();
 
+    // These 4 were missing from dispose — calendarManager, deviceManager,
+    // userSettingsManager, and streamRegistry. If any hold timers, DB watchers,
+    // or event listeners, the UserSession can't be GC'd.
+    if (this.calendarManager) (this.calendarManager as any).dispose?.();
+    if (this.deviceManager) (this.deviceManager as any).dispose?.();
+    if (this.userSettingsManager) (this.userSettingsManager as any).dispose?.();
+    if (this.streamRegistry) (this.streamRegistry as any).dispose?.();
+
     // Persist location to DB cold cache and clean up
     if (this.locationManager) await this.locationManager.dispose();
 
@@ -791,8 +799,11 @@ export class UserSession {
     // Dispose UDP audio manager
     if (this.udpAudioManager) this.udpAudioManager.dispose();
 
-    // Remove from static session map
-    UserSession.sessions.delete(this.userId);
+    // Only delete from map if this session is still the registered one.
+    // A stale session's dispose() must not delete a newer session's entry.
+    if (UserSession.sessions.get(this.userId) === this) {
+      UserSession.sessions.delete(this.userId);
+    }
 
     this.logger.info(
       {

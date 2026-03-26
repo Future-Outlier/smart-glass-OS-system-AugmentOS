@@ -87,7 +87,7 @@ function handleGlassesUpgrade(req: Request, server: any, url: URL): Response | u
 
   try {
     const payload = jwt.verify(token, AUGMENTOS_AUTH_JWT_SECRET) as any;
-    const userId = payload.email;
+    const userId = payload.email?.toLowerCase();
 
     if (!userId) {
       logger.warn("Glasses upgrade rejected: no userId in token");

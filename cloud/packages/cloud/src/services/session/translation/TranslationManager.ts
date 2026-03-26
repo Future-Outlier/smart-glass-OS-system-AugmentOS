@@ -58,6 +58,9 @@ export class TranslationManager {
   // Health Monitoring
   private healthCheckInterval?: NodeJS.Timeout;
 
+  // Disposal flag
+  private disposed = false;
+
   constructor(
     private userSession: UserSession,
     private config: TranslationConfig = DEFAULT_TRANSLATION_CONFIG,
@@ -398,6 +401,7 @@ export class TranslationManager {
    * Dispose of the manager and cleanup resources
    */
   async dispose(): Promise<void> {
+    this.disposed = true;
     this.logger.info("Disposing TranslationManager");
 
     // Stop health monitoring
@@ -950,6 +954,7 @@ export class TranslationManager {
     );
 
     setTimeout(async () => {
+      if (this.disposed) return;
       try {
         await this.startStream(subscription);
         this.streamRetryAttempts.delete(subscription); // Success
