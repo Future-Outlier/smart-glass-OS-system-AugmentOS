@@ -767,13 +767,12 @@ export class UserSession {
     if (this.managedStreamingExtension) this.managedStreamingExtension.dispose();
     if (this.appAudioStreamManager) this.appAudioStreamManager.dispose();
 
-    // These 4 were missing from dispose — calendarManager, deviceManager,
-    // userSettingsManager, and streamRegistry. If any hold timers, DB watchers,
-    // or event listeners, the UserSession can't be GC'd.
-    if (this.calendarManager) (this.calendarManager as any).dispose?.();
-    if (this.deviceManager) (this.deviceManager as any).dispose?.();
-    if (this.userSettingsManager) (this.userSettingsManager as any).dispose?.();
-    if (this.streamRegistry) (this.streamRegistry as any).dispose?.();
+    // These 4 were previously missing from dispose. Each now has a proper
+    // dispose() that clears internal state (Maps, Sets, promises, snapshots).
+    if (this.calendarManager) this.calendarManager.dispose();
+    if (this.deviceManager) this.deviceManager.dispose();
+    if (this.userSettingsManager) this.userSettingsManager.dispose();
+    if (this.streamRegistry) this.streamRegistry.dispose();
 
     // Persist location to DB cold cache and clean up
     if (this.locationManager) await this.locationManager.dispose();
