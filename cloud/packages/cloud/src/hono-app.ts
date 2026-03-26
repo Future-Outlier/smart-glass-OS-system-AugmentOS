@@ -115,7 +115,7 @@ app.use(async (c, next) => {
   c.set("reqId", reqId);
 
   // Skip detailed logging for noisy endpoints (but still process them)
-  const isNoisyEndpoint = reqPath === "/health";
+  const isNoisyEndpoint = reqPath === "/health" || reqPath === "/livez";
 
   // Capture request details before processing
   const userAgent = c.req.header("user-agent") || "unknown";
@@ -243,23 +243,6 @@ app.get("/health", (c) => {
       },
       500,
     );
-  }
-});
-
-// ============================================================================
-// Heap Snapshot (admin diagnostics)
-// ============================================================================
-
-// On-demand heap snapshot for memory analysis.
-// Returns JSON analyzable in Chrome DevTools (Memory tab → Load).
-// Admin auth required. Rate limit: expensive operation that briefly pauses the runtime.
-app.get("/api/admin/heap-snapshot", (c) => {
-  try {
-    const snapshot = Bun.generateHeapSnapshot();
-    return c.json(snapshot);
-  } catch (error) {
-    logger.error(error, "Failed to generate heap snapshot");
-    return c.json({ error: "Failed to generate heap snapshot" }, 500);
   }
 });
 

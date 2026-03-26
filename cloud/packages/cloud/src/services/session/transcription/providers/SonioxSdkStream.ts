@@ -396,19 +396,10 @@ export class SonioxSdkStream implements StreamInstance {
     // Stop gap detection interval (Fix 044-3)
     this.stopGapDetection();
 
-    // Remove event listeners to prevent leaking references to this stream
-    // (and transitively to TranscriptionManager → UserSession) via the session emitter.
-    if (this.onResult) this.session.off("result", this.onResult);
-    if (this.onEndpoint) this.session.off("endpoint", this.onEndpoint);
-    if (this.onFinalized) this.session.off("finalized", this.onFinalized);
-    if (this.onFinished) this.session.off("finished", this.onFinished);
-    if (this.onError) this.session.off("error", this.onError);
-    if (this.onDisconnected) this.session.off("disconnected", this.onDisconnected);
-    if (this.onConnected) this.session.off("connected", this.onConnected);
-
     try {
       // Graceful shutdown: finish() waits for remaining results, then closes.
-      // If the session is already disconnected, close() is a no-op.
+      // Keep listeners active through finish() so finalized/finished handlers
+      // can fire and flush final transcript data via emitFinal().
       const sessionState = this.session.state;
       if (sessionState === "connected" || sessionState === "finishing") {
         try {
@@ -422,6 +413,18 @@ export class SonioxSdkStream implements StreamInstance {
       }
     } catch (error) {
       this.logger.warn({ error, streamId: this.id }, "Error during Soniox SDK stream close");
+    } finally {
+      // Remove event listeners AFTER finish() to prevent leaking references
+      // to this stream (and transitively to TranscriptionManager → UserSession)
+      // via the session emitter. Must happen after finish() because finish()
+      // may emit finalized/finished events that flush pending transcript data.
+      if (this.onResult) this.session.off("result", this.onResult);
+      if (this.onEndpoint) this.session.off("endpoint", this.onEndpoint);
+      if (this.onFinalized) this.session.off("finalized", this.onFinalized);
+      if (this.onFinished) this.session.off("finished", this.onFinished);
+      if (this.onError) this.session.off("error", this.onError);
+      if (this.onDisconnected) this.session.off("disconnected", this.onDisconnected);
+      if (this.onConnected) this.session.off("connected", this.onConnected);
     }
 
     // Reset buffers

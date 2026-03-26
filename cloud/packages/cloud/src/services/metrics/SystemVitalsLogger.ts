@@ -27,10 +27,8 @@ class OperationTimers {
   }
 
   getAndReset(): Record<string, number> {
-    const snapshot = { ...this.timers };
-    for (const key of Object.keys(this.timers)) {
-      this.timers[key] = 0;
-    }
+    const snapshot = this.timers;
+    this.timers = {};
     return snapshot;
   }
 }
@@ -71,9 +69,15 @@ class SystemVitalsLogger {
 
       for (const session of sessions) {
         totalAppWebsockets += session.appWebsockets?.size || 0;
-        // Access stream counts if available
-        totalTranscriptionStreams += (session.transcriptionManager as any)?.streams?.size || 0;
-        totalTranslationStreams += (session.translationManager as any)?.streams?.size || 0;
+        // Stream counts accessed via as any because TranscriptionManager/TranslationManager
+        // don't expose streams.size in their public type. These are internal Maps that track
+        // active Soniox/translation streams. If the property names change, this returns 0.
+        try {
+          totalTranscriptionStreams += (session.transcriptionManager as any)?.streams?.size || 0;
+          totalTranslationStreams += (session.translationManager as any)?.streams?.size || 0;
+        } catch {
+          // Swallow — property access failed, counts stay at 0
+        }
       }
 
       const operationSnapshot = operationTimers.getAndReset();
@@ -97,7 +101,7 @@ class SystemVitalsLogger {
           activeTranslationStreams: totalTranslationStreams,
 
           // Leak indicator
-          disposedSessionsPendingGC: (memoryLeakDetector as any)?.disposedAtByTag?.size || 0,
+          disposedSessionsPendingGC: memoryLeakDetector.getDisposedPendingGCCount(),
 
           // Uptime
           uptimeSeconds: Math.round((Date.now() - this.startedAt) / 1000),

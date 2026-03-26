@@ -22,6 +22,9 @@ const logger = rootLogger.child({ service: "MetricsService" });
 // How often to sample event loop lag (ms)
 const EVENT_LOOP_SAMPLE_INTERVAL_MS = 2000;
 
+// Minimum time between event loop lag warnings (ms)
+const EVENT_LOOP_LAG_WARN_COOLDOWN_MS = 30_000;
+
 // Rolling window size for event loop lag stats
 const EVENT_LOOP_LAG_WINDOW_SIZE = 150; // 150 samples × 2s = ~5 minutes of history
 
@@ -107,6 +110,8 @@ export class MetricsService {
     return this._eventLoopLagCurrent;
   }
 
+  private _lastLagWarnAt = 0;
+
   getCurrentLag(): number {
     return this._eventLoopLagCurrent;
   }
@@ -134,18 +139,22 @@ export class MetricsService {
       const lag = performance.now() - start;
       this._eventLoopLagCurrent = Math.round(lag * 100) / 100; // 2 decimal places
 
-      // Log to BetterStack when event loop is degraded
+      // Log to BetterStack when event loop is degraded (throttled to avoid log storms)
       if (this._eventLoopLagCurrent > 100) {
-        const memUsage = process.memoryUsage();
-        logger.warn(
-          {
-            lagMs: this._eventLoopLagCurrent,
-            heapUsedMB: Math.round(memUsage.heapUsed / 1048576),
-            rssMB: Math.round(memUsage.rss / 1048576),
-            feature: "event-loop-lag",
-          },
-          `Event loop lag: ${Math.round(this._eventLoopLagCurrent)}ms`,
-        );
+        const now = Date.now();
+        if (now - this._lastLagWarnAt >= EVENT_LOOP_LAG_WARN_COOLDOWN_MS) {
+          this._lastLagWarnAt = now;
+          const memUsage = process.memoryUsage();
+          logger.warn(
+            {
+              lagMs: this._eventLoopLagCurrent,
+              heapUsedMB: Math.round(memUsage.heapUsed / 1048576),
+              rssMB: Math.round(memUsage.rss / 1048576),
+              feature: "event-loop-lag",
+            },
+            `Event loop lag: ${Math.round(this._eventLoopLagCurrent)}ms`,
+          );
+        }
       }
 
       this._eventLoopLagSamples.push(this._eventLoopLagCurrent);

@@ -60,6 +60,7 @@ export class TranslationManager {
 
   // Disposal flag
   private disposed = false;
+  private pendingTimers = new Set<NodeJS.Timeout>();
 
   constructor(
     private userSession: UserSession,
@@ -402,6 +403,11 @@ export class TranslationManager {
    */
   async dispose(): Promise<void> {
     this.disposed = true;
+    // Clear all pending retry timers to release references to this manager
+    for (const timer of this.pendingTimers) {
+      clearTimeout(timer);
+    }
+    this.pendingTimers.clear();
     this.logger.info("Disposing TranslationManager");
 
     // Stop health monitoring
@@ -953,7 +959,8 @@ export class TranslationManager {
       "Scheduling translation stream retry",
     );
 
-    setTimeout(async () => {
+    const retryTimer = setTimeout(async () => {
+      this.pendingTimers.delete(retryTimer);
       if (this.disposed) return;
       try {
         await this.startStream(subscription);
@@ -962,6 +969,7 @@ export class TranslationManager {
         this.logger.warn({ subscription, attempt, error }, "Translation stream retry failed");
       }
     }, delay);
+    this.pendingTimers.add(retryTimer);
   }
 
   private async waitForStreamReady(stream: TranslationStreamInstance, timeoutMs: number): Promise<void> {
