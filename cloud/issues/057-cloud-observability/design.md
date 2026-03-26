@@ -91,47 +91,104 @@ dispose(): void {
 
 **File:** `services/session/transcription/providers/SonioxSdkStream.ts`
 
-**Problem:** `initialize()` registers 7 `.on()` listeners on `this.session` (result, endpoint, finalized, finished, error, disconnected, connected). `close()` never removes them. Each listener closure captures `this` (the SonioxSdkStream), which holds `callbacks` → `TranscriptionManager` → `UserSession`. The entire chain is pinned until the Soniox SDK session object is collected.
+**Context:** `this.session` here is a Soniox SDK `RealtimeSttSession` — a WebSocket connection to Soniox's speech-to-text API. This is NOT a `UserSession`. The naming is unfortunate. One `SonioxSdkStream` wraps one Soniox real-time transcription connection. `TranscriptionManager` creates these when a user starts transcription.
 
-**Before:**
+**Problem:** `initialize()` registers 7 `.on()` listeners on `this.session` (result, endpoint, finalized, finished, error, disconnected, connected). `close()` never removes them. Each listener is an arrow function that captures `this` (the SonioxSdkStream), which holds `callbacks` → `TranscriptionManager` → `UserSession`. The reference chain:
+
+```
+Soniox session object → listener closures → SonioxSdkStream → TranscriptionManager → UserSession
+                         (never removed)     (can't be GC'd)   (can't be GC'd)       (can't be GC'd)
+```
+
+Even after `close()`, the Soniox SDK's session object still holds the listener array. Until that object is garbage collected, the entire chain is pinned in memory.
+
+**Before (initialize):**
 ```ts
-// close() — line 372
+// Listeners registered as anonymous arrow functions — no way to remove them later
+this.session.on("result", (result: RealtimeResult) => this.handleResult(result));
+this.session.on("endpoint", () => this.handleEndpoint());
+this.session.on("finalized", () => this.handleFinalized());
+this.session.on("finished", () => this.handleFinished());
+this.session.on("error", (error: Error) => this.handleError(error));
+this.session.on("disconnected", (reason?: string) => this.handleDisconnected(reason));
+this.session.on("connected", () => { /* ... */ });
+```
+
+**Before (close):**
+```ts
 async close(): Promise<void> {
   if (this.disposed) return;
   this.disposed = true;
   this.state = StreamState.CLOSING;
   this.stopGapDetection();
-
+  // No listener cleanup — they stay registered forever
   try {
     const sessionState = this.session.state;
     // ... finish/close logic
 ```
 
-**After:**
+**After (initialize) — store references, then register:**
 ```ts
-// close() — line 372
+// Store listener references as class fields so we can .off() each one in close()
+this.onResult = (result: RealtimeResult) => this.handleResult(result);
+this.onEndpoint = () => this.handleEndpoint();
+this.onFinalized = () => this.handleFinalized();
+this.onFinished = () => this.handleFinished();
+this.onError = (error: Error) => this.handleError(error);
+this.onDisconnected = (reason?: string) => this.handleDisconnected(reason);
+this.onConnected = () => { /* ... same connected handler ... */ };
+
+// Register using the stored references
+this.session.on("result", this.onResult);
+this.session.on("endpoint", this.onEndpoint);
+this.session.on("finalized", this.onFinalized);
+this.session.on("finished", this.onFinished);
+this.session.on("error", this.onError);
+this.session.on("disconnected", this.onDisconnected);
+this.session.on("connected", this.onConnected);
+```
+
+**After (close) — remove each listener individually:**
+```ts
 async close(): Promise<void> {
   if (this.disposed) return;
   this.disposed = true;
   this.state = StreamState.CLOSING;
   this.stopGapDetection();
 
-  // Remove all event listeners to prevent leaking references to this stream
-  // (and transitively to TranscriptionManager → UserSession) via the session emitter.
-  try {
-    (this.session as any).removeAllListeners?.();
-  } catch {
-    // Swallow — some session states may not support this
-  }
+  // Remove event listeners to break the reference chain
+  if (this.onResult) this.session.off("result", this.onResult);
+  if (this.onEndpoint) this.session.off("endpoint", this.onEndpoint);
+  if (this.onFinalized) this.session.off("finalized", this.onFinalized);
+  if (this.onFinished) this.session.off("finished", this.onFinished);
+  if (this.onError) this.session.off("error", this.onError);
+  if (this.onDisconnected) this.session.off("disconnected", this.onDisconnected);
+  if (this.onConnected) this.session.off("connected", this.onConnected);
 
   try {
     const sessionState = this.session.state;
     // ... finish/close logic (unchanged)
 ```
 
-**Note on `as any`:** The Soniox SDK's `RealtimeSttSession` TypeScript type does not declare `removeAllListeners()`, but the runtime object is an EventEmitter that supports it. The cast is necessary to satisfy the TypeScript compiler. The optional chaining (`?.`) is a safety net — if the method doesn't exist at runtime, it's a no-op instead of a crash.
+**New class fields added:**
+```ts
+private onResult?: (result: RealtimeResult) => void;
+private onEndpoint?: () => void;
+private onFinalized?: () => void;
+private onFinished?: () => void;
+private onError?: (error: Error) => void;
+private onDisconnected?: (reason?: string) => void;
+private onConnected?: () => void;
+```
 
-**How to verify:** Create a transcription stream, then dispose the session. The stream's event listeners should no longer fire after close(). In BetterStack, "Soniox SDK stream error" logs should not appear for already-closed streams.
+### Decision Log for A2
+
+| Decision | Alternatives considered | Why we chose this |
+|----------|------------------------|-------------------|
+| Store listener refs + use typed `.off()` per listener | `(this.session as any).removeAllListeners()` | **First attempt used `removeAllListeners()` — failed.** The Soniox SDK's `RealtimeSttSession` TypeScript type doesn't expose `removeAllListeners()`. The SDK internally uses a custom `TypedEmitter` (not Node's `EventEmitter`) which does have the method at runtime, but the type definition only exposes `.on()`, `.off()`, and `.once()`. First attempt cast to `any` to bypass TypeScript — this broke the CI build (`TS2339: Property 'removeAllListeners' does not exist on type 'RealtimeSttSession'`). Second attempt added `as any` cast + optional chaining — built successfully but was flagged in review as a code smell. Final approach: store each listener as a class field, register with `.on()`, clean up with `.off()` — fully typed, no casts, uses the SDK's documented API. |
+| Remove listeners before `session.finish()` | Remove listeners after `session.finish()` | `finish()` may emit `finalized` and `finished` events as part of graceful shutdown. However, by the time `close()` is called, the stream is being torn down — the `SonioxSdkStream` is disposed and we don't want to process any more events. Removing listeners first prevents any callbacks from firing on a half-disposed stream. The transcription data has already been flushed by this point (the stream was either idle or the user disconnected). |
+
+**How to verify:** Create a transcription stream, then dispose the session. The stream's event listeners should no longer fire after close(). In BetterStack, "Soniox SDK stream error" logs should not appear for already-closed streams. `MemoryLeakDetector` should show "Object finalized by GC" for the disposed session within 60 seconds.
 
 ---
 

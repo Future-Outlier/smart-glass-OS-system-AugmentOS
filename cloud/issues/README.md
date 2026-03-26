@@ -134,6 +134,19 @@ Table of all changes: component, file, what changes.
 
 What changes, why, code snippets showing before/after.
 
+## Decision Log
+
+| Decision | Alternatives considered | Why we chose this |
+| -------- | ----------------------- | ----------------- |
+
+Every non-obvious implementation decision gets a row. Include things that
+didn't work (build failures, runtime issues, API mismatches) and why the
+approach was changed. If the design evolved during implementation, document
+what changed and why — don't silently overwrite the original decision.
+
+The goal: someone reading this months later should understand not just what
+was built, but what was tried, what failed, and why the final approach won.
+
 ## Testing
 
 How to verify it works. Edge cases to check.
@@ -142,6 +155,14 @@ How to verify it works. Edge cases to check.
 
 Deployment order, backward compatibility notes.
 ```
+
+**Keeping the design doc current:** The design doc is the source of truth for what was actually built. If implementation reveals that the original design doesn't work (a method doesn't exist on a type, a library doesn't support an API, a runtime behavior differs from what we expected), update the design doc:
+
+1. **Update the "after" code** to reflect what was actually shipped
+2. **Add the failed approach to the Decision Log** with why it didn't work
+3. **Don't delete the original thinking** — move it to "Alternatives considered" so future readers understand the journey
+
+The design doc is not a spec (what we plan to do) — it's a record of what we did and why. It should match the code at all times.
 
 ## Writing Style
 
