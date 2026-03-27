@@ -43,6 +43,7 @@ export class ManagedStreamingExtension {
   private lastSentStatus: Map<string, ManagedStreamStatus> = new Map(); // key: `${streamId}:${packageName}`
 
   private cleanupInterval?: NodeJS.Timeout;
+  private playbackUrlTimeout?: NodeJS.Timeout;
 
   constructor(logger: Logger, streamRegistry: StreamRegistry) {
     this.logger = logger.child({ service: "ManagedStreamingExtension" });
@@ -1005,7 +1006,7 @@ export class ManagedStreamingExtension {
     this.pollingIntervals.set(userId, pollInterval);
 
     // Set timeout to stop polling after 60 seconds
-    setTimeout(() => {
+    this.playbackUrlTimeout = setTimeout(() => {
       if (this.pollingIntervals.get(userId) === pollInterval) {
         clearInterval(pollInterval);
         this.pollingIntervals.delete(userId);
@@ -1017,6 +1018,7 @@ export class ManagedStreamingExtension {
           "⏱️ Stopped polling for playback URLs after timeout",
         );
       }
+      this.playbackUrlTimeout = undefined;
     }, 60000);
   }
 
@@ -1313,6 +1315,11 @@ export class ManagedStreamingExtension {
    * Dispose of all resources
    */
   dispose(): void {
+    if (this.playbackUrlTimeout) {
+      clearTimeout(this.playbackUrlTimeout);
+      this.playbackUrlTimeout = undefined;
+    }
+
     if (this.cleanupInterval) {
       clearInterval(this.cleanupInterval);
       this.cleanupInterval = undefined;
