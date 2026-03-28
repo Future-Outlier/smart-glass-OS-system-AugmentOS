@@ -31,71 +31,71 @@ With a SIGTERM handler, the server sends WebSocket close frames to every connect
 **Implementation:**
 
 ```typescript
-let isShuttingDown = false
+let isShuttingDown = false;
 
 async function gracefulShutdown(signal: string): Promise<void> {
-  if (isShuttingDown) return // prevent double-shutdown
-  isShuttingDown = true
+  if (isShuttingDown) return; // prevent double-shutdown
+  isShuttingDown = true;
 
-  logger.info({signal}, `${signal} received — starting graceful shutdown`)
+  logger.info({ signal }, `${signal} received — starting graceful shutdown`);
 
   // 1. Close all glasses WebSocket connections
-  const sessions = UserSession.getAllSessions()
-  let closedGlasses = 0
-  let closedApps = 0
+  const sessions = UserSession.getAllSessions();
+  let closedGlasses = 0;
+  let closedApps = 0;
 
   for (const session of sessions) {
     try {
       // Close glasses WebSocket with "Going Away" code
       if (session.websocket) {
-        session.websocket.close(1001, "Server shutting down")
-        closedGlasses++
+        session.websocket.close(1001, "Server shutting down");
+        closedGlasses++;
       }
       // Close all app WebSockets for this session
       if (session.appWebsockets) {
         for (const [, appWs] of session.appWebsockets) {
           try {
-            appWs.close(1001, "Server shutting down")
-            closedApps++
+            appWs.close(1001, "Server shutting down");
+            closedApps++;
           } catch {
             // Swallow — WebSocket might already be closed
           }
         }
       }
     } catch (error) {
-      logger.warn({error, userId: session.userId}, "Error closing WebSocket during shutdown")
+      logger.warn({ error, userId: session.userId }, "Error closing WebSocket during shutdown");
     }
   }
 
   logger.info(
-    {closedGlasses, closedApps, totalSessions: sessions.length},
+    { closedGlasses, closedApps, totalSessions: sessions.length },
     `Closed ${closedGlasses} glasses + ${closedApps} app WebSockets`,
-  )
+  );
 
   // 2. Stop timers and services
   try {
-    systemVitalsLogger.stop()
-    appCache.stop()
-    metricsService.stop()
+    systemVitalsLogger.stop();
+    appCache.stop();
+    metricsService.stop();
   } catch {
     // Swallow — timers might already be stopped
   }
 
   // 3. Close MongoDB
   try {
-    const mongoose = await import("mongoose")
-    await mongoose.default.connection.close()
-    logger.info("MongoDB connection closed")
+    const mongoose = await import("mongoose");
+    await mongoose.default.connection.close();
+    logger.info("MongoDB connection closed");
   } catch {
     // Swallow — connection might already be closed
   }
 
-  logger.info("Graceful shutdown complete — exiting")
-  process.exit(0)
+  logger.info("Graceful shutdown complete — exiting");
+  process.exit(0);
 }
 
-process.on("SIGTERM", () => gracefulShutdown("SIGTERM"))
-process.on("SIGINT", () => gracefulShutdown("SIGINT")) // for local dev (Ctrl+C)
+process.on("SIGTERM", () => gracefulShutdown("SIGTERM"));
+process.on("SIGINT", () => gracefulShutdown("SIGINT")); // for local dev (Ctrl+C)
 ```
 
 **Why code 1001:** RFC 6455 defines 1001 as "Going Away" — "an endpoint is going away, such as a server going down." This is the semantically correct code for a server shutdown. The mobile client should already handle this — it's a standard WebSocket close code.
@@ -112,7 +112,7 @@ Export `isShuttingDown` from index.ts (or a shared module) and check it at the t
 
 ```typescript
 if (isShuttingDown) {
-  return c.json({status: "draining", message: "Server is shutting down"}, 503)
+  return c.json({ status: "draining", message: "Server is shutting down" }, 503);
 }
 ```
 
@@ -130,7 +130,7 @@ In `handleUpgrade()`, add at the top:
 
 ```typescript
 if (isShuttingDown) {
-  return new Response("Server is shutting down", {status: 503})
+  return new Response("Server is shutting down", { status: 503 });
 }
 ```
 
@@ -193,3 +193,5 @@ if (isShuttingDown) {
 | WebSocket close frame on deploy    | None (SIGKILL)                    | 1001 "Going Away"    |
 | User-visible disruption per deploy | "Disconnected" banner, retry loop | Brief reconnect, <2s |
 | Shutdown time (SIGTERM → exit)     | 30s (grace period → SIGKILL)      | <1s                  |
+
+<!-- Test deploy: 2026-03-28T19:40:00Z -->
