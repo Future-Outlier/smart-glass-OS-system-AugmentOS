@@ -235,7 +235,12 @@ async function gracefulShutdown(signal: string): Promise<void> {
     // Connection might already be closed
   }
 
-  logger.info("Graceful shutdown complete — exiting");
+  // Wait 2 seconds for WebSocket close frames to flush to clients before exiting.
+  // Without this delay, process.exit(0) can kill the runtime before Bun sends
+  // the close handshake on the wire, making the shutdown look like a crash.
+  logger.info("Graceful shutdown complete — waiting 2s for close frames to flush");
+  await new Promise((resolve) => setTimeout(resolve, 2000));
+  logger.info("Draining complete — exiting");
   process.exit(0);
 }
 
