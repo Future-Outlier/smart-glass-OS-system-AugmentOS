@@ -13,6 +13,7 @@
 import dotenv from "dotenv";
 dotenv.config();
 
+import mongoose from "mongoose";
 import * as mongoConnection from "./connections/mongodb.connection";
 import honoApp from "./hono-app";
 import * as AppUptimeService from "./services/core/app-uptime.service";
@@ -21,7 +22,9 @@ import { memoryTelemetryService } from "./services/debug/MemoryTelemetryService"
 import { logger as rootLogger } from "./services/logging/pino-logger";
 import { metricsService } from "./services/metrics";
 import { systemVitalsLogger } from "./services/metrics/SystemVitalsLogger";
+import { setShuttingDown } from "./services/shutdown";
 import { udpAudioServer } from "./services/udp/UdpAudioServer";
+import UserSession from "./services/session/UserSession";
 import { handleUpgrade, websocketHandlers } from "./services/websocket/bun-websocket";
 // import generateCoreToken from "./utils/generateCoreToken";
 
@@ -167,6 +170,77 @@ logger.info(`\n
     ☁️☁️☁️      ⚡ Pure Hono + Bun Native ⚡
     ☁️☁️☁️☁️☁️☁️☁️☁️☁️☁️☁️☁️☁️☁️☁️☁️☁️☁️☁️☁️☁️☁️☁️☁️☁️☁️☁️☁️☁️☁️☁️☁️☁️☁️☁️☁️☁️☁️
     ☁️☁️☁️☁️☁️☁️☁️☁️☁️☁️☁️☁️☁️☁️☁️☁️☁️☁️☁️☁️☁️☁️☁️☁️☁️☁️☁️☁️☁️☁️☁️☁️☁️☁️☁️☁️☁️☁️\n`);
+
+// ---------------------------------------------------------------------------
+// Graceful shutdown on SIGTERM/SIGINT
+// Sends WebSocket close frames to all connected clients so phones detect
+// the disconnect immediately (<2s) instead of waiting for ping timeout (30-60s).
+// See: cloud/issues/063-graceful-shutdown/spec.md
+// ---------------------------------------------------------------------------
+
+let isShutdownInProgress = false;
+
+async function gracefulShutdown(signal: string): Promise<void> {
+  if (isShutdownInProgress) return;
+  isShutdownInProgress = true;
+  setShuttingDown(); // shared flag — health check returns 503, new WS upgrades rejected
+
+  logger.info({ signal }, `${signal} received — starting graceful shutdown`);
+
+  // 1. Close all WebSocket connections with close frames
+  const sessions = UserSession.getAllSessions();
+  let closedGlasses = 0;
+  let closedApps = 0;
+
+  for (const session of sessions) {
+    try {
+      if (session.websocket) {
+        session.websocket.close(1001, "Server shutting down");
+        closedGlasses++;
+      }
+      if (session.appWebsockets) {
+        for (const [, appWs] of session.appWebsockets) {
+          try {
+            appWs.close(1001, "Server shutting down");
+            closedApps++;
+          } catch {
+            // WebSocket might already be closed
+          }
+        }
+      }
+    } catch (error) {
+      logger.warn({ error, userId: session.userId }, "Error closing WebSocket during shutdown");
+    }
+  }
+
+  logger.info(
+    { closedGlasses, closedApps, totalSessions: sessions.length },
+    `Closed ${closedGlasses} glasses + ${closedApps} app WebSockets`,
+  );
+
+  // 2. Stop timers and services
+  try {
+    systemVitalsLogger.stop();
+    appCache.stop();
+    metricsService.stop();
+  } catch {
+    // Timers might already be stopped
+  }
+
+  // 3. Close MongoDB connection
+  try {
+    await mongoose.connection.close();
+    logger.info("MongoDB connection closed");
+  } catch {
+    // Connection might already be closed
+  }
+
+  logger.info("Graceful shutdown complete — exiting");
+  process.exit(0);
+}
+
+process.on("SIGTERM", () => gracefulShutdown("SIGTERM"));
+process.on("SIGINT", () => gracefulShutdown("SIGINT"));
 
 // Generate core token for debugging with postman.
 // generateCoreToken

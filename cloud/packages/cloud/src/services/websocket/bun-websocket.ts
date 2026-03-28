@@ -27,6 +27,7 @@ import {
 import { SYSTEM_DASHBOARD_PACKAGE_NAME } from "../core/app.service";
 import { logger as rootLogger } from "../logging/pino-logger";
 import { operationTimers } from "../metrics/SystemVitalsLogger";
+import { isShuttingDown } from "../shutdown";
 import { metricsService } from "../metrics";
 import { PosthogService } from "../logging/posthog.service";
 import UserSession from "../session/UserSession";
@@ -56,6 +57,11 @@ const GRACE_PERIOD_CLEANUP_ENABLED = true;
  * Returns true if upgrade was successful, false otherwise.
  */
 export function handleUpgrade(req: Request, server: any): Response | undefined {
+  // A3: Reject new WebSocket upgrades during graceful shutdown
+  if (isShuttingDown()) {
+    return new Response("Server is shutting down", { status: 503 });
+  }
+
   const url = new URL(req.url);
   const path = url.pathname;
 

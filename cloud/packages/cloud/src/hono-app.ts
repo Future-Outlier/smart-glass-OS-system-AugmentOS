@@ -13,6 +13,7 @@ import path from "path";
 
 import { CORS_ORIGINS } from "./config/cors";
 import { logger as rootLogger } from "./services/logging/pino-logger";
+import { isShuttingDown } from "./services/shutdown";
 import { metricsService } from "./services/metrics";
 import UserSession from "./services/session/UserSession";
 import { udpAudioServer } from "./services/udp/UdpAudioServer";
@@ -209,6 +210,11 @@ app.get("/livez", (c) => c.text("ok"));
 // ============================================================================
 
 app.get("/health", (c) => {
+  // A2: Return 503 during graceful shutdown so LB stops routing to this pod
+  if (isShuttingDown()) {
+    return c.json({ status: "draining", message: "Server is shutting down" }, 503);
+  }
+
   const t0 = performance.now();
   try {
     const activeSessions = UserSession.getAllSessions();
