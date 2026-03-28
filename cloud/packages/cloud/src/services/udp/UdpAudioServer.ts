@@ -20,6 +20,7 @@
  */
 
 import { logger as rootLogger } from "../logging/pino-logger";
+import { operationTimers } from "../metrics/SystemVitalsLogger";
 import type { UserSession } from "../session/UserSession";
 
 import { NONCE_SIZE, TAG_SIZE } from "./UdpCrypto";
@@ -256,9 +257,11 @@ export class UdpAudioServer {
     // Forward reordered packets to AudioManager
     // AudioManager handles LC3→PCM decoding if needed based on client's audio config
     try {
+      const t0 = performance.now();
       for (const audioChunk of packetsToProcess) {
         session.audioManager.processAudioData(audioChunk, "udp");
       }
+      operationTimers.addTiming("audioProcessing", performance.now() - t0);
     } catch (error) {
       this.logger.error(
         {

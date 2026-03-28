@@ -34,6 +34,7 @@ import {
 } from "@mentra/sdk";
 
 import App from "../../../models/app.model";
+import { appCache } from "../../core/app-cache.service";
 import { SimplePermissionChecker } from "../../permissions/simple-permission-checker";
 import { metricsService } from "../../metrics/MetricsService";
 import { IWebSocket, WebSocketReadyState } from "../../websocket/types";
@@ -670,7 +671,7 @@ function handleOwnershipRelease(userSession: UserSession, message: OwnershipRele
  */
 async function checkCameraPermission(packageName: string, userSession: UserSession, logger: Logger): Promise<boolean> {
   try {
-    const app = await App.findOne({ packageName });
+    const app = appCache.getByPackageName(packageName) || (await App.findOne({ packageName }).lean());
     if (!app) {
       logger.warn({ packageName, userId: userSession.userId }, "App not found when checking camera permissions");
       return false;

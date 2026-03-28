@@ -16,6 +16,7 @@ import { memoryTelemetryService } from "../../../services/debug/MemoryTelemetryS
 import { logger as rootLogger } from "../../../services/logging/pino-logger";
 import type { AppEnv, AppContext } from "../../../types/hono";
 import { isMentraAdmin } from "../../../services/core/admin.utils";
+import { appCache } from "../../../services/core/app-cache.service";
 import { LeanDocument, Types } from "mongoose";
 
 const logger = rootLogger.child({ service: "admin.routes" });
@@ -192,6 +193,7 @@ async function createTestSubmission(c: AppContext) {
     });
 
     await testApp.save();
+    appCache.invalidate(); // fire-and-forget
 
     return c.json(
       {
@@ -371,6 +373,7 @@ async function approveApp(c: AppContext) {
     appDoc.reviewedAt = new Date();
 
     await appDoc.save();
+    appCache.invalidate(); // fire-and-forget
 
     // Send approval email to developer/organization contact (non-blocking)
     try {
@@ -438,6 +441,7 @@ async function rejectApp(c: AppContext) {
     appDoc.reviewedAt = new Date();
 
     await appDoc.save();
+    appCache.invalidate(); // fire-and-forget
 
     // Send rejection email to developer/organization contact (non-blocking)
     try {

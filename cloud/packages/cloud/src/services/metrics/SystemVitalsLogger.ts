@@ -14,11 +14,14 @@
 import { logger as rootLogger } from "../logging/pino-logger";
 import { UserSession } from "../session/UserSession";
 import { memoryLeakDetector } from "../debug/MemoryLeakDetector";
+import { mongoQueryStats } from "../../connections/mongodb.connection";
 
 const logger = rootLogger.child({ service: "SystemVitalsLogger" });
 
 const VITALS_INTERVAL_MS = 30_000; // 30 seconds
 const GC_PROBE_INTERVAL_MS = 60_000; // 60 seconds
+const GAP_DETECTOR_INTERVAL_MS = 1_000; // 1 second
+const GAP_THRESHOLD_MS = 2_000; // log when interval takes >2x expected (event loop blocked >1s)
 
 /**
  * Operation timing accumulator.
@@ -44,6 +47,8 @@ export const operationTimers = new OperationTimers();
 class SystemVitalsLogger {
   private vitalsInterval?: NodeJS.Timeout;
   private gcProbeInterval?: NodeJS.Timeout;
+  private gapDetectorInterval?: NodeJS.Timeout;
+  private lastGapTick: number = Date.now();
   private startedAt: number = Date.now();
 
   start(): void {
@@ -59,9 +64,13 @@ class SystemVitalsLogger {
       this.runGcProbe();
     }, GC_PROBE_INTERVAL_MS);
 
+    // B1: Event loop gap detector — catches ALL blocking regardless of cause.
+    // If the 1s interval takes >2s, the event loop was blocked for the excess.
+    this.startGapDetector();
+
     logger.info(
       { vitalsIntervalMs: VITALS_INTERVAL_MS, gcProbeIntervalMs: GC_PROBE_INTERVAL_MS },
-      "SystemVitalsLogger started (vitals + GC probe)",
+      "SystemVitalsLogger started (vitals + GC probe + gap detector)",
     );
   }
 
@@ -74,7 +83,42 @@ class SystemVitalsLogger {
       clearInterval(this.gcProbeInterval);
       this.gcProbeInterval = undefined;
     }
+    if (this.gapDetectorInterval) {
+      clearInterval(this.gapDetectorInterval);
+      this.gapDetectorInterval = undefined;
+    }
     logger.info("SystemVitalsLogger stopped");
+  }
+
+  /**
+   * B1: Event loop gap detector.
+   * A 1-second setInterval that records Date.now() each tick.
+   * If the interval between ticks exceeds 2000ms, something blocked the event loop
+   * for the excess duration. This is the definitive signal — it catches GC, MongoDB
+   * callback storms, audio processing, Bun runtime stalls, anything.
+   */
+  private startGapDetector(): void {
+    this.lastGapTick = Date.now();
+    this.gapDetectorInterval = setInterval(() => {
+      const now = Date.now();
+      const elapsed = now - this.lastGapTick;
+      this.lastGapTick = now;
+
+      if (elapsed > GAP_THRESHOLD_MS) {
+        const gapMs = elapsed - GAP_DETECTOR_INTERVAL_MS;
+        logger.warn(
+          {
+            feature: "event-loop-gap",
+            gapMs,
+            expectedMs: GAP_DETECTOR_INTERVAL_MS,
+            actualMs: elapsed,
+            rssMB: Math.round(process.memoryUsage().rss / 1048576),
+            activeSessions: UserSession.getAllSessions().length,
+          },
+          `Event loop gap: ${gapMs}ms (expected ${GAP_DETECTOR_INTERVAL_MS}ms, actual ${elapsed}ms)`,
+        );
+      }
+    }, GAP_DETECTOR_INTERVAL_MS);
   }
 
   /**
@@ -131,6 +175,7 @@ class SystemVitalsLogger {
     try {
       const memUsage = process.memoryUsage();
       const sessions = UserSession.getAllSessions();
+      const mongoStats = mongoQueryStats.getAndReset();
 
       let totalAppWebsockets = 0;
       let totalTranscriptionStreams = 0;
@@ -199,6 +244,11 @@ class SystemVitalsLogger {
           glassesWebSockets,
           totalConnections,
           micActiveCount,
+
+          // B2: MongoDB cumulative blocking (how much event loop time MongoDB consumed)
+          mongoQueryCount: mongoStats.count,
+          mongoTotalBlockingMs: Math.round(mongoStats.totalMs),
+          mongoMaxQueryMs: Math.round(mongoStats.maxMs * 10) / 10,
 
           // Leak indicator
           disposedSessionsPendingGC: memoryLeakDetector.getDisposedPendingGCCount(),

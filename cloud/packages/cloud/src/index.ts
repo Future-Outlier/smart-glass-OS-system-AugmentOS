@@ -16,6 +16,7 @@ dotenv.config();
 import * as mongoConnection from "./connections/mongodb.connection";
 import honoApp from "./hono-app";
 import * as AppUptimeService from "./services/core/app-uptime.service";
+import { appCache } from "./services/core/app-cache.service";
 import { memoryTelemetryService } from "./services/debug/MemoryTelemetryService";
 import { logger as rootLogger } from "./services/logging/pino-logger";
 import { metricsService } from "./services/metrics";
@@ -31,8 +32,17 @@ const logger = rootLogger.child({ service: "index" });
 // Initialize MongoDB connection
 mongoConnection
   .init()
-  .then(() => {
+  .then(async () => {
     logger.info("MongoDB connection initialized successfully");
+
+    // Initialize app cache — loads all ~1,314 apps (~2MB) into memory.
+    // Must happen after MongoDB connects and before server accepts connections.
+    // See: cloud/issues/062-mongodb-latency/spec.md (B3)
+    try {
+      await appCache.initialize();
+    } catch (error) {
+      logger.error(error, "App cache initialization failed — hot-path queries will fall back to DB");
+    }
 
     // Log admin emails from environment for debugging
     const adminEmails = process.env.ADMIN_EMAILS || "";
