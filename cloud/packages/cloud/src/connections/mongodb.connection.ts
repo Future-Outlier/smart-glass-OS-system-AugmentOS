@@ -10,8 +10,35 @@ const SLOW_QUERY_MS = parseInt(process.env.MONGOOSE_SLOW_QUERY_MS || "0", 10);
 
 const logger = rootLogger.child({ service: "mongodb" });
 
+/**
+ * Cumulative MongoDB query stats — read and reset by SystemVitalsLogger every 30s.
+ * Records all queries exceeding MONGOOSE_SLOW_QUERY_MS threshold.
+ */
+class MongoQueryStats {
+  count = 0;
+  totalMs = 0;
+  maxMs = 0;
+
+  record(durationMs: number): void {
+    this.count++;
+    this.totalMs += durationMs;
+    if (durationMs > this.maxMs) this.maxMs = durationMs;
+  }
+
+  getAndReset(): { count: number; totalMs: number; maxMs: number } {
+    const snapshot = { count: this.count, totalMs: this.totalMs, maxMs: this.maxMs };
+    this.count = 0;
+    this.totalMs = 0;
+    this.maxMs = 0;
+    return snapshot;
+  }
+}
+
+export const mongoQueryStats = new MongoQueryStats();
+
 // Mongoose plugin that wraps query execution with timing.
 // Logs a warning through Pino (→ BetterStack) for queries exceeding the threshold.
+// Also records cumulative stats for SystemVitalsLogger.
 function slowQueryPlugin(schema: mongoose.Schema): void {
   if (SLOW_QUERY_MS <= 0) return;
 
@@ -39,6 +66,9 @@ function slowQueryPlugin(schema: mongoose.Schema): void {
           },
           `Slow MongoDB query: ${collection}.${operation} ${Math.round(durationMs)}ms`,
         );
+
+        // Record in cumulative stats for SystemVitalsLogger
+        mongoQueryStats.record(durationMs);
       }
     },
   );

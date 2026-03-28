@@ -26,6 +26,7 @@ import {
 
 import { SYSTEM_DASHBOARD_PACKAGE_NAME } from "../core/app.service";
 import { logger as rootLogger } from "../logging/pino-logger";
+import { operationTimers } from "../metrics/SystemVitalsLogger";
 import { metricsService } from "../metrics";
 import { PosthogService } from "../logging/posthog.service";
 import UserSession from "../session/UserSession";
@@ -398,6 +399,7 @@ async function handleGlassesConnectionInit(
  * Handle glasses WebSocket message
  */
 async function handleGlassesMessage(ws: GlassesServerWebSocket, message: string | Buffer): Promise<void> {
+  const t0 = performance.now();
   metricsService.incrementClientMessagesIn();
   const { userId } = ws.data;
   const userSession = UserSession.getById(userId);
@@ -444,6 +446,8 @@ async function handleGlassesMessage(ws: GlassesServerWebSocket, message: string 
     await userSession.handleGlassesMessage(parsed);
   } catch (error) {
     userSession.logger.error({ error }, "Error processing glasses message");
+  } finally {
+    operationTimers.addTiming("glassesMessage", performance.now() - t0);
   }
 }
 
@@ -572,6 +576,7 @@ async function handleAppOpen(ws: AppServerWebSocket): Promise<void> {
  * Handle app WebSocket message
  */
 async function handleAppMessage(ws: AppServerWebSocket, message: string | Buffer): Promise<void> {
+  const t0 = performance.now();
   metricsService.incrementMiniappMessagesIn();
   const { userId, packageName } = ws.data;
 
@@ -663,6 +668,8 @@ async function handleAppMessage(ws: AppServerWebSocket, message: string | Buffer
   } catch (error) {
     logger.error({ error, userId, packageName }, "Error processing app message");
     ws.close(1011, "Internal server error");
+  } finally {
+    operationTimers.addTiming("appMessage", performance.now() - t0);
   }
 }
 
