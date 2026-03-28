@@ -10,6 +10,7 @@ on:
       - hotfix/cloud-observability
       - hotfix/crash-diagnostics
       - cloud/062-mongodb-audit
+      - hotfix/graceful-shutdown
     paths:
       - "cloud/**"
       - ".github/workflows/porter-debug.yml"

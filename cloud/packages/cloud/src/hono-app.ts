@@ -13,6 +13,7 @@ import path from "path";
 
 import { CORS_ORIGINS } from "./config/cors";
 import { logger as rootLogger } from "./services/logging/pino-logger";
+import { isShuttingDown } from "./services/shutdown";
 import { metricsService } from "./services/metrics";
 import UserSession from "./services/session/UserSession";
 import { udpAudioServer } from "./services/udp/UdpAudioServer";
@@ -96,6 +97,17 @@ app.use(
     credentials: true,
   }),
 );
+
+// Drain middleware — reject all requests during graceful shutdown.
+// This prevents REST requests from hitting a dying pod that has no sessions.
+// Without this, the LB can route requests here during the 30s SIGTERM grace period.
+// /livez is excluded so Kubernetes can still check if the process is alive.
+app.use(async (c, next) => {
+  if (isShuttingDown() && c.req.path !== "/livez") {
+    return c.json({ status: "draining", message: "Server is shutting down" }, 503);
+  }
+  await next();
+});
 
 // Request logging middleware (replaces pino-http)
 // Logs all HTTP requests to Better Stack with detailed information
@@ -209,6 +221,11 @@ app.get("/livez", (c) => c.text("ok"));
 // ============================================================================
 
 app.get("/health", (c) => {
+  // A2: Return 503 during graceful shutdown so LB stops routing to this pod
+  if (isShuttingDown()) {
+    return c.json({ status: "draining", message: "Server is shutting down" }, 503);
+  }
+
   const t0 = performance.now();
   try {
     const activeSessions = UserSession.getAllSessions();
