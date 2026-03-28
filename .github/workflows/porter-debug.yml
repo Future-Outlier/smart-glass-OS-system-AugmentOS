@@ -9,6 +9,7 @@ on:
       - cloud/044-ci-build-audit
       - hotfix/cloud-observability
       - hotfix/crash-diagnostics
+      - cloud/062-mongodb-audit
     paths:
       - "cloud/**"
       - ".github/workflows/porter-debug.yml"
