@@ -142,8 +142,9 @@ class SystemVitalsLogger {
         totalAppWebsockets += session.appWebsockets?.size || 0;
 
         // Count glasses WebSocket connections (sessions with an active glasses WS)
+        // UserSession stores the glasses connection as `websocket` (type IWebSocket)
         try {
-          if ((session as any).glassesWs || (session as any).glassesWebSocket) {
+          if (session.websocket) {
             glassesWebSockets++;
           }
         } catch {

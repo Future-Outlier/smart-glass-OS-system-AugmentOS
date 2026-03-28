@@ -44,17 +44,20 @@ function slowQueryPlugin(schema: mongoose.Schema): void {
   );
 }
 
+// Register slow query plugin at module load time — BEFORE models are imported.
+// mongoose.plugin() only applies to schemas created AFTER registration.
+// Since index.ts imports routes (which import models) before calling init(),
+// registering inside init() would be too late.
+if (SLOW_QUERY_MS > 0) {
+  mongoose.plugin(slowQueryPlugin);
+  logger.info({ thresholdMs: SLOW_QUERY_MS }, "Slow query monitoring enabled (registered at module load)");
+}
+
 // Connect to mongo db.
 export async function init(): Promise<void> {
   if (!MONGO_URL) throw "MONGO_URL is undefined";
   try {
     mongoose.set("strictQuery", false);
-
-    // Register slow query plugin globally before connecting
-    if (SLOW_QUERY_MS > 0) {
-      mongoose.plugin(slowQueryPlugin);
-      logger.info({ thresholdMs: SLOW_QUERY_MS }, "Slow query monitoring enabled");
-    }
     let modifiedUrl = MONGO_URL;
     if (!IS_CHINA) {
       modifiedUrl = MONGO_URL + "/prod";

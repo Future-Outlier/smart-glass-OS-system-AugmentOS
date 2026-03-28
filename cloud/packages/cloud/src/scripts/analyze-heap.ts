@@ -32,24 +32,7 @@ export {};
 // Config
 // ---------------------------------------------------------------------------
 
-const ADMIN_JWT =
-  process.env.MENTRA_ADMIN_JWT ||
-  // Fallback: try to read from .env manually
-  (() => {
-    try {
-      const envFile = Bun.file("../../.env");
-      const text = envFile.text();
-      // text() returns a Promise in types but we only use this as a fallback
-      // If it fails, we return empty string
-      if (typeof text === "string") {
-        const match = text.match(/MENTRA_ADMIN_JWT=(.+)/);
-        return match?.[1]?.trim() ?? "";
-      }
-      return "";
-    } catch {
-      return "";
-    }
-  })();
+const ADMIN_JWT = process.env.MENTRA_ADMIN_JWT ?? "";
 
 if (!ADMIN_JWT) {
   console.error("❌ MENTRA_ADMIN_JWT not set. Set it in environment or cloud/.env");
@@ -389,7 +372,7 @@ function printSummary(history: TimePoint[]) {
 
   // Per-session memory cost
   const avgSessions = history.reduce((s, p) => s + p.sessions, 0) / history.length;
-  if (avgSessions > 0) {
+  if (avgSessions > 0 && last.sessions > 0) {
     const perSessionRss = last.memory.rss / last.sessions;
     const perSessionHeap = last.memory.heapUsed / last.sessions;
     console.log();
