@@ -143,7 +143,9 @@ async function listApps(c: AppContext) {
     // Fetch apps from cache with DB fallback
     const cachedApps = appCache.getByPackageNames(installedPackageNames);
     const installedApps = (
-      cachedApps.length > 0 ? cachedApps : await App.find({ packageName: { $in: installedPackageNames } }).lean()
+      cachedApps.length === installedPackageNames.length
+        ? cachedApps
+        : await App.find({ packageName: { $in: installedPackageNames } }).lean()
     ) as AppI[];
 
     // Combine with LOCAL_APPS (pre-installed system apps), avoiding duplicates
@@ -365,7 +367,9 @@ async function getUserTools(c: AppContext) {
     // Fetch apps with tools from cache with DB fallback
     const cachedApps = appCache.getByPackageNames(installedPackageNames);
     const apps = (
-      cachedApps.length > 0 ? cachedApps : await App.find({ packageName: { $in: installedPackageNames } }).lean()
+      cachedApps.length === installedPackageNames.length
+        ? cachedApps
+        : await App.find({ packageName: { $in: installedPackageNames } }).lean()
     ).filter((a: any) => a.tools && Array.isArray(a.tools) && a.tools.length > 0);
 
     // Collect all tools with app info

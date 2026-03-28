@@ -93,32 +93,32 @@ private startGapDetector(): void {
 ```typescript
 // Exported accumulator — SystemVitalsLogger reads and resets every 30s
 class MongoQueryStats {
-  count = 0;
-  totalMs = 0;
-  maxMs = 0;
+  count = 0
+  totalMs = 0
+  maxMs = 0
 
   record(durationMs: number): void {
-    this.count++;
-    this.totalMs += durationMs;
-    if (durationMs > this.maxMs) this.maxMs = durationMs;
+    this.count++
+    this.totalMs += durationMs
+    if (durationMs > this.maxMs) this.maxMs = durationMs
   }
 
-  getAndReset(): { count: number; totalMs: number; maxMs: number } {
-    const snapshot = { count: this.count, totalMs: this.totalMs, maxMs: this.maxMs };
-    this.count = 0;
-    this.totalMs = 0;
-    this.maxMs = 0;
-    return snapshot;
+  getAndReset(): {count: number; totalMs: number; maxMs: number} {
+    const snapshot = {count: this.count, totalMs: this.totalMs, maxMs: this.maxMs}
+    this.count = 0
+    this.totalMs = 0
+    this.maxMs = 0
+    return snapshot
   }
 }
 
-export const mongoQueryStats = new MongoQueryStats();
+export const mongoQueryStats = new MongoQueryStats()
 ```
 
 In the existing `slowQueryPlugin` post hook, after logging the warning, add:
 
 ```typescript
-mongoQueryStats.record(durationMs);
+mongoQueryStats.record(durationMs)
 ```
 
 **Note:** Record ALL queries that exceed the threshold, not just the ones we log. The logging has its own threshold (`MONGOOSE_SLOW_QUERY_MS`), but the stats should use the same threshold for consistency.
@@ -161,91 +161,91 @@ const mongoStats = mongoQueryStats.getAndReset();
 
 **File:** `packages/cloud/src/services/core/app-cache.service.ts` (new)
 
-**What:** A singleton cache that loads all `App` documents at boot and serves `getByPackageName()` from memory. Refreshes every 5 minutes. All 18+ hot-path `App.findOne({ packageName })` calls switch to use the cache instead of hitting MongoDB.
+**What:** A singleton cache that loads all `App` documents at boot and serves `getByPackageName()` from memory. Refreshes every 30 seconds. All 18+ hot-path `App.findOne({ packageName })` calls switch to use the cache instead of hitting MongoDB.
 
 **Why:** The `apps` collection is 1,314 documents, 2 MB total. It changes rarely (new apps are published maybe once a day). Every hot-path query against it pays 80-370ms of network RTT for data that's effectively static. Caching it in memory eliminates all of that RTT.
 
 **Implementation:**
 
 ```typescript
-import { App } from "../../models/app.model";
-import type { AppI } from "../../models/app.model";
-import { logger as rootLogger } from "../logging/pino-logger";
+import {App} from "../../models/app.model"
+import type {AppI} from "../../models/app.model"
+import {logger as rootLogger} from "../logging/pino-logger"
 
-const logger = rootLogger.child({ service: "AppCache" });
+const logger = rootLogger.child({service: "AppCache"})
 
-const REFRESH_INTERVAL_MS = 5 * 60 * 1000; // 5 minutes
+const REFRESH_INTERVAL_MS = 30_000 // 30 seconds
 
 class AppCacheService {
-  private cache: Map<string, AppI> = new Map();
-  private allApps: AppI[] = [];
-  private refreshInterval?: NodeJS.Timeout;
-  private loaded = false;
-  private lastRefresh: number = 0;
+  private cache: Map<string, AppI> = new Map()
+  private allApps: AppI[] = []
+  private refreshInterval?: NodeJS.Timeout
+  private loaded = false
+  private lastRefresh: number = 0
 
   async initialize(): Promise<void> {
-    await this.refresh();
+    await this.refresh()
     this.refreshInterval = setInterval(() => {
-      this.refresh().catch((err) => logger.error(err, "App cache refresh failed"));
-    }, REFRESH_INTERVAL_MS);
-    logger.info({ count: this.cache.size, refreshMs: REFRESH_INTERVAL_MS }, "App cache initialized");
+      this.refresh().catch((err) => logger.error(err, "App cache refresh failed"))
+    }, REFRESH_INTERVAL_MS)
+    logger.info({count: this.cache.size, refreshMs: REFRESH_INTERVAL_MS}, "App cache initialized")
   }
 
   async refresh(): Promise<void> {
-    const t0 = performance.now();
-    const apps = await App.find({}).lean<AppI[]>();
-    const elapsed = performance.now() - t0;
+    const t0 = performance.now()
+    const apps = await App.find({}).lean<AppI[]>()
+    const elapsed = performance.now() - t0
 
-    this.cache.clear();
+    this.cache.clear()
     for (const app of apps) {
       if (app.packageName) {
-        this.cache.set(app.packageName, app);
+        this.cache.set(app.packageName, app)
       }
     }
-    this.allApps = apps;
-    this.loaded = true;
-    this.lastRefresh = Date.now();
+    this.allApps = apps
+    this.loaded = true
+    this.lastRefresh = Date.now()
 
     logger.info(
-      { count: apps.length, refreshMs: Math.round(elapsed), feature: "app-cache" },
+      {count: apps.length, refreshMs: Math.round(elapsed), feature: "app-cache"},
       `App cache refreshed: ${apps.length} apps in ${Math.round(elapsed)}ms`,
-    );
+    )
   }
 
   getByPackageName(packageName: string): AppI | null {
     if (!this.loaded) {
-      logger.warn("App cache not loaded yet — falling back to DB");
-      return null; // caller should fall back to DB query
+      logger.warn("App cache not loaded yet — falling back to DB")
+      return null // caller should fall back to DB query
     }
-    return this.cache.get(packageName) ?? null;
+    return this.cache.get(packageName) ?? null
   }
 
   getAll(): AppI[] {
-    return this.allApps;
+    return this.allApps
   }
 
   getByPackageNames(packageNames: string[]): AppI[] {
-    return packageNames.map((name) => this.cache.get(name)).filter((app): app is AppI => app !== undefined);
+    return packageNames.map((name) => this.cache.get(name)).filter((app): app is AppI => app !== undefined)
   }
 
   // Force refresh after a write (app created/updated/deleted)
   async invalidate(): Promise<void> {
-    await this.refresh();
+    await this.refresh()
   }
 
   isLoaded(): boolean {
-    return this.loaded;
+    return this.loaded
   }
 
   stop(): void {
     if (this.refreshInterval) {
-      clearInterval(this.refreshInterval);
-      this.refreshInterval = undefined;
+      clearInterval(this.refreshInterval)
+      this.refreshInterval = undefined
     }
   }
 }
 
-export const appCache = new AppCacheService();
+export const appCache = new AppCacheService()
 ```
 
 **Initialization:** Call `appCache.initialize()` in `index.ts` after MongoDB connects, before the server starts accepting connections. This ensures the cache is warm before any sessions connect.
@@ -254,17 +254,17 @@ export const appCache = new AppCacheService();
 
 ```typescript
 // Before — blocks event loop for 80-370ms
-const app = await App.findOne({ packageName });
+const app = await App.findOne({packageName})
 ```
 
 to:
 
 ```typescript
 // After — instant memory lookup, 0ms
-const app = appCache.getByPackageName(packageName);
+const app = appCache.getByPackageName(packageName)
 if (!app) {
   // Cache miss (shouldn't happen for valid apps). Fall back to DB.
-  const dbApp = await App.findOne({ packageName }).lean();
+  const dbApp = await App.findOne({packageName}).lean()
   // Optionally trigger a cache refresh
 }
 ```
@@ -359,12 +359,12 @@ The app cache solves the `apps` collection specifically. But `User`, `UserSettin
 
 ```typescript
 // Before — all reads go to primary (US East)
-await mongoose.connect(MONGO_URL + "/prod");
+await mongoose.connect(MONGO_URL + "/prod")
 
 // After — reads go to nearest replica
 await mongoose.connect(MONGO_URL + "/prod", {
   readPreference: "nearest",
-});
+})
 ```
 
 **Cost consideration:** Each read replica is a separate Atlas node billed at its tier. M10 is ~$57/month per node. 4 replicas = ~$228/month. Compare with the engineering time spent on caching and crash investigation.
@@ -403,12 +403,12 @@ await mongoose.connect(MONGO_URL + "/prod", {
 **Implementation pattern (same for each):**
 
 ```typescript
-import { operationTimers } from "../metrics/SystemVitalsLogger";
+import {operationTimers} from "../metrics/SystemVitalsLogger"
 
 // In the hot path:
-const t0 = performance.now();
+const t0 = performance.now()
 // ... existing code ...
-operationTimers.addTiming("audioProcessing", performance.now() - t0);
+operationTimers.addTiming("audioProcessing", performance.now() - t0)
 ```
 
 **What this produces in the existing `system-vitals` log:**

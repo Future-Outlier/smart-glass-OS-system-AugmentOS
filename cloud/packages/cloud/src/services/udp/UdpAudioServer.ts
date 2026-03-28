@@ -256,12 +256,11 @@ export class UdpAudioServer {
 
     // Forward reordered packets to AudioManager
     // AudioManager handles LC3→PCM decoding if needed based on client's audio config
+    const t0 = performance.now();
     try {
-      const t0 = performance.now();
       for (const audioChunk of packetsToProcess) {
         session.audioManager.processAudioData(audioChunk, "udp");
       }
-      operationTimers.addTiming("audioProcessing", performance.now() - t0);
     } catch (error) {
       this.logger.error(
         {
@@ -274,6 +273,8 @@ export class UdpAudioServer {
         },
         "Error processing UDP audio in AudioManager",
       );
+    } finally {
+      operationTimers.addTiming("audioProcessing", performance.now() - t0);
     }
   }
 

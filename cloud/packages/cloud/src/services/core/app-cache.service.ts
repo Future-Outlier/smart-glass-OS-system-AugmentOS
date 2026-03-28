@@ -1,3 +1,5 @@
+import { clearSdkAuthCache } from "../sdk/sdk.auth.service";
+
 /**
  * AppCacheService — In-memory cache for the `apps` collection.
  *
@@ -48,14 +50,14 @@ class AppCacheService {
   private loaded = false;
   private lastRefresh: number = 0;
   private refreshCount: number = 0;
+  private refreshing = false;
 
   /**
    * Load the cache and start the refresh timer.
    * Call AFTER MongoDB connects and models are registered.
    */
   async initialize(): Promise<void> {
-    await this.refresh();
-
+    // Start interval BEFORE initial refresh so retries happen even if first refresh fails
     this.refreshInterval = setInterval(() => {
       this.refresh().catch((err) => {
         logger.error(err, "App cache refresh failed");
@@ -73,6 +75,12 @@ class AppCacheService {
       }
     }, REFRESH_INTERVAL_MS);
 
+    try {
+      await this.refresh();
+    } catch (err) {
+      logger.error(err, "App cache initial refresh failed — interval will retry");
+    }
+
     logger.info(
       {
         feature: "app-cache",
@@ -87,35 +95,44 @@ class AppCacheService {
    * Reload all apps from MongoDB. Uses .lean() for minimal overhead.
    */
   async refresh(): Promise<void> {
-    const t0 = performance.now();
-    const App = getAppModel();
-    const apps = await App.find({}).lean();
-    const elapsed = performance.now() - t0;
-
-    const newMap = new Map<string, any>();
-    for (const app of apps) {
-      if (app.packageName) {
-        newMap.set(app.packageName, app);
-      }
+    if (this.refreshing) {
+      logger.debug({ feature: "app-cache" }, "Refresh already in progress — skipping");
+      return;
     }
+    this.refreshing = true;
+    try {
+      const t0 = performance.now();
+      const App = getAppModel();
+      const apps = await App.find({}).lean();
+      const elapsed = performance.now() - t0;
 
-    // Atomic swap — no partial state visible to readers
-    this.byPackageName = newMap;
-    this.allApps = apps;
-    this.loaded = true;
-    this.lastRefresh = Date.now();
-    this.refreshCount++;
+      const newMap = new Map<string, any>();
+      for (const app of apps) {
+        if (app.packageName) {
+          newMap.set(app.packageName, app);
+        }
+      }
 
-    // Log every refresh (once per 30s = 2,880/day — negligible)
-    logger.info(
-      {
-        feature: "app-cache",
-        count: apps.length,
-        refreshMs: Math.round(elapsed * 10) / 10,
-        refreshCount: this.refreshCount,
-      },
-      `App cache refreshed: ${apps.length} apps in ${Math.round(elapsed)}ms`,
-    );
+      // Atomic swap — no partial state visible to readers
+      this.byPackageName = newMap;
+      this.allApps = apps;
+      this.loaded = true;
+      this.lastRefresh = Date.now();
+      this.refreshCount++;
+
+      // Log every refresh (once per 30s = 2,880/day — negligible)
+      logger.info(
+        {
+          feature: "app-cache",
+          count: apps.length,
+          refreshMs: Math.round(elapsed * 10) / 10,
+          refreshCount: this.refreshCount,
+        },
+        `App cache refreshed: ${apps.length} apps in ${Math.round(elapsed)}ms`,
+      );
+    } finally {
+      this.refreshing = false;
+    }
   }
 
   /**
@@ -155,6 +172,7 @@ class AppCacheService {
    */
   async invalidate(): Promise<void> {
     try {
+      clearSdkAuthCache();
       await this.refresh();
     } catch (err) {
       logger.error(err, "App cache invalidation refresh failed");

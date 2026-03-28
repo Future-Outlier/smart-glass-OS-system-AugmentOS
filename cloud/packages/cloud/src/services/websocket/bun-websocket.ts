@@ -667,6 +667,7 @@ async function handleAppMessage(ws: AppServerWebSocket, message: string | Buffer
     await userSession.handleAppMessage(ws as any, parsed);
   } catch (error) {
     logger.error({ error, userId, packageName }, "Error processing app message");
+    ws.close(1011, "Internal server error");
   } finally {
     operationTimers.addTiming("appMessage", performance.now() - t0);
   }

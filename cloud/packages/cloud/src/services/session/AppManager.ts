@@ -612,7 +612,7 @@ export class AppManager {
       const runningAppsPackageNames = Array.from(this.userSession.runningApps.keys());
       const cachedApps = appCache.getByPackageNames(runningAppsPackageNames);
       const runningForegroundApps = (
-        cachedApps.length > 0
+        cachedApps.length === runningAppsPackageNames.length
           ? cachedApps
           : await App.find({
               packageName: { $in: runningAppsPackageNames },

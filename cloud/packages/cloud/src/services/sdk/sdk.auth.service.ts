@@ -18,7 +18,6 @@
 
 import crypto from "crypto";
 import App, { AppI } from "../../models/app.model";
-import { appCache } from "../core/app-cache.service";
 import { logger as rootLogger } from "../logging/pino-logger";
 
 const logger = rootLogger.child({ service: "sdk.auth.service" });
@@ -97,11 +96,21 @@ export function invalidateCache(packageName?: string): void {
 }
 
 /**
+ * Clear the entire SDK auth cache.
+ * Called from app-cache invalidation to ensure stale credentials are not retained.
+ */
+export function clearSdkAuthCache(): void {
+  cache.clear();
+  logger.debug("SDK auth cache: cleared all entries (via clearSdkAuthCache)");
+}
+
+/**
  * Fetch the hashedApiKey for an App from the DB.
+ * Always queries the database directly — credential validation must never
+ * rely on a cache that could serve stale hashed keys.
  */
 async function fetchHashedKeyFromDb(packageName: string): Promise<string | undefined> {
-  const app = (appCache.getByPackageName(packageName) ||
-    (await App.findOne({ packageName }).select("packageName hashedApiKey").lean())) as Pick<
+  const app = (await App.findOne({ packageName }).select("packageName hashedApiKey").lean()) as Pick<
     AppI,
     "packageName" | "hashedApiKey"
   > | null;
