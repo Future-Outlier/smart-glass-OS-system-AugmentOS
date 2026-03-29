@@ -18,6 +18,7 @@ import {
 import { ResourceTracker } from "../../utils/resource-tracker";
 import appService from "../core/app.service";
 import { memoryLeakDetector } from "../debug/MemoryLeakDetector";
+import { connectionChurnTracker } from "../metrics/SystemVitalsLogger";
 import DisplayManager from "../layout/DisplayManager6.1";
 import { logger as rootLogger } from "../logging/pino-logger";
 import { PosthogService } from "../logging/posthog.service";
@@ -55,6 +56,14 @@ export class UserSession {
   public readonly userId: string;
   public readonly startTime: Date; // = new Date();
   public disconnectedAt: Date | null = null;
+
+  // Connection churn tracking — proves whether disconnects are client-side or server-side
+  // See: cloud/issues/069-ws-disconnect-observability/spike.md
+  public reconnectCount = 0;
+  public lastCloseCode?: number;
+  public lastCloseReason?: string;
+  public lastClientMessageTime?: number; // Updated on every message FROM the client
+  public lastAppLevelPongTime?: number; // Updated when client responds to our app-level ping
 
   // Logging
   public readonly logger: Logger;
@@ -134,7 +143,7 @@ export class UserSession {
   private appLevelPingInterval?: NodeJS.Timeout;
   private appLevelPingCount = 0; // Counter for targeted debug logging
   private pongHandler?: () => void; // Stored for cleanup
-  private lastPongTime?: number;
+  public lastPongTime?: number;
   private pongTimeoutTimer?: NodeJS.Timeout;
   private readonly PONG_TIMEOUT_MS = 30000; // 30 seconds - 3x heartbeat interval
 
@@ -472,9 +481,35 @@ export class UserSession {
   ): Promise<{ userSession: UserSession; reconnection: boolean }> {
     const existingSession = UserSession.getById(userId);
     if (existingSession) {
+      // Compute downtime BEFORE clearing disconnectedAt — this is the key metric
+      // for proving client-side disconnect churn.
+      const downtimeMs = existingSession.disconnectedAt ? Date.now() - existingSession.disconnectedAt.getTime() : null;
+      const sessionAgeSeconds = Math.round((Date.now() - existingSession.startTime.getTime()) / 1000);
+      const now = Date.now();
+
+      existingSession.reconnectCount++;
+
       existingSession.logger.info(
-        `[UserSession:createOrReconnect] Existing session found for ${userId}, updating WebSocket`,
+        {
+          feature: "ws-reconnect",
+          reconnectCount: existingSession.reconnectCount,
+          downtimeMs,
+          sessionAgeSeconds,
+          lastCloseCode: existingSession.lastCloseCode,
+          lastCloseReason: existingSession.lastCloseReason || undefined,
+          timeSinceLastClientMessage: existingSession.lastClientMessageTime
+            ? now - existingSession.lastClientMessageTime
+            : null,
+          timeSinceLastPong: existingSession.lastPongTime ? now - (existingSession.lastPongTime as number) : null,
+          timeSinceLastAppPong: existingSession.lastAppLevelPongTime
+            ? now - existingSession.lastAppLevelPongTime
+            : null,
+        },
+        `Glasses reconnect #${existingSession.reconnectCount}: downtime=${downtimeMs}ms, lastClose=${existingSession.lastCloseCode}`,
       );
+
+      // Record reconnect for churn tracking in SystemVitalsLogger
+      connectionChurnTracker.recordReconnect(downtimeMs);
 
       // Update WS and restart heartbeat
       existingSession.updateWebSocket(ws);
@@ -738,7 +773,22 @@ export class UserSession {
     // Log to posthog disconnected duration.
     const now = new Date();
     const duration = now.getTime() - this.startTime.getTime();
-    this.logger.info({ duration }, `User session ${this.userId} disconnected. Connected for ${duration}ms`);
+    const sessionDurationSeconds = Math.round(duration / 1000);
+    const nowMs = now.getTime();
+    this.logger.info(
+      {
+        feature: "ws-dispose",
+        duration,
+        sessionDurationSeconds,
+        reconnectCount: this.reconnectCount,
+        lastCloseCode: this.lastCloseCode,
+        lastCloseReason: this.lastCloseReason || undefined,
+        timeSinceLastClientMessage: this.lastClientMessageTime ? nowMs - this.lastClientMessageTime : null,
+        timeSinceLastAppPong: this.lastAppLevelPongTime ? nowMs - this.lastAppLevelPongTime : null,
+        disposalReason: this.disconnectedAt ? "grace_period_timeout" : "explicit_disposal",
+      },
+      `Session disposed: duration=${sessionDurationSeconds}s, reconnects=${this.reconnectCount}, lastClose=${this.lastCloseCode}, silent=${this.lastClientMessageTime ? nowMs - this.lastClientMessageTime : "?"}ms`,
+    );
     try {
       await PosthogService.trackEvent("disconnected", this.userId, {
         duration: duration,
@@ -804,14 +854,7 @@ export class UserSession {
       UserSession.sessions.delete(this.userId);
     }
 
-    const sessionDurationSeconds = this.startTime ? Math.round((Date.now() - this.startTime.getTime()) / 1000) : 0;
-
-    this.logger.info(
-      {
-        disposalReason: this.disconnectedAt ? "grace_period_timeout" : "explicit_disposal",
-      },
-      `🗑️ Session disposed and removed from storage for ${this.userId}`,
-    );
+    this.logger.info(`🗑️ Session disposed and removed from storage for ${this.userId}`);
 
     // Mark disposed for leak detection
     memoryLeakDetector.markDisposed(`UserSession:${this.userId}`);
