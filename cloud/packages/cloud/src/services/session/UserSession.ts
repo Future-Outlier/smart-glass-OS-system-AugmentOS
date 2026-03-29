@@ -481,35 +481,42 @@ export class UserSession {
   ): Promise<{ userSession: UserSession; reconnection: boolean }> {
     const existingSession = UserSession.getById(userId);
     if (existingSession) {
-      // Compute downtime BEFORE clearing disconnectedAt — this is the key metric
-      // for proving client-side disconnect churn.
-      const downtimeMs = existingSession.disconnectedAt ? Date.now() - existingSession.disconnectedAt.getTime() : null;
-      const sessionAgeSeconds = Math.round((Date.now() - existingSession.startTime.getTime()) / 1000);
-      const now = Date.now();
+      // Only log reconnect metrics if the session was actually disconnected.
+      // If disconnectedAt is null, this is a WebSocket upgrade (new socket arriving
+      // before old one closed) — not a true disconnect/reconnect cycle.
+      if (existingSession.disconnectedAt) {
+        const downtimeMs = Date.now() - existingSession.disconnectedAt.getTime();
+        const sessionAgeSeconds = Math.round((Date.now() - existingSession.startTime.getTime()) / 1000);
+        const now = Date.now();
 
-      existingSession.reconnectCount++;
+        existingSession.reconnectCount++;
 
-      existingSession.logger.info(
-        {
-          feature: "ws-reconnect",
-          reconnectCount: existingSession.reconnectCount,
-          downtimeMs,
-          sessionAgeSeconds,
-          lastCloseCode: existingSession.lastCloseCode,
-          lastCloseReason: existingSession.lastCloseReason || undefined,
-          timeSinceLastClientMessage: existingSession.lastClientMessageTime
-            ? now - existingSession.lastClientMessageTime
-            : null,
-          timeSinceLastPong: existingSession.lastPongTime ? now - (existingSession.lastPongTime as number) : null,
-          timeSinceLastAppPong: existingSession.lastAppLevelPongTime
-            ? now - existingSession.lastAppLevelPongTime
-            : null,
-        },
-        `Glasses reconnect #${existingSession.reconnectCount}: downtime=${downtimeMs}ms, lastClose=${existingSession.lastCloseCode}`,
-      );
+        existingSession.logger.info(
+          {
+            feature: "ws-reconnect",
+            reconnectCount: existingSession.reconnectCount,
+            downtimeMs,
+            sessionAgeSeconds,
+            lastCloseCode: existingSession.lastCloseCode,
+            lastCloseReason: existingSession.lastCloseReason || undefined,
+            timeSinceLastClientMessage: existingSession.lastClientMessageTime
+              ? now - existingSession.lastClientMessageTime
+              : null,
+            timeSinceLastPong: existingSession.lastPongTime ? now - (existingSession.lastPongTime as number) : null,
+            timeSinceLastAppPong: existingSession.lastAppLevelPongTime
+              ? now - existingSession.lastAppLevelPongTime
+              : null,
+          },
+          `Glasses reconnect #${existingSession.reconnectCount}: downtime=${downtimeMs}ms, lastClose=${existingSession.lastCloseCode}`,
+        );
 
-      // Record reconnect for churn tracking in SystemVitalsLogger
-      connectionChurnTracker.recordReconnect(downtimeMs);
+        // Record reconnect for churn tracking in SystemVitalsLogger
+        connectionChurnTracker.recordReconnect(downtimeMs);
+      } else {
+        existingSession.logger.info(
+          `[UserSession:createOrReconnect] WebSocket upgrade for ${userId} (session was not disconnected)`,
+        );
+      }
 
       // Update WS and restart heartbeat
       existingSession.updateWebSocket(ws);
