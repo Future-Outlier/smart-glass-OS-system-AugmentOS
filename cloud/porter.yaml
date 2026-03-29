@@ -51,6 +51,14 @@ services:
       nginx.ingress.kubernetes.io/proxy-read-timeout: "3600"
       nginx.ingress.kubernetes.io/proxy-send-timeout: "3600"
       nginx.ingress.kubernetes.io/proxy-connect-timeout: "60"
+    # Prometheus metrics scraping — exposes mentra_user_sessions, mentra_miniapp_sessions,
+    # mentra_event_loop_lag_ms, mentra_udp_packets_received_total, etc. to Porter's
+    # built-in metrics dashboard. The /metrics endpoint is already on port 80.
+    metricsScraping:
+      enabled: true
+      path: /metrics
+      port: 80
+      scrapeIntervalSeconds: 30
     # Graceful shutdown — give WebSocket close frames time to flush
     # See: cloud/issues/063-graceful-shutdown/spec.md
     terminationGracePeriodSeconds: 30
