@@ -42,7 +42,13 @@ export class ResourceTracker {
    */
   track(cleanup: CleanupFunction): CleanupFunction {
     if (this.isDisposed) {
-      throw new Error("Cannot track resources on a disposed ResourceTracker");
+      // Don't throw — this crashes the entire process (exit code 1).
+      // This happens when a translation/transcription stream tries to connect
+      // after the UserSession has already been disposed (race condition during
+      // disconnect storms). Silently ignore and return a no-op.
+      // See: cloud/issues/067-heap-growth-investigation — this was the cause
+      // of the cascading exit-code-1 crashes on US Central.
+      return () => {};
     }
 
     this.cleanupFunctions.push(cleanup);
