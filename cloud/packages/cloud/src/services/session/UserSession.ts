@@ -816,51 +816,12 @@ export class UserSession {
     // Mark disposed for leak detection
     memoryLeakDetector.markDisposed(`UserSession:${this.userId}`);
 
-    // GC after disconnect — force garbage collection and measure how much is freed.
-    // Rate-limited: at most once per 10 seconds across all sessions to avoid
-    // thrashing GC during crash cascades (many sessions disconnecting at once).
-    if (this.userId && UserSession.canRunPostDisconnectGc()) {
-      const gcLogger = rootLogger.child({ service: "gc-after-disconnect" });
-      setTimeout(() => {
-        try {
-          const memBefore = process.memoryUsage();
-          const t0 = performance.now();
-          Bun.gc(true);
-          const gcDurationMs = performance.now() - t0;
-          const memAfter = process.memoryUsage();
-          const freedBytes = memBefore.heapUsed - memAfter.heapUsed;
-
-          gcLogger.info(
-            {
-              feature: "gc-after-disconnect",
-              userId: this.userId,
-              gcDurationMs: Math.round(gcDurationMs * 10) / 10,
-              heapBeforeMB: Math.round(memBefore.heapUsed / 1048576),
-              heapAfterMB: Math.round(memAfter.heapUsed / 1048576),
-              freedMB: Math.round(freedBytes / 1048576),
-              rssMB: Math.round(memAfter.rss / 1048576),
-              sessionDurationSeconds,
-            },
-            `GC after disconnect (${this.userId}): ${gcDurationMs.toFixed(1)}ms, freed ${Math.round(freedBytes / 1048576)}MB`,
-          );
-        } catch (error) {
-          gcLogger.error(error, "GC after disconnect failed");
-        }
-      }, 0);
-    }
-  }
-
-  // Rate limiter for post-disconnect GC: at most once per 10 seconds
-  private static lastPostDisconnectGc: number = 0;
-  private static POST_DISCONNECT_GC_COOLDOWN_MS = 10_000;
-
-  private static canRunPostDisconnectGc(): boolean {
-    const now = Date.now();
-    if (now - UserSession.lastPostDisconnectGc < UserSession.POST_DISCONNECT_GC_COOLDOWN_MS) {
-      return false;
-    }
-    UserSession.lastPostDisconnectGc = now;
-    return true;
+    // gc-after-disconnect REMOVED — confirmed wasteful:
+    // 31 calls/hour on US Central, 2,242ms total event loop blocking, freed 0 bytes
+    // every single time. The gc-probe in SystemVitalsLogger provides the same
+    // diagnostic data on a fixed 60s schedule without being triggered by user behavior.
+    // See: cloud/issues/066-ws-disconnect-churn/spec.md (A7)
+    // See: cloud/issues/067-heap-growth-investigation/spike.md
   }
 
   /**
