@@ -45,9 +45,20 @@ export class ResourceTracker {
       // Don't throw — this crashes the entire process (exit code 1).
       // This happens when a translation/transcription stream tries to connect
       // after the UserSession has already been disposed (race condition during
-      // disconnect storms). Silently ignore and return a no-op.
-      // See: cloud/issues/067-heap-growth-investigation — this was the cause
-      // of the cascading exit-code-1 crashes on US Central.
+      // disconnect storms).
+      //
+      // Run the cleanup immediately instead of dropping it — callers typically
+      // allocate the resource first, then call track() to register teardown.
+      // If we return a no-op, the resource (WebSocket, listener, etc.) leaks
+      // because the cleanup never runs. Running it now tears down the
+      // late-arriving resource since the session is already gone.
+      //
+      // See: cloud/issues/068-resource-tracker-crash
+      try {
+        cleanup();
+      } catch {
+        // Swallow — the resource may already be in a bad state
+      }
       return () => {};
     }
 

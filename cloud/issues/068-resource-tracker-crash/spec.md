@@ -15,7 +15,7 @@
 
 ### A1. Change `ResourceTracker.track()` from throw to no-op
 
-**File:** `packages/cloud/src/utils/resource-tracker.ts`
+**File:** `cloud/packages/cloud/src/utils/resource-tracker.ts`
 
 **Before:**
 
@@ -34,34 +34,41 @@ track(cleanup: CleanupFunction): CleanupFunction {
 track(cleanup: CleanupFunction): CleanupFunction {
   if (this.isDisposed) {
     // Don't throw — this crashes the entire process (exit code 1).
-    // This happens when a translation/transcription stream tries to connect
-    // after the UserSession has already been disposed (race condition during
-    // disconnect storms). Silently ignore and return a no-op.
+    // Run the cleanup immediately — callers typically allocate the resource
+    // first, then call track() to register teardown. If we drop the cleanup,
+    // the resource (WebSocket, listener, etc.) leaks.
+    try {
+      cleanup();
+    } catch {
+      // Swallow — the resource may already be in a bad state
+    }
     return () => {};
   }
   // ...
 }
 ```
 
-**Why no-op instead of throw:** A disposed ResourceTracker will never run cleanup functions again — `dispose()` already ran them all and set `isDisposed = true`. Registering a new cleanup on a disposed tracker is meaningless but harmless. The cleanup function will simply never execute, which is the correct behavior — the resource it would have cleaned up belongs to a session that's already gone. Throwing serves no purpose other than crashing the process.
+**Why run cleanup immediately instead of dropping it:** Callers typically allocate a resource (open a WebSocket, add a listener) and THEN call `track()` to register the teardown function. If we return a no-op without running the cleanup, the already-allocated resource leaks — the WebSocket stays open, the listener stays attached. Running the cleanup immediately tears down the late-arriving resource since the session is already gone.
+
+**Why not throw:** Throwing crashes the entire process. An unhandled throw inside a `new Promise` constructor becomes an unhandled promise rejection, which Bun treats as fatal (exit code 1).
 
 **Why not catch in SonioxTranslationProvider instead:** The throw could occur in any code path that calls `track()` after an async gap. Fixing at the source (ResourceTracker) protects all callers, not just the one that happened to crash first. Defense in depth — the caller shouldn't need to know about ResourceTracker's internal state.
 
 ### What This Does NOT Include
 
-| Out of scope                                   | Why                                                                                                                                                                                               |
-| ---------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Adding disposed guards to individual providers | The ResourceTracker fix protects all callers. Individual guards are defense-in-depth for a future PR.                                                                                             |
-| Fixing the race condition root cause           | The race (dispose during async connect) is inherent to the session lifecycle. The correct behavior is to silently abandon the operation, which is what the no-op achieves.                        |
-| Fixing the SDK's copy of ResourceTracker       | `packages/sdk/src/utils/resource-tracker.ts` has the same throw, but SDK code runs in the developer's process, not in our server. A crash there doesn't kill production. Can be fixed separately. |
+| Out of scope                                   | Why                                                                                                                                                                                                     |
+| ---------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Adding disposed guards to individual providers | The ResourceTracker fix protects all callers. Individual guards are defense-in-depth for a future PR.                                                                                                   |
+| Fixing the race condition root cause           | The race (dispose during async connect) is inherent to the session lifecycle. The correct behavior is to silently abandon the operation, which is what the no-op achieves.                              |
+| Fixing the SDK's copy of ResourceTracker       | `cloud/packages/sdk/src/utils/resource-tracker.ts` has the same throw, but SDK code runs in the developer's process, not in our server. A crash there doesn't kill production. Can be fixed separately. |
 
 ## Decision Log
 
-| Decision                    | Alternatives considered                      | Why we chose this                                                                                                                                           |
-| --------------------------- | -------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Return no-op from `track()` | Catch in SonioxTranslationProvider.connect() | Fixes all callers, not just one. The throw can occur from any async code path.                                                                              |
-| Silent return (no log)      | Log a warning on every disposed track() call | During thundering herd, hundreds of disposed track() calls would fire. Logging each one creates noise and event loop pressure at the worst possible moment. |
-| No-op cleanup function      | Run the cleanup immediately                  | The cleanup function references resources that may no longer exist (the session is disposed). Running it could cause secondary errors.                      |
+| Decision                    | Alternatives considered                      | Why we chose this                                                                                                                                                                                                                                        |
+| --------------------------- | -------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Return no-op from `track()` | Catch in SonioxTranslationProvider.connect() | Fixes all callers, not just one. The throw can occur from any async code path.                                                                                                                                                                           |
+| Silent return (no log)      | Log a warning on every disposed track() call | During thundering herd, hundreds of disposed track() calls would fire. Logging each one creates noise and event loop pressure at the worst possible moment.                                                                                              |
+| Run cleanup immediately     | Return no-op (drop cleanup)                  | Callers allocate resources before calling `track()`. Dropping the cleanup leaks the already-allocated resource (WebSocket, listener). Running it immediately with a try/catch is safe — if the resource is in a bad state, the catch swallows the error. |
 
 ## Testing
 
@@ -79,7 +86,7 @@ track(cleanup: CleanupFunction): CleanupFunction {
 After deploying:
 
 - US Central should stop crashing with exit code 1
-- Uptime should exceed the previous ~5 minute crash cycle
+- Uptime should exceed the previous ~5-minute crash cycle
 - BetterStack uptime monitor should stay green
 - No `Cannot track resources on a disposed ResourceTracker` errors in logs (the code path is silently handled)
 
